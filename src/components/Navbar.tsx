@@ -27,45 +27,27 @@ const Navbar = () => {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled ? 'bg-white bg-opacity-80 backdrop-blur-md shadow-sm' : 'bg-transparent'
-    }`}>
+    <header
+    className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
+    bg-white ${isScrolled ? 'bg-opacity-90 backdrop-blur-md shadow-sm' : 'bg-opacity-100'}`}>
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16 md:h-20">
         {/* Logo */}
-        <Link to="/" className="flex items-center">
-          <span className="text-xl font-bold bg-gradient-to-r from-primary to-line bg-clip-text text-transparent">LINE Bot Creator</span>
+        <Link to="/" className="flex items-center space-x-3">
+        <img src="/專題圖片/Botfly.svg" alt="Logo" className="h-12 w-auto" />
+        <h6 className="text-2xl font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">BOTFLY</h6>
         </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link to="/" className="text-foreground hover:text-primary transition-colors hover-underline">
-            Home
-          </Link>
-          <Link to="#features" className="text-foreground hover:text-primary transition-colors hover-underline">
-            Features
-          </Link>
-          <Link to="#how-it-works" className="text-foreground hover:text-primary transition-colors hover-underline">
-            How It Works
-          </Link>
-          <Link to="#demo" className="text-foreground hover:text-primary transition-colors hover-underline">
-            Demo
-          </Link>
-          <Link to="#contact" className="text-foreground hover:text-primary transition-colors hover-underline">
-            Contact
-          </Link>
-        </nav>
 
         {/* Language Toggle & Auth Buttons (Desktop) */}
         <div className="hidden md:flex items-center space-x-4">
           <LanguageToggle />
           <Link to="/login">
-            <Button variant="outline" size="sm" className="rounded-full">
-              Log In
+            <Button  variant="outline" size="sm" className="w-full rounded-full custom-signin">
+              SIGN IN
             </Button>
           </Link>
           <Link to="/register">
-            <Button className="rounded-full bg-line hover:bg-line-dark">
-              Get Started
+            <Button className="w-full rounded-full custom-joinus">
+              JOIN US
             </Button>
           </Link>
         </div>
@@ -84,51 +66,16 @@ const Navbar = () => {
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-border">
           <div className="max-w-7xl mx-auto px-6 py-4 space-y-3">
-            <Link 
-              to="/" 
-              className="block py-2 text-foreground hover:text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link 
-              to="#features" 
-              className="block py-2 text-foreground hover:text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Features
-            </Link>
-            <Link 
-              to="#how-it-works" 
-              className="block py-2 text-foreground hover:text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              How It Works
-            </Link>
-            <Link 
-              to="#demo" 
-              className="block py-2 text-foreground hover:text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Demo
-            </Link>
-            <Link 
-              to="#contact" 
-              className="block py-2 text-foreground hover:text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Contact
-            </Link>
             <div className="pt-4 flex flex-col space-y-3">
               <LanguageToggle className="self-start" />
               <Link to="/login" className="w-full" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="outline" className="w-full rounded-full">
-                  Log In
+                SIGN IN
                 </Button>
               </Link>
               <Link to="/register" className="w-full" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full rounded-full bg-line hover:bg-line-dark">
-                  Get Started
+                JOIN US
                 </Button>
               </Link>
             </div>

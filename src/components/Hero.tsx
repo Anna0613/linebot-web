@@ -8,17 +8,14 @@ const Hero = () => {
     <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-radial from-blue-50 to-transparent opacity-60"></div>
-        <div className="absolute bottom-0 left-0 w-1/2 h-full bg-gradient-radial from-green-50 to-transparent opacity-60"></div>
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-[#fffdfa]  from-blue-50 to-transparent opacity-60"></div>
+        <div className="absolute bottom-0 left-0 w-1/2 h-full bg-[#fffdfa]  from-green-50 to-transparent opacity-60"></div>
         <div className="absolute inset-0 dot-pattern opacity-10"></div>
       </div>
       
       <div className="section grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-6 items-center">
         {/* Text Content */}
         <div className="space-y-6 fade-in-element" style={{ animationDelay: '0.1s' }}>
-          <div className="inline-block glassmorphism py-1.5 px-3 rounded-full text-sm font-medium text-primary mb-2">
-            No coding skills required
-          </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-tight">
             Build Your <span className="text-gradient">LINE Bot</span> Without Coding
           </h1>
@@ -28,8 +25,8 @@ const Hero = () => {
           
           <div className="flex flex-wrap gap-4 pt-4">
             <Link to="/register">
-              <Button size="lg" className="rounded-full bg-line hover:bg-line-dark shadow-lg hover:shadow-xl transition-all">
-                Get Started
+              <Button size="lg" className="rounded-full bg-[#F4CD41] font-bold hover:bg-line-dark shadow-lg hover:shadow-xl transition-all">
+                開始設計
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>

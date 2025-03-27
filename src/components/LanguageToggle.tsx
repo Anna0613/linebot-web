@@ -20,9 +20,9 @@ const LanguageToggle = ({ className }: LanguageToggleProps) => {
       variant="outline" 
       size="sm" 
       onClick={toggleLanguage}
-      className={`rounded-full text-sm font-medium transition-all ${className}`}
+      className={`bg-transparent border-none rounded-[5px] text-[#1a1a40] uppercase font-[Times] text-base h-[30px] min-w-[30px] transition-all ${className}`}
     >
-      {language === 'en' ? '中文' : 'EN'}
+      {language === 'en' ? '中' : 'EN'}
     </Button>
   );
 };

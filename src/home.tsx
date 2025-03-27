@@ -8,6 +8,10 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
+import Index2 from "./pages/Index2";
+import AddServer from "./pages/AddServer";
+import Block from "./pages/Block";
+import HowToEstablish from "./pages/HowToEstablish";
 
 const queryClient = new QueryClient();
 
@@ -21,8 +25,11 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
+          <Route path="/index2" element={<Index2 />} />
+          <Route path="/add server" element={<AddServer />} />
+          <Route path="/block" element={<Block />} />
+          <Route path="/how to establish" element={<HowToEstablish />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

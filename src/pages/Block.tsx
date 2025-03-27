@@ -46,7 +46,7 @@ const Login = () => {
       }
 
       alert("登入成功！");
-      navigate("/index2"); // 修改為登入後要前往的頁面路由
+      navigate("/dashboard"); // 修改為登入後要前往的頁面路由
     } catch (error: any) {
       console.error("錯誤:", error);
       alert(error.message);

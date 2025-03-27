@@ -190,3 +190,60 @@ html {
   transform: scaleX(1);
   transform-origin: bottom left;
 }
+
+h6 {
+  float: left;
+  color: #32376F;
+  position: relative;
+  margin-top: 20px;
+  z-index: 1004;
+  font-size: 28px;
+  font-weight: bold;
+  font-family:'Papyrus', Times, serif;
+}
+
+.logo {
+  float: left;
+  margin-top: 15px;
+  margin-right: 25px;
+  position: relative; 
+  z-index: 1004; 
+}
+
+body {
+  background-color: #FFFDFA;
+}
+
+.custom-signin {
+  border: none;
+  border-radius: 5px;
+  color: #1a1a40;
+  background-color: transparent;
+  text-transform: uppercase;
+  font-size: 1rem;
+  font-family:Times, serif;
+  float: right;
+  min-width: 80px;             /* 控制寬度，改小一點也不會太窄 */
+  height: 30px;                /* 保持細長高度 */
+}
+
+.custom-joinus {
+  text-transform: uppercase;
+  padding: 4px 12px;           /* 減少內距 → 更小更細 */
+  background-color: #F4CD41;
+  color: rgb(0, 0, 0);
+  border: none;
+  border-radius: 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;        /* 改為 flex 才能垂直置中 */
+  align-items: center;         /* 垂直置中 */
+  justify-content: center;     /* 水平置中 */
+  font-size: 1rem;      
+  font-family: Times, serif;
+  min-width: 80px;             /* 控制寬度，改小一點也不會太窄 */
+  height: 30px;                /* 保持細長高度 */
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
