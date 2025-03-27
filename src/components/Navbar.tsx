@@ -34,7 +34,7 @@ const Navbar = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-3">
         <img src="/專題圖片/Botfly.svg" alt="Logo" className="h-12 w-auto" />
-        <h6 className="text-2xl font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">BOTFLY</h6>
+        <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">BOTFLY</h6>
         </Link>
 
         {/* Language Toggle & Auth Buttons (Desktop) */}

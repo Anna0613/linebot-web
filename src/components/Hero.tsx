@@ -25,13 +25,13 @@ const Hero = () => {
           
           <div className="flex flex-wrap gap-4 pt-4">
             <Link to="/register">
-              <Button size="lg" className="rounded-full bg-[#F4CD41] font-bold hover:bg-line-dark shadow-lg hover:shadow-xl transition-all">
+              <Button size="lg" className="rounded-full bg-[#F4CD41] text-[16px] font-bold hover:bg-line-dark shadow-lg hover:shadow-xl transition-all">
                 開始設計
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link to="#demo">
-              <Button variant="outline" size="lg" className="rounded-full">
+              <Button variant="outline" size="lg" className="rounded-full text-[16px]">
                 See Demo
               </Button>
             </Link>
