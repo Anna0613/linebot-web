@@ -223,12 +223,11 @@ body {
   font-family:Times, serif;
   float: right;
   min-width: 80px;             /* 控制寬度，改小一點也不會太窄 */
-  height: 30px;                /* 保持細長高度 */
 }
 
 .custom-joinus {
   text-transform: uppercase;
-  padding: 4px 12px;           /* 減少內距 → 更小更細 */
+  padding: 10px 20px;      /* 減少內距 → 更小更細 */
   background-color: #F4CD41;
   color: rgb(0, 0, 0);
   border: none;
@@ -241,7 +240,6 @@ body {
   font-size: 1rem;      
   font-family: Times, serif;
   min-width: 80px;             /* 控制寬度，改小一點也不會太窄 */
-  height: 30px;                /* 保持細長高度 */
   line-height: 1.2;
   cursor: pointer;
   transition: background-color 0.2s ease;

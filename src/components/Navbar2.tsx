@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import LanguageToggle from './LanguageToggle';
+import 'animate.css';
 
 const Navbar2 = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -16,6 +17,16 @@ const Navbar2 = () => {
   useEffect(() => {
     setUsername(localStorage.getItem("username"));
     setEmail(localStorage.getItem("email"));
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      setIsScrolled(scrollTop > 0);
+      const backToTop = document.getElementById("backToTop");
+      if (backToTop) {
+        backToTop.style.display = scrollTop > 300 ? 'flex' : 'none';
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
@@ -34,15 +45,19 @@ const Navbar2 = () => {
       reader.readAsDataURL(file);
     }
   };
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
+    <>
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white ${isScrolled ? 'bg-opacity-90 backdrop-blur-md shadow-sm' : 'bg-opacity-100'}`}>
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16 md:h-20">
+    <div className="w-full px-6 flex items-center justify-between h-16 md:h-20">
         <div className="flex items-center gap-4">
           <button className="text-[#1a1a40]" onClick={toggleMobileMenu}>
             <Menu size={28} />
           </button>
-          <Link to="/index2" className="flex items-center space-x-3 z-10">
+          <Link to="/index2" className="flex items-center space-x-3 z-10 ml-2">
             <img src="/專題圖片/Botfly.svg" alt="Logo" className="h-12 w-auto" />
             <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">BOTFLY</h6>
           </Link>
@@ -136,34 +151,49 @@ const Navbar2 = () => {
       </div>
 
       {mobileMenuOpen && (
-        <>
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-30 z-40"
-            onClick={toggleMobileMenu}
-          />
-
-          <div className="fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 
-            transition-transform duration-500 ease-in-out transform 
-            translate-x-0">
-            <div className="flex justify-end">
-              <button onClick={toggleMobileMenu} className="text-2xl text-gray-700">
-                <X />
-              </button>
-            </div>
-
-            <ul className="mt-8 space-y-4 text-[#1a1a40] text-lg">
-              <li><Link to="/index2" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">首頁</Link></li>
-              <li><Link to="/how to establish" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">如何建立機器人</Link></li>
-              <li><Link to="/add server" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">建立機器人</Link></li>
-              <li><Link to="/block" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">開始建立機器人</Link></li>
-              <li><Link to="/about" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">關於</Link></li>
-              <li><Link to="/describe" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">介紹</Link></li>
-              <li><Link to="/how to use" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">操作說明</Link></li>
-            </ul>
-          </div>
-        </>
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-30 z-40" 
+          onClick={toggleMobileMenu}
+        />
       )}
+      <div className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6
+        animate__animated ${mobileMenuOpen ? 'animate__fadeInLeft animate__faster' : 'hidden'}`}>
+        <div className="flex justify-end">
+          <button onClick={toggleMobileMenu} className="text-2xl text-gray-700"><X /></button>
+        </div>
+        <ul className="mt-8 space-y-4 text-[#1a1a40] text-lg">
+          <li><Link to="/index2" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">首頁</Link></li>
+          <li><Link to="/how to establish" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">如何建立機器人</Link></li>
+          <li><Link to="/add server" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">建立機器人</Link></li>
+          <li><Link to="/block" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">開始建立機器人</Link></li>
+          <li><Link to="/about" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">關於</Link></li>
+          <li><Link to="/describe" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">介紹</Link></li>
+          <li><Link to="/how to use" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">操作說明</Link></li>
+        </ul>
+      </div>
     </header>
+
+    <div id="backToTop" className="back-to-top fixed hidden right-5 bottom-20 w-12 h-12 bg-[#919191] text-center rounded-full cursor-pointer z-[1001] items-center justify-center hover:bg-[#575757] hover:scale-110"
+        onClick={scrollToTop}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-6 h-6 fill-white">
+          <path d="M233.4 105.4c12.5-12.5 32.8-12.5 45.3 0l192 192c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L256 173.3 86.6 342.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l192-192z" />
+        </svg>
+      </div>
+
+      <a
+        href="https://line.me/ti/p/OQV3UIgmr7"
+        target="_blank"
+        className="fixed right-5 bottom-5 z-[1001]"
+      >
+        <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center hover:scale-110 transition">
+          <img
+            src="/專題圖片/line-logo.svg"
+            alt="Line icon"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </a>
+    </>
   );
 };
 

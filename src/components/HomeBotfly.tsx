@@ -36,11 +36,10 @@ const HomeBotfly = () => {
     <div className="min-h-screen flex flex-col relative bg-white">
       <Navbar2 />
   
-      {/* 把 mt-12 改成 mt-4 或 mt-2，讓整體往上靠 */}
       <main className="flex-1 px-4 md:px-8 mt-1 flex justify-center items-center flex-wrap">
-        {/* 每個區塊加大 margin-right，讓箭頭與圖片距離更遠 */}
+
         <div className="flex items-center gap-8 md:gap-14 flex-wrap justify-center">
-          {/* 第一步 */}
+
           <Link to="/how to establish">
             <img
               src="/專題圖片/1.svg"
@@ -49,7 +48,6 @@ const HomeBotfly = () => {
             />
           </Link>
   
-          {/* 箭頭 */}
           <div className="mx-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -60,7 +58,6 @@ const HomeBotfly = () => {
             </svg>
           </div>
   
-          {/* 第二步 */}
           <Link to="/add server">
             <img
               src="/專題圖片/2.svg"
@@ -69,7 +66,6 @@ const HomeBotfly = () => {
             />
           </Link>
   
-          {/* 箭頭 */}
           <div className="mx-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -80,7 +76,6 @@ const HomeBotfly = () => {
             </svg>
           </div>
   
-          {/* 第三步 */}
           <Link to="/block">
             <img
               src="/專題圖片/3.svg"
