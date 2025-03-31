@@ -84,7 +84,7 @@ const Navbar2 = () => {
           </Link>
 
           <Link to="/block">
-            <Button className="bg-[#F4CD41] text-[#1a1a40] text-black font-bold rounded-[5px] text-[16px]">建立設計</Button>
+            <Button className="bg-[#F4CD41] text-black font-bold rounded-[5px] text-[16px]">建立設計</Button>
           </Link>
 
           <div className="relative">
