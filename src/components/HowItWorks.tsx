@@ -138,7 +138,7 @@ const steps = [
 
 const HowItWorks = () => {
   return (
-    <section id="how-it-works" className="section py-24 bg-gray-50">
+    <section id="how-it-works" className="section py-24 bg-[#FFFDFA]">
       <div className="text-center mb-16 fade-in-element">
         <h2 className="section-title">How It <span className="text-gradient">Works</span></h2>
         <p className="section-subtitle mx-auto">

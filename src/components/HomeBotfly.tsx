@@ -35,59 +35,59 @@ const HomeBotfly = () => {
   return (
     <div className="min-h-screen flex flex-col relative bg-white">
       <Navbar2 />
-  
-      <main className="flex-1 px-4 md:px-8 mt-1 flex justify-center items-center flex-wrap">
 
-        <div className="flex items-center gap-8 md:gap-14 flex-wrap justify-center">
+      <main className="flex-1 pt-24 px-4 md:px-8 flex justify-center items-center flex-wrap bg-[#FFFDFA]">
+        <div className="flex flex-wrap justify-center gap-x-10 gap-y-8">
+          {[
+            {
+              link: "/how to establish",
+              img: "/專題圖片/how to establish.svg",
+              title: "如何建立機器人",
+              desc: ["快速了解機器人建立流程", "從零開始的完整指南"],
+            },
+            {
+              link: "/add server",
+              img: "/專題圖片/add server.svg",
+              title: "建立機器人",
+              desc: ["連接數據來源創建機器人", "整合您的資料庫與API"],
+            },
+            {
+              link: "/block",
+              img: "/專題圖片/block.svg",
+              title: "開始設計機器人",
+              desc: ["自定義機器人對話與功能", "設計智能回應邏輯"],
+            },
+            {
+              link: "/editbot",
+              img: "/專題圖片/editbot.svg",
+              title: "修改機器人",
+              desc: ["更新與優化現有機器人", "增強機器人效能與體驗"],
+            },
+          ].map(({ link, img, title, desc }) => (
+            <Link to={link} key={title}>
+              <div className="group relative w-[300px] h-[400px] rounded-[8px] overflow-hidden hover:scale-105 transition duration-300 cursor-pointer shadow-md">
+                
+                <img
+                  src={img}
+                  alt={title}
+                  className="w-full h-full object-contain transition-opacity duration-300 group-hover:opacity-0"
+                />
 
-          <Link to="/how to establish">
-            <img
-              src="/專題圖片/1.svg"
-              className="w-[300px] h-auto hover:scale-105 transition rounded-[5px]"
-              alt="How To Establish"
-            />
-          </Link>
-  
-          <div className="mx-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 512 512"
-              className="w-14 h-14 fill-[#454658]"
-            >
-              <path d="M334.5 414c8.8 3.8 19 2 26-4.6l144-136c4.8-4.5 7.5-10.8 7.5-17.4s-2.7-12.9-7.5-17.4l-144-136c-7-6.6-17.2-8.4-26-4.6s-14.5 12.5-14.5 22v72H32c-17.7 0-32 14.3-32 32v64c0 17.7 14.3 32 32 32h288v72c0 9.6 5.7 18.2 14.5 22z" />
-            </svg>
-          </div>
-  
-          <Link to="/add server">
-            <img
-              src="/專題圖片/2.svg"
-              className="w-[300px] h-auto hover:scale-105 transition rounded-[5px]"
-              alt="Add Server"
-            />
-          </Link>
-  
-          <div className="mx-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 512 512"
-              className="w-14 h-14 fill-[#454658]"
-            >
-              <path d="M334.5 414c8.8 3.8 19 2 26-4.6l144-136c4.8-4.5 7.5-10.8 7.5-17.4s-2.7-12.9-7.5-17.4l-144-136c-7-6.6-17.2-8.4-26-4.6s-14.5 12.5-14.5 22v72H32c-17.7 0-32 14.3-32 32v64c0 17.7 14.3 32 32 32h288v72c0 9.6 5.7 18.2 14.5 22z" />
-            </svg>
-          </div>
-  
-          <Link to="/block">
-            <img
-              src="/專題圖片/3.svg"
-              className="w-[300px] h-auto hover:scale-105 transition rounded-[5px]"
-              alt="Block"
-            />
-          </Link>
+                <div className="absolute inset-0 bg-[#f2f2f2]/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 px-4 text-center">
+                  <h3 className="text-[22px] font-bold text-[#1a1a40] mb-3">{title}</h3>
+                  <div className="text-[17px] text-[#1a1a40] leading-relaxed space-y-1">
+                    {desc.map((line, i) => (
+                      <p key={i}>{line}</p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       </main>
     </div>
   );
-  
 };
 
 export default HomeBotfly;
