@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 const Hero = () => {
   return (
     <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
-      {/* Background Elements */}
+
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-[#fffdfa]  from-blue-50 to-transparent opacity-60"></div>
         <div className="absolute bottom-0 left-0 w-1/2 h-full bg-[#fffdfa]  from-green-50 to-transparent opacity-60"></div>
@@ -14,7 +14,7 @@ const Hero = () => {
       </div>
       
       <div className="section grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-6 items-center">
-        {/* Text Content */}
+       
         <div className="space-y-6 fade-in-element" style={{ animationDelay: '0.1s' }}>
           <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-tight">
             Build Your <span className="text-gradient">LINE Bot</span> Without Coding
@@ -25,13 +25,13 @@ const Hero = () => {
           
           <div className="flex flex-wrap gap-4 pt-4">
             <Link to="/register">
-              <Button size="lg" className="rounded-full bg-[#F4CD41] text-[16px] font-bold hover:bg-line-dark shadow-lg hover:shadow-xl transition-all">
+              <Button size="lg" className="rounded-full bg-[#F4CD41] text-[16px] font-bold hover:bg-[#e6bc00] shadow-lg hover:shadow-xl transition-all">
                 開始設計
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link to="#demo">
-              <Button variant="outline" size="lg" className="rounded-full text-[16px]">
+              <Button variant="outline" size="lg" className="rounded-full text-[16px] hover:bg-[#A0A0A0]">
                 See Demo
               </Button>
             </Link>
@@ -92,7 +92,7 @@ const Hero = () => {
             </div>
           </div>
           
-          {/* Decorative elements */}
+          
           <div className="absolute top-1/4 -left-8 w-16 h-16 bg-primary/10 rounded-full blur-xl"></div>
           <div className="absolute bottom-1/4 -right-8 w-20 h-20 bg-line/10 rounded-full blur-xl"></div>
         </div>

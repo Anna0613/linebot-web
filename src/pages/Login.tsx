@@ -11,7 +11,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState(''); // 加上使用者名稱
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
@@ -46,7 +46,7 @@ const Login = () => {
       }
 
       alert("登入成功！");
-      navigate("/index2"); // 修改為登入後要前往的頁面路由
+      navigate("/index2"); 
     } catch (error: any) {
       console.error("錯誤:", error);
       alert(error.message);
@@ -80,7 +80,7 @@ const Login = () => {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">密碼：</Label>
                   <Link
-                    to="#"
+                    to="/forgetthepassword"
                     className="text-sm text-primary hover:text-primary/80 hover-underline"
                   >
                     忘記密碼？
@@ -112,7 +112,7 @@ const Login = () => {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-line-dark h-11">
+              <Button type="submit" className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11">
                 登入
               </Button>
             </form>

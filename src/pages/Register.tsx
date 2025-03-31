@@ -174,14 +174,14 @@ const Register = () => {
                 </Label>
               </div>
               
-              <Button type="submit" className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-line-dark h-11">
+              <Button type="submit" className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11">
                 註冊
               </Button>
             </form>
             
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">已有帳號? </span>
-              <Link to="/index2" className="text-primary hover:text-primary/80 font-medium hover-underline">
+              <Link to="/login" className="text-primary hover:text-primary/80 font-medium hover-underline">
                 登入
               </Link>
             </div>

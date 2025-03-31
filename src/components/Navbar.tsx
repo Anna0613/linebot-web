@@ -53,12 +53,12 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-4">
             <LanguageToggle />
             <Link to="/login">
-              <Button variant="outline" size="sm" className="w-full rounded-full custom-signin">
+              <Button variant="outline" size="sm" className="w-full rounded-full custom-signin hover:bg-[#A0A0A0]">
                 SIGN IN
               </Button>
             </Link>
             <Link to="/register">
-              <Button className="w-full rounded-full custom-joinus">
+              <Button className="w-full rounded-full custom-joinus hover:bg-[#e6bc00]">
                 JOIN US
               </Button>
             </Link>
