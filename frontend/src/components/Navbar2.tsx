@@ -84,11 +84,7 @@ const Navbar2 = () => {
           </Link>
 
           <Link to="/block">
-<<<<<<< HEAD:src/components/Navbar2.tsx
             <Button className="bg-[#F4CD41] text-[#1a1a40] text-black font-bold rounded-[5px] text-[16px] hover:bg-[#e6bc00]">建立設計</Button>
-=======
-            <Button className="bg-[#F4CD41] text-black font-bold rounded-[5px] text-[16px]">建立設計</Button>
->>>>>>> 164e78cdc0e27b9d5f8eeec3e8892f961160e87f:frontend/src/components/Navbar2.tsx
           </Link>
 
           <div className="relative">
