@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +8,7 @@ import Login from "./pages/Login";
 import ForgetThePassword from "./pages/ForgetThePassword";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
-import Index2 from "./pages/Index2";
+import Index2 from "./pages/LoginHome";
 import AddServer from "./pages/AddServer";
 import Block from "./pages/Block";
 import HowToEstablish from "./pages/HowToEstablish";

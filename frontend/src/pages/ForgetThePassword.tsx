@@ -3,8 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import Navbar from '../components/Index/Navbar';
+import Footer from '../components/Index/Footer';
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState('');

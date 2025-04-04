@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import LanguageToggle from './LanguageToggle';
+import LanguageToggle from '../LanguageToggle/LanguageToggle';
 
 const Footer = () => {
   return (

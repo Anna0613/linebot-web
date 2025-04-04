@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import LanguageToggle from './LanguageToggle';
+import LanguageToggle from '../LanguageToggle/LanguageToggle';
 import 'animate.css';
 
 const Navbar2 = () => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import LanguageToggle from './LanguageToggle';
+import LanguageToggle from '../LanguageToggle/LanguageToggle';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
