@@ -231,23 +231,6 @@
 - 需要在環境變數中設置有效的 `CHANNEL_ACCESS_TOKEN`。
 - `userId` 必須是有效的 LINE 用戶 ID，可從 LINE 平台獲取。
 
----
-
-## 環境變數
-API 依賴以下環境變數，需在 `backend/puzzleAPI/.env` 中配置：
-
-```
-PORT=3000
-DB_HOST=sql.jkl921102.org
-DB_PORT=5432
-DB_NAME=LineBot_01
-DB_USER=11131230
-DB_PASSWORD=11131230
-CHANNEL_ACCESS_TOKEN=你的_CHANNEL_ACCESS_TOKEN
-```
-
----
-
 ## 資料庫結構
 - **表**: `users`
   - `id` (INTEGER, 主鍵): 用戶 ID。
