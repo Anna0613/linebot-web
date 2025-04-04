@@ -282,16 +282,3 @@ CHANNEL_ACCESS_TOKEN=你的_CHANNEL_ACCESS_TOKEN
 4. **發送 Flex Message**:
    - `POST http://localhost:3000/api/send-message`
    - Body: `{"botId": "機器人ID", "flexMessageId": "Flex Message ID", "userId": "LINE用戶ID"}`
-```
-
----
-
-### **儲存與使用**
-1. **儲存**:
-   - 將上述內容複製到文字編輯器（如 Notepad 或 VS Code）。
-   - 儲存為 `LineBot_Puzzle_API.md`，建議放在 `D:\vs_files\code_file\linebotweb\linebot-web\backend\puzzleAPI` 目錄下。
-2. **預覽**:
-   - 在 VS Code 中打開並安裝 Markdown 插件，右鍵選擇「Open Preview」。
-   - 或上傳至 GitHub 查看渲染效果。
-
-這是完整的 `.md` 文件，已忠實呈現你提供的內容。如果需要調整格式或新增內容，請告訴我！
