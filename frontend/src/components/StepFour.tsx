@@ -1,52 +1,53 @@
-import React from "react";
-import "animate.css";
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 const StepFour = () => {
   return (
-    <div className="relative text-white text-left w-full flex flex-col items-center pt-20">
+    <div className="relative w-full flex flex-col items-center pt-0 pb-0 bg-[#FFFDFA]">
+
       <img
-        src="/\u5c08\u984c\u5716\u7247/step4.svg"
+        src="/專題圖片/step4.svg"
         alt="Step 4 Background"
-        className="w-[1296px] h-[729px]"
+        className="max-w-[1296px] w-full h-auto block"
+        style={{ margin: 0, padding: 0 }}
       />
 
-      {/* Overlay Images */}
-      <div className="absolute top-[74.74%] right-0 flex flex-col gap-5 pr-[70px]">
+      <div className="absolute top-[7%] w-full flex flex-col items-end pr-[163px] gap-0">
         <img
-          src="/\u5c08\u984c\u5716\u7247/p7.png"
-          alt="Image 7"
-          className="w-[690px] animate__animated animate__fadeInTopRight"
+          src="/專題圖片/p7.png"
+          alt="Photo 7"
+          className="w-[660px] animate__animated animate__fadeIn"
         />
         <img
-          src="/\u5c08\u984c\u5716\u7247/p8.png"
-          alt="Image 8"
-          className="w-[620px] animate__animated animate__fadeInBottomRight"
+          src="/專題圖片/p8.png"
+          alt="Photo 8"
+          className="w-[600px] animate__animated animate__fadeIn translate-x-[61.5px]"
         />
       </div>
 
-      {/* Red Rectangles */}
-      <div className="absolute top-[150px] left-[645px] w-[100px] h-[50px] border-4 border-red-600 rounded-full animate__animated animate__heartBeat"></div>
-      <div className="absolute top-[540px] left-[770px] w-[180px] h-[90px] border-4 border-red-600 rounded-full animate__animated animate__heartBeat"></div>
+      <div className="absolute top-[200px] left-[700px] w-[100px] h-[50px] border-4 border-red-500 rounded-[50%/50%]" />
+      <div className="absolute top-[580px] left-[790px] w-[180px] h-[90px] border-4 border-red-500 rounded-[50%/50%]" />
 
-      {/* Texts */}
-      <div className="absolute top-[77.5%] left-[83px] text-[#e8e4dd] flex flex-col items-start w-fit">
-        <h2 className="text-[100px] font-bold mb-6">Step 4.</h2>
-        <p className="text-[36px] mb-1">取得 LINE Channel secret</p>
-        <p className="text-[36px] mb-8">和 Channel access token</p>
-        <p className="text-[28px] mb-1">進入 Basic settings，往下滑找到 Channel secret。</p>
-        <p className="text-[28px] mb-1">前往 Messaging API settings，往下滑找到</p>
-        <p className="text-[28px] mb-1">Channel access token，點選 Issue 產生。</p>
-        <p className="text-[28px] mb-6">把這兩個都複製下來，並貼到我們網站裡。</p>
+      <div className="absolute top-[3.5%] left-[85px] text-[#e8e4dd] text-left space-y-7">
+        <h2 className="text-[100px] lg:text-[130px] font-bold leading-none mb-2 min-h-[150px]">Step 4.</h2>
+        <h3 className="text-[28px] lg:text-[40px] font-semibold">取得 LINE Channel secret</h3>
+        <h3 className="text-[28px] lg:text-[40px] font-semibold">和 Channel access token</h3>
+        <div className="space-y-4">
+          <p className="text-[18px] lg:text-[30px] leading-relaxed">進入Basic settings，往下滑找到Channel</p>
+          <p className="text-[18px] lg:text-[30px] leading-relaxed">secret。前往Messaging API settings，往</p>
+          <p className="text-[18px] lg:text-[30px] leading-relaxed">下滑找到Channel access token，點選lssue</p>
+          <p className="text-[18px] lg:text-[30px] leading-relaxed">產生。把這兩個都複製下來，並貼到我們網</p>
+          <p className="text-[18px] lg:text-[30px] leading-relaxed">站裡。</p>
+        </div>
       </div>
 
-      {/* NEXT Button */}
-      <div className="pt-10">
-        <a
-          href="/add-server"
-          className="inline-block text-white bg-[#F4B8AD] hover:bg-[#e6998a] px-6 py-3 rounded-md font-bold text-lg"
+      <div className="mt-10 mb-10">
+        <Link
+          to="/add server"
+          className="inline-block text-white bg-[#F4B8AD] px-6 h-11 text-lg font-bold rounded hover:bg-[#e6998a] transition flex items-center justify-center"
         >
           NEXT
-        </a>
+        </Link>
       </div>
     </div>
   );

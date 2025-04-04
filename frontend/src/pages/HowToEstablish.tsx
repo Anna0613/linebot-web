@@ -12,7 +12,8 @@ const HowToEstablish = () => {
       <main className="pt-24 flex flex-col items-center">
         <StepOne />
         <StepTwo />
-        
+        <StepThree />
+        <StepFour />
       </main>
       <Footer />
     </div>
