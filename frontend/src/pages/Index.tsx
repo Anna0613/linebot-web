@@ -1,10 +1,10 @@
 
-import Hero from '../components/Hero';
-import Features from '../components/Features';
-import HowItWorks from '../components/HowItWorks';
-import DemoPreview from '../components/DemoPreview';
-import Footer from '../components/Footer';
-import Navbar from '../components/Navbar';
+import Hero from '../components/Index/Hero';
+import Features from '../components/Index/Features';
+import HowItWorks from '../components/Index/HowItWorks';
+import DemoPreview from '../components/Index/DemoPreview';
+import Navbar from '../components/Index/Navbar';
+import Footer from '../components/Index/Footer';
 
 const Index = () => {
   return (

@@ -1,9 +1,9 @@
-import StepOne from '../components/StepOne';
-import StepTwo from '../components/StepTwo';
-import StepThree from '../components/StepThree';
-import StepFour from '../components/StepFour';
-import Navbar2 from '../components/Navbar2';
-import Footer from '../components/Footer';
+import StepOne from '../components/HowToEstablish/StepOne';
+import StepTwo from '../components/HowToEstablish/StepTwo';
+import StepThree from '../components/HowToEstablish/StepThree';
+import StepFour from '../components/HowToEstablish/StepFour';
+import Navbar2 from '../components/LoginHome/Navbar2';
+import Footer from '../components/Index/Footer';
 
 const HowToEstablish = () => {
   return (
