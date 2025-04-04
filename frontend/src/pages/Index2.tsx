@@ -6,7 +6,9 @@ const Index2 = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar2 />
-      <LogInIn />
+      <div className="mt-40 mb-20">
+        <LogInIn />
+      </div>
       <Footer />
     </div>
   );

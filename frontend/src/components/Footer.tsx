@@ -6,82 +6,55 @@ const Footer = () => {
   return (
     <footer id="contact" className="bg-[#C4D4C9] pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+      <div className="grid grid-cols-[2fr_1fr_1fr] gap-[120px] mb-12">
           
-          <div className="space-y-4">
-            <Link to="/" className="inline-block">
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-line bg-clip-text text-transparent">LINE Bot Creator</span>
-            </Link>
-            <p className="text-muted-foreground text-sm">
-              Create powerful LINE Bots without coding. Perfect for businesses in Taiwan and beyond.
-            </p>
-            <div className="flex items-center space-x-4 pt-2">
-              <LanguageToggle />
-            </div>
+        <div className="space-y-4">
+          <span className="text-2xl font-bold text-[#fefefe]">LINE Bot 製作輔助系統</span>
+          <p className="text-muted-foreground text-sm">
+            非常適合需要使用LINE Bot機器人做為行銷工具的商家，
+          </p>
+          <p className="text-muted-foreground text-sm">
+            或者想修改原有LINE Bot機器人的功能卻因為不會打程式碼而無法修改的人。
+          </p>
+          <div className="flex items-center space-x-4 pt-8">
+            <LanguageToggle />
           </div>
+        </div>          
           
-          
-          <div>
-            <h3 className="font-medium text-lg mb-4">Quick Links</h3>
+          <div className="w-full flex flex-col">
+            <h3 className="font-medium text-lg mb-4">快速連結</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  Home
+                <Link to="/index2" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                  首頁
                 </Link>
               </li>
               <li>
-                <Link to="#features" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  Features
+                <Link to="/how to establish" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                如何建立機器人
                 </Link>
               </li>
               <li>
-                <Link to="#how-it-works" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  How It Works
+                <Link to="/add server" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                建立機器人
                 </Link>
               </li>
               <li>
-                <Link to="#demo" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  Demo
+                <Link to="/block" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                開始建立機器人
                 </Link>
               </li>
               <li>
-                <Link to="/register" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  Get Started
+                <Link to="/editbot" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                修改機器人
                 </Link>
               </li>
             </ul>
           </div>
+                 
           
-          
-          <div>
-            <h3 className="font-medium text-lg mb-4">Legal</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link to="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  Cookie Policy
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                  Security
-                </Link>
-              </li>
-            </ul>
-          </div>
-          
-          
-          <div>
-            <h3 className="font-medium text-lg mb-4">Contact Us</h3>
+          <div className="w-full flex flex-col">
+            <h3 className="font-medium text-lg mb-4">聯絡我們</h3>
             <ul className="space-y-2">
               <li className="text-muted-foreground text-sm">
                   Taoyuan, Taiwan

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import Navbar2 from "./Navbar2";
+import Navbar2 from "./Navbar2"; 
 
 const HomeBotfly = () => {
   const [username, setUsername] = useState<string | null>(null);
@@ -33,10 +33,11 @@ const HomeBotfly = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative bg-white">
-      <Navbar2 />
+    <div className="flex flex-col relative bg-white">
+  
+      <Navbar2 /> 
 
-      <main className="flex-1 pt-24 px-4 md:px-8 flex justify-center items-center flex-wrap bg-[#FFFDFA]">
+      <main className="flex-1 pt-2 px-4 md:px-8 pb-0 flex justify-center items-center flex-wrap bg-[#FFFDFA]">
         <div className="flex flex-wrap justify-center gap-x-10 gap-y-8">
           {[
             {
