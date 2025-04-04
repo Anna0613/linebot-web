@@ -1,17 +1,32 @@
-# 使用 Python 3.9 作為基礎映像
-FROM python:3.9
+# Use an official Python runtime as the base image
+FROM python:3.9-slim
 
-# 設定工作目錄
+# Install PostgreSQL development libraries and tools
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory in the container
 WORKDIR /app
 
-# 複製應用程式檔案到容器中
-COPY . .
+# Copy requirements.txt and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 安裝必要的套件
-RUN pip install --no-cache-dir flask psycopg2 flask-cors werkzeug
+# Copy the Flask application code
+COPY app.py .
 
-# 暴露 Flask 預設埠
+# Expose the port your Flask app will run on
 EXPOSE 5501
 
-# 設定啟動指令
+# Set environment variables (optional, override in Unraid if needed)
+ENV FLASK_SECRET_KEY=b03a02f4a3424a61ff02701dcec96805
+ENV DB_HOST=sql.jkl921102.org
+ENV DB_PORT=5432
+ENV DB_NAME=LineBot_01
+ENV DB_USER=11131230
+ENV DB_PASS=11131230
+
+# Command to run the Flask application
 CMD ["python", "app.py"]
