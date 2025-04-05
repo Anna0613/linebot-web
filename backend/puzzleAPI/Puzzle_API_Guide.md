@@ -377,12 +377,12 @@
 ## 環境變數
 需要在部署時配置（例如透過 .env 或 Unraid Docker UI）：
 ```
-PORT_PUZZLE=3000
-DB_HOST=sql.jkl921102.org
-DB_PORT=5432
-DB_NAME=LineBot_01
-DB_USER=11131230
-DB_PASSWORD=11131230
+PORT_PUZZLE=
+DB_HOST=
+DB_PORT=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
 ```
 
 #### 說明:
