@@ -4,12 +4,16 @@ import psycopg2
 import os
 from flask_cors import CORS
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# 載入根目錄的 .env
+load_dotenv(dotenv_path="../.env")
 
 app = Flask(__name__)
 CORS(app)
 
 # 設置 session 安全性
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_default_secret_key')  
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_default_secret_key')
 app.permanent_session_lifetime = timedelta(days=7)  # Session 7 天內有效
 
 # 連接 PostgreSQL 資料庫
@@ -20,7 +24,7 @@ def get_db_connection():
             port=os.getenv('DB_PORT', 5432),
             database=os.getenv('DB_NAME', 'LineBot_01'),
             user=os.getenv('DB_USER', '11131230'),
-            password=os.getenv('DB_PASS', '11131230')
+            password=os.getenv('DB_PASSWORD', '11131230')  # 統一使用 DB_PASSWORD
         )
         return conn
     except psycopg2.Error as e:
@@ -86,7 +90,7 @@ def login():
 
         if user and check_password_hash(user[0], password):
             session.permanent = True
-            session['username'] = username  # 保存用戶到 session
+            session['username'] = username
             return jsonify({'message': 'Login successful!', 'username': username, 'email': user[1]}), 200
         else:
             return jsonify({'error': 'Invalid username or password.'}), 401
@@ -105,9 +109,9 @@ def check_login():
 # 登出 API
 @app.route('/logout', methods=['POST'])
 def logout():
-    session.pop('username', None)  # 清除 session
+    session.pop('username', None)
     return jsonify({'message': 'Logged out successfully!'}), 200
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5501))
-    app.run(host='0.0.0.0', port=port)  # 讓 Flask 监听所有外部請求
+    port = int(os.getenv('PORT_LOGIN', 5501))  # 使用 PORT_LOGIN
+    app.run(host='0.0.0.0', port=port)
