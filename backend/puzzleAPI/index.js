@@ -1,10 +1,7 @@
 const express = require('express');
-const { Sequelize } = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize'); // 修正：引入 DataTypes
 const axios = require('axios');
 const dotenv = require('dotenv');
-const UserModel = require('./models/User');
-const BotModel = require('./models/Bot');
-const FlexMessageModel = require('./models/FlexMessage');
 
 dotenv.config({ path: '../.env' });
 const app = express();
@@ -21,9 +18,9 @@ const sequelize = new Sequelize({
 });
 
 // 初始化模型
-const User = UserModel(sequelize);
-const Bot = BotModel(sequelize);
-const FlexMessage = FlexMessageModel(sequelize);
+const User = require('./models/User')(sequelize, DataTypes); // 傳入 DataTypes
+const Bot = require('./models/Bot')(sequelize, DataTypes);
+const FlexMessage = require('./models/FlexMessage')(sequelize, DataTypes);
 
 // 建立關聯
 User.hasMany(Bot, { foreignKey: 'userId' });
@@ -38,8 +35,6 @@ sequelize.sync({ force: false }).then(() => {
   console.error('資料庫同步失敗:', err);
 });
 
-const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN;
-const CHANNEL_SECRET = process.env.CHANNEL_SECRET;
 const PORT = process.env.PORT_PUZZLE || 3000;
 
 // 獲取用戶的機器人
@@ -59,7 +54,7 @@ app.get('/api/bots/:userId', async (req, res) => {
 // 建立新機器人
 app.post('/api/bots', async (req, res) => {
   try {
-    const { userId, name } = req.body;
+    const { userId, name, channel_access_token, channel_secret } = req.body;
     const user = await User.findByPk(userId);
     if (!user) {
       return res.status(404).json({ error: '用戶不存在' });
@@ -68,7 +63,7 @@ app.post('/api/bots', async (req, res) => {
     if (botCount >= 3) {
       return res.status(400).json({ error: '已達機器人數量上限 (3)' });
     }
-    const bot = await Bot.create({ userId, name });
+    const bot = await Bot.create({ userId, name, channel_access_token, channel_secret });
     res.json(bot);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -97,47 +92,53 @@ app.post('/api/flex-messages', async (req, res) => {
 
 // 發送 Flex Message
 app.post('/api/send-message', async (req, res) => {
-    try {
-      const { botId, flexMessageId, userId } = req.body;
-      const flexMessage = await FlexMessage.findOne({
-        where: { id: flexMessageId, botId },
-      });
-      if (!flexMessage) {
-        return res.status(404).json({ error: 'Flex Message 不存在' });
-      }
-  
-      let messagePayload = flexMessage.flexMessage;
-      if (!messagePayload.type || messagePayload.type !== 'flex') {
-        messagePayload = {
-          type: 'flex',
-          altText: 'Default Flex Message',
-          contents: messagePayload
-        };
-      }
-  
-      const response = await axios.post(
-        'https://api.line.me/v2/bot/message/push',
-        {
-          to: userId,
-          messages: [messagePayload],
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`,
-          },
-        }
-      );
-      res.json({ message: '訊息已發送' });
-    } catch (error) {
-      if (error.response) {
-        console.error('LINE API 錯誤:', error.response.data);
-        res.status(error.response.status).json({ error: error.response.data });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
+  try {
+    const { botId, flexMessageId, userId } = req.body;
+    const flexMessage = await FlexMessage.findOne({
+      where: { id: flexMessageId, botId },
+      include: [{ model: Bot }] // 關聯查詢 Bot
+    });
+    if (!flexMessage) {
+      return res.status(404).json({ error: 'Flex Message 不存在' });
     }
-  });
+
+    const bot = flexMessage.Bot;
+    if (!bot.channel_access_token) {
+      return res.status(400).json({ error: '此 Bot 缺少 CHANNEL_ACCESS_TOKEN' });
+    }
+
+    let messagePayload = flexMessage.flexMessage;
+    if (!messagePayload.type || messagePayload.type !== 'flex') {
+      messagePayload = {
+        type: 'flex',
+        altText: 'Default Flex Message',
+        contents: messagePayload
+      };
+    }
+
+    const response = await axios.post(
+      'https://api.line.me/v2/bot/message/push',
+      {
+        to: userId,
+        messages: [messagePayload],
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${bot.channel_access_token}`, // 使用 Bot 特定的 token
+        },
+      }
+    );
+    res.json({ message: '訊息已發送' });
+  } catch (error) {
+    if (error.response) {
+      console.error('LINE API 錯誤:', error.response.data);
+      res.status(error.response.status).json({ error: error.response.data });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
 
 // 修改機器人資訊
 app.put('/api/bots/:botId', async (req, res) => {
@@ -232,7 +233,6 @@ app.delete('/api/flex-messages/:flexMessageId', async (req, res) => {
 // Webhook 端點
 app.post('/webhook', (req, res) => {
   console.log('Webhook 收到請求:', req.body);
-  // 簡單回應 200 OK，未來可在此處理 LINE 事件
   res.status(200).send('OK');
 });
 
