@@ -6,7 +6,7 @@ const UserModel = require('./models/User');
 const BotModel = require('./models/Bot');
 const FlexMessageModel = require('./models/FlexMessage');
 
-dotenv.config({ path: './.env' });
+dotenv.config({ path: '../.env' });
 const app = express();
 app.use(express.json());
 
@@ -17,6 +17,7 @@ const sequelize = new Sequelize({
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 5432,
 });
 
 // 初始化模型
@@ -30,7 +31,7 @@ Bot.belongsTo(User, { foreignKey: 'userId' });
 Bot.hasMany(FlexMessage, { foreignKey: 'botId' });
 FlexMessage.belongsTo(Bot, { foreignKey: 'botId' });
 
-// 同步資料庫（僅新增表，不修改現有 users 表）
+// 同步資料庫
 sequelize.sync({ force: false }).then(() => {
   console.log('資料庫同步完成');
 }).catch((err) => {
@@ -38,6 +39,8 @@ sequelize.sync({ force: false }).then(() => {
 });
 
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN;
+const CHANNEL_SECRET = process.env.CHANNEL_SECRET;
+const PORT = process.env.PORT_PUZZLE || 3000;
 
 // 獲取用戶的機器人
 app.get('/api/bots/:userId', async (req, res) => {
@@ -103,7 +106,7 @@ app.post('/api/send-message', async (req, res) => {
       return res.status(404).json({ error: 'Flex Message 不存在' });
     }
 
-    await axios.post(
+    const response = await axios.post(
       'https://api.line.me/v2/bot/message/push',
       {
         to: userId,
@@ -118,12 +121,113 @@ app.post('/api/send-message', async (req, res) => {
     );
     res.json({ message: '訊息已發送' });
   } catch (error) {
+    if (error.response) {
+      console.error('LINE API 錯誤:', error.response.data);
+      res.status(error.response.status).json({ error: error.response.data });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+// 修改機器人資訊
+app.put('/api/bots/:botId', async (req, res) => {
+  try {
+    const { botId } = req.params;
+    const { name } = req.body;
+
+    const bot = await Bot.findByPk(botId);
+    if (!bot) {
+      return res.status(404).json({ error: '機器人不存在' });
+    }
+
+    if (name) {
+      bot.name = name;
+      await bot.save();
+    }
+
+    res.json({
+      id: bot.id,
+      userId: bot.userId,
+      name: bot.name,
+      createdAt: bot.createdAt,
+      updatedAt: bot.updatedAt
+    });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+// 修改 Flex Message
+app.put('/api/flex-messages/:flexMessageId', async (req, res) => {
+  try {
+    const { flexMessageId } = req.params;
+    const { flexMessage } = req.body;
+
+    const message = await FlexMessage.findByPk(flexMessageId);
+    if (!message) {
+      return res.status(404).json({ error: 'Flex Message 不存在' });
+    }
+
+    if (flexMessage) {
+      message.flexMessage = flexMessage;
+      await message.save();
+    }
+
+    res.json({
+      id: message.id,
+      botId: message.botId,
+      flexMessage: message.flexMessage,
+      createdAt: message.createdAt,
+      updatedAt: message.updatedAt
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 刪除機器人
+app.delete('/api/bots/:botId', async (req, res) => {
+  try {
+    const { botId } = req.params;
+
+    const bot = await Bot.findByPk(botId);
+    if (!bot) {
+      return res.status(404).json({ error: '機器人不存在' });
+    }
+
+    await bot.destroy();
+    res.json({ message: '機器人已刪除' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 刪除 Flex Message
+app.delete('/api/flex-messages/:flexMessageId', async (req, res) => {
+  try {
+    const { flexMessageId } = req.params;
+
+    const flexMessage = await FlexMessage.findByPk(flexMessageId);
+    if (!flexMessage) {
+      return res.status(404).json({ error: 'Flex Message 不存在' });
+    }
+
+    await flexMessage.destroy();
+    res.json({ message: 'Flex Message 已刪除' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Webhook 端點
+app.post('/webhook', (req, res) => {
+  console.log('Webhook 收到請求:', req.body);
+  // 簡單回應 200 OK，未來可在此處理 LINE 事件
+  res.status(200).send('OK');
+});
+
 // 啟動伺服器
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`伺服器運行於 port ${PORT}`);
 });
