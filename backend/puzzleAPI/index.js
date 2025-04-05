@@ -97,38 +97,47 @@ app.post('/api/flex-messages', async (req, res) => {
 
 // 發送 Flex Message
 app.post('/api/send-message', async (req, res) => {
-  try {
-    const { botId, flexMessageId, userId } = req.body;
-    const flexMessage = await FlexMessage.findOne({
-      where: { id: flexMessageId, botId },
-    });
-    if (!flexMessage) {
-      return res.status(404).json({ error: 'Flex Message 不存在' });
-    }
-
-    const response = await axios.post(
-      'https://api.line.me/v2/bot/message/push',
-      {
-        to: userId,
-        messages: [flexMessage.flexMessage],
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`,
-        },
+    try {
+      const { botId, flexMessageId, userId } = req.body;
+      const flexMessage = await FlexMessage.findOne({
+        where: { id: flexMessageId, botId },
+      });
+      if (!flexMessage) {
+        return res.status(404).json({ error: 'Flex Message 不存在' });
       }
-    );
-    res.json({ message: '訊息已發送' });
-  } catch (error) {
-    if (error.response) {
-      console.error('LINE API 錯誤:', error.response.data);
-      res.status(error.response.status).json({ error: error.response.data });
-    } else {
-      res.status(500).json({ error: error.message });
+  
+      let messagePayload = flexMessage.flexMessage;
+      if (!messagePayload.type || messagePayload.type !== 'flex') {
+        messagePayload = {
+          type: 'flex',
+          altText: 'Default Flex Message',
+          contents: messagePayload
+        };
+      }
+  
+      const response = await axios.post(
+        'https://api.line.me/v2/bot/message/push',
+        {
+          to: userId,
+          messages: [messagePayload],
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`,
+          },
+        }
+      );
+      res.json({ message: '訊息已發送' });
+    } catch (error) {
+      if (error.response) {
+        console.error('LINE API 錯誤:', error.response.data);
+        res.status(error.response.status).json({ error: error.response.data });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
     }
-  }
-});
+  });
 
 // 修改機器人資訊
 app.put('/api/bots/:botId', async (req, res) => {

@@ -1,32 +1,21 @@
-# Use an official Python runtime as the base image
+# 基礎映像：Python
 FROM python:3.9-slim
 
-# Install PostgreSQL development libraries and tools
-RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set working directory in the container
+# 設置工作目錄
 WORKDIR /app
 
-# Copy requirements.txt and install dependencies
+# 複製並安裝依賴
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the Flask application code
-COPY app.py .
+# 複製程式碼
+COPY main.py .
 
-# Expose the port your Flask app will run on
+# 暴露端口
 EXPOSE 5501
 
-# Set environment variables (optional, override in Unraid if needed)
-ENV FLASK_SECRET_KEY=b03a02f4a3424a61ff02701dcec96805
-ENV DB_HOST=sql.jkl921102.org
-ENV DB_PORT=5432
-ENV DB_NAME=LineBot_01
-ENV DB_USER=11131230
-ENV DB_PASS=11131230
+# 設置環境變數
+ENV FLASK_ENV=production
 
-# Command to run the Flask application
-CMD ["python", "app.py"]
+# 運行 Flask
+CMD ["python", "main.py"]
