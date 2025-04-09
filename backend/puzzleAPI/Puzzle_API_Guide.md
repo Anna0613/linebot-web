@@ -3,7 +3,7 @@
 ## 概述
 `Puzzle API` 是一個基於 Node.js 和 Express 的後端服務，用於管理 LINE Bot 的機器人和 Flex Messages，並整合 LINE Messaging API 以發送訊息和接收 Webhook 事件。該 API 使用 PostgreSQL 資料庫（`LineBot_01`）儲存資料，每個用戶最多可創建 3 個機器人，每個機器人最多儲存 10 個 Flex Messages。每個機器人擁有獨立的 `channel_access_token` 和 `channel_secret`，允許動態發送訊息。
 
-- **基礎 URL**: `http://localhost:3000/api`（本地測試）或 `http://<Unraid_IP>:3000/api`（部署後）
+- **基礎 URL**: `https://puzzle-api.jkl921102.org/api`
 - **技術棧**: Node.js, Express, Sequelize, PostgreSQL
 - **認證**: 目前無需額外認證，建議未來整合 `loginAPI`
 
@@ -416,19 +416,19 @@ DB_PASSWORD=
 ## 使用範例
 ### Postman 測試流程
 1. **建立機器人**:
-   - POST http://<Unraid_IP>:3000/api/bots
+   - POST https://puzzle-api.jkl921102.org/api/bots
    - Body: `{"userId": 1, "name": "Bot 1", "channel_access_token": "token1", "channel_secret": "secret1"}`
 
 2. **儲存 Flex Message**:
-   - POST http://<Unraid_IP>:3000/api/flex-messages
+   - POST https://puzzle-api.jkl921102.org/api/flex-messages
    - Body: `{"botId": "機器人ID", "flexMessage": {...}}`
 
 3. **發送 Flex Message**:
-   - POST http://<Unraid_IP>:3000/api/send-message
+   - POST https://puzzle-api.jkl921102.org/api/send-message
    - Body: `{"botId": "機器人ID", "flexMessageId": "FlexMessageID", "userId": "LINE用戶ID"}`
 
 4. **獲取機器人**:
-   - GET http://<Unraid_IP>:3000/api/bots/1
+   - GET https://puzzle-api.jkl921102.org/api/bots/1
 
 5. **修改與刪除**:
    - 使用對應的 PUT 和 DELETE 端點。
