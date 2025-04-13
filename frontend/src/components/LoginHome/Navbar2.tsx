@@ -60,7 +60,7 @@ const Navbar2 = () => {
 
   return (
     <>
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white ${isScrolled ? 'bg-opacity-90 backdrop-blur-md shadow-sm' : 'bg-opacity-100'}`}>
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white bg-opacity-100'}`}>
     <div className="w-full px-6 flex items-center justify-between h-16 md:h-20">
         <div className="flex items-center gap-4">
           <button className="text-[#1a1a40]" onClick={toggleMobileMenu}>
