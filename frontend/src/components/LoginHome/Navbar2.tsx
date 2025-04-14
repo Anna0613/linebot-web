@@ -12,6 +12,7 @@ const Navbar2 = () => {
   const [email, setEmail] = useState<string | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -57,6 +58,19 @@ const Navbar2 = () => {
     document.documentElement.classList.toggle('dark');
   };
   
+   useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -87,7 +101,7 @@ const Navbar2 = () => {
             <Button className="bg-[#F4CD41] text-[#1a1a40] text-black font-bold rounded-[5px] text-[16px] hover:bg-[#e6bc00]">建立設計</Button>
           </Link>
 
-          <div className="relative">
+          <div className="relative" ref={dropdownRef}>
             <button onClick={toggleDropdown} className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-200 overflow-hidden">
               {userImage ? (
                 <img src={userImage} alt="User" className="h-full w-full object-cover" />
@@ -100,8 +114,7 @@ const Navbar2 = () => {
 
             {showDropdown && (
               <div className="absolute right-0 mt-3 w-56 bg-white border shadow-xl rounded-lg z-50 p-4">
-                <button onClick={closeDropdown} className="absolute top-2 right-2 text-gray-500 text-xl">&times;</button>
-
+                <button onClick={() => setShowDropdown(false)} className="absolute top-2 right-2 text-gray-500 text-xl">&times;</button>
                 <div className="flex flex-col items-center cursor-pointer mb-4" onClick={() => fileInputRef.current?.click()}>
                   {userImage ? (
                     <img src={userImage} alt="User Detail" className="w-16 h-16 rounded-full mb-2 object-cover" />
