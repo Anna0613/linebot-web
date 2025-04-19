@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,11 +9,59 @@ import Footer from '../components/Index/Footer';
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [loading, setLoading] = useState(false);
 
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+
+  const verifyToken = async (token: string) => {
+    try {
+      const response = await fetch('https://line-login.jkl921102.org/api/verify-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      if (!response.ok) throw new Error('Token verification failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Token 驗證失敗:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      verifyToken(token).then((user) => {
+        if (user && user.display_name) {
+          console.log("LINE 登入成功", user);
+          localStorage.setItem("line_token", token);
+          localStorage.setItem("username", user.display_name);
+          localStorage.setItem("email", user.email || '');
+          navigate("/index2");
+        } else {
+          alert("LINE 登入驗證失敗！");
+        }
+      });
+    }
+  }, [searchParams]);
+
+  const handleLINELogin = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`https://line-login.jkl921102.org/api/line-login`);
+      const data = await response.json();
+      if (!data.login_url) throw new Error("登入連結取得失敗");
+      window.location.href = data.login_url;
+    } catch (error) {
+      console.error("LINE login error:", error);
+      alert("LINE 登入失敗，請稍後再試");
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +94,7 @@ const Login = () => {
       }
 
       alert("登入成功！");
-      navigate("/index2"); 
+      navigate("/index2");
     } catch (error: any) {
       console.error("錯誤:", error);
       alert(error.message);
@@ -64,6 +112,22 @@ const Login = () => {
           </div>
 
           <div className="glassmorphism p-8 fade-in-element" style={{ animationDelay: '0.2s' }}>
+
+            <div className="flex flex-col items-center space-y-4 mb-6">
+              <Button
+                onClick={handleLINELogin}
+                disabled={loading}
+                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-base font-semibold h-11"
+              >
+                {loading ? '登入中...' : '以 LINE 繼續'}
+              </Button>
+              <div className="flex items-center w-full">
+                <hr className="flex-grow border-gray-300" />
+                <span className="mx-3 text-gray-500 text-sm">或</span>
+                <hr className="flex-grow border-gray-300" />
+              </div>
+            </div>
+
             <form className="space-y-6" onSubmit={handleLogin}>
               <div className="space-y-1">
                 <Label htmlFor="username">使用者名稱：</Label>

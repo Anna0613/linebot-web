@@ -12,7 +12,6 @@ import Index2 from "./pages/LoginHome";
 import AddServer from "./pages/AddServer";
 import Block from "./pages/Block";
 import HowToEstablish from "./pages/HowToEstablish";
-import LINELogin from "./pages/LINELogin";
 
 const queryClient = new QueryClient();
 
@@ -27,7 +26,6 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/forgetthepassword" element={<ForgetThePassword />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/line-login" element={<LINELogin />} />
           <Route path="/index2" element={<Index2 />} />
           <Route path="/add server" element={<AddServer />} />
           <Route path="/block" element={<Block />} />

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom'; // 加入 useNavigate
 import LINELoginButton from '../components/LINELogin/LINELoginButton';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
+
 
 interface User {
   line_id: string;
@@ -14,15 +15,19 @@ const LINELogin: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate(); // 加這行
 
   useEffect(() => {
     const token = searchParams.get('token');
     const displayName = searchParams.get('display_name');
 
     if (token) {
+      // 儲存 token 到 localStorage
+      localStorage.setItem('line_token', token);
       verifyToken(token).then((userData) => {
         if (userData) {
           setUser(userData);
+          navigate('/index2'); // 登入成功後導到首頁（你要的那一頁）
         }
       }).catch((err) => {
         setError('Failed to verify token');
