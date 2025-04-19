@@ -1,20 +1,29 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import Navbar2 from "./Navbar2";
 
-const HomeBotfly = () => {
-  const [username, setUsername] = useState<string | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+// 定義 User 介面，與 LoginHome.tsx 一致
+interface User {
+  line_id: string;
+  display_name: string;
+  picture_url: string;
+}
+
+// 定義 HomeBotfly 的 Props 介面
+interface HomeBotflyProps {
+  user: User | null;
+}
+
+const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
   const [userImage, setUserImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem("username");
-    const storedEmail = localStorage.getItem("email");
-    setUsername(storedUsername);
-    setEmail(storedEmail);
-  }, []);
+    // 若 user 存在，設置 userImage
+    if (user?.picture_url) {
+      setUserImage(user.picture_url);
+    }
+  }, [user]);
 
   const toggleDropdown = () => setShowDropdown(!showDropdown);
   const closeDropdown = () => setShowDropdown(false);
@@ -34,10 +43,21 @@ const HomeBotfly = () => {
 
   return (
     <div className="flex flex-col relative bg-white">
-  
-      <Navbar2 /> 
-
       <main className="flex-1 pt-2 px-4 md:px-8 pb-0 flex justify-center items-center flex-wrap bg-[#FFFDFA]">
+        {/* 顯示用戶歡迎訊息 */}
+        {user && (
+          <div className="w-full text-center mb-8">
+            <h2 className="text-2xl font-bold text-[#1a1a40]">歡迎，{user.display_name}！</h2>
+            {user.picture_url && (
+              <img
+                src={user.picture_url}
+                alt={user.display_name}
+                className="w-16 h-16 rounded-full mx-auto mt-4"
+              />
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap justify-center gap-x-10 gap-y-8">
           {[
             {
@@ -67,13 +87,11 @@ const HomeBotfly = () => {
           ].map(({ link, img, title, desc }) => (
             <Link to={link} key={title}>
               <div className="group relative w-[300px] h-[400px] rounded-[8px] overflow-hidden hover:scale-105 transition duration-300 cursor-pointer shadow-md">
-                
                 <img
                   src={img}
                   alt={title}
                   className="w-full h-full object-contain transition-opacity duration-300 group-hover:opacity-0"
                 />
-
                 <div className="absolute inset-0 bg-[#f2f2f2]/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 px-4 text-center">
                   <h3 className="text-[22px] font-bold text-[#1a1a40] mb-3">{title}</h3>
                   <div className="text-[17px] text-[#1a1a40] leading-relaxed space-y-1">

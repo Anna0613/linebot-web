@@ -1,0 +1,10 @@
+#API Rebuild
+#!/bin/bash
+docker stop line-login
+docker rm line-login
+docker run -d \
+  --name line-login \
+  -p 5502:5502 \
+  --env-file .env \
+  -v /mnt/user/appdata/linebot_web/LINEloginAPI:/app \
+  line-login-app

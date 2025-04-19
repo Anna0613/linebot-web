@@ -238,7 +238,7 @@ def line_callback():
         logger.error(f"JWT encoding error: {e}")
         return jsonify({"error": "Failed to generate token"}), 500
 
-    frontend_url = f"{os.getenv('FRONTEND_URL')}/line-login?token={token}&display_name={urllib.parse.quote(display_name or '')}"
+    frontend_url = f"{os.getenv('FRONTEND_URL')}/index2?token={token}&display_name={urllib.parse.quote(display_name or '')}"
     logger.debug(f"Redirecting to: {frontend_url}")
     return redirect(frontend_url)
 
