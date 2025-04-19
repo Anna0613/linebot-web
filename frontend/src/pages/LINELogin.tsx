@@ -35,7 +35,7 @@ const LINELogin: React.FC = () => {
 
   const verifyToken = async (token: string): Promise<User | null> => {
     try {
-      const response = await fetch(`http://localhost:${process.env.PORT_LOGIN || 5501}/api/verify-token`, {
+      const response = await fetch('https://line-login.jkl921102.org/api/verify-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),

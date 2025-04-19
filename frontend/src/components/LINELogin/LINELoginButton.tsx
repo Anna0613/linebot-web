@@ -13,7 +13,7 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin }) => {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5501/api/line-login`, {
+      const response = await fetch(`https://line-login.jkl921102.org/api/line-login`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
