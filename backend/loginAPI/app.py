@@ -12,10 +12,13 @@ from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 
 # 載入 .env（與 app.py 同目錄）
-load_dotenv(dotenv_path=".env")
+#load_dotenv(dotenv_path=".env")
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+#CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": ["http://localhost:8080"]}})
+
 
 # 配置安全性設置
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', secrets.token_hex(32))
@@ -188,38 +191,54 @@ def login():
         conn.close()
 
 # 忘記密碼 API
-@app.route('/forgot_password', methods=['POST'])
+@app.route('/forgot_password', methods=['POST'])  
 def forgot_password():
-    data = request.json
-    email = data.get('email')
-
-    if not email:
-        return jsonify({'error': 'Email is required'}), 400
-
-    conn = get_db_connection()
-    if not conn:
-        return jsonify({'error': 'Database connection failed'}), 500
-
     try:
-        cur = conn.cursor()
-        cur.execute('SELECT username FROM users WHERE email = %s', (email,))
-        user = cur.fetchone()
-        if not user:
-            return jsonify({'error': 'Email not found'}), 404
+        data = request.json
+        email = data.get('email')
 
-        # 發送密碼重置郵件
-        token = ts.dumps(email, salt='password-reset')
-        reset_url = f"https://login-api.jkl921102.org/reset_password/{token}"
-        msg = Message('Reset Your Password', sender=app.config['MAIL_USERNAME'], recipients=[email])
-        msg.body = f'Click this link to reset your password: {reset_url}\nLink expires in 1 hour.'
-        mail.send(msg)
+        if not email:
+            return jsonify({'error': 'Email is required'}), 400
 
-        return jsonify({'message': 'Password reset email sent!'}), 200
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+
+        try:
+            cur = conn.cursor()
+            cur.execute('SELECT username FROM users WHERE email = %s', (email,))
+            user = cur.fetchone()
+            if not user:
+                return jsonify({'error': 'Email not found'}), 404
+
+            # 檢查並列印郵件配置
+            print("MAIL_USERNAME:", app.config['MAIL_USERNAME'])
+            print("MAIL_PASSWORD:", "***" if app.config['MAIL_PASSWORD'] else None)
+            
+            if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
+                return jsonify({'error': 'Email configuration error: Mail settings not properly configured'}), 500
+
+            # 發送密碼重置郵件
+            token = ts.dumps(email, salt='password-reset')
+            reset_url = f"https://login-api.jkl921102.org/reset_password/{token}"
+            msg = Message('Reset Your Password', sender=app.config['MAIL_USERNAME'], recipients=[email])
+            msg.body = f'Click this link to reset your password: {reset_url}\nLink expires in 1 hour.'
+            print(f"Sending email to {email} with reset URL: {reset_url}")
+            mail.send(msg)
+            print("Email sent successfully")
+
+            return jsonify({'message': 'Password reset email sent!'}), 200
+        except Exception as e:
+            print(f"Failed to send email: {str(e)}")
+            return jsonify({'error': f'Error: {str(e)}'}), 500
+        finally:
+            if cur:
+                cur.close()
+            if conn:
+                conn.close()
     except Exception as e:
-        return jsonify({'error': f'Error: {str(e)}'}), 500
-    finally:
-        cur.close()
-        conn.close()
+        print(f"General error in forgot_password route: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 # 重置密碼 API
 @app.route('/reset_password/<token>', methods=['POST'])
@@ -268,8 +287,11 @@ def change_password():
         return jsonify({'error': 'New password must be at least 8 characters'}), 400
 
     token = request.cookies.get('token')
-    payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-    username = payload['username']
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        username = payload.get('username')
+    except jwt.InvalidTokenError:
+        return jsonify({'error': 'Invalid token'}), 401
 
     conn = get_db_connection()
     if not conn:
@@ -279,18 +301,21 @@ def change_password():
         cur = conn.cursor()
         cur.execute('SELECT password FROM users WHERE username = %s', (username,))
         user = cur.fetchone()
-
         if not user or not check_password_hash(user[0], old_password):
-            return jsonify({'error': 'Invalid old password'}), 401
+            return jsonify({'error': 'Old password is incorrect'}), 403
 
-        hashed_password = generate_password_hash(new_password, method='pbkdf2:sha256', salt_length=16)
-        cur.execute('UPDATE users SET password = %s WHERE username = %s', (hashed_password, username))
+        hashed_new_password = generate_password_hash(new_password, method='pbkdf2:sha256', salt_length=16)
+        cur.execute('UPDATE users SET password = %s WHERE username = %s', (hashed_new_password, username))
         conn.commit()
+
         return jsonify({'message': 'Password changed successfully!'}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': f'Error: {str(e)}'}), 500
     finally:
         cur.close()
         conn.close()
-
+        
 # 檢查登入狀態
 @app.route('/check_login', methods=['GET'])
 @token_required
@@ -308,4 +333,4 @@ def logout():
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT_LOGIN', 5501))
-    app.run(host='0.0.0.0', port=port, ssl_context='adhoc')
+    app.run(host='0.0.0.0', port=port, debug=True)
