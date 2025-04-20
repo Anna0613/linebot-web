@@ -8,3 +8,16 @@ docker run -d \
   --env-file .env \
   -v /mnt/user/appdata/linebot_web/LINEloginAPI:/app \
   line-login-app
+
+#!/bin/bash
+docker stop login-api
+docker rm login-api
+docker run -d \
+  --name login-api \
+  -p 5501:5501 \
+  --env-file .env \
+  -v /mnt/user/appdata/login_api:/app \
+  login-api-app
+
+  /mnt/user/appdata/login_api
+

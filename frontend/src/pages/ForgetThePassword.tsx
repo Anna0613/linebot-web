@@ -20,7 +20,7 @@ const ForgetPassword = () => {
     }
 
     try {
-      const response = await fetch('https://login-api.jkl921102.org/forget-password', {
+      const response = await fetch('https://login-api.jkl921102.org/forgot_password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
