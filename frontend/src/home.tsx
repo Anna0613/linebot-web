@@ -12,6 +12,8 @@ import Index2 from "./pages/LoginHome";
 import AddServer from "./pages/AddServer";
 import Block from "./pages/Block";
 import HowToEstablish from "./pages/HowToEstablish";
+import Setting from "./pages/Setting";
+
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,7 @@ const App = () => (
           <Route path="/block" element={<Block />} />
           <Route path="/how to establish" element={<HowToEstablish />} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/setting" element={<Setting />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

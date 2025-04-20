@@ -165,7 +165,7 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
                       設定
                     </Link>
                     <Link to="/language" className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]">
-                      <img src="/專題圖片/language setting.svg" alt="Logo" className="h-6 w-auto" />
+                      <img src="/專題圖片/language setting.svg" alt="Logo" className="w-6 h-6 fill-[#454658]" />
                       語言
                     </Link>
                     <Link to="/suggest" className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]">
