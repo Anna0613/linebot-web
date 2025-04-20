@@ -9,7 +9,7 @@ const Footer = () => {
       <div className="grid grid-cols-[2fr_1fr_1fr] gap-[120px] mb-12">
           
         <div className="space-y-4">
-          <span className="text-2xl font-bold text-[#fefefe]">LINE Bot 製作輔助系統</span>
+          <span className="text-2xl font-bold text-[#0B346E]">LINE Bot 製作輔助系統</span>
           <p className="text-muted-foreground text-sm">
             非常適合需要使用LINE Bot機器人做為行銷工具的商家，
           </p>

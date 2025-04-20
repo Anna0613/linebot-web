@@ -47,7 +47,7 @@ const Navbar = () => {
 
           <Link to="/" className="flex items-center space-x-3">
             <img src="/專題圖片/Botfly.svg" alt="Logo" className="h-12 w-auto" />
-            <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">BOTFLY</h6>
+            <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">LineBot 製作輔助系統</h6>
           </Link>
 
           <div className="hidden md:flex items-center space-x-4">
