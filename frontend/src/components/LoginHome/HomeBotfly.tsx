@@ -43,10 +43,10 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
 
   return (
     <div className="flex flex-col relative bg-white">
-      <main className="flex-1 pt-2 px-4 md:px-8 pb-0 flex justify-center items-center flex-wrap bg-[#FFFDFA]">
+      <main className="flex-1 pt-0 px-4 md:px-8 pb-0 flex justify-center items-center flex-wrap bg-[#FFFDFA]">
         {/* 顯示用戶歡迎訊息 */}
         {user && (
-          <div className="w-full text-center mb-8">
+          <div className="w-full text-center mt-[-20px] mb-8">
             <h2 className="text-2xl font-bold text-[#1a1a40]">歡迎，{user.display_name}！</h2>
             {user.picture_url && (
               <img
