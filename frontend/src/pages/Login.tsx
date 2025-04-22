@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Loader } from "@/components/ui/loader";
+import { CustomAlert } from "@/components/ui/custom-alert";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
+import "@/components/ui/loader.css";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,6 +19,18 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  
+  // Alert state
+  const [alert, setAlert] = useState({
+    show: false,
+    message: '',
+    type: 'error' as 'success' | 'error' | 'info'
+  });
+
+  const showAlert = (message: string, type: 'success' | 'error' | 'info') => {
+    setAlert({ show: true, message, type });
+    setTimeout(() => setAlert(prev => ({ ...prev, show: false })), 3000);
+  };
 
   const verifyToken = async (token: string) => {
     try {
@@ -41,9 +56,10 @@ const Login = () => {
           localStorage.setItem("line_token", token);
           localStorage.setItem("username", user.display_name);
           localStorage.setItem("email", user.email || '');
+          showAlert("登入成功！", "success");
           navigate("/index2");
         } else {
-          alert("LINE 登入驗證失敗！");
+          showAlert("LINE 登入驗證失敗，請重試", "error");
         }
       });
     }
@@ -58,16 +74,19 @@ const Login = () => {
       window.location.href = data.login_url;
     } catch (error) {
       console.error("LINE login error:", error);
-      alert("LINE 登入失敗，請稍後再試");
+      showAlert("LINE 登入失敗，請稍後再試", "error");
       setLoading(false);
     }
   };
+  
   const nativeFetch = window.fetch.bind(window);
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
   
     if (!username || !password) {
-      alert("請輸入使用者名稱和密碼！");
+      showAlert("請輸入使用者名稱和密碼", "error");
+      setLoading(false);
       return;
     }
   
@@ -85,24 +104,52 @@ const Login = () => {
   
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error("登入失敗：" + errorData.error);
+        let errorMessage = "登入失敗";
+        
+        // 根據不同錯誤類型顯示不同信息
+        switch (errorData.error) {
+          case "INVALID_PASSWORD":
+            errorMessage = "密碼錯誤，請重新輸入";
+            break;
+          case "USER_NOT_FOUND":
+            errorMessage = "找不到此使用者，請確認帳號是否正確";
+            break;
+          case "EMAIL_NOT_VERIFIED":
+            errorMessage = "請先完成電子郵件驗證";
+            break;
+          case "ACCOUNT_LOCKED":
+            errorMessage = "帳號已被鎖定，請聯繫客服";
+            break;
+          default:
+            errorMessage = errorData.message || "登入失敗，請稍後再試";
+        }
+        
+        throw new Error(errorMessage);
       }
   
       const resData = await response.json();
       localStorage.setItem("username", username);
       localStorage.setItem("email", resData.email || "");
   
-      alert("登入成功！");
+      showAlert("登入成功！", "success");
       navigate("/index2");
     } catch (error: any) {
       console.error("錯誤:", error);
-      alert(error.message);
+      showAlert(error.message, "error");
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+      {loading && <Loader fullPage />}
+      <CustomAlert 
+        isOpen={alert.show}
+        message={alert.message}
+        type={alert.type}
+        onClose={() => setAlert(prev => ({ ...prev, show: false }))}
+      />
 
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 mt-10">
         <div className="w-full max-w-md">
@@ -111,14 +158,13 @@ const Login = () => {
           </div>
 
           <div className="glassmorphism p-8 fade-in-element" style={{ animationDelay: '0.2s' }}>
-
             <div className="flex flex-col items-center space-y-4 mb-6">
               <Button
                 onClick={handleLINELogin}
                 disabled={loading}
-                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-base font-semibold h-11"
+                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-base font-semibold h-11 relative"
               >
-                {loading ? '登入中...' : '以 LINE 繼續'}
+                {loading ? '載入中...' : '以 LINE 繼續'}
               </Button>
               <div className="flex items-center w-full">
                 <hr className="flex-grow border-gray-300" />
@@ -175,8 +221,12 @@ const Login = () => {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11">
-                登入
+              <Button 
+                type="submit" 
+                disabled={loading}
+                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11 relative"
+              >
+                {loading ? '載入中...' : '登入'}
               </Button>
             </form>
 

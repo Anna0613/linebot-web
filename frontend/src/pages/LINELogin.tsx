@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom'; // 加入 useNavigate
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import LINELoginButton from '../components/LINELogin/LINELoginButton';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
-
+import { Loader } from "@/components/ui/loader";
+import "@/components/ui/loader.css";
 
 interface User {
   line_id: string;
@@ -15,23 +16,26 @@ const LINELogin: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate(); // 加這行
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const token = searchParams.get('token');
     const displayName = searchParams.get('display_name');
 
     if (token) {
-      // 儲存 token 到 localStorage
+      setLoading(true);
       localStorage.setItem('line_token', token);
       verifyToken(token).then((userData) => {
         if (userData) {
           setUser(userData);
-          navigate('/index2'); // 登入成功後導到首頁（你要的那一頁）
+          navigate('/index2');
         }
       }).catch((err) => {
         setError('Failed to verify token');
         console.error(err);
+      }).finally(() => {
+        setLoading(false);
       });
     } else if (displayName) {
       setUser({ line_id: '', display_name: displayName, picture_url: '' });
@@ -55,6 +59,7 @@ const LINELogin: React.FC = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      {loading && <Loader fullPage />}
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>LINE Login</CardTitle>

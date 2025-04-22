@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Loader } from "@/components/ui/loader";
+import { CustomAlert } from "@/components/ui/custom-alert";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
+import "@/components/ui/loader.css";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -19,6 +22,18 @@ const Register = () => {
     confirmPassword: '',
     agreeTerms: false
   });
+
+  // Alert state
+  const [alert, setAlert] = useState({
+    show: false,
+    message: '',
+    type: 'error' as 'success' | 'error' | 'info'
+  });
+
+  const showAlert = (message: string, type: 'success' | 'error' | 'info') => {
+    setAlert({ show: true, message, type });
+    setTimeout(() => setAlert(prev => ({ ...prev, show: false })), 3000);
+  };
 
   const verifyToken = async (token: string) => {
     try {
@@ -38,15 +53,18 @@ const Register = () => {
   useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
+      setLoading(true);
       verifyToken(token).then((user) => {
         if (user && user.display_name) {
           console.log('LINE 使用者資料:', user);
           localStorage.setItem('line_token', token);
           localStorage.setItem('username', user.display_name);
           localStorage.setItem('email', user.email || '');
+          showAlert("註冊成功！", "success");
           navigate('/index2');
         } else {
-          alert("登入驗證失敗：未取得有效的使用者資料！");
+          showAlert("LINE 驗證失敗：未取得有效的使用者資料", "error");
+          setLoading(false);
         }
       });
     }
@@ -61,7 +79,7 @@ const Register = () => {
       window.location.href = data.login_url;
     } catch (error) {
       console.error("LINE login error:", error);
-      alert("LINE 登入失敗，請稍後再試");
+      showAlert("LINE 登入失敗，請稍後再試", "error");
       setLoading(false);
     }
   };
@@ -75,30 +93,58 @@ const Register = () => {
     setFormData(prev => ({ ...prev, agreeTerms: checked }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateForm = () => {
     const { fullName, email, password, confirmPassword, agreeTerms } = formData;
 
     if (!fullName || !email || !password || !confirmPassword) {
-      alert("請先輸入所有資料！");
-      return;
+      showAlert("請填寫所有必填欄位", "error");
+      return false;
+    }
+
+    if (fullName.length < 2) {
+      showAlert("使用者名稱至少需要2個字元", "error");
+      return false;
+    }
+
+    if (password.length < 8) {
+      showAlert("密碼長度至少需要8位", "error");
+      return false;
+    }
+
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password)) {
+      showAlert("密碼需要包含至少一個字母和一個數字", "error");
+      return false;
     }
 
     if (password !== confirmPassword) {
-      alert("請重新檢查密碼！");
-      return;
+      showAlert("確認密碼與密碼不符", "error");
+      return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      alert("請輸入有效的電子郵件地址！");
-      return;
+      showAlert("請輸入有效的電子郵件地址", "error");
+      return false;
     }
 
     if (!agreeTerms) {
-      alert("請勾選同意服務條款與隱私政策！");
+      showAlert("請閱讀並同意服務條款與隱私權政策", "error");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (!validateForm()) {
+      setLoading(false);
       return;
     }
+
+    const { fullName, email, password } = formData;
 
     try {
       const response = await fetch("https://login-api.jkl921102.org/register", {
@@ -109,23 +155,54 @@ const Register = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "註冊失敗");
+        let errorMessage = "註冊失敗";
+        
+        switch (errorData.error) {
+          case "USERNAME_EXISTS":
+            errorMessage = "此使用者名稱已被使用";
+            break;
+          case "EMAIL_EXISTS":
+            errorMessage = "此電子郵件已被註冊";
+            break;
+          case "INVALID_USERNAME":
+            errorMessage = "使用者名稱格式不正確";
+            break;
+          case "INVALID_EMAIL":
+            errorMessage = "電子郵件格式不正確";
+            break;
+          case "INVALID_PASSWORD":
+            errorMessage = "密碼格式不正確";
+            break;
+          default:
+            errorMessage = errorData.message || "註冊失敗，請稍後再試";
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const resData = await response.json();
-      alert("註冊成功！");
+      showAlert("註冊成功！請檢查電子郵件以完成驗證", "success");
       localStorage.setItem("username", fullName);
       localStorage.setItem("email", email);
-      navigate("/index2");
+      setTimeout(() => navigate("/index2"), 2000);
     } catch (error: any) {
       console.error("註冊錯誤:", error);
-      alert(error.message);
+      showAlert(error.message, "error");
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+      {loading && <Loader fullPage />}
+      <CustomAlert 
+        isOpen={alert.show}
+        message={alert.message}
+        type={alert.type}
+        onClose={() => setAlert(prev => ({ ...prev, show: false }))}
+      />
+
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 mt-10">
         <div className="w-full max-w-md">
           <div className="text-center mb-10 fade-in-element">
@@ -133,14 +210,13 @@ const Register = () => {
           </div>
 
           <div className="glassmorphism p-8 fade-in-element" style={{ animationDelay: '0.2s' }}>
-
             <div className="flex flex-col items-center space-y-4 mb-6">
               <Button
                 onClick={handleLINELogin}
                 disabled={loading}
-                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-base font-semibold h-11"
+                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-base font-semibold h-11 relative"
               >
-                {loading ? '登入中...' : '以 LINE 繼續'}
+                {loading ? '載入中...' : '以 LINE 繼續'}
               </Button>
               <div className="flex items-center w-full">
                 <hr className="flex-grow border-gray-300" />
@@ -156,7 +232,7 @@ const Register = () => {
                   id="fullName"
                   name="fullName"
                   type="text"
-                  placeholder="ABC"
+                  placeholder="至少2個字元"
                   value={formData.fullName}
                   onChange={handleChange}
                   required
@@ -184,7 +260,7 @@ const Register = () => {
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="至少8位，含字母和數字"
                   value={formData.password}
                   onChange={handleChange}
                   required
@@ -198,7 +274,7 @@ const Register = () => {
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="請再次輸入密碼"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
@@ -220,8 +296,12 @@ const Register = () => {
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11">
-                註冊
+              <Button 
+                type="submit" 
+                disabled={loading}
+                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11 relative"
+              >
+                {loading ? '載入中...' : '註冊'}
               </Button>
             </form>
 

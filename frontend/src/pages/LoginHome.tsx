@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import Footer from '../components/Index/Footer';
 import Navbar2 from '../components/LoginHome/Navbar2';
 import HomeBotfly from '../components/LoginHome/HomeBotfly';
+import { Loader } from "@/components/ui/loader";
+import "@/components/ui/loader.css";
 
 interface User {
   line_id?: string;
@@ -16,34 +18,43 @@ const LoginHome = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = searchParams.get('token');
     const displayName = searchParams.get('display_name');
   
     const verify = async () => {
+      setLoading(true);
       if (token) {
         localStorage.setItem('auth_token', token);
         const userData = await verifyLineToken(token);
         if (userData) {
           setUser(userData);
+          setLoading(false);
         } else {
           setError('LINE Token 驗證失敗');
           navigate('/line-login');
         }
       } else if (displayName) {
         setUser({ display_name: displayName });
+        setLoading(false);
       } else {
         const storedToken = localStorage.getItem('auth_token');
         if (storedToken) {
           const userData = await verifyLineToken(storedToken);
           if (userData) {
             setUser(userData);
+            setLoading(false);
           } else {
-            setTimeout(checkLoginStatus, 3000); // 延遲 3 秒
+            setTimeout(() => {
+              checkLoginStatus();
+            }, 3000); // 延遲 3 秒
           }
         } else {
-          setTimeout(checkLoginStatus, 3000); // 延遲 3 秒
+          setTimeout(() => {
+            checkLoginStatus();
+          }, 3000); // 延遲 3 秒
         }
       }
     };
@@ -88,10 +99,12 @@ const LoginHome = () => {
         setError('請先登入');
         navigate('/login');
       }
+      setLoading(false);
     } catch (error) {
       console.error('檢查登入狀態錯誤:', error);
       setError('請先登入');
       navigate('/login');
+      setLoading(false);
     }
   };
 
@@ -99,7 +112,11 @@ const LoginHome = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar2 user={user} />
       <div className="mt-40 mb-20">
-        {error ? (
+        {loading ? (
+          <div className="flex justify-center">
+            <Loader />
+          </div>
+        ) : error ? (
           <p className="text-red-500 text-center">{error}</p>
         ) : (
           <HomeBotfly user={user} />
