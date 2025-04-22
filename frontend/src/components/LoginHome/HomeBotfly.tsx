@@ -1,14 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 
-// 定義 User 介面，與 LoginHome.tsx 一致
+// 定義 User 介面
 interface User {
-  line_id: string;
+  line_id?: string;
   display_name: string;
-  picture_url: string;
+  picture_url?: string;
+  username?: string;
 }
 
-// 定義 HomeBotfly 的 Props 介面
 interface HomeBotflyProps {
   user: User | null;
 }
@@ -48,12 +48,16 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         {user && (
           <div className="w-full text-center mt-[-20px] mb-8">
             <h2 className="text-2xl font-bold text-[#1a1a40]">歡迎，{user.display_name}！</h2>
-            {user.picture_url && (
+            {userImage || user?.picture_url ? (
               <img
-                src={user.picture_url}
+                src={userImage || user?.picture_url}
                 alt={user.display_name}
                 className="w-16 h-16 rounded-full mx-auto mt-4"
               />
+            ) : (
+              <svg className="w-16 h-16 text-gray-400 mx-auto mt-4" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10" />
+              </svg>
             )}
           </div>
         )}

@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
 import 'animate.css';
 
-// 定義 User 介面，與 LoginHome.tsx 一致
+// 定義 User 介面
 interface User {
-  line_id: string;
+  line_id?: string;
   display_name: string;
-  picture_url: string;
+  picture_url?: string;
+  username?: string;
 }
 
-// 定義 Navbar2 的 Props 介面
 interface Navbar2Props {
   user: User | null;
 }
@@ -30,7 +30,9 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
     if (user?.picture_url) {
       setUserImage(user.picture_url);
     }
+  }, [user]);
 
+  useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       setIsScrolled(scrollTop > 0);
@@ -41,7 +43,7 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -55,7 +57,6 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
   const toggleDropdown = () => setShowDropdown(!showDropdown);
-  const closeDropdown = () => setShowDropdown(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -81,10 +82,23 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
     document.documentElement.classList.toggle('dark');
   };
 
-  const handleLogout = () => {
-    // 清除 LINE 登入相關資料
-    localStorage.removeItem('auth_token');
-    setShowDropdown(false);
+  const handleLogout = async () => {
+    try {
+      // 清除後端設置的 HTTP-only cookie
+      await fetch('https://login-api.jkl921102.org/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      // 清除 LINE 登入相關資料
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('username');
+      localStorage.removeItem('email');
+      localStorage.removeItem('line_token');
+      setShowDropdown(false);
+      window.location.href = '/login'; // 重定向到登入頁面
+    } catch (error) {
+      console.error('登出失敗:', error);
+    }
   };
 
   return (
@@ -137,7 +151,7 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
                       </svg>
                     )}
                     <span className="font-medium">{user?.display_name || "未登入"}</span>
-                    <small className="text-gray-500">{user?.line_id || "未登入"}</small>
+                    <small className="text-gray-500">{user?.line_id || user?.username || "未登入"}</small>
                     <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                   </div>
 

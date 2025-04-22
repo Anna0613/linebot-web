@@ -10,14 +10,21 @@ import secrets
 from functools import wraps
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from flask import Flask
+from flask_cors import CORS
 
+JWT_SECRET = os.getenv('JWT_SECRET', secrets.token_hex(32))
+print("JWT_SECRET:", JWT_SECRET)
 # 載入 .env（與 app.py 同目錄）
 #load_dotenv(dotenv_path=".env")
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
-
 app = Flask(__name__)
-#CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": ["http://localhost:8080"]}})
+allowed_origins = [
+    "http://localhost:8080",
+    "http://localhost:3000",
+    "http://localhost:5173"
+]
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": allowed_origins}})
 
 
 # 配置安全性設置
@@ -63,11 +70,15 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.cookies.get('token')
+        print(f"Received token in /check_login: {token}")
         if not token:
+            print("Token is missing in /check_login")
             return jsonify({'error': 'Token is missing'}), 401
         try:
-            jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        except jwt.InvalidTokenError:
+            data = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            print(f"Decoded token data: {data}")
+        except jwt.InvalidTokenError as e:
+            print(f"Invalid token error: {str(e)}")
             return jsonify({'error': 'Invalid token'}), 401
         return f(*args, **kwargs)
     return decorated
@@ -183,8 +194,16 @@ def login():
             'email': user[1]
         }), 200)
         response.set_cookie(
-            'token', token, httponly=True, secure=True, samesite='Strict', max_age=604800
+            'token', 
+            token, 
+            httponly=True, 
+            secure=True,  # Cloudflare 使用 HTTPS
+            samesite='None',  # 允許跨站請求
+            max_age=604800,
+            path='/',
+            domain=None  # 使用當前域名
         )
+        print(f"Set-Cookie: token={token} for domain=None, path=/, samesite=None, secure=True")
         return response
     finally:
         cur.close()

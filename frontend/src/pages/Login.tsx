@@ -62,37 +62,36 @@ const Login = () => {
       setLoading(false);
     }
   };
-
+  const nativeFetch = window.fetch.bind(window);
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (!username || !password) {
       alert("請輸入使用者名稱和密碼！");
       return;
     }
-
+  
     const data = { username, password };
-
+  
     try {
-      const response = await fetch("https://login-api.jkl921102.org/login", {
+      const response = await nativeFetch("https://login-api.jkl921102.org/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(data),
+        credentials: "include",
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error("登入失敗：" + errorData.message);
+        throw new Error("登入失敗：" + errorData.error);
       }
-
+  
       const resData = await response.json();
-      localStorage.setItem("authToken", resData.token);
       localStorage.setItem("username", username);
-
-      if (!localStorage.getItem("email")) {
-        alert("電子郵件未儲存！");
-      }
-
+      localStorage.setItem("email", resData.email || "");
+  
       alert("登入成功！");
       navigate("/index2");
     } catch (error: any) {

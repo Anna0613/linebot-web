@@ -5,9 +5,10 @@ import Navbar2 from '../components/LoginHome/Navbar2';
 import HomeBotfly from '../components/LoginHome/HomeBotfly';
 
 interface User {
-  line_id: string;
+  line_id?: string;
   display_name: string;
-  picture_url: string;
+  picture_url?: string;
+  username?: string; // 新增以支援帳號密碼登入
 }
 
 const LoginHome = () => {
@@ -19,41 +20,38 @@ const LoginHome = () => {
   useEffect(() => {
     const token = searchParams.get('token');
     const displayName = searchParams.get('display_name');
-
-    if (token) {
-      // 儲存 token 以便跨頁面使用
-      localStorage.setItem('auth_token', token);
-      verifyToken(token).then((userData) => {
+  
+    const verify = async () => {
+      if (token) {
+        localStorage.setItem('auth_token', token);
+        const userData = await verifyLineToken(token);
         if (userData) {
           setUser(userData);
+        } else {
+          setError('LINE Token 驗證失敗');
+          navigate('/line-login');
         }
-      }).catch((err) => {
-        setError('Token 驗證失敗');
-        console.error(err);
-        navigate('/line-login'); // 驗證失敗時重定向
-      });
-    } else if (displayName) {
-      setUser({ line_id: '', display_name: displayName, picture_url: '' });
-    } else {
-      // 檢查 localStorage 是否有 token
-      const storedToken = localStorage.getItem('auth_token');
-      if (storedToken) {
-        verifyToken(storedToken).then((userData) => {
+      } else if (displayName) {
+        setUser({ display_name: displayName });
+      } else {
+        const storedToken = localStorage.getItem('auth_token');
+        if (storedToken) {
+          const userData = await verifyLineToken(storedToken);
           if (userData) {
             setUser(userData);
+          } else {
+            setTimeout(checkLoginStatus, 3000); // 延遲 3 秒
           }
-        }).catch((err) => {
-          console.error('Stored token verification failed:', err);
-          localStorage.removeItem('auth_token');
-          navigate('/line-login');
-        });
-      } else {
-        navigate('/line-login'); // 無 token 時重定向
+        } else {
+          setTimeout(checkLoginStatus, 3000); // 延遲 3 秒
+        }
       }
-    }
+    };
+  
+    verify();
   }, [searchParams, navigate]);
 
-  const verifyToken = async (token: string): Promise<User | null> => {
+  const verifyLineToken = async (token: string): Promise<User | null> => {
     try {
       const response = await fetch('https://line-login.jkl921102.org/api/verify-token', {
         method: 'POST',
@@ -63,8 +61,37 @@ const LoginHome = () => {
       if (!response.ok) throw new Error('Token 驗證失敗');
       return await response.json();
     } catch (error) {
-      console.error('驗證 token 錯誤:', error);
+      console.error('驗證 LINE token 錯誤:', error);
       return null;
+    }
+  };
+
+  const nativeFetch = window.fetch.bind(window); // 保存原生 fetch
+
+  const checkLoginStatus = async () => {
+    try {
+      const response = await nativeFetch('https://login-api.jkl921102.org/check_login', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const username = data.message.split('User ')[1].split(' is logged in')[0];
+        setUser({ display_name: username, username });
+      } else {
+        const errorData = await response.json();
+        console.error('check_login error:', errorData);
+        setError('請先登入');
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('檢查登入狀態錯誤:', error);
+      setError('請先登入');
+      navigate('/login');
     }
   };
 
