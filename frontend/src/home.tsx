@@ -7,12 +7,14 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import ForgetThePassword from "./pages/ForgetThePassword";
 import Register from "./pages/Register";
+import EmailVerification from "./pages/EmailVerification";
 import NotFound from "./pages/NotFound";
 import Index2 from "./pages/LoginHome";
 import AddServer from "./pages/AddServer";
 import Block from "./pages/Block";
 import HowToEstablish from "./pages/HowToEstablish";
 import Setting from "./pages/Setting";
+import ResetPassword from "./pages/ResetPassword";
 
 
 const queryClient = new QueryClient();
@@ -34,6 +36,8 @@ const App = () => (
           <Route path="/how to establish" element={<HowToEstablish />} />
           <Route path="*" element={<NotFound />} />
           <Route path="/setting" element={<Setting />} />
+          <Route path="/verify-email" element={<EmailVerification />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

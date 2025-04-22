@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import os
@@ -111,11 +111,36 @@ def register():
         )
         conn.commit()
 
-        # 發送驗證郵件
+        # 發送美化的驗證郵件
         token = ts.dumps(email, salt='email-verify')
         verify_url = f"https://login-api.jkl921102.org/verify_email/{token}"
-        msg = Message('Verify Your Email', sender=app.config['MAIL_USERNAME'], recipients=[email])
-        msg.body = f'Please click this link to verify your email: {verify_url}\nLink expires in 24 hours.'
+        msg = Message('歡迎加入 - 請驗證您的電子郵件', 
+                     sender=app.config['MAIL_USERNAME'], 
+                     recipients=[email])
+        msg.html = f'''
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #333; text-align: center; margin-bottom: 30px;">歡迎加入我們！</h1>
+            <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                感謝您的註冊！請點擊下方按鈕完成電子郵件驗證：
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{verify_url}" 
+                   style="background-color: #F4CD41; 
+                          color: #1a1a40; 
+                          padding: 12px 30px; 
+                          text-decoration: none; 
+                          border-radius: 25px; 
+                          font-weight: bold; 
+                          display: inline-block;">
+                    驗證電子郵件
+                </a>
+            </div>
+            <p style="color: #888; font-size: 14px; text-align: center; margin-top: 30px;">
+                此連結將在24小時後失效。<br>
+                如果您沒有註冊帳號，請忽略此郵件。
+            </p>
+        </div>
+        '''
         mail.send(msg)
 
         return jsonify({'message': 'User registered successfully! Please check your email to verify.'}), 201
@@ -129,10 +154,20 @@ def register():
         cur.close()
         conn.close()
 
-# Email 驗證 API
+# Email 驗證 - 重定向到前端頁面
 @app.route('/verify_email/<token>', methods=['GET'])
 def verify_email(token):
+    verify_url = f"http://localhost:5173/verify-email?token={token}"
+    return redirect(verify_url)
+
+# Email 驗證 API
+@app.route('/verify-email', methods=['POST'])
+def verify_email_token():
     try:
+        token = request.json.get('token')
+        if not token:
+            return jsonify({'error': 'Token is required'}), 400
+
         email = ts.loads(token, salt='email-verify', max_age=86400)  # 24小時有效
         conn = get_db_connection()
         if not conn:
@@ -140,20 +175,29 @@ def verify_email(token):
 
         cur = conn.cursor()
         cur.execute(
-            'UPDATE users SET email_verified = TRUE WHERE email = %s AND email_verified = FALSE',
+            'UPDATE users SET email_verified = TRUE WHERE email = %s AND email_verified = FALSE RETURNING username',
             (email,)
         )
-        if cur.rowcount == 0:
+        result = cur.fetchone()
+        if not result:
             return jsonify({'error': 'Email already verified or invalid'}), 400
+
         conn.commit()
-        return jsonify({'message': 'Email verified successfully!'}), 200
+        return jsonify({
+            'message': 'Email verified successfully!',
+            'username': result[0]
+        }), 200
     except SignatureExpired:
         return jsonify({'error': 'Verification link has expired'}), 400
     except BadSignature:
         return jsonify({'error': 'Invalid verification link'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     finally:
-        cur.close()
-        conn.close()
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
 
 # 登入 API
 @app.route('/login', methods=['POST'])
@@ -237,11 +281,36 @@ def forgot_password():
             if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
                 return jsonify({'error': 'Email configuration error: Mail settings not properly configured'}), 500
 
-            # 發送密碼重置郵件
+            # 發送美化的密碼重置郵件
             token = ts.dumps(email, salt='password-reset')
-            reset_url = f"https://login-api.jkl921102.org/reset_password/{token}"
-            msg = Message('Reset Your Password', sender=app.config['MAIL_USERNAME'], recipients=[email])
-            msg.body = f'Click this link to reset your password: {reset_url}\nLink expires in 1 hour.'
+            reset_url = f"https://login-api.jkl921102.org/reset-password/{token}"
+            msg = Message('密碼重設要求', 
+                        sender=app.config['MAIL_USERNAME'], 
+                        recipients=[email])
+            msg.html = f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h1 style="color: #333; text-align: center; margin-bottom: 30px;">密碼重設要求</h1>
+                <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                    我們收到了您的密碼重設請求。請點擊下方按鈕重設您的密碼：
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_url}" 
+                       style="background-color: #F4CD41; 
+                              color: #1a1a40; 
+                              padding: 12px 30px; 
+                              text-decoration: none; 
+                              border-radius: 25px; 
+                              font-weight: bold; 
+                              display: inline-block;">
+                        重設密碼
+                    </a>
+                </div>
+                <p style="color: #888; font-size: 14px; text-align: center; margin-top: 30px;">
+                    此連結將在1小時後失效。<br>
+                    如果這不是您發起的請求，請忽略此郵件。
+                </p>
+            </div>
+            '''
             print(f"Sending email to {email} with reset URL: {reset_url}")
             mail.send(msg)
             print("Email sent successfully")
