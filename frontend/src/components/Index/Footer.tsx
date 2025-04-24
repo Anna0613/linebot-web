@@ -11,10 +11,10 @@ const Footer = () => {
         <div className="space-y-4">
           <span className="text-2xl font-bold text-[#0B346E]">LINE Bot 製作輔助系統</span>
           <p className="text-muted-foreground text-sm">
-            非常適合需要使用LINE Bot機器人做為行銷工具的商家，
+            非常適合需要使用LINE Bot做為行銷工具的商家，
           </p>
           <p className="text-muted-foreground text-sm">
-            或者想修改原有LINE Bot機器人的功能卻因為不會打程式碼而無法修改的人。
+            或者想修改原有LINE Bot的功能卻因為不會打程式碼而無法修改的人。
           </p>
           <div className="flex items-center space-x-4 pt-8">
             <LanguageToggle />
@@ -31,22 +31,22 @@ const Footer = () => {
               </li>
               <li>
                 <Link to="/how to establish" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                如何建立機器人
+                如何建立LINE Bot
                 </Link>
               </li>
               <li>
                 <Link to="/add server" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                建立機器人
+                建立LINE Bot
                 </Link>
               </li>
               <li>
                 <Link to="/block" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                開始建立機器人
+                開始建立LINE Bot
                 </Link>
               </li>
               <li>
                 <Link to="/editbot" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                修改機器人
+                修改LINE Bot
                 </Link>
               </li>
             </ul>

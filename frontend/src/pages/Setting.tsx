@@ -111,7 +111,7 @@ const Setting: React.FC = () => {
 
         <section className="space-y-2">
           <h3 className="text-lg font-semibold">已連結的社交帳號</h3>
-          <p className="text-sm text-gray-500">你用於登入 LineBot製作輔助系統 的服務</p>
+          <p className="text-sm text-gray-500">你用於登入 LINE Bot 製作輔助系統 的服務</p>
           <div className="bg-gray-100 p-4 rounded flex justify-between items-center">
             <div className="flex items-center gap-2">
               <img src="/專題圖片/line-logo.svg" alt="LINE" className="w-6 h-6" />

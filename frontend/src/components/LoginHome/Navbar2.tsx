@@ -110,8 +110,8 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
               <Menu size={28} />
             </button>
             <Link to="/index2" className="flex items-center space-x-3 z-10 ml-2">
-              <img src="/專題圖片/Botfly.svg" alt="Logo" className="h-12 w-auto" />
-              <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">LineBot 製作輔助系統</h6>
+              <img src="/專題圖片/logo.svg" alt="Logo" className="h-12 w-auto" />
+              <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">LINE Bot 製作輔助系統</h6>
             </Link>
           </div>
 
@@ -211,10 +211,10 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
           </div>
           <ul className="mt-8 space-y-4 text-[#1a1a40] text-lg">
             <li><Link to="/index2" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">首頁</Link></li>
-            <li><Link to="/how to establish" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">如何建立機器人</Link></li>
-            <li><Link to="/add server" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">建立機器人</Link></li>
-            <li><Link to="/block" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">開始建立機器人</Link></li>
-            <li><Link to="/editbot" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">修改機器人</Link></li>
+            <li><Link to="/how to establish" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">如何建立LINE Bot</Link></li>
+            <li><Link to="/add server" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">建立LINE Bot</Link></li>
+            <li><Link to="/block" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">開始建立LINE Bot</Link></li>
+            <li><Link to="/editbot" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">修改LINE Bot</Link></li>
             <li><Link to="/about" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">關於</Link></li>
             <li><Link to="/describe" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">介紹</Link></li>
             <li><Link to="/how to use" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">操作說明</Link></li>

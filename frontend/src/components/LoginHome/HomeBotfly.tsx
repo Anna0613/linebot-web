@@ -67,25 +67,25 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
             {
               link: "/how to establish",
               img: "/專題圖片/how to establish.svg",
-              title: "如何建立機器人",
+              title: "如何建立LINE Bot",
               desc: ["快速了解機器人建立流程", "從零開始的完整指南"],
             },
             {
               link: "/add server",
               img: "/專題圖片/add server.svg",
-              title: "建立機器人",
+              title: "建立LINE Bot",
               desc: ["連接數據來源創建機器人", "整合您的資料庫與API"],
             },
             {
               link: "/block",
               img: "/專題圖片/block.svg",
-              title: "開始設計機器人",
+              title: "開始設計LINE Bot",
               desc: ["自定義機器人對話與功能", "設計智能回應邏輯"],
             },
             {
               link: "/editbot",
               img: "/專題圖片/editbot.svg",
-              title: "修改機器人",
+              title: "修改LINE Bot",
               desc: ["更新與優化現有機器人", "增強機器人效能與體驗"],
             },
           ].map(({ link, img, title, desc }) => (
