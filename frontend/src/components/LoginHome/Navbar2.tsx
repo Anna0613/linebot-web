@@ -140,7 +140,7 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
               </button>
 
               {showDropdown && (
-                <div className="absolute right-0 mt-3 w-62 bg-white border shadow-xl rounded-lg z-50 p-4">
+                <div className="absolute right-0 mt-3 w-[260px] bg-white border shadow-xl rounded-lg z-50 p-4">
                   <button onClick={() => setShowDropdown(false)} className="absolute top-2 right-2 text-gray-500 text-xl">×</button>
                   <div className="flex flex-col items-center cursor-pointer mb-4" onClick={() => fileInputRef.current?.click()}>
                     {userImage || user?.picture_url ? (

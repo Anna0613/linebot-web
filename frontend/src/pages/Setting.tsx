@@ -21,7 +21,9 @@ const Setting: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState(""); 
+  const [isEditingName, setIsEditingName] = useState(false);
   const [email, setEmail] = useState("");            
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [userImage, setUserImage] = useState<string | null>(null); 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -179,49 +181,144 @@ const Setting: React.FC = () => {
 
         <hr className="border-t border-gray-300" />
 
-        <section className="flex justify-between items-center">
-          <div>
-            <h3 className="text-lg font-semibold">名稱</h3>
-            <Label htmlFor="displayName">{user.display_name}</Label>
-            <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+        <section>
+        <h3 className="text-lg font-semibold mb-1">名稱</h3>
+
+        {isEditingName ? (
+          <div className="flex justify-between items-center gap-2">
+            <Input
+              id="displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-[600px]"
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setDisplayName(user?.display_name || "");
+                  setIsEditingName(false);
+                }}
+              >
+                取消
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setUser((prev) => prev ? { ...prev, display_name: displayName } : null);
+                  setIsEditingName(false);
+                }}
+              >
+                儲存
+              </Button>
+            </div>
           </div>
-          <Button className="mt-6 rounded-md h-9">編輯</Button>
-        </section>
+        ) : (
+          <div className="flex justify-between items-center">
+            <span className="text-base">{displayName}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsEditingName(true)}
+            >
+              編輯
+            </Button>
+          </div>
+        )}
+      </section>
+
 
         <hr className="border-t border-gray-300" />
 
-        <section className="flex justify-between items-center">
-          <div>
-            <h3 className="text-lg font-semibold">電子郵件</h3>
-            <Label htmlFor="email">{user.email}</Label>
-            <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={user.isLineUser} />
-          </div>
-          <Button className="mt-6 rounded-md h-9" disabled={user.isLineUser}>編輯</Button>
+        {!user?.isLineUser && (
+        <section>
+          <h3 className="text-lg font-semibold mb-1">電子郵件</h3>
+
+          {isEditingEmail ? (
+            <div className="flex items-center gap-2">
+              <Input
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-[600px]"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEmail(user?.email || "");
+                  setIsEditingEmail(false);
+                }}
+              >
+                取消
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setUser((prev) => prev ? { ...prev, email: email } : null);
+                  setIsEditingEmail(false);
+                }}
+              >
+                儲存
+              </Button>
+            </div>
+          ) : (
+            <div className="flex justify-between items-center">
+              <span className="text-base">{email}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsEditingEmail(true)}
+              >
+                編輯
+              </Button>
+            </div>
+          )}
         </section>
+      )}
 
         <hr className="border-t border-gray-300" />
-
         <section className="space-y-2">
           <h3 className="text-lg font-semibold">已連結的社交帳號</h3>
           <p className="text-sm text-gray-500">你用於登入 LINE Bot 製作輔助系統 的服務</p>
-          <div className="bg-gray-100 p-4 rounded flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <img src="/專題圖片/line-logo.svg" alt="LINE" className="w-6 h-6" />
-              <span className="font-medium">LINE</span>
+
+          <div className="bg-gray-100 px-4 py-3 rounded">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <img src="/專題圖片/line-logo.svg" alt="LINE" className="w-10 h-10" />
+                <div>
+                  <div className="text-base font-semibold">LINE</div>
+                  <div className="text-sm text-gray-700">{user?.display_name}</div>
+                </div>
+              </div>
+              <Button
+                className="rounded-md h-9"
+                variant="outline"
+                size="sm"
+              >
+                中斷連結
+              </Button>
             </div>
-            <Button className="rounded-md h-9" variant="outline" size="sm">中斷連結</Button>
           </div>
-          <div className="text-sm text-gray-500 ml-8">{user.display_name}</div>
         </section>
 
         <hr className="border-t border-gray-300" />
 
         <section className="space-y-2">
           <h3 className="text-lg font-semibold">密碼</h3>
-          <p className="text-sm text-gray-500">
-            若要第一次為帳號新增密碼，你必須透過密碼重設頁面，我們才能驗證你的身分。
-          </p>
-          <Button className="rounded-md h-9" variant="outline" onClick={() => navigate("/forgetthepassword")}>前往密碼重設</Button>
+          <div className="flex justify-between items-center flex-wrap gap-2">
+            <p className="text-sm text-gray-500">
+              若要第一次為帳號新增密碼，你必須透過密碼重設頁面，我們才能驗證你的身分。
+            </p>
+            <Button
+              className="rounded-md h-9 whitespace-nowrap"
+              variant="outline"
+              onClick={() => navigate("/forgetthepassword")}
+            >
+              前往密碼重設
+            </Button>
+          </div>
         </section>
 
         <hr className="border-t border-gray-300" />
