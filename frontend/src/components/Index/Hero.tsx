@@ -17,10 +17,10 @@ const Hero = () => {
        
         <div className="space-y-6 fade-in-element" style={{ animationDelay: '0.1s' }}>
           <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-tight">
-            Build Your <span className="text-gradient">LINE Bot</span> Without Coding
+          無需編碼即可建造 <span className="text-gradient">LINE Bot</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-xl">
-            Create powerful LINE bots with our drag-and-drop interface. Connect with your customers, automate responses, and grow your business.
+          使用我們的拖拉介面創建強大的LINE Bot。與您的客戶建立聯繫、自動回應並發展您的業務。
           </p>
           
           <div className="flex flex-wrap gap-4 pt-4">
@@ -32,7 +32,7 @@ const Hero = () => {
             </Link>
             <Link to="#demo">
               <Button variant="outline" size="lg" className="rounded-full text-[16px] hover:bg-[#A0A0A0]">
-                See Demo
+                了解更多
               </Button>
             </Link>
           </div>
@@ -44,7 +44,7 @@ const Hero = () => {
               <div className="w-8 h-8 rounded-full bg-blue-400"></div>
             </div>
             <p>
-              Trusted by <span className="font-medium text-foreground">500+</span> businesses in Taiwan
+            深受台灣 <span className="font-medium text-foreground">500+</span> 家企業的信賴
             </p>
           </div>
         </div>
@@ -87,7 +87,7 @@ const Hero = () => {
                   <div className="w-2 h-2 rounded-full bg-gray-300"></div>
                   <div className="w-2 h-2 rounded-full bg-gray-300"></div>
                 </div>
-                <div className="text-xs text-muted-foreground">Bot Creator Interface</div>
+                <div className="text-xs text-muted-foreground">機器人創作者介面</div>
               </div>
             </div>
           </div>

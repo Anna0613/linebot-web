@@ -77,7 +77,7 @@ const Navbar = () => {
           <div className="md:hidden bg-white border-t border-border">
             <div className="max-w-7xl mx-auto px-6 py-4 space-y-3">
               <div className="pt-4 flex flex-col space-y-3">
-                <LanguageToggle className="self-start" />
+              <LanguageToggle />
                 <Link to="/login" className="w-full" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="outline" className="w-full rounded-full">
                     SIGN IN

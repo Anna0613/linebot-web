@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const demoTabs = [
   {
     id: "builder",
-    title: "Bot Builder",
-    description: "Intuitive drag-and-drop interface for creating bot conversation flows.",
+    title: "機器人生成器",
+    description: "直覺的拖放介面，用於創建機器人對話流。",
     preview: (
       <div className="w-full bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="bg-gray-100 px-4 py-3 flex items-center justify-between border-b">
@@ -132,8 +132,8 @@ const demoTabs = [
   },
   {
     id: "flex-message",
-    title: "Flex Message Editor",
-    description: "Design rich LINE Flex Messages with a visual editor.",
+    title: "Flex 訊息編輯器",
+    description: "使用視覺化編輯器設計豐富的 LINE Flex 訊息。",
     preview: (
       <div className="w-full bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="bg-gray-100 px-4 py-3 flex items-center justify-between border-b">
@@ -255,8 +255,8 @@ const demoTabs = [
   },
   {
     id: "dashboard",
-    title: "Analytics Dashboard",
-    description: "Monitor your bot's performance with detailed analytics.",
+    title: "分析儀表板",
+    description: "透過詳細的分析監控您的機器人的性能。",
     preview: (
       <div className="w-full bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="bg-gray-100 px-4 py-3 flex items-center justify-between border-b">
@@ -346,9 +346,9 @@ const DemoPreview = () => {
   return (
     <section id="demo" className="section py-24">
       <div className="text-center mb-16 fade-in-element">
-        <h2 className="section-title">See It In <span className="text-gradient">Action</span></h2>
+        <h2 className="section-title">觀看<span className="text-gradient">實際操作</span></h2>
         <p className="section-subtitle mx-auto">
-          Explore our interactive demo to see how easy it is to create and manage LINE Bots with our platform.
+        探索我們的互動式演示，了解使用我們的平台創建和管理 LINE 機器人是多麼容易。
         </p>
       </div>
       

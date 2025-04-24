@@ -4,8 +4,8 @@ import { ArrowRight } from 'lucide-react';
 const steps = [
   {
     number: "01",
-    title: "Register & Create Project",
-    description: "Sign up for an account and create your first LINE Bot project with a few clicks.",
+    title: "註冊並建立項目",
+    description: "註冊一個帳戶並點擊幾下即可建立您的第一個 LINE Bot 專案。",
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between mb-6">
@@ -35,8 +35,8 @@ const steps = [
   },
   {
     number: "02",
-    title: "Design Bot Flow",
-    description: "Use our visual drag-and-drop editor to design your bot's conversation flow without coding.",
+    title: "設計機器人流程",
+    description: "使用我們的視覺化拖放編輯器來設計您的機器人的對話流程，無需編碼。",
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-center mb-4">
@@ -74,8 +74,8 @@ const steps = [
   },
   {
     number: "03",
-    title: "Configure & Customize",
-    description: "Customize your bot's appearance, set up automated responses, and configure settings.",
+    title: "配置和自訂",
+    description: "自訂機器人的外觀、設定自動響應並配置設定。",
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center mb-6">
@@ -116,8 +116,8 @@ const steps = [
   },
   {
     number: "04",
-    title: "Deploy & Go Live",
-    description: "Launch your bot with one click and connect it to your LINE Business account.",
+    title: "部署並上線",
+    description: "一鍵啟動您的機器人並將其連接到您的 LINE 商業帳戶。",
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="h-6 w-32 bg-primary/20 rounded mb-6"></div>
@@ -140,9 +140,9 @@ const HowItWorks = () => {
   return (
     <section id="how-it-works" className="section py-24 bg-[#FFFDFA]">
       <div className="text-center mb-16 fade-in-element">
-        <h2 className="section-title">How It <span className="text-gradient">Works</span></h2>
+        <h2 className="section-title">它如何<span className="text-gradient">工作</span></h2>
         <p className="section-subtitle mx-auto">
-          Creating and deploying your custom LINE Bot is simple with our platform. Follow these easy steps to get started.
+        使用我們的平台可以輕鬆建立和部署您的自訂 LINE Bot。按照這些簡單的步驟即可開始。
         </p>
       </div>
       

@@ -7,13 +7,13 @@ const features = [
   {
     id: "design",
     icon: <Layout className="h-6 w-6" />,
-    title: "Drag-and-Drop Bot Design",
-    description: "Intuitively design your bot's conversation flows with our visual editor. No coding required.",
+    title: "拖拉式機器人設計",
+    description: "使用我們的可視化編輯器直觀地設計機器人的對話流程。無需編碼。",
     details: [
-      "Visual flow builder with drag-and-drop nodes",
-      "Real-time preview of your bot's responses",
-      "Rich media message editor for LINE Flex Messages",
-      "Template library with pre-built conversation flows"
+      "帶有拖拉式節點的可視化流程建構器",
+      "實時預覽你的機器人的回應",
+      "很多LINE Flex Messages的媒體訊息編輯器",
+      "有預先建立對話流程的範本庫"
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -39,13 +39,13 @@ const features = [
   {
     id: "server",
     icon: <Server className="h-6 w-6" />,
-    title: "Simplified Server Management",
-    description: "Deploy and manage your bot's server infrastructure with just a few clicks.",
+    title: "簡單的伺服器管理",
+    description: "只需點擊幾下即可部署和管理機器人的伺服器基礎架構。",
     details: [
-      "One-click deployment with Docker containers",
-      "Automatic scaling based on traffic",
-      "Built-in NGINX configuration for optimal performance",
-      "Server health monitoring and alerts"
+      "使用 Docker 容器進行一鍵部署",
+      "根據流量自動擴展",
+      "內建 NGINX 配置以實現最佳效能",
+      "伺服器健康監控和警報"
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -76,13 +76,13 @@ const features = [
   {
     id: "database",
     icon: <Database className="h-6 w-6" />,
-    title: "Seamless Database Management",
-    description: "Manage your bot's data without SQL knowledge. Store user interactions and preferences easily.",
+    title: "資料庫管理",
+    description: "無需 SQL 知識即可管理您的機器人的資料。輕鬆儲存使用者互動和偏好。",
     details: [
-      "Visual database schema designer",
-      "Automatic data backups and recovery",
-      "Built-in data validation rules",
-      "Export and import data in multiple formats"
+      "可視化資料庫模式設計器",
+      "自動資料備份和還原",
+      "內建資料驗證規則",
+      "以多種格式匯出和匯入資料"
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -126,13 +126,13 @@ const features = [
   {
     id: "analytics",
     icon: <BarChart3 className="h-6 w-6" />,
-    title: "Powerful Analytics",
-    description: "Gain insights from user interactions and measure your bot's performance.",
+    title: "強大的分析功能",
+    description: "從使用者互動中獲得見解並衡量機器人的性能。",
     details: [
-      "Real-time dashboard with key metrics",
-      "User engagement and conversation analytics",
-      "Message response rate monitoring",
-      "Custom reports and data visualization"
+      "包含關鍵指標的即時儀表板",
+      "用戶參與度和對話分析",
+      "訊息回覆率監控",
+      "自訂報告和數據視覺化"
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -164,13 +164,13 @@ const features = [
   {
     id: "security",
     icon: <Shield className="h-6 w-6" />,
-    title: "Enterprise-Grade Security",
-    description: "Keep your bot and customer data secure with our comprehensive security features.",
+    title: "企業級安全性",
+    description: "利用我們全面的安全功能確保您的機器人和客戶資料的安全。",
     details: [
-      "HTTPS encryption for all communications",
-      "JWT authentication for secure API access",
-      "Rate limiting to prevent abuse",
-      "Regular security audits and updates"
+      "所有通訊均採用 HTTPS 加密",
+      "用於安全 API 存取的 JWT 身份驗證",
+      "限制速率以防止濫用",
+      "定期安全審核和更新"
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -192,13 +192,13 @@ const features = [
   {
     id: "messaging",
     icon: <MessageSquare className="h-6 w-6" />,
-    title: "Rich Messaging Capabilities",
-    description: "Create engaging conversations with LINE's rich message formats.",
+    title: "豐富的訊息傳遞功能",
+    description: "利用 LINE 豐富的訊息格式創造引人入勝的對話。",
     details: [
-      "Support for all LINE message types including Flex Messages",
-      "Image, video, and audio message handling",
-      "Interactive buttons and carousels",
-      "Quick reply and persistent menu options"
+      "支援所有 LINE 訊息類型，包括 Flex Messages",
+      "圖像、視訊和音訊資訊處理",
+      "互動式按鈕和選單",
+      "快速回覆和持久選單選項"
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -233,9 +233,9 @@ const Features = () => {
   return (
     <section id="features" className="section py-24">
       <div className="text-center mb-16 fade-in-element">
-        <h2 className="section-title">Powerful Features, <span className="text-gradient">Simple Interface</span></h2>
+        <h2 className="section-title">強大的功能， <span className="text-gradient">簡單的介面</span></h2>
         <p className="section-subtitle mx-auto">
-          Our platform provides everything you need to create, deploy, and manage LINE Bots without writing a single line of code.
+        我們的平台提供創建、部署和管理 LINE 機器人所需的一切，無需編寫任何程式碼。
         </p>
       </div>
 
@@ -278,7 +278,7 @@ const Features = () => {
                   <p className="text-muted-foreground">{feature.description}</p>
                   
                   <div className="pt-4">
-                    <h4 className="font-medium mb-3">Key capabilities:</h4>
+                    <h4 className="font-medium mb-3">主要功能：</h4>
                     <ul className="space-y-2">
                       {feature.details.map((detail, index) => (
                         <li key={index} className="flex items-start">
