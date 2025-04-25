@@ -1,7 +1,7 @@
 const SizeBlock = () => {
   return (
-    <div className="w-[120px] h-[40px] bg-[#E9CD4C] text-white rounded flex items-center justify-center">
-      尺寸積木
+    <div className="w-[120px] h-[40px] bg-[#CDB4DB] text-white rounded flex items-center justify-center">
+      尺寸
     </div>
   );
 };

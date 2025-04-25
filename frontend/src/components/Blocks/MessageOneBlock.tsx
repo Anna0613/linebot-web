@@ -1,7 +1,9 @@
 const MessageOneBlock = () => {
   return (
-    <div className="w-[120px] h-[40px] bg-[#AF3C3C] text-white rounded flex items-center justify-center">
-      單一訊息積木
+    <div className="relative w-[120px] h-[40px] bg-[#F4A261] rounded-[5px] flex items-center justify-center text-sm font-sans">
+      單一訊息
+      <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-[16px] h-[16px] bg-[#F4A261] rounded-full">
+      </div>
     </div>
   );
 };

@@ -1,23 +1,33 @@
 import { useRef } from 'react';
 import { blockList } from '../Blocks/blockList';
+import MessageOneBlock from '../Blocks/MessageOneBlock';
+import MessageManyBlock from '../Blocks/MessageManyBlock';
+import HorizontalBlock from '../Blocks/HorizontalBlock';
+import VerticalBlock from '../Blocks/VerticalBlock';
 
 const LeftPanel = () => {
   const sortedBlockList = [
     {
-      label: '訊息',
-      color: '#AF3C3C',
-      types: ['message', 'messagess'],
+      label: '容器',
+      color: '#F4A261',
+      types: ['bubble', 'carousel'],
+      ref: useRef<HTMLDivElement>(null),
+    },
+    {
+      label: '區塊',
+      color: '#2A9D8F',
+      types: ['horizontal', 'vertical'],
       ref: useRef<HTMLDivElement>(null),
     },
     {
       label: '元件',
-      color: '#153F7A',
-      types: ['text', 'image', 'button', 'icon', 'video'],
+      color: '#8ECAE6',
+      types: ['text', 'image', 'button', 'icon', 'video', 'spacer', 'separator'],
       ref: useRef<HTMLDivElement>(null),
     },
     {
       label: '樣式',
-      color: '#E9CD4C',
+      color: '#CDB4DB',
       types: ['color', 'size', 'width', 'height'],
       ref: useRef<HTMLDivElement>(null),
     },
@@ -43,12 +53,12 @@ const LeftPanel = () => {
 
       <div className="flex flex-col relative mt-5 ml-[2px] items-center">
         {sortedBlockList.map((group) => (
-          <div key={group.label} className="flex flex-col items-center mb-[30px] cursor-pointer" onClick={() => handleScrollTo(group.ref)}>
+          <div key={group.label} className="flex flex-col items-center mb-[30px] cursor-pointer" onClick={() => handleScrollTo(group.ref)}>       
             <div
               className="w-[30px] h-[30px] rounded-full mb-1"
               style={{ backgroundColor: group.color }}
             ></div>
-            <span className="text-[12px]" style={{ color: group.color }}>
+            <span className="text-[12px] text-black">
               {group.label}
             </span>
           </div>
@@ -69,20 +79,52 @@ const LeftPanel = () => {
               <h3 className="text-[14px] font-medium mb-2 text-[#383A45]">{group.label}</h3>
 
               <div className="flex flex-col gap-2">
-                {blocksInGroup.map((block) => (
-                  <div
-                    key={block.type}
-                    className="w-[120px] h-[40px] rounded-[5px] text-white text-center leading-[40px] cursor-move"
-                    style={{ backgroundColor: group.color }}
-                    draggable="true"
-                    onDragStart={(event) => {
-                      event.dataTransfer.effectAllowed = "move";
-                      event.dataTransfer.setData('blockType', block.type);
-                    }}
-                  >
-                    {block.label}
+
+              {blocksInGroup.map((block) => {
+                const commonProps = {
+                  key: block.type,
+                  draggable: true,
+                  onDragStart: (event: React.DragEvent<HTMLDivElement>) => {
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData('blockType', block.type);
+                  }
+                };
+
+                let blockElement = null;
+
+                switch (block.type) {
+                  case 'bubble':
+                    blockElement = <MessageOneBlock />;
+                    break;
+                  case 'carousel':
+                    blockElement = <MessageManyBlock />;
+                    break;
+                  case 'horizontal':
+                    blockElement = <HorizontalBlock />;
+                    break;
+                  case 'vertical':
+                    blockElement = <VerticalBlock />;
+                    break;
+                  default:
+                    blockElement = (
+                      <div
+                        className="w-[50px] h-[25px] rounded-[50px] flex items-center justify-center leading-[40px]"
+                        style={{ backgroundColor: group.color }}
+                      >
+                        {block.label}
+                      </div>
+                    );
+                }
+
+                return (
+                  <div {...commonProps} className="cursor-move mb-4">
+                    <div className="pointer-events-none">
+                      {blockElement}
+                    </div>
                   </div>
-                ))}
+                );
+              })}
+
               </div>
             </div>
           );
