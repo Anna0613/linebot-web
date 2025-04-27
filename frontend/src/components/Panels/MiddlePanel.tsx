@@ -4,18 +4,24 @@ import { blockList } from '../Blocks/blockList';
 interface BlockInstance {
   id: string;
   type: string;
+  parentType?: string;
+  children?: BlockInstance[];  // 新增！每個積木可以有自己的 children
 }
+
+const parentType = 'container';
 
 const MiddlePanel = () => {
   const [zoom, setZoom] = useState(1);
-  const [blocks, setBlocks] = useState<BlockInstance[]>([]);
+  const [blocks, setBlocks] = useState<BlockInstance[]>([
+    { id: 'placeholder-0', type: 'placeholder' }
+  ]);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [draggingGroupStart, setDraggingGroupStart] = useState<number | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; blockId: string } | null>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const draggingGroupRef = useRef<BlockInstance[]>([]);
+  const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
 
-  // 點空白處自動關閉右鍵選單
   useEffect(() => {
     const handleClickOutside = () => setContextMenu(null);
     window.addEventListener('click', handleClickOutside);
@@ -23,49 +29,89 @@ const MiddlePanel = () => {
   }, []);
 
   const handleSave = () => alert('已儲存目前設計！');
-  const handleDeleteAll = () => setBlocks([]);
+  const handleDeleteAll = () => setBlocks([{ id: 'placeholder-0', type: 'placeholder' }]);
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.1, 2));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.1, 0.5));
 
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
-    const blockType = event.dataTransfer.getData('blockType');
     const isInternal = event.dataTransfer.getData('internalDrag') === 'true';
-
-    setBlocks((prev) => {
-      const newBlocks = [...prev];
-      if (isInternal && draggingGroupRef.current.length > 0 && draggingGroupStart !== null) {
-        const group = draggingGroupRef.current;
-        newBlocks.splice(draggingGroupStart, group.length);
-        const insertIndex = dragOverIndex !== null ? dragOverIndex : newBlocks.length;
-        newBlocks.splice(insertIndex, 0, ...group);
-      } else if (blockType) {
-        const newBlock: BlockInstance = {
-          id: `${blockType}-${Date.now()}`,
-          type: blockType,
-        };
-        const insertIndex = dragOverIndex !== null ? dragOverIndex : newBlocks.length;
-        newBlocks.splice(insertIndex, 0, newBlock);
+    const blockType = event.dataTransfer.getData('blockType');
+    const blockId = event.dataTransfer.getData('blockId');
+  
+    setBlocks((prevBlocks) => {
+      const newBlocks = [...prevBlocks];
+  
+      // 看看滑到的這個 block 是不是容器型
+      const targetBlock = newBlocks.find(block => block.id === dragOverBlockId);
+  
+      const isContainer = targetBlock && ['horizontal', 'vertical', 'baseline'].includes(targetBlock.type);
+  
+      const newBlock: BlockInstance = {
+        id: `${blockType}-${Date.now()}`,
+        type: blockType,
+        parentType: parentType,
+        children: [], // 預設新的積木也可以有 children
+      };
+  
+      if (isContainer && targetBlock) {
+        // 如果有找到容器，就把新積木丟到它 children 裡
+        targetBlock.children = targetBlock.children || [];
+        targetBlock.children.push(newBlock);
+      } else {
+        // 沒有對到容器，就直接放外層
+        newBlocks.push(newBlock);
       }
+  
       return newBlocks;
     });
-
+  
     setDragOverIndex(null);
+    setDragOverBlockId(null);
     setDraggingGroupStart(null);
+    setDraggingBlockId(null);
     draggingGroupRef.current = [];
   };
-
+  
+  const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
   const handleDragOver = (event: React.DragEvent, index: number) => {
     event.preventDefault();
-    setDragOverIndex(index);
-  };
+    setDragOverIndex(index); // 每次拖曳到不同積木，就設定新的目標位置
+    if (!dropZoneRef.current) return;
+  
+    const dropZoneRect = dropZoneRef.current.getBoundingClientRect();
+    const targetElements = dropZoneRef.current.querySelectorAll('.block-wrapper'); // 👈等等積木要加這個 class
+  
+    const currentMouseX = event.clientX - dropZoneRect.left;
+    const currentMouseY = event.clientY - dropZoneRect.top;
+  
+    const targetElement = targetElements[index] as HTMLElement;
+    if (!targetElement) return;
+  
+    const targetRect = targetElement.getBoundingClientRect();
+    const targetLeft = targetRect.left - dropZoneRect.left;
+    const targetTop = targetRect.top - dropZoneRect.top;
+    const targetHeight = targetRect.height;
 
+    const blockId = blocks[index].id;
+    setDragOverBlockId(blockId); // 👈 記住目前滑過的是哪一個 block
+
+    const isConnected =
+      Math.abs(currentMouseX - targetLeft) < 10 &&
+      Math.abs(currentMouseY - (targetTop + targetHeight)) < 10;
+  
+    if (isConnected) {
+      setDragOverIndex(index);
+    } else {
+      setDragOverIndex(null);
+    }
+  };
+  
   const handleContextMenu = (event: React.MouseEvent, blockId: string) => {
     event.preventDefault();
     if (!dropZoneRef.current) return;
     const dropZoneRect = dropZoneRef.current.getBoundingClientRect();
-    const target = event.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     setContextMenu({
       x: rect.right - dropZoneRect.left + 5,
       y: rect.top - dropZoneRect.top + 5,
@@ -79,7 +125,10 @@ const MiddlePanel = () => {
     if (!block) return;
 
     if (action === 'delete') {
-      setBlocks((prev) => prev.filter((b) => b.id !== contextMenu.blockId));
+      setBlocks((prev) => {
+        const filtered = prev.filter((b) => b.id !== block.id);
+        return filtered.length > 0 ? filtered : [{ id: 'placeholder-0', type: 'placeholder' }];
+      });
     } else if (action === 'copy') {
       const newBlock: BlockInstance = {
         id: `${block.type}-${Date.now()}`,
@@ -98,11 +147,39 @@ const MiddlePanel = () => {
 
   const handleGroupDragStart = (event: React.DragEvent, index: number, blockId: string, blockType: string) => {
     setDraggingGroupStart(index);
+    setDraggingBlockId(blockId);
     draggingGroupRef.current = blocks.slice(index);
     event.dataTransfer.setData('internalDrag', 'true');
     event.dataTransfer.setData('blockId', blockId);
     event.dataTransfer.setData('blockType', blockType);
     event.dataTransfer.effectAllowed = 'move';
+
+    const ghost = event.currentTarget.cloneNode(true) as HTMLElement;
+    ghost.style.position = 'absolute';
+    ghost.style.top = '-1000px';
+    ghost.style.left = '-1000px';
+    document.body.appendChild(ghost);
+    event.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, ghost.offsetHeight / 2);
+    setTimeout(() => document.body.removeChild(ghost), 0);
+  };
+
+  const renderBlock = (block: BlockInstance) => {
+    const blockItem = blockList.find(b => b.type === block.type);
+    if (!blockItem) return null;
+    const BlockComponent = blockItem.component;
+
+    return (
+      <div key={block.id} className="block-wrapper">
+        <BlockComponent />
+
+        {/* 如果有 children，遞迴畫 */}
+        {block.children && block.children.length > 0 && (
+          <div className="pl-4">
+            {block.children.map(child => renderBlock(child))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -143,33 +220,33 @@ const MiddlePanel = () => {
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
       >
-        {blocks.length === 0 && (
-          <p className="text-gray-400 absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            拖曳積木到這裡！
-          </p>
-        )}
-
         {blocks.map((block, index) => {
-          const blockItem = blockList.find((b) => b.type === block.type);
-          if (!blockItem) return null;
-          const BlockComponent = blockItem.component;
-          const isDraggingGroup = draggingGroupStart !== null && index >= draggingGroupStart;
+        const blockItem = blockList.find((b) => b.type === block.type);
+        if (!blockItem) return null;
+        const BlockComponent = blockItem.component;
 
-          return (
+        return (
+          <div key={block.id} className="flex flex-col items-start">
+            {/* 當拖曳到這個位置時，插一個吸附提示 */}
+            {dragOverIndex === index && (
+              <div className="w-[200px] h-[20px] bg-gray-300 rounded mb-2"></div> // 👈 灰色小格，代表可以插進來
+            )}
             <div
               key={block.id}
-              className={`relative w-[100px] h-[40px] flex justify-center transition-all duration-200 ${
-                dragOverIndex === index ? 'mb-4' : ''
-              } ${isDraggingGroup ? 'opacity-50' : 'opacity-100'}`}
+              className="block-wrapper relative flex justify-center transition-all duration-200"
               onDragOver={(e) => handleDragOver(e, index)}
               onContextMenu={(e) => handleContextMenu(e, block.id)}
               draggable
               onDragStart={(e) => handleGroupDragStart(e, index, block.id, block.type)}
             >
-              <BlockComponent />
+              <div className="relative">
+                <BlockComponent topCircleVisible={true} topCircleColor="green" />
+              </div>
             </div>
-          );
-        })}
+          </div>
+        );
+      })}
+
       </div>
 
       {/* 右鍵選單 */}
@@ -178,12 +255,8 @@ const MiddlePanel = () => {
           className="absolute bg-white border border-gray-300 rounded shadow-md z-50 w-[150px]"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
-          <button className="block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left" onClick={() => handleMenuAction('copy')}>
-            複製
-          </button>
-          <button className="block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left" onClick={() => handleMenuAction('delete')}>
-            刪除
-          </button>
+          <button className="block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left" onClick={() => handleMenuAction('copy')}>複製</button>
+          <button className="block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left" onClick={() => handleMenuAction('delete')}>刪除</button>
         </div>
       )}
     </div>

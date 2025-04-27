@@ -4,34 +4,43 @@ import MessageOneBlock from '../Blocks/MessageOneBlock';
 import MessageManyBlock from '../Blocks/MessageManyBlock';
 import HorizontalBlock from '../Blocks/HorizontalBlock';
 import VerticalBlock from '../Blocks/VerticalBlock';
+import BaselineBlock from '../Blocks/BaselineBlock';
+import EndBlock from '../Blocks/EndBlock';
+import ColorBlock from '../Blocks/ColorBlock';
+import ImageBlock from '../Blocks/ImageBlock';
+import SizeBlock from '../Blocks/SizeBlock';
+import TextBlock from '../Blocks/TextBlock';
 
 const LeftPanel = () => {
-  const sortedBlockList = [
-    {
-      label: '容器',
-      color: '#F4A261',
-      types: ['bubble', 'carousel'],
-      ref: useRef<HTMLDivElement>(null),
-    },
-    {
-      label: '區塊',
-      color: '#2A9D8F',
-      types: ['horizontal', 'vertical'],
-      ref: useRef<HTMLDivElement>(null),
-    },
-    {
-      label: '元件',
-      color: '#8ECAE6',
-      types: ['text', 'image', 'button', 'icon', 'video', 'spacer', 'separator'],
-      ref: useRef<HTMLDivElement>(null),
-    },
-    {
-      label: '樣式',
-      color: '#CDB4DB',
-      types: ['color', 'size', 'width', 'height'],
-      ref: useRef<HTMLDivElement>(null),
-    },
-  ];
+  const categoryMap = {
+      container: {
+        label: '容器',
+        color: '#F4A261',
+        ref: useRef<HTMLDivElement>(null),
+      },
+      box: {
+        label: '區塊',
+        color: '#2A9D8F',
+        ref: useRef<HTMLDivElement>(null),
+      },
+      component: {
+        label: '元件',
+        color: '#8ECAE6',
+        ref: useRef<HTMLDivElement>(null),
+      },
+      style: {
+        label: '樣式',
+        color: '#CDB4DB',
+        ref: useRef<HTMLDivElement>(null),
+      },
+    };
+    
+    // 自動分類
+    const sortedBlockList = Object.keys(categoryMap).map((category) => ({
+      ...categoryMap[category],
+      types: blockList.filter(block => block.category === category).map(block => block.type)
+    }));
+    
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -105,10 +114,28 @@ const LeftPanel = () => {
                   case 'vertical':
                     blockElement = <VerticalBlock />;
                     break;
+                  case 'baseline':
+                    blockElement = <BaselineBlock />;
+                    break;
+                  case 'end':
+                      blockElement = <EndBlock />;
+                      break;  
+                  case 'color':
+                      blockElement = <ColorBlock />;
+                      break;    
+                  case 'image':
+                      blockElement = <ImageBlock />;
+                      break;     
+                  case 'size':
+                      blockElement = <SizeBlock />;
+                      break;  
+                  case 'text':
+                      blockElement = <TextBlock />;
+                      break;         
                   default:
                     blockElement = (
                       <div
-                        className="w-[50px] h-[25px] rounded-[50px] flex items-center justify-center leading-[40px]"
+                        className="w-[100px] h-[40px] rounded-[50px] flex items-center justify-center leading-[40px]"
                         style={{ backgroundColor: group.color }}
                       >
                         {block.label}
@@ -118,9 +145,9 @@ const LeftPanel = () => {
 
                 return (
                   <div {...commonProps} className="cursor-move mb-4">
-                    <div className="pointer-events-none">
+                    
                       {blockElement}
-                    </div>
+                    
                   </div>
                 );
               })}

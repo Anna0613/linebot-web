@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 const AddServerPage = () => {
   return (
     <div className="bg-[#DFECF4] mt-[105px] mb-[60px] mx-auto py-10 px-8 rounded-[10px] shadow-[0_0_10px_rgba(0,0,0,0.1)] w-[60%] text-center">
-      <h2 className="text-[#32376F] text-[28px] font-bold mb-8">建立機器人</h2>
+      <h2 className="text-[#32376F] text-[28px] font-bold mb-8">建立LINE Bot</h2>
       <form className="w-full">
         <div className="mb-6 text-left">
           <label htmlFor="server-name" className="block mb-3 text-[18px] font-bold pl-2">
-            機器人名稱：
+          LINE Bot名稱：
           </label>
           <input
             type="text"
@@ -19,7 +19,7 @@ const AddServerPage = () => {
 
         <div className="mb-6 text-left">
           <label htmlFor="api-key" className="block mb-3 text-[18px] font-bold pl-2">
-            輸入 Channel ID：
+            輸入 Channel access token：
           </label>
           <input
             type="text"

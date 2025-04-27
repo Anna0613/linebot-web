@@ -1,4 +1,4 @@
-const VerticalBlock = ({
+const BaselineBlock = ({
   topCircleVisible = true,
   topCircleColor = 'white', // 這裡新增 topCircleColor
 }: { topCircleVisible?: boolean; topCircleColor?: 'white' | 'green' }) => {
@@ -10,7 +10,7 @@ const VerticalBlock = ({
       <div className="flex flex-col z-10">
         {/* 上段 */}
         <div className="relative w-[160px] h-[40px] bg-[#2A9D8F] rounded-[8px] flex items-center justify-start pl-3">
-          <p className="text-sm font-sans">垂直排列</p>
+          <p className="text-sm font-sans">基準線</p>
           <div className="w-[70px] h-[28px] bg-white rounded-full ml-3" />
 
           {/* 頂部圈圈，根據 topCircleColor 決定白色或綠色 */}
@@ -36,4 +36,4 @@ const VerticalBlock = ({
   );
 };
 
-export default VerticalBlock;
+export default BaselineBlock;
