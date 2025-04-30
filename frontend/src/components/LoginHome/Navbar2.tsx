@@ -213,7 +213,7 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
             <li><Link to="/index2" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">首頁</Link></li>
             <li><Link to="/how to establish" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">如何建立LINE Bot</Link></li>
             <li><Link to="/add server" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">建立LINE Bot</Link></li>
-            <li><Link to="/block" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">開始建立LINE Bot</Link></li>
+            <li><Link to="/block" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">開始設計LINE Bot</Link></li>
             <li><Link to="/editbot" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">修改LINE Bot</Link></li>
             <li><Link to="/about" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">關於</Link></li>
             <li><Link to="/describe" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">介紹</Link></li>
