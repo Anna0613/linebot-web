@@ -41,7 +41,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link to="/block" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                開始建立LINE Bot
+                開始設計LINE Bot
                 </Link>
               </li>
               <li>
