@@ -22,9 +22,22 @@ app = Flask(__name__)
 allowed_origins = [
     "http://localhost:8080",
     "http://localhost:3000",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "https://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://127.0.0.1:5173"
 ]
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": allowed_origins}})
+CORS(app, 
+     supports_credentials=True, 
+     resources={r"/*": {"origins": allowed_origins}},
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+)
+
+# SSL context
+ssl_context = None
+if os.getenv('FLASK_ENV') == 'production':
+    ssl_context = ('cert.pem', 'key.pem')
 
 
 # 配置安全性設置
@@ -421,4 +434,9 @@ def logout():
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT_LOGIN', 5501))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(
+        host='0.0.0.0',
+        port=port,
+        debug=True,
+        ssl_context=ssl_context
+    )

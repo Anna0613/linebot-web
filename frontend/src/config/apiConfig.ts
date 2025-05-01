@@ -7,7 +7,8 @@ export const API_CONFIG = {
     }
   },
   AUTH: {
-    BASE_URL: 'https://login-api.jkl921102.org',
+    //login-api.jkl921102.org
+    BASE_URL: 'http://127.0.0.1:5501',
     ENDPOINTS: {
       LOGIN: '/login',
       REGISTER: '/register',
@@ -16,6 +17,19 @@ export const API_CONFIG = {
       VERIFY_EMAIL: '/verify-email',
       FORGOT_PASSWORD: '/forgot_password',
       RESET_PASSWORD: (token: string) => `/reset_password/${token}`
+    }
+  },
+  PUZZLE: {
+    BASE_URL: 'https://puzzle-api.jkl921102.org/api',
+    ENDPOINTS: {
+      GET_BOTS: (userId: number) => `/bots/${userId}`,
+      CREATE_BOT: '/bots',
+      UPDATE_BOT: (botId: string) => `/bots/${botId}`,
+      DELETE_BOT: (botId: string) => `/bots/${botId}`,
+      CREATE_FLEX_MESSAGE: '/flex-messages',
+      UPDATE_FLEX_MESSAGE: (flexMessageId: string) => `/flex-messages/${flexMessageId}`,
+      DELETE_FLEX_MESSAGE: (flexMessageId: string) => `/flex-messages/${flexMessageId}`,
+      SEND_MESSAGE: '/send-message'
     }
   }
 } as const;
