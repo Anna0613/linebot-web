@@ -80,7 +80,7 @@ const MiddlePanel = () => {
     if (!dropZoneRef.current) return;
   
     const dropZoneRect = dropZoneRef.current.getBoundingClientRect();
-    const targetElements = dropZoneRef.current.querySelectorAll('.block-wrapper'); // 👈等等積木要加這個 class
+    const targetElements = dropZoneRef.current.querySelectorAll('.relative.flex'); // 使用新的類選擇器
   
     const currentMouseX = event.clientX - dropZoneRect.left;
     const currentMouseY = event.clientY - dropZoneRect.top;
@@ -169,7 +169,7 @@ const MiddlePanel = () => {
     const BlockComponent = blockItem.component;
 
     return (
-      <div key={block.id} className="block-wrapper">
+      <div key={block.id}>
         <BlockComponent />
 
         {/* 如果有 children，遞迴畫 */}
@@ -249,7 +249,7 @@ const MiddlePanel = () => {
             )}
             <div
               key={block.id}
-              className="block-wrapper relative flex justify-center transition-all duration-200 hover:scale-105 cursor-grab active:cursor-grabbing active:scale-95"
+              className="relative flex justify-center transition-all duration-200 hover:scale-105 cursor-grab active:cursor-grabbing active:scale-95"
               onDragOver={(e) => handleDragOver(e, index)}
               onContextMenu={(e) => handleContextMenu(e, block.id)}
               draggable
