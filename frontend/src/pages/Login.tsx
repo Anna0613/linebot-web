@@ -163,9 +163,17 @@ const Login = () => {
               <Button
                 onClick={handleLINELogin}
                 disabled={loading}
-                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-xs xs:text-sm sm:text-base font-semibold h-10 xs:h-11 sm:h-12 relative transition-all duration-200"
+                className="w-full rounded-full bg-[#06C755] hover:bg-[#06C755]/90 text-white text-xs xs:text-sm sm:text-base font-semibold h-10 xs:h-11 sm:h-12 relative transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center gap-2"
               >
-                {loading ? '載入中...' : 'LINE 登入'}
+                <img src="/專題圖片/line-logo.svg" alt="LINE" className="w-5 h-5" />
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    載入中
+                    <span className="loading loading-dots loading-sm"></span>
+                  </span>
+                ) : (
+                  'LINE 登入'
+                )}
               </Button>
               <div className="flex items-center w-full max-w-[280px] sm:max-w-full mx-auto">
                 <hr className="flex-grow border-gray-300" />
@@ -177,12 +185,13 @@ const Login = () => {
             <form className="space-y-4 xs:space-y-5 sm:space-y-6 max-w-[280px] sm:max-w-full mx-auto" onSubmit={handleLogin}>
               <div className="space-y-1.5">
                 <Label htmlFor="username" className="text-sm sm:text-base">使用者名稱：</Label>
-                <Input
+              <Input
                   id="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  className="rounded-lg h-11 text-base"
+                  className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
+                  placeholder="請輸入使用者名稱"
                 />
               </div>
 
@@ -199,11 +208,11 @@ const Login = () => {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="請輸入密碼"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="rounded-lg h-11 text-base"
+                  className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
                 />
               </div>
 
@@ -225,9 +234,16 @@ const Login = () => {
               <Button 
                 type="submit" 
                 disabled={loading}
-                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11 relative transition-all duration-200"
+                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11 relative transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
               >
-                {loading ? '載入中...' : '登入'}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    載入中
+                    <span className="loading loading-dots loading-sm"></span>
+                  </span>
+                ) : (
+                  '登入'
+                )}
               </Button>
             </form>
 

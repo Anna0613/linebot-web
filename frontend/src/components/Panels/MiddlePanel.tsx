@@ -185,14 +185,22 @@ const MiddlePanel = () => {
   return (
     <div className="relative w-full xs:w-[520px] sm:w-[580px] md:w-[624px] h-[360px] xs:h-[400px] sm:h-[460px] md:h-[520px] rounded-[12px] xs:rounded-[15px] sm:rounded-[20px] md:rounded-[25px] bg-white border border-black shadow-[-6px_6px_0_#819780] xs:shadow-[-8px_8px_0_#819780] sm:shadow-[-12px_12px_0_#819780] md:shadow-[-15px_15px_0_#819780] p-2 xs:p-3 sm:p-4 md:p-5 flex-shrink-0 flex flex-col transition-all duration-300">
       {/* 儲存按鈕 */}
-      <button onClick={handleSave} className="absolute top-2 xs:top-3 sm:top-4 left-2 xs:left-3 sm:left-4 p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-transform duration-200">
+      <button 
+        onClick={handleSave} 
+        className="absolute top-2 xs:top-3 sm:top-4 left-2 xs:left-3 sm:left-4 p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:bg-gray-50 group"
+        title="儲存設計"
+      >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6">
           <path fill="#454658" d="M64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-242.7c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32L64 32zm0 96c0-17.7 14.3-32 32-32l192 0c17.7 0 32 14.3 32 32l0 64c0 17.7-14.3 32-32 32L96 224c-17.7 0-32-14.3-32-32l0-64zM224 288a64 64 0 1 1 0 128 64 64 0 1 1 0-128z" />
         </svg>
       </button>
 
       {/* 清空按鈕 */}
-      <button onClick={handleDeleteAll} className="absolute top-2 xs:top-3 sm:top-4 right-2 xs:right-3 sm:right-4 p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-transform duration-200">
+      <button 
+        onClick={handleDeleteAll} 
+        className="absolute top-2 xs:top-3 sm:top-4 right-2 xs:right-3 sm:right-4 p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:bg-red-50 group"
+        title="清空設計"
+      >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6">
           <path fill="#454658" d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z" />
         </svg>
@@ -200,12 +208,20 @@ const MiddlePanel = () => {
 
       {/* 放大縮小 */}
       <div className="absolute bottom-2 xs:bottom-3 sm:bottom-4 right-2 xs:right-3 sm:right-4 flex flex-col space-y-2 xs:space-y-3">
-        <button onClick={handleZoomIn} className="p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-transform duration-200">
+        <button 
+          onClick={handleZoomIn} 
+          className="p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:bg-gray-50 group"
+          title="放大"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6">
             <path fill="#454658" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM184 296c0 13.3 10.7 24 24 24s24-10.7 24-24l0-64 64 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-64 0 0-64c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 64-64 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l64 0 0 64z" />
           </svg>
         </button>
-        <button onClick={handleZoomOut} className="p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-transform duration-200">
+        <button 
+          onClick={handleZoomOut} 
+          className="p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:bg-gray-50 group"
+          title="縮小"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6">
             <path fill="#454658" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM136 184c-13.3 0-24 10.7-24 24s10.7 24 24 24l144 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-144 0z" />
           </svg>
@@ -229,17 +245,17 @@ const MiddlePanel = () => {
           <div key={block.id} className="flex flex-col items-start">
             {/* 當拖曳到這個位置時，插一個吸附提示 */}
             {dragOverIndex === index && (
-              <div className="w-[140px] xs:w-[160px] sm:w-[180px] md:w-[200px] h-[14px] xs:h-[16px] sm:h-[18px] md:h-[20px] bg-gray-300 rounded mb-1.5 xs:mb-2"></div>
+              <div className="w-[140px] xs:w-[160px] sm:w-[180px] md:w-[200px] h-[14px] xs:h-[16px] sm:h-[18px] md:h-[20px] bg-[#F4CD41] rounded-lg mb-1.5 xs:mb-2 animate-pulse shadow-lg"></div>
             )}
             <div
               key={block.id}
-              className="block-wrapper relative flex justify-center transition-all duration-200"
+              className="block-wrapper relative flex justify-center transition-all duration-200 hover:scale-105 cursor-grab active:cursor-grabbing active:scale-95"
               onDragOver={(e) => handleDragOver(e, index)}
               onContextMenu={(e) => handleContextMenu(e, block.id)}
               draggable
               onDragStart={(e) => handleGroupDragStart(e, index, block.id, block.type)}
             >
-              <div className="relative">
+              <div className="relative hover:shadow-lg transition-shadow duration-200">
                 <BlockComponent topCircleVisible={true} topCircleColor="green" />
               </div>
             </div>
@@ -252,19 +268,25 @@ const MiddlePanel = () => {
       {/* 右鍵選單 */}
       {contextMenu && (
         <div
-          className="absolute bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-[120px] xs:w-[130px] sm:w-[140px] md:w-[150px] overflow-hidden"
+          className="absolute bg-white/95 border border-gray-200 rounded-lg shadow-xl z-50 w-[120px] xs:w-[130px] sm:w-[140px] md:w-[150px] overflow-hidden backdrop-blur-sm"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           <button 
-            className="block w-full px-3 xs:px-4 py-2.5 xs:py-3 sm:py-2.5 text-xs xs:text-sm hover:bg-gray-100 text-left touch-manipulation transition-colors duration-200" 
+            className="block w-full px-3 xs:px-4 py-2.5 xs:py-3 sm:py-2.5 text-xs xs:text-sm hover:bg-blue-50 text-left touch-manipulation transition-colors duration-200 flex items-center gap-2" 
             onClick={() => handleMenuAction('copy')}
           >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-4 h-4">
+              <path fill="currentColor" d="M272 0H396.1c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9V336c0 26.5-21.5 48-48 48H272c-26.5 0-48-21.5-48-48V48c0-26.5 21.5-48 48-48zM48 128H192v64H64V448H256V416h64v48c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48z"/>
+            </svg>
             複製
           </button>
           <button 
-            className="block w-full px-3 xs:px-4 py-2.5 xs:py-3 sm:py-2.5 text-xs xs:text-sm hover:bg-gray-100 text-left touch-manipulation transition-colors duration-200" 
+            className="block w-full px-3 xs:px-4 py-2.5 xs:py-3 sm:py-2.5 text-xs xs:text-sm hover:bg-red-50 text-left touch-manipulation transition-colors duration-200 flex items-center gap-2 text-red-600" 
             onClick={() => handleMenuAction('delete')}
           >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" className="w-4 h-4">
+              <path fill="currentColor" d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"/>
+            </svg>
             刪除
           </button>
         </div>

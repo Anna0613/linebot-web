@@ -215,9 +215,17 @@ const Register = () => {
               <Button
                 onClick={handleLINELogin}
                 disabled={loading}
-                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-xs xs:text-sm sm:text-base font-semibold h-10 xs:h-11 sm:h-12 relative transition-all duration-200"
+                className="w-full rounded-full bg-[#06C755] hover:bg-[#06C755]/90 text-white text-xs xs:text-sm sm:text-base font-semibold h-10 xs:h-11 sm:h-12 relative transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center gap-2"
               >
-                {loading ? '載入中...' : 'LINE 登入'}
+                <img src="/專題圖片/line-logo.svg" alt="LINE" className="w-5 h-5" />
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    載入中
+                    <span className="loading loading-dots loading-sm"></span>
+                  </span>
+                ) : (
+                  'LINE 註冊'
+                )}
               </Button>
               <div className="flex items-center w-full max-w-[280px] sm:max-w-full mx-auto">
                 <hr className="flex-grow border-gray-300" />
@@ -237,7 +245,7 @@ const Register = () => {
                   value={formData.fullName}
                   onChange={handleChange}
                   required
-                  className="rounded-lg h-11 text-base"
+                  className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
                 />
               </div>
 
@@ -251,7 +259,7 @@ const Register = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="rounded-lg h-11 text-base"
+                  className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
                 />
               </div>
 
@@ -265,7 +273,7 @@ const Register = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="rounded-lg h-11 text-base"
+                  className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
                 />
               </div>
 
@@ -279,7 +287,7 @@ const Register = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  className="rounded-lg h-11 text-base"
+                  className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
                 />
               </div>
 
@@ -300,9 +308,16 @@ const Register = () => {
               <Button 
                 type="submit" 
                 disabled={loading}
-                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11 relative transition-all duration-200"
+                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11 relative transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
               >
-                {loading ? '載入中...' : '註冊'}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    載入中
+                    <span className="loading loading-dots loading-sm"></span>
+                  </span>
+                ) : (
+                  '註冊'
+                )}
               </Button>
             </form>
 
