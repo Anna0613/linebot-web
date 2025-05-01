@@ -3,16 +3,20 @@ module.exports = (sequelize, DataTypes) => {
     const FlexMessage = sequelize.define('FlexMessage', {
       id: {
         type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4, // 改用 DataTypes.UUIDV4
+        defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
-      botId: {
-        type: DataTypes.UUID,
+      userId: {
+        type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: 'bots',
+          model: 'users',
           key: 'id',
         },
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
       },
       flexMessage: {
         type: DataTypes.JSON,
@@ -24,7 +28,15 @@ module.exports = (sequelize, DataTypes) => {
       },
     }, {
       tableName: 'flex_messages',
+      timestamps: true
     });
+
+    FlexMessage.associate = (models) => {
+      FlexMessage.belongsTo(models.User, {
+        foreignKey: 'userId',
+        as: 'user'
+      });
+    };
   
     return FlexMessage;
   };

@@ -18,10 +18,31 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      botLimit: {
+        type: DataTypes.INTEGER,
+        defaultValue: 3,
+        allowNull: false
+      },
+      flexMessageLimit: {
+        type: DataTypes.INTEGER,
+        defaultValue: 10,
+        allowNull: false
+      }
     }, {
       tableName: 'users',
-      timestamps: false, // 假設現有表沒有 createdAt/updatedAt
+      timestamps: false
     });
+  
+    User.associate = (models) => {
+      User.hasMany(models.Bot, {
+        foreignKey: 'userId',
+        as: 'bots'
+      });
+      User.hasMany(models.FlexMessage, {
+        foreignKey: 'userId',
+        as: 'flexMessages'
+      });
+    };
   
     return User;
   };

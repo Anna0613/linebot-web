@@ -23,7 +23,16 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true
       }
     }, {
-      tableName: 'bots'
+      tableName: 'bots',
+      timestamps: true
     });
+
+    Bot.associate = (models) => {
+      Bot.belongsTo(models.User, {
+        foreignKey: 'userId',
+        as: 'user'
+      });
+    };
+
     return Bot;
   };
