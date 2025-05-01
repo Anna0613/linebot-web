@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
+    <section className="relative min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-4.5rem)] lg:min-h-[calc(100vh-5rem)] flex items-center pt-14 sm:pt-16 md:pt-18 lg:pt-20 overflow-hidden px-3 sm:px-4 md:px-6 lg:px-8">
 
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-[#fffdfa]  from-blue-50 to-transparent opacity-60"></div>
@@ -13,32 +13,32 @@ const Hero = () => {
         <div className="absolute inset-0 dot-pattern opacity-10"></div>
       </div>
       
-      <div className="section grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-6 items-center">
+      <div className="container-custom mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 items-center text-center lg:text-left" style={{ maxWidth: 'min(94%, 1200px)' }}>
        
-        <div className="space-y-6 fade-in-element" style={{ animationDelay: '0.1s' }}>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-tight">
+        <div className="space-y-3 xs:space-y-4 sm:space-y-5 md:space-y-6 fade-in-element" style={{ animationDelay: '0.1s' }}>
+          <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.2]">
           無需編碼即可建造 <span className="text-gradient">LINE Bot</span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-xl">
+          <p className="text-base xs:text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0">
           使用我們的拖拉介面創建強大的LINE Bot。與您的客戶建立聯繫、自動回應並發展您的業務。
           </p>
           
-          <div className="flex flex-wrap gap-4 pt-4">
+          <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 sm:gap-4 pt-3 xs:pt-4 sm:pt-5 md:pt-6 justify-center lg:justify-start">
             <Link to="/register">
-              <Button size="lg" className="rounded-full bg-[#F4CD41] text-[16px] font-bold hover:bg-[#e6bc00] shadow-lg hover:shadow-xl transition-all">
+              <Button size="lg" className="w-full xs:w-auto rounded-full bg-[#F4CD41] text-sm xs:text-base font-bold hover:bg-[#e6bc00] h-10 xs:h-11 shadow-lg hover:shadow-xl transition-all">
                 開始設計
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link to="#demo">
-              <Button variant="outline" size="lg" className="rounded-full text-[16px] hover:bg-[#A0A0A0]">
+              <Button variant="outline" size="lg" className="w-full xs:w-auto rounded-full text-sm xs:text-base hover:bg-[#A0A0A0] h-10 xs:h-11">
                 了解更多
               </Button>
             </Link>
           </div>
           
-          <div className="pt-8 flex items-center text-sm text-muted-foreground">
-            <div className="flex -space-x-2 mr-3">
+          <div className="pt-4 xs:pt-5 sm:pt-6 md:pt-8 flex items-center text-xs sm:text-sm text-muted-foreground justify-center lg:justify-start">
+            <div className="flex -space-x-2 mr-3 mx-auto lg:mx-0">
               <div className="w-8 h-8 rounded-full bg-gradient-blue"></div>
               <div className="w-8 h-8 rounded-full bg-gradient-green"></div>
               <div className="w-8 h-8 rounded-full bg-blue-400"></div>
@@ -50,8 +50,8 @@ const Hero = () => {
         </div>
         
         {/* Hero Image/Illustration */}
-        <div className="relative fade-in-element" style={{ animationDelay: '0.3s' }}>
-          <div className="relative z-10 animate-float">
+        <div className="relative fade-in-element lg:px-4 xl:px-6" style={{ animationDelay: '0.3s' }}>
+          <div className="relative z-10 animate-float max-w-[92%] xs:max-w-[88%] sm:max-w-[85%] lg:max-w-[92%] xl:max-w-[95%] mx-auto">
             <div className="glassmorphism p-4 rounded-2xl shadow-glass-lg">
               <div className="aspect-[4/3] rounded-lg overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
                 <div className="w-full max-w-md">
@@ -87,7 +87,7 @@ const Hero = () => {
                   <div className="w-2 h-2 rounded-full bg-gray-300"></div>
                   <div className="w-2 h-2 rounded-full bg-gray-300"></div>
                 </div>
-                <div className="text-xs text-muted-foreground">機器人創作者介面</div>
+              <div className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground">機器人創作者介面</div>
               </div>
             </div>
           </div>

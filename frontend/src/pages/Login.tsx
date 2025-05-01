@@ -152,46 +152,46 @@ const Login = () => {
         onClose={() => setAlert(prev => ({ ...prev, show: false }))}
       />
 
-      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 mt-10">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-10 fade-in-element">
-            <h2 className="text-3xl font-bold">登入</h2>
+      <div className="flex-1 flex items-center justify-center py-6 xs:py-8 sm:py-12 px-3 sm:px-6 lg:px-8 mt-14 sm:mt-16 md:mt-20">
+        <div className="w-full max-w-[88%] xs:max-w-[85%] sm:max-w-md">
+          <div className="text-center mb-4 xs:mb-6 sm:mb-10 fade-in-element">
+            <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold tracking-tight">登入</h2>
           </div>
 
-          <div className="glassmorphism p-8 fade-in-element" style={{ animationDelay: '0.2s' }}>
-            <div className="flex flex-col items-center space-y-4 mb-6">
+          <div className="glassmorphism p-6 xs:p-7 sm:p-8 rounded-2xl shadow-glass-sm fade-in-element mx-auto" style={{ animationDelay: '0.2s' }}>
+            <div className="flex flex-col items-center space-y-3 xs:space-y-4 mb-5 xs:mb-6">
               <Button
                 onClick={handleLINELogin}
                 disabled={loading}
-                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-base font-semibold h-11 relative"
+                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-xs xs:text-sm sm:text-base font-semibold h-10 xs:h-11 sm:h-12 relative transition-all duration-200"
               >
-                {loading ? '載入中...' : '以 LINE 繼續'}
+                {loading ? '載入中...' : 'LINE 登入'}
               </Button>
-              <div className="flex items-center w-full">
+              <div className="flex items-center w-full max-w-[280px] sm:max-w-full mx-auto">
                 <hr className="flex-grow border-gray-300" />
-                <span className="mx-3 text-gray-500 text-sm">或</span>
+                <span className="mx-2 xs:mx-3 text-gray-500 text-xs xs:text-sm">或以帳號繼續</span>
                 <hr className="flex-grow border-gray-300" />
               </div>
             </div>
 
-            <form className="space-y-6" onSubmit={handleLogin}>
-              <div className="space-y-1">
-                <Label htmlFor="username">使用者名稱：</Label>
+            <form className="space-y-4 xs:space-y-5 sm:space-y-6 max-w-[280px] sm:max-w-full mx-auto" onSubmit={handleLogin}>
+              <div className="space-y-1.5">
+                <Label htmlFor="username" className="text-sm sm:text-base">使用者名稱：</Label>
                 <Input
                   id="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  className="rounded-lg h-11"
+                  className="rounded-lg h-11 text-base"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">密碼：</Label>
+                  <Label htmlFor="password" className="text-sm sm:text-base">密碼：</Label>
                   <Link
                     to="/forgetthepassword"
-                    className="text-sm text-primary hover:text-primary/80 hover-underline"
+                    className="text-[10px] xs:text-xs sm:text-sm text-primary hover:text-primary/80 hover-underline transition-colors"
                   >
                     忘記密碼？
                   </Link>
@@ -203,7 +203,7 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="rounded-lg h-11"
+                  className="rounded-lg h-11 text-base"
                 />
               </div>
 
@@ -216,7 +216,7 @@ const Login = () => {
                       setRememberMe(checked as boolean)
                     }
                   />
-                  <Label htmlFor="remember-me" className="text-sm font-normal">
+                  <Label htmlFor="remember-me" className="text-xs xs:text-sm font-normal">
                     記住帳號
                   </Label>
                 </div>
@@ -225,27 +225,27 @@ const Login = () => {
               <Button 
                 type="submit" 
                 disabled={loading}
-                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11 relative"
+                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11 relative transition-all duration-200"
               >
                 {loading ? '載入中...' : '登入'}
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm">
+            <div className="mt-4 xs:mt-5 sm:mt-6 text-center text-xs xs:text-sm">
               <span className="text-muted-foreground">沒有帳號?</span>{' '}
-              <Link to="/register" className="text-primary hover:text-primary/80 font-medium hover-underline">
+              <Link to="/register" className="text-primary hover:text-primary/80 font-medium hover-underline transition-colors">
                 註冊
               </Link>
             </div>
           </div>
 
-          <div className="mt-10 text-center text-sm text-muted-foreground fade-in-element" style={{ animationDelay: '0.3s' }}>
+          <div className="mt-6 text-center text-[10px] xs:text-xs sm:text-sm text-muted-foreground fade-in-element max-w-[280px] sm:max-w-full mx-auto" style={{ animationDelay: '0.3s' }}>
             我已閱讀並同意{' '}
-            <Link to="#" className="underline hover:text-primary">
+            <Link to="#" className="underline hover:text-primary transition-colors">
               服務條款
             </Link>{' '}
             及{' '}
-            <Link to="#" className="underline hover:text-primary">
+            <Link to="#" className="underline hover:text-primary transition-colors">
               隱私權政策
             </Link>
             .

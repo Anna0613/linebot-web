@@ -58,26 +58,26 @@ const LeftPanel = () => {
   };
 
   return (
-    <div className="w-[352px] h-[520px] rounded-[25px] bg-white border border-black shadow-[-15px_15px_0_#819780] p-5 flex-shrink-0 relative flex">
+    <div className="w-full sm:w-[352px] h-[400px] sm:h-[520px] rounded-[15px] sm:rounded-[25px] bg-white border border-black shadow-[-8px_8px_0_#819780] sm:shadow-[-15px_15px_0_#819780] p-3 sm:p-5 flex-shrink-0 relative flex">
 
-      <div className="flex flex-col relative mt-5 ml-[2px] items-center">
+      <div className="flex flex-col relative mt-3 sm:mt-5 ml-[2px] items-center">
         {sortedBlockList.map((group) => (
-          <div key={group.label} className="flex flex-col items-center mb-[30px] cursor-pointer" onClick={() => handleScrollTo(group.ref)}>       
+          <div key={group.label} className="flex flex-col items-center mb-[20px] sm:mb-[30px] cursor-pointer touch-manipulation" onClick={() => handleScrollTo(group.ref)}>       
             <div
-              className="w-[30px] h-[30px] rounded-full mb-1"
+              className="w-[24px] h-[24px] sm:w-[30px] sm:h-[30px] rounded-full mb-1"
               style={{ backgroundColor: group.color }}
             ></div>
-            <span className="text-[12px] text-black">
+            <span className="text-[10px] sm:text-[12px] text-black">
               {group.label}
             </span>
           </div>
         ))}
 
-        <div className="absolute top-0 left-[50px] w-[2px] h-[440px] bg-black"></div>
+        <div className="absolute top-0 left-[40px] sm:left-[50px] w-[2px] h-[340px] sm:h-[440px] bg-black"></div>
       </div>
 
       <div
-        className="flex flex-col gap-4 mt-1 ml-[40px] overflow-y-auto h-full pr-0 w-full"
+        className="flex flex-col gap-3 sm:gap-4 mt-1 ml-[30px] sm:ml-[40px] overflow-y-auto h-full pr-0 w-full scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent"
         ref={scrollContainerRef}
       >
         {sortedBlockList.map((group) => {
@@ -85,7 +85,7 @@ const LeftPanel = () => {
 
           return (
             <div key={group.label} ref={group.ref}>
-              <h3 className="text-[14px] font-medium mb-2 text-[#383A45]">{group.label}</h3>
+              <h3 className="text-[12px] sm:text-[14px] font-medium mb-2 text-[#383A45]">{group.label}</h3>
 
               <div className="flex flex-col gap-2">
 
@@ -144,7 +144,7 @@ const LeftPanel = () => {
                 }
 
                 return (
-                  <div {...commonProps} className="cursor-move mb-4">
+                  <div {...commonProps} className="cursor-move mb-3 sm:mb-4 touch-manipulation">
                     
                       {blockElement}
                     

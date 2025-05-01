@@ -204,30 +204,30 @@ const Register = () => {
         onClose={() => setAlert(prev => ({ ...prev, show: false }))}
       />
 
-      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 mt-10">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-10 fade-in-element">
-            <h2 className="text-3xl font-bold">註冊</h2>
+      <div className="flex-1 flex items-center justify-center py-6 xs:py-8 sm:py-12 px-3 sm:px-6 lg:px-8 mt-14 sm:mt-16 md:mt-20">
+        <div className="w-full max-w-[88%] xs:max-w-[85%] sm:max-w-md">
+          <div className="text-center mb-4 xs:mb-6 sm:mb-10 fade-in-element">
+            <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold tracking-tight">註冊</h2>
           </div>
 
-          <div className="glassmorphism p-8 fade-in-element" style={{ animationDelay: '0.2s' }}>
-            <div className="flex flex-col items-center space-y-4 mb-6">
+          <div className="glassmorphism p-6 xs:p-7 sm:p-8 rounded-2xl shadow-glass-sm fade-in-element mx-auto" style={{ animationDelay: '0.2s' }}>
+            <div className="flex flex-col items-center space-y-3 xs:space-y-4 mb-5 xs:mb-6 max-w-[280px] sm:max-w-full mx-auto">
               <Button
                 onClick={handleLINELogin}
                 disabled={loading}
-                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-base font-semibold h-11 relative"
+                className="w-full rounded-full bg-green-500 hover:bg-green-600 text-white text-xs xs:text-sm sm:text-base font-semibold h-10 xs:h-11 sm:h-12 relative transition-all duration-200"
               >
-                {loading ? '載入中...' : '以 LINE 繼續'}
+                {loading ? '載入中...' : 'LINE 登入'}
               </Button>
-              <div className="flex items-center w-full">
+              <div className="flex items-center w-full max-w-[280px] sm:max-w-full mx-auto">
                 <hr className="flex-grow border-gray-300" />
-                <span className="mx-3 text-gray-500 text-sm">或</span>
+                <span className="mx-2 xs:mx-3 text-gray-500 text-xs xs:text-sm">或以帳號繼續</span>
                 <hr className="flex-grow border-gray-300" />
               </div>
             </div>
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <div className="space-y-1">
+            <form className="space-y-4 xs:space-y-5 sm:space-y-6 max-w-[280px] sm:max-w-full mx-auto" onSubmit={handleSubmit}>
+              <div className="space-y-1.5 w-full">
                 <Label htmlFor="fullName">使用者名稱：</Label>
                 <Input
                   id="fullName"
@@ -237,12 +237,12 @@ const Register = () => {
                   value={formData.fullName}
                   onChange={handleChange}
                   required
-                  className="rounded-lg h-11"
+                  className="rounded-lg h-11 text-base"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="email">電子郵件：</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm sm:text-base">電子郵件：</Label>
                 <Input
                   id="email"
                   name="email"
@@ -251,12 +251,12 @@ const Register = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="rounded-lg h-11"
+                  className="rounded-lg h-11 text-base"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="password">密碼：</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-sm sm:text-base">密碼：</Label>
                 <Input
                   id="password"
                   name="password"
@@ -265,12 +265,12 @@ const Register = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="rounded-lg h-11"
+                  className="rounded-lg h-11 text-base"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="confirmPassword">確認密碼：</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword" className="text-sm sm:text-base">確認密碼：</Label>
                 <Input
                   id="confirmPassword"
                   name="confirmPassword"
@@ -279,36 +279,36 @@ const Register = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  className="rounded-lg h-11"
+                  className="rounded-lg h-11 text-base"
                 />
               </div>
 
-              <div className="flex items-start space-x-2">
+              <div className="flex items-start space-x-2 mt-2 max-w-[280px] sm:max-w-full mx-auto">
                 <Checkbox
                   id="agree-terms"
                   checked={formData.agreeTerms}
                   onCheckedChange={handleCheckboxChange}
                   required
                 />
-                <Label htmlFor="agree-terms" className="text-sm font-normal leading-tight">
+                <Label htmlFor="agree-terms" className="text-xs sm:text-sm font-normal leading-tight">
                   我已閱讀並同意{' '}
-                  <Link to="#" className="text-primary hover:text-primary/80 hover-underline">服務條款</Link> 及{' '}
-                  <Link to="#" className="text-primary hover:text-primary/80 hover-underline">隱私權政策</Link>
+                  <Link to="#" className="text-primary hover:text-primary/80 hover-underline transition-colors">服務條款</Link> 及{' '}
+                  <Link to="#" className="text-primary hover:text-primary/80 hover-underline transition-colors">隱私權政策</Link>
                 </Label>
               </div>
 
               <Button 
                 type="submit" 
                 disabled={loading}
-                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11 relative"
+                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11 relative transition-all duration-200"
               >
                 {loading ? '載入中...' : '註冊'}
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm">
+            <div className="mt-4 xs:mt-5 sm:mt-6 text-center text-xs xs:text-sm">
               <span className="text-muted-foreground">已有帳號? </span>
-              <Link to="/login" className="text-primary hover:text-primary/80 font-medium hover-underline">登入</Link>
+              <Link to="/login" className="text-primary hover:text-primary/80 font-medium hover-underline transition-colors">登入</Link>
             </div>
           </div>
         </div>
