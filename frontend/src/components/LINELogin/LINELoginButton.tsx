@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { useToast } from '../ui/use-toast';
+import { API_CONFIG, getApiUrl } from '../../config/apiConfig';
 
 interface LINELoginButtonProps {
   onLogin?: () => void;
@@ -13,7 +14,7 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin }) => {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`https://line-login.jkl921102.org/api/line-login`, {
+      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.LINE_LOGIN), {
         method: 'GET',
         headers: {
           'Accept': 'application/json',

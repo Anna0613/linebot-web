@@ -8,6 +8,7 @@ import { CustomAlert } from "@/components/ui/custom-alert";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
 import "@/components/ui/loader.css";
+import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -68,7 +69,7 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`https://login-api.jkl921102.org/reset_password/${token}`, {
+      const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.RESET_PASSWORD(token)), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ new_password: password }),

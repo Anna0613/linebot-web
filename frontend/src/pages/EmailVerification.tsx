@@ -6,6 +6,7 @@ import { CheckCircle, XCircle } from "lucide-react";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
 import "@/components/ui/loader.css";
+import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 const EmailVerification = () => {
   const [searchParams] = useSearchParams();
@@ -23,7 +24,7 @@ const EmailVerification = () => {
       }
 
       try {
-        const response = await fetch('https://login-api.jkl921102.org/verify-email', {
+        const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.VERIFY_EMAIL), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),

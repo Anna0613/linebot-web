@@ -8,6 +8,7 @@ import { CustomAlert } from "@/components/ui/custom-alert";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
 import "@/components/ui/loader.css";
+import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState('');
@@ -49,7 +50,7 @@ const ForgetPassword = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('https://login-api.jkl921102.org/forgot_password', {
+      const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.FORGOT_PASSWORD), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

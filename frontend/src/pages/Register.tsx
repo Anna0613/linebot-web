@@ -9,6 +9,7 @@ import { CustomAlert } from "@/components/ui/custom-alert";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
 import "@/components/ui/loader.css";
+import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const Register = () => {
 
   const verifyToken = async (token: string) => {
     try {
-      const response = await fetch('https://line-login.jkl921102.org/api/verify-token', {
+      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
@@ -73,7 +74,7 @@ const Register = () => {
   const handleLINELogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`https://line-login.jkl921102.org/api/line-login`);
+      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.LINE_LOGIN));
       const data = await response.json();
       if (!data.login_url) throw new Error("登入連結取得失敗");
       window.location.href = data.login_url;
@@ -147,7 +148,7 @@ const Register = () => {
     const { fullName, email, password } = formData;
 
     try {
-      const response = await fetch("https://login-api.jkl921102.org/register", {
+      const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.REGISTER), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: fullName, email, password })
