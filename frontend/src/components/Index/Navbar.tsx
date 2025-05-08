@@ -44,13 +44,10 @@ const Navbar = () => {
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white ${isScrolled ? 'bg-opacity-90 backdrop-blur-md shadow-sm' : 'bg-opacity-100'}`}
       >
         <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 flex items-center justify-between h-14 sm:h-16 md:h-18 lg:h-20">
-          <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
-            <img src="/專題圖片/logo.svg" alt="Logo" className="h-10 sm:h-12 w-auto transition-all duration-300" />
-            <h6 className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold pl-1 sm:pl-2 md:pl-3 text-[#1a1a40] tracking-wide truncate transition-all duration-300">
-              <span className="hidden sm:inline">LINE Bot 製作輔助系統</span>
-              <span className="sm:hidden">LINE Bot</span>
-            </h6>
-          </Link>
+            <Link to="/" className="flex items-center space-x-3 z-10 ml-2">
+              <img src="/專題圖片/logo.svg" alt="Logo" className="h-12 w-auto" />
+              <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">LINE Bot 製作輔助系統</h6>
+            </Link>
 
           <div className="hidden sm:flex items-center space-x-2 sm:space-x-4">
             <LanguageToggle />

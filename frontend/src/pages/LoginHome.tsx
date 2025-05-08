@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import Footer from '../components/Index/Footer';
+import Footer2 from '../components/LoginHome/Footer2';
 import Navbar2 from '../components/LoginHome/Navbar2';
 import HomeBotfly from '../components/LoginHome/HomeBotfly';
 import { Loader } from "@/components/ui/loader";
@@ -122,7 +122,7 @@ const LoginHome = () => {
           <HomeBotfly user={user} />
         )}
       </div>
-      <Footer />
+      <Footer2 />
     </div>
   );
 };
