@@ -15,6 +15,8 @@ import Block from "./pages/Block";
 import HowToEstablish from "./pages/HowToEstablish";
 import Setting from "./pages/Setting";
 import ResetPassword from "./pages/ResetPassword";
+import Editbot from "./pages/Editbot";
+
 
 
 const queryClient = new QueryClient();
@@ -38,6 +40,8 @@ const App = () => (
           <Route path="/setting" element={<Setting />} />
           <Route path="/verify-email" element={<EmailVerification />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/editbot" element={<Editbot />} />
+
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
