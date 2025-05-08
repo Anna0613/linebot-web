@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 
-const BottomBlock = () => {
+const HendlBlock = () => {
   const [color, setColor] = useState('#CDB4DB');
   const colorInputRef = useRef<HTMLInputElement>(null);
 
@@ -17,10 +17,10 @@ const BottomBlock = () => {
         }}
         onClick={handleBlockClick}
       >
-        底部對齊
+        靠右對齊
       </div>
     );
   };
   
-  export default BottomBlock;
+  export default HendlBlock;
   

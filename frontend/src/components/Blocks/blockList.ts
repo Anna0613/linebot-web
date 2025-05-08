@@ -21,6 +21,7 @@ import TopBlock from './TopBlock';
 import BottomBlock from './BottomBlock';
 import EndBlock from './EndBlock';
 import SpanBlock from './SpanBlock';
+import HendlBlock from './HendlBlock';
 
 export const blockList = [
   
@@ -41,7 +42,7 @@ export const blockList = [
  
     { type: 'start', label: '靠左對齊', component: StartBlock, category: 'style', allowedParent: ['horizontal', 'vertical', 'baseline'] },
     { type: 'horizontal_center', label: '置中對齊', component: Horizontal_CenterBlock, category: 'style', allowedParent: ['horizontal', 'baseline'] },
-    { type: 'hend', label: '靠右對齊', component: HorizontalBlock, category: 'style', allowedParent: ['horizontal', 'baseline'] },
+    { type: 'hend', label: '靠右對齊', component: HendlBlock, category: 'style', allowedParent: ['horizontal', 'baseline'] },
 
     { type: 'vertical_center', label: '中間對齊', component: Vertical_CenterBlock, category: 'style', allowedParent: ['vertical'] },
     { type: 'top', label: '頂部對齊', component: TopBlock, category: 'style', allowedParent: ['vertical']  },
