@@ -7,6 +7,7 @@ import RightPanel from '../components/Panels/RightPanel';
 import Navbar3 from '../components/Panels/Navbar3';
 import Footer from '../components/Index/Footer'
 import Editoptions from '../components/Editbot/Editoptions';
+import Mybot from '@/components/Editbot/Mybot';
 
 interface User {
   line_id?: string;
@@ -112,8 +113,10 @@ const Editbot = () => {
   return (
     <div>
       <Navbar3 user={user}/>
-      <div className="flex p-6 gap-6 min-h-screen bg-gray-100">
+      <div className="flex gap-[35px] px-6 mb-24 justify-start items-start translate-x-[10px]">
+        <Mybot/>
         <Editoptions />
+        <RightPanel />
       </div>
       <Footer />
     </div>
