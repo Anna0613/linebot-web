@@ -3,7 +3,7 @@ import StepTwo from '../components/HowToEstablish/StepTwo';
 import StepThree from '../components/HowToEstablish/StepThree';
 import StepFour from '../components/HowToEstablish/StepFour';
 import Navbar2 from '../components/LoginHome/Navbar2';
-import Footer from '../components/Index/Footer';
+import Footer2 from '../components/LoginHome/Footer2';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
@@ -117,7 +117,7 @@ const HowToEstablish = () => {
         <StepThree />
         <StepFour />
       </main>
-      <Footer />
+      <Footer2 />
     </div>
   );
 };

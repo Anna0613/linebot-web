@@ -1,6 +1,6 @@
 import AddServerPage from '../components/AddServer/AddServerPage';
 import Navbar2 from '../components/LoginHome/Navbar2';
-import Footer from '../components/Index/Footer';
+import Footer2 from '../components/LoginHome/Footer2';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
@@ -111,7 +111,7 @@ const AddServer = () => {
       <main className="pt-8 flex flex-col items-center">
         <AddServerPage />
       </main>
-      <Footer />
+      <Footer2 />
     </div>
   );
 };

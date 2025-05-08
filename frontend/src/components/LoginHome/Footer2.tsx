@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
 
-const Footer = () => {
+const Footer2 = () => {
   return (
     <footer id="contact" className="bg-[#C4D4C9] pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-6">
@@ -20,6 +20,38 @@ const Footer = () => {
             <LanguageToggle />
           </div>
         </div>          
+          
+          <div className="w-full flex flex-col">
+            <h3 className="font-medium text-lg mb-4">快速連結</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/index2" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                  首頁
+                </Link>
+              </li>
+              <li>
+                <Link to="/how to establish" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                如何建立LINE Bot
+                </Link>
+              </li>
+              <li>
+                <Link to="/add server" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                建立LINE Bot
+                </Link>
+              </li>
+              <li>
+                <Link to="/block" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                開始設計LINE Bot
+                </Link>
+              </li>
+              <li>
+                <Link to="/editbot" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                修改LINE Bot
+                </Link>
+              </li>
+            </ul>
+          </div>
+                 
           
           <div className="w-full flex flex-col">
             <h3 className="font-medium text-lg mb-4">聯絡我們</h3>
@@ -100,4 +132,4 @@ const Footer = () => {
   );
 };
 
-export default Footer;
+export default Footer2;

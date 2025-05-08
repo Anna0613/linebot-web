@@ -2,7 +2,7 @@ import LeftPanel from '../components/Panels/LeftPanel';
 import MiddlePanel from '../components/Panels/MiddlePanel';
 import RightPanel from '../components/Panels/RightPanel';
 import Navbar3 from '../components/Panels/Navbar3';
-import Footer from '../components/Index/Footer';
+import Footer2 from '../components/LoginHome/Footer2';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
@@ -117,7 +117,7 @@ const Block = () => {
           <RightPanel />
       </div>
       </main>
-      <Footer />
+      <Footer2 />
     </div>
   );
 };
