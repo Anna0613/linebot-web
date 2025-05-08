@@ -5,7 +5,7 @@ const ImageBlock = () => {
   const options = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl', '3xl', '4xl', '5xl', 'full'];
 
   return (
-    <div className="relative w-[130px] h-[40px] bg-[#8ECAE6] rounded-[5px] flex items-center justify-between px-3">
+    <div className="relative w-[110px] h-[40px] bg-[#8ECAE6] rounded-[5px] flex items-center justify-between px-3">
       {/* 左邊文字 */}
       <p className="text-sm font-sans">圖片</p>
 
@@ -14,7 +14,7 @@ const ImageBlock = () => {
         <select
           value={selectedSize}
           onChange={(e) => setSelectedSize(e.target.value)}
-          className="w-[70px] h-[28px] bg-white rounded-full text-black text-xs pl-2 pr-5 appearance-none cursor-pointer"
+          className="w-[50px] h-[28px] bg-white rounded-full text-black text-xs pl-2 pr-5 appearance-none cursor-pointer"
         >
           {options.map((size) => (
             <option key={size} value={size}>

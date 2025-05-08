@@ -10,6 +10,13 @@ import ColorBlock from '../Blocks/ColorBlock';
 import ImageBlock from '../Blocks/ImageBlock';
 import SizeBlock from '../Blocks/SizeBlock';
 import TextBlock from '../Blocks/TextBlock';
+import StartBlock from '../Blocks/StartBlock';
+import Horizontal_CenterBlock from '../Blocks/Horizontal_CenterBlock';
+import HendlBlock from '../Blocks/HendlBlock';
+import Vertical_CenterBlock from '../Blocks/Vertical_CenterBlock';
+import TopBlock from '../Blocks/TopBlock';
+import BottomBlock from '../Blocks/BottomBlock';
+import SpacingBlock from '../Blocks/SpacingBlock';
 
 const LeftPanel = () => {
   const categoryMap = {
@@ -131,7 +138,28 @@ const LeftPanel = () => {
                       break;  
                   case 'text':
                       blockElement = <TextBlock />;
-                      break;         
+                      break;   
+                  case 'start':
+                      blockElement = <StartBlock />;
+                      break; 
+                  case 'horizontal_center':
+                      blockElement = <Horizontal_CenterBlock />;
+                      break;  
+                  case 'hend':
+                      blockElement = <HendlBlock />;
+                      break;  
+                  case 'vertical_center':
+                      blockElement = <Vertical_CenterBlock />;
+                      break;    
+                  case 'top':
+                      blockElement = <TopBlock />;
+                      break;   
+                  case 'bottom':
+                      blockElement = <BottomBlock />;
+                      break; 
+                  case 'spacing':
+                      blockElement = <SpacingBlock />;
+                      break;      
                   default:
                     blockElement = (
                       <div

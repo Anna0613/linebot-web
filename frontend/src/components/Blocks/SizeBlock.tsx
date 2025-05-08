@@ -5,35 +5,28 @@ const SizeBlock = () => {
   const [selectedSize, setSelectedSize] = useState('md');
 
   return (
-    <div className="relative w-[70px] h-[28px] rounded-full bg-[#CDB4DB] flex items-center justify-between px-3 cursor-pointer text-sm font-sans">
-      {/* 左邊顯示文字 */}
-      <span>{selectedSize}</span>
-
-      {/* 下拉小箭頭 */}
-      <div className="pointer-events-none flex items-center">
-        <svg
-          className="w-3 h-3 text-black"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
+    <div className="relative w-[110px] h-[28px] rounded-full bg-[#CDB4DB] flex items-center justify-between px-3 cursor-pointer text-sm font-sans">
+      <p className="text-sm font-sans">尺寸</p>
+      <div className="relative">
+        <select
+          value={selectedSize}
+          onChange={(e) => setSelectedSize(e.target.value)}
+          className="w-[50px] h-[28px] bg-[#CDB4DB] rounded-full text-black text-xs pl-2 pr-5 appearance-none cursor-pointer"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
+          {options.map((size) => (
+            <option key={size} value={size}>
+              {size}
+            </option>
+          ))}
+        </select>
 
-      {/* 隱藏的 select，pointer-events-none 讓它不擋住拖曳 */}
-      <select
-        value={selectedSize}
-        onChange={(e) => setSelectedSize(e.target.value)}
-        className="absolute inset-0 opacity-0 cursor-pointer pointer-events-auto" // 保持能點
-      >
-        {options.map((size) => (
-          <option key={size} value={size}>
-            {size}
-          </option>
-        ))}
-      </select>
+        {/* 自訂小箭頭 */}
+        <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+          <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
     </div>
   );
 };
