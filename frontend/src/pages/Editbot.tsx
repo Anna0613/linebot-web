@@ -113,11 +113,13 @@ const Editbot = () => {
   return (
     <div>
       <Navbar3 user={user}/>
+      <main className="pt-32 flex flex-col items-center">
       <div className="flex gap-[35px] px-6 mb-24 justify-start items-start translate-x-[10px]">
         <Mybot/>
         <Editoptions />
         <RightPanel />
       </div>
+      </main>
       <Footer />
     </div>
   );
