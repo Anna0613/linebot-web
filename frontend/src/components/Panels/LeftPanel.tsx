@@ -17,6 +17,7 @@ import Vertical_CenterBlock from '../Blocks/Vertical_CenterBlock';
 import TopBlock from '../Blocks/TopBlock';
 import BottomBlock from '../Blocks/BottomBlock';
 import SpacingBlock from '../Blocks/SpacingBlock';
+import ButtonBlock from '../Blocks/ButtonBlock';
 
 const LeftPanel = () => {
   const categoryMap = {
@@ -160,6 +161,9 @@ const LeftPanel = () => {
                   case 'spacing':
                       blockElement = <SpacingBlock />;
                       break;      
+                  case 'button':
+                      blockElement = <ButtonBlock />;
+                      break; 
                   default:
                     blockElement = (
                       <div
