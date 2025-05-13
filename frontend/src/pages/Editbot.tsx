@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-
-import LeftPanel from '../components/Panels/LeftPanel';
-import MiddlePanel from '../components/Panels/MiddlePanel';
-import RightPanel from '../components/Panels/RightPanel';
 import Navbar3 from '../components/Panels/Navbar3';
 import Footer from '../components/Index/Footer'
 import Editoptions from '../components/Editbot/Editoptions';
@@ -107,9 +103,6 @@ const Editbot = () => {
       setLoading(false);
     }
   };
-
-  if (loading) return <div className="text-center mt-10">載入中...</div>;
-  if (error) return <div className="text-center mt-10 text-red-500">{error}</div>;
 
   const handleEdit = (botId: number) => {
     setEditingBotId(botId);
