@@ -22,6 +22,7 @@ const Editbot = () => {
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingBotId, setEditingBotId] = useState<number | null>(null);
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -110,19 +111,34 @@ const Editbot = () => {
   if (loading) return <div className="text-center mt-10">載入中...</div>;
   if (error) return <div className="text-center mt-10 text-red-500">{error}</div>;
 
+  const handleEdit = (botId: number) => {
+    setEditingBotId(botId);
+  };
+  
+  const handleEditClose = () => {
+    setEditingBotId(null);
+  };
+  
+  const handleEditConfirm = (option: string) => {
+    console.log(`Bot ${editingBotId} 修改項目: ${option}`);
+    setEditingBotId(null);
+  };
+  
   return (
     <div>
-      <Navbar3 user={user}/>
+      <Navbar3 user={user} />
       <main className="pt-32 flex flex-col items-center">
-      <div className="flex gap-[35px] px-6 mb-24 justify-start items-start translate-x-[10px]">
-        <Mybot/>
-        <Editoptions />
-        <RightPanel />
-      </div>
+        <div className="flex flex-row gap-[35px] justify-center items-start px-6 mb-24">
+          <Mybot onEdit={handleEdit} />
+          {editingBotId !== null && (
+            <Editoptions onClose={handleEditClose} onConfirm={handleEditConfirm} />
+          )}
+        </div>
       </main>
       <Footer />
     </div>
   );
+
 };
 
 export default Editbot;
