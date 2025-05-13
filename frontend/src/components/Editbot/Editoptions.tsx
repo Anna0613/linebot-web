@@ -11,8 +11,8 @@ const EditOptions = ({ onClose, onConfirm }: EditOptions) => {
 
   const isSelected = (option: string) =>
     selectedOption === option
-      ? "bg-[#E58D7D] text-white"
-      : "bg-[#F9C6BA] text-[#5A2C1D] hover:bg-[#f4b1a5]";
+      ? "bg-[#FFD59E] text-[#4B4B4B]"
+      : "bg-[#FFF7E0] text-[#4B4B4B] hover:bg-[#f4b1a5]";
 
   return (
     <div className="w-full sm:w-[320px] h-[520px] rounded-[25px] bg-white border border-black shadow-[-15px_15px_0_#819780] p-6 flex flex-col justify-between items-center">
@@ -35,13 +35,13 @@ const EditOptions = ({ onClose, onConfirm }: EditOptions) => {
 
       <div className="flex justify-between w-full space-x-4 pt-2">
         <button
-          className="flex-1 bg-[#E9B9CF] text-white py-2 rounded-md font-bold shadow hover:brightness-90 transition"
+          className="flex-1 bg-[#F6B1B1] text-white py-2 rounded-md font-bold shadow hover:brightness-90 transition"
           onClick={onClose}
         >
           取消
         </button>
         <button
-          className="flex-1 bg-[#BC8C65] text-white py-2 rounded-md font-bold shadow hover:brightness-90 transition"
+          className="flex-1 bg-[#A0D6B4] text-white py-2 rounded-md font-bold shadow hover:brightness-90 transition"
           onClick={() => {
             if (selectedOption) {
               onConfirm(selectedOption);

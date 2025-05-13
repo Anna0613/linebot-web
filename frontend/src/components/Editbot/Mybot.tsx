@@ -41,7 +41,7 @@ const Mybot = ({ onEdit }: MybotProps) => {
                 <button
                   onClick={() => handleSelect(bot.id)}
                   className={`px-3 py-1 rounded transition font-bold ${
-                    selectedId === bot.id ? "bg-[#BC8C65] text-white" : "bg-[#E9B9CF] text-white hover:brightness-90"
+                    selectedId === bot.id ? "bg-[#F6B1B1] text-white" : "bg-[#FFD59E] text-[#5A2C1D] hover:brightness-90"
                   }`}
                 >
                   {selectedId === bot.id ? "取消" : "選擇"}
@@ -53,7 +53,7 @@ const Mybot = ({ onEdit }: MybotProps) => {
               disabled={selectedId !== bot.id}
               className={`px-3 py-1 rounded transition font-bold
                 ${selectedId === bot.id 
-                  ? "bg-[#819780] text-white hover:brightness-90" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  ? "bg-[#A0D6B4] text-white hover:brightness-90" : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
                 >
                   修改
