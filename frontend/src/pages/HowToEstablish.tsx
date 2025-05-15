@@ -6,6 +6,7 @@ import Navbar2 from '../components/LoginHome/Navbar2';
 import Footer2 from '../components/LoginHome/Footer2';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 interface User {
   line_id?: string;
@@ -62,10 +63,9 @@ const HowToEstablish = () => {
       
         verify();
       }, [searchParams, navigate]);
-    
       const verifyLineToken = async (token: string): Promise<User | null> => {
         try {
-          const response = await fetch('https://line-login.jkl921102.org/api/verify-token', {
+          const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token }),
@@ -77,12 +77,11 @@ const HowToEstablish = () => {
           return null;
         }
       };
-    
       const nativeFetch = window.fetch.bind(window); // 保存原生 fetch
     
       const checkLoginStatus = async () => {
         try {
-          const response = await nativeFetch('https://login-api.jkl921102.org/check_login', {
+          const response = await nativeFetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN), {
             method: 'GET',
             credentials: 'include',
             headers: {

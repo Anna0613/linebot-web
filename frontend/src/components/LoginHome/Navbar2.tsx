@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
 import 'animate.css';
+import { API_CONFIG, getApiUrl } from '../../config/apiConfig';
 
 // 定義 User 介面
 interface User {
@@ -81,11 +82,10 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
   };
-
   const handleLogout = async () => {
     try {
       // 清除後端設置的 HTTP-only cookie
-      await fetch('https://login-api.jkl921102.org/logout', {
+      await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.LOGOUT), {
         method: 'POST',
         credentials: 'include',
       });

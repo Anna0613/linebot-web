@@ -25,13 +25,16 @@ allowed_origins = [
     "http://localhost:5173",
     "https://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://127.0.0.1:5173"
+    "https://127.0.0.1:5173",
+    "http://login-api.jkl921102.org",
+    "https://login-api.jkl921102.org"
 ]
 CORS(app, 
      supports_credentials=True, 
      resources={r"/*": {"origins": allowed_origins}},
-     allow_headers=["Content-Type", "Authorization"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+     allow_headers=["Content-Type", "Authorization", "Referer", "User-Agent"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     expose_headers=["Set-Cookie"]
 )
 
 # SSL context

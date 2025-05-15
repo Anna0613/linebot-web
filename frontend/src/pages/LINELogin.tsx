@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
+import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 interface User {
   line_id: string;
@@ -41,10 +42,9 @@ const LINELogin: React.FC = () => {
       setUser({ line_id: '', display_name: displayName, picture_url: '' });
     }
   }, [searchParams]);
-
   const verifyToken = async (token: string): Promise<User | null> => {
     try {
-      const response = await fetch('https://line-login.jkl921102.org/api/verify-token', {
+      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
