@@ -1,9 +1,7 @@
 // JWT相關常量
-const TOKEN_KEY = 'token';  // 統一使用 'token' 作為 key
+const TOKEN_KEY = 'auth_token';
 const USERNAME_KEY = 'username';
 const EMAIL_KEY = 'email';
-
-const COOKIE_NAME = 'token';
 
 export interface AuthUser {
   username: string;
@@ -15,28 +13,19 @@ export class AuthService {
   static getToken(): string | null {
     // 嘗試從cookie獲取token
     const cookies = document.cookie.split(';');
-    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith(`${COOKIE_NAME}=`));
+    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
     if (tokenCookie) {
-      const token = tokenCookie.split('=')[1];
-      if (token && this.isTokenValid(token)) {
-        return token;
-      }
+      return tokenCookie.split('=')[1];
     }
     
-    // 如果cookie中沒有或無效，則從localStorage獲取
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (token && this.isTokenValid(token)) {
-      return token;
-    }
-
-    return null;
+    // 如果cookie中沒有，則從localStorage獲取
+    return localStorage.getItem(TOKEN_KEY);
   }
 
   // 設置token和用戶信息
   static setToken(token: string): void {
-    if (token && this.isTokenValid(token)) {
-      localStorage.setItem(TOKEN_KEY, token);
-    }
+    // 同時保存在localStorage作為備用
+    localStorage.setItem(TOKEN_KEY, token);
   }
 
   // 移除token和用戶信息

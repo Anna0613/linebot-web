@@ -29,14 +29,8 @@ const LoginHome = () => {
   const verify = async () => {
       setLoading(true);
       try {
-        // 如果有新的 token 參數，則設置它
-        if (token) {
-          AuthService.setToken(token);
-        }
-        
-        // 檢查是否有有效的 token
-        const validToken = AuthService.getToken();
-        if (!validToken) {
+        const storedToken = token || localStorage.getItem('auth_token');
+        if (!storedToken) {
           setError('請先登入');
           navigate('/login');
           return;
@@ -44,9 +38,10 @@ const LoginHome = () => {
         
         if (loginType === 'line') {
           // LINE登入驗證流程
-          const userData = await verifyLineToken(validToken);
+          const userData = await verifyLineToken(storedToken);
           if (userData) {
             setUser(userData);
+            localStorage.setItem('auth_token', storedToken);
           } else {
             setError('LINE Token 驗證失敗');
             navigate('/line-login');
@@ -55,6 +50,7 @@ const LoginHome = () => {
           setUser({ display_name: displayName });
         } else {
           // 一般帳號登入流程或檢查已存在的登入狀態
+          localStorage.setItem('auth_token', storedToken);
           await checkLoginStatus();
         }
       } catch (error) {
@@ -86,15 +82,18 @@ const LoginHome = () => {
 
   const checkLoginStatus = async () => {
     try {
-      const token = AuthService.getToken();
+      const token = localStorage.getItem('auth_token');
       if (!token) {
         throw new Error('No token found');
       }
 
       const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN), {
         method: 'GET',
-        headers: AuthService.getAuthHeaders(),
-        credentials: 'include'
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
       if (response.ok) {
         const data = await response.json();
