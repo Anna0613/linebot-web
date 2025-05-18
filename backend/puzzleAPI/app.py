@@ -1,17 +1,36 @@
+import os
+import json
 from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import sessionmaker, Session, relationship, declarative_base
 from pydantic import BaseModel, Json
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from datetime import datetime, timedelta
 from typing import List, Optional
-import os
-import json
+from datetime import datetime
+
+from auth_service import verify_password, get_password_hash, verify_token
 
 # FastAPI app
 app = FastAPI(title="LINE Bot Management API")
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://127.0.0.1:5173",
+        "http://line-login.jkl921102.org",
+        "https://line-login.jkl921102.org"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Database configuration
 DB_HOST = "sql.jkl921102.org"
@@ -25,14 +44,7 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-
-# JWT configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# OAuth2 scheme for JWT token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 # Database Models
@@ -119,16 +131,12 @@ class BotCodeResponse(BaseModel):
     code: str
     user_id: int
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
 class UserCreate(BaseModel):
     username: str
     password: str
     email: str
 
-# Dependency
+# Dependencies
 def get_db():
     db = SessionLocal()
     try:
@@ -136,36 +144,27 @@ def get_db():
     finally:
         db.close()
 
-# JWT Authentication
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-    user = db.query(User).filter(User.id == user_id).first()
+        payload = verify_token(token)
+        username = payload.get("username")
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials"
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+    
+    user = db.query(User).filter(User.username == username).first()
     if user is None:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
     return user
 
 # Routes
@@ -174,24 +173,13 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
+    
     hashed_password = get_password_hash(user.password)
     db_user = User(username=user.username, password=hashed_password, email=user.email)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return {"message": "User created successfully"}
-
-@app.post("/token", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token = create_access_token(data={"sub": str(user.id)})
-    return {"access_token": access_token, "token_types": "bearer"}
 
 # Bot Management
 @app.post("/bots", response_model=BotResponse, status_code=status.HTTP_201_CREATED)
@@ -284,7 +272,6 @@ def send_flex_message(message_id: int, bot_id: int, user: User = Depends(get_cur
     bot = db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == user.id).first()
     if not message or not bot:
         raise HTTPException(status_code=404, detail="Flex message or bot not found")
-    # Placeholder for sending logic (requires LINE Messaging API integration)
     return {"message": f"Flex message {message_id} sent via bot {bot_id}"}
 
 # Bot Code Management
@@ -334,3 +321,7 @@ def delete_bot_code(code_id: int, user: User = Depends(get_current_user), db: Se
         raise HTTPException(status_code=404, detail="Bot code not found")
     db.delete(code)
     db.commit()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT_PUZZLE", 5503)))

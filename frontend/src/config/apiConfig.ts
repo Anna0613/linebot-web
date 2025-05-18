@@ -1,6 +1,6 @@
 // 從環境變數中獲取 API 端點
 const LINE_LOGIN_API_URL = import.meta.env.VITE_LINE_LOGIN_API_URL || 'https://line-login.jkl921102.org';
-const LOGIN_API_URL = import.meta.env.VITE_LOGIN_API_URL || 'http://login-api.jkl921102.org';
+const LOGIN_API_URL = import.meta.env.VITE_LOGIN_API_URL || 'https://login-api.jkl921102.org';
 const PUZZLE_API_URL = import.meta.env.VITE_PUZZLE_API_URL || 'https://puzzle-api.jkl921102.org';
 
 export const API_CONFIG = {

@@ -3,22 +3,21 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import os
 from flask_cors import CORS
-from datetime import timedelta, datetime
+from datetime import timedelta
 from dotenv import load_dotenv
-import jwt
-import secrets
 from functools import wraps
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
-from flask import Flask
-from flask_cors import CORS
 
-JWT_SECRET = os.getenv('JWT_SECRET', secrets.token_hex(32))
-print("JWT_SECRET:", JWT_SECRET)
+from auth_service import (
+    verify_password, get_password_hash, create_access_token,
+    verify_token, get_cookie_settings
+)
+
 # 載入 .env（與 app.py 同目錄）
-#load_dotenv(dotenv_path=".env")
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 app = Flask(__name__)
+
 allowed_origins = [
     "http://localhost:8080",
     "http://localhost:3000",
@@ -26,29 +25,71 @@ allowed_origins = [
     "https://localhost:5173",
     "http://127.0.0.1:5173",
     "https://127.0.0.1:5173",
+    "http://127.0.0.1:8080",
+    "https://127.0.0.1:8080",
     "http://login-api.jkl921102.org",
-    "https://login-api.jkl921102.org"
+    "https://login-api.jkl921102.org",
+    "http://line-login.jkl921102.org",
+    "https://line-login.jkl921102.org",
+    "https://jkl921102.org",
+    "http://jkl921102.org"
 ]
+
+# 配置 CORS
 CORS(app, 
-     supports_credentials=True, 
-     resources={r"/*": {"origins": allowed_origins}},
-     allow_headers=["Content-Type", "Authorization", "Referer", "User-Agent"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     expose_headers=["Set-Cookie"]
+    resources={
+        r"/*": {
+            "origins": allowed_origins,
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": [
+                "Content-Type", 
+                "Authorization",
+                "X-Requested-With",
+                "Accept",
+                "Origin",
+                "Referer",
+                "User-Agent",
+                "sec-ch-ua",
+                "sec-ch-ua-mobile",
+                "sec-ch-ua-platform"
+            ],
+            "expose_headers": ["Set-Cookie"],
+            "supports_credentials": True,
+            "max_age": 600
+        }
+    }
 )
 
-# SSL context
-ssl_context = None
-if os.getenv('FLASK_ENV') == 'production':
-    ssl_context = ('cert.pem', 'key.pem')
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    if request.method == 'OPTIONS':
+        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer, User-Agent, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform'
+        response.headers['Access-Control-Max-Age'] = '600'
+    return response
 
+# 處理 OPTIONS 預檢請求
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+        response.headers.add('Access-Control-Allow-Headers', 
+                           'Content-Type, Authorization, X-Requested-With, Accept, Origin, ' +
+                           'Referer, User-Agent, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform')
+        response.headers.add('Access-Control-Allow-Methods', 
+                           'GET, POST, PUT, DELETE, OPTIONS')
+        response.headers.add('Access-Control-Max-Age', '600')
+        return response
 
 # 配置安全性設置
-app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', secrets.token_hex(32))
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32))
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-JWT_SECRET = os.getenv('JWT_SECRET', secrets.token_hex(32))
 
-# 郵件配置（使用 Gmail SMTP）
+# 郵件配置
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = True
@@ -56,12 +97,6 @@ app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
 mail = Mail(app)
-
-# 調試環境變數
-print("Loading .env from:", os.path.abspath(".env"))
-print("MAIL_USERNAME:", app.config['MAIL_USERNAME'])
-print("MAIL_PASSWORD:", app.config['MAIL_PASSWORD'])
-print("MAIL_DEFAULT_SENDER:", app.config['MAIL_DEFAULT_SENDER'])
 
 # Token 生成器
 ts = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -86,16 +121,12 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.cookies.get('token')
-        print(f"Received token in /check_login: {token}")
         if not token:
-            print("Token is missing in /check_login")
             return jsonify({'error': 'Token is missing'}), 401
         try:
-            data = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-            print(f"Decoded token data: {data}")
-        except jwt.InvalidTokenError as e:
-            print(f"Invalid token error: {str(e)}")
-            return jsonify({'error': 'Invalid token'}), 401
+            data = verify_token(token)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 401
         return f(*args, **kwargs)
     return decorated
 
@@ -113,7 +144,7 @@ def register():
     if len(password) < 8:
         return jsonify({'error': 'Password must be at least 8 characters'}), 400
 
-    hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
+    hashed_password = get_password_hash(password)
 
     conn = get_db_connection()
     if not conn:
@@ -127,7 +158,7 @@ def register():
         )
         conn.commit()
 
-        # 發送美化的驗證郵件
+        # 發送驗證郵件
         token = ts.dumps(email, salt='email-verify')
         verify_url = f"https://login-api.jkl921102.org/verify_email/{token}"
         msg = Message('歡迎加入 - 請驗證您的電子郵件', 
@@ -173,7 +204,7 @@ def register():
 # Email 驗證 - 重定向到前端頁面
 @app.route('/verify_email/<token>', methods=['GET'])
 def verify_email(token):
-    verify_url = f"http://localhost:5173/verify-email?token={token}"
+    verify_url = f"http://localhost:8080/verify-email?token={token}"
     return redirect(verify_url)
 
 # Email 驗證 API
@@ -237,33 +268,22 @@ def login():
         )
         user = cur.fetchone()
 
-        if not user or not check_password_hash(user[0], password):
+        if not user or not verify_password(password, user[0]):
             return jsonify({'error': 'Invalid credentials'}), 401
         
         if not user[2]:  # email_verified
             return jsonify({'error': 'Please verify your email first'}), 403
 
-        token = jwt.encode({
-            'username': username,
-            'exp': datetime.utcnow() + timedelta(days=7)
-        }, JWT_SECRET, algorithm="HS256")
+        token = create_access_token({'username': username})
         
         response = make_response(jsonify({
             'message': 'Login successful!',
             'username': username,
             'email': user[1]
         }), 200)
-        response.set_cookie(
-            'token', 
-            token, 
-            httponly=True, 
-            secure=True,  # Cloudflare 使用 HTTPS
-            samesite='None',  # 允許跨站請求
-            max_age=604800,
-            path='/',
-            domain=None  # 使用當前域名
-        )
-        print(f"Set-Cookie: token={token} for domain=None, path=/, samesite=None, secure=True")
+
+        cookie_settings = get_cookie_settings(token)
+        response.set_cookie(**cookie_settings)
         return response
     finally:
         cur.close()
@@ -289,15 +309,11 @@ def forgot_password():
             user = cur.fetchone()
             if not user:
                 return jsonify({'error': 'Email not found'}), 404
-
-            # 檢查並列印郵件配置
-            print("MAIL_USERNAME:", app.config['MAIL_USERNAME'])
-            print("MAIL_PASSWORD:", "***" if app.config['MAIL_PASSWORD'] else None)
             
             if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
                 return jsonify({'error': 'Email configuration error: Mail settings not properly configured'}), 500
 
-            # 發送美化的密碼重置郵件
+            # 發送密碼重置郵件
             token = ts.dumps(email, salt='password-reset')
             reset_url = f"https://login-api.jkl921102.org/reset-password/{token}"
             msg = Message('密碼重設要求', 
@@ -327,13 +343,10 @@ def forgot_password():
                 </p>
             </div>
             '''
-            print(f"Sending email to {email} with reset URL: {reset_url}")
             mail.send(msg)
-            print("Email sent successfully")
 
             return jsonify({'message': 'Password reset email sent!'}), 200
         except Exception as e:
-            print(f"Failed to send email: {str(e)}")
             return jsonify({'error': f'Error: {str(e)}'}), 500
         finally:
             if cur:
@@ -341,7 +354,6 @@ def forgot_password():
             if conn:
                 conn.close()
     except Exception as e:
-        print(f"General error in forgot_password route: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 # 重置密碼 API
@@ -355,7 +367,7 @@ def reset_password(token):
         if not new_password or len(new_password) < 8:
             return jsonify({'error': 'New password must be at least 8 characters'}), 400
 
-        hashed_password = generate_password_hash(new_password, method='pbkdf2:sha256', salt_length=16)
+        hashed_password = get_password_hash(new_password)
 
         conn = get_db_connection()
         if not conn:
@@ -391,11 +403,8 @@ def change_password():
         return jsonify({'error': 'New password must be at least 8 characters'}), 400
 
     token = request.cookies.get('token')
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        username = payload.get('username')
-    except jwt.InvalidTokenError:
-        return jsonify({'error': 'Invalid token'}), 401
+    data = verify_token(token)
+    username = data.get('username')
 
     conn = get_db_connection()
     if not conn:
@@ -405,10 +414,10 @@ def change_password():
         cur = conn.cursor()
         cur.execute('SELECT password FROM users WHERE username = %s', (username,))
         user = cur.fetchone()
-        if not user or not check_password_hash(user[0], old_password):
+        if not user or not verify_password(old_password, user[0]):
             return jsonify({'error': 'Old password is incorrect'}), 403
 
-        hashed_new_password = generate_password_hash(new_password, method='pbkdf2:sha256', salt_length=16)
+        hashed_new_password = get_password_hash(new_password)
         cur.execute('UPDATE users SET password = %s WHERE username = %s', (hashed_new_password, username))
         conn.commit()
 
@@ -425,7 +434,7 @@ def change_password():
 @token_required
 def check_login():
     token = request.cookies.get('token')
-    data = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    data = verify_token(token)
     return jsonify({'message': f'User {data["username"]} is logged in'}), 200
 
 # 登出 API
@@ -440,6 +449,5 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         port=port,
-        debug=True,
-        ssl_context=ssl_context
+        debug=True
     )
