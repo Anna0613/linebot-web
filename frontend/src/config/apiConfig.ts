@@ -39,3 +39,8 @@ export const API_CONFIG = {
     },
   },
 } as const;
+
+// Helper function to construct API URLs
+export function getApiUrl(baseUrl: string, endpoint: string): string {
+  return `${baseUrl}${endpoint}`;
+}
