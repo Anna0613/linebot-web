@@ -14,7 +14,7 @@ from auth_service import (
     verify_token, get_cookie_settings
 )
 
-# 載入 .env（與 app.py 同目錄）
+# 載入 .env（與 app.py 同目錄）.
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 app = Flask(__name__)
 
