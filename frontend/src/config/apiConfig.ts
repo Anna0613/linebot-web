@@ -9,8 +9,8 @@ export const API_CONFIG = {
     FULL_URL: LINE_LOGIN_API_URL,
     ENDPOINTS: {
       LINE_LOGIN: '/line-login',
-      VERIFY_TOKEN: '/verify-token'
-    }
+      VERIFY_TOKEN: '/verify-token',
+    },
   },
   AUTH: {
     BASE_URL: LOGIN_API_URL,
@@ -21,8 +21,8 @@ export const API_CONFIG = {
       CHECK_LOGIN: '/check_login',
       VERIFY_EMAIL: '/verify-email',
       FORGOT_PASSWORD: '/forgot_password',
-      RESET_PASSWORD: (token: string) => `/reset_password/${token}`
-    }
+      RESET_PASSWORD: (token: string) => `/reset_password/${token}`,
+    },
   },
   PUZZLE: {
     BASE_URL: `${PUZZLE_API_URL}/api`,
@@ -35,12 +35,7 @@ export const API_CONFIG = {
       CREATE_FLEX_MESSAGE: '/flex-messages',
       UPDATE_FLEX_MESSAGE: (flexMessageId: string) => `/flex-messages/${flexMessageId}`,
       DELETE_FLEX_MESSAGE: (flexMessageId: string) => `/flex-messages/${flexMessageId}`,
-      SEND_MESSAGE: '/send-message'
-    }
-  }
+      SEND_MESSAGE: '/send-message',
+    },
+  },
 } as const;
-
-// 輔助函數，用於生成完整的API URL
-export const getApiUrl = (baseUrl: string, endpoint: string): string => {
-  return `${baseUrl}${endpoint}`;
-};
