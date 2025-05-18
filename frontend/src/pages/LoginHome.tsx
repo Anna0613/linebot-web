@@ -26,34 +26,36 @@ const LoginHome = () => {
     const displayName = searchParams.get('display_name');
     const loginType = searchParams.get('login_type');
   
-    const verify = async () => {
+  const verify = async () => {
       setLoading(true);
       try {
-        if (token && loginType === 'line') {
+        // 如果有新的 token 參數，則設置它
+        if (token) {
+          AuthService.setToken(token);
+        }
+        
+        // 檢查是否有有效的 token
+        const validToken = AuthService.getToken();
+        if (!validToken) {
+          setError('請先登入');
+          navigate('/login');
+          return;
+        }
+        
+        if (loginType === 'line') {
           // LINE登入驗證流程
-          localStorage.setItem('auth_token', token);
-          const userData = await verifyLineToken(token);
+          const userData = await verifyLineToken(validToken);
           if (userData) {
             setUser(userData);
           } else {
             setError('LINE Token 驗證失敗');
             navigate('/line-login');
           }
-        } else if (token) {
-          // 一般帳號登入流程
-          localStorage.setItem('auth_token', token);
-          await checkLoginStatus();
         } else if (displayName) {
           setUser({ display_name: displayName });
         } else {
-          // 檢查已存在的登入狀態
-          const storedToken = localStorage.getItem('auth_token');
-          if (storedToken) {
-            await checkLoginStatus();
-          } else {
-            setError('請先登入');
-            navigate('/login');
-          }
+          // 一般帳號登入流程或檢查已存在的登入狀態
+          await checkLoginStatus();
         }
       } catch (error) {
         console.error('驗證錯誤:', error);
@@ -84,13 +86,15 @@ const LoginHome = () => {
 
   const checkLoginStatus = async () => {
     try {
-      const response = await nativeFetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN), {
+      const token = AuthService.getToken();
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN), {
         method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
+        headers: AuthService.getAuthHeaders(),
+        credentials: 'include'
       });
       if (response.ok) {
         const data = await response.json();

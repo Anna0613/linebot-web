@@ -40,7 +40,14 @@ export class ApiClient {
   }
 
   private getHeaders(): Headers {
-    const headers = AuthService.getAuthHeaders();
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+    });
+
+    const token = AuthService.getToken();
+    if (token) {
+      headers.append('Authorization', `Bearer ${token}`);
+    }
     return headers;
   }
 
@@ -120,7 +127,11 @@ export class ApiClient {
     if (response.data) {
       // 設置認證信息
       const { token } = response.data;
-      AuthService.setToken(token);
+      if (token) {
+        AuthService.setToken(token);
+        // 同時也設置到 localStorage 作為備用
+        localStorage.setItem('auth_token', token);
+      }
       const { username, email } = response.data;
       AuthService.setUser({
         username,

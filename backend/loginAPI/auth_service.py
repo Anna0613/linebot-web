@@ -42,6 +42,12 @@ def verify_token(token: str) -> dict:
     except jwt.InvalidTokenError:
         return None
 
+def extract_token_from_header(auth_header: str) -> Optional[str]:
+    """從 Authorization header 中提取 token"""
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
+    return auth_header.split(' ')[1]
+
 # Cookie配置
 def get_cookie_settings(token: str):
     """獲取Cookie設置"""
@@ -50,7 +56,8 @@ def get_cookie_settings(token: str):
         "value": token,
         "httponly": True,
         "secure": True,
-        "samesite": "none",
+        "samesite": "lax",  # 改為 lax 以支援新的 cookie 政策
         "max_age": ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         "path": "/",
+        "domain": ".jkl921102.org",  # 設置domain
     }

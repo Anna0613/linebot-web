@@ -11,7 +11,7 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 
 from auth_service import (
     verify_password, get_password_hash, create_access_token,
-    verify_token, get_cookie_settings
+    verify_token, get_cookie_settings, extract_token_from_header
 )
 
 # 載入 .env（與 app.py 同目錄）.
@@ -63,13 +63,17 @@ CORS(app,
 @app.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
-    if origin in allowed_origins:
+    if origin in allowed_origins or origin.startswith('http://localhost:'):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer, User-Agent, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform'
+        response.headers['Access-Control-Expose-Headers'] = 'Set-Cookie'
+        response.headers['Access-Control-Max-Age'] = '600'
+        
+        # 如果是預檢請求，確保返回200狀態碼
         if request.method == 'OPTIONS':
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer, User-Agent, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform'
-            response.headers['Access-Control-Max-Age'] = '600'
+            response.status_code = 200
     return response
 
 # 配置安全性設置
@@ -107,13 +111,36 @@ def get_db_connection():
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.cookies.get('token')
-        if not token:
-            return jsonify({'error': 'Token is missing'}), 401
-        try:
-            data = verify_token(token)
-        except Exception as e:
-            return jsonify({'error': str(e)}), 401
+        token = None
+        auth_error = None
+        
+        # 首先嘗試從 Authorization header 獲取 token
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            try:
+                token = extract_token_from_header(auth_header)
+                data = verify_token(token)
+                if data:
+                    return f(*args, **kwargs)
+            except Exception as e:
+                auth_error = str(e)
+        
+        # 如果 header 中的 token 無效，則嘗試從 cookies 獲取
+        if not token or not data:
+            token = request.cookies.get('token')
+            if token:
+                try:
+                    data = verify_token(token)
+                    if data:
+                        return f(*args, **kwargs)
+                except Exception as e:
+                    auth_error = str(e)
+        
+        # 如果兩種方式都失敗
+        if auth_error:
+            return jsonify({'error': f'Invalid token: {auth_error}'}), 401
+        return jsonify({'error': 'Token is missing'}), 401
+            
         return f(*args, **kwargs)
     return decorated
 
@@ -424,7 +451,13 @@ def change_password():
 @app.route('/check_login', methods=['GET'])
 @token_required
 def check_login():
-    token = request.cookies.get('token')
+    # 嘗試從 Authorization header 獲取 token
+    auth_header = request.headers.get('Authorization')
+    if auth_header:
+        token = extract_token_from_header(auth_header)
+    else:
+        token = request.cookies.get('token')
+
     data = verify_token(token)
     return jsonify({
         'message': f'User {data["username"]} is logged in',

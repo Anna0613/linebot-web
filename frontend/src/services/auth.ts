@@ -1,7 +1,9 @@
 // JWT相關常量
-const TOKEN_KEY = 'auth_token';
+const TOKEN_KEY = 'token';  // 統一使用 'token' 作為 key
 const USERNAME_KEY = 'username';
 const EMAIL_KEY = 'email';
+
+const COOKIE_NAME = 'token';
 
 export interface AuthUser {
   username: string;
@@ -9,14 +11,32 @@ export interface AuthUser {
 }
 
 export class AuthService {
-  // 獲取token
+  // 獲取token，優先從cookie獲取，如果沒有則從localStorage獲取
   static getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    // 嘗試從cookie獲取token
+    const cookies = document.cookie.split(';');
+    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith(`${COOKIE_NAME}=`));
+    if (tokenCookie) {
+      const token = tokenCookie.split('=')[1];
+      if (token && this.isTokenValid(token)) {
+        return token;
+      }
+    }
+    
+    // 如果cookie中沒有或無效，則從localStorage獲取
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token && this.isTokenValid(token)) {
+      return token;
+    }
+
+    return null;
   }
 
   // 設置token和用戶信息
   static setToken(token: string): void {
-    localStorage.setItem(TOKEN_KEY, token);
+    if (token && this.isTokenValid(token)) {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
   }
 
   // 移除token和用戶信息
@@ -24,6 +44,18 @@ export class AuthService {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USERNAME_KEY);
     localStorage.removeItem(EMAIL_KEY);
+    // 同時清除cookie中的token
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  }
+
+  // 檢查token是否有效
+  private static isTokenValid(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 > Date.now();
+    } catch {
+      return false;
+    }
   }
 
   // 檢查是否已認證
@@ -31,14 +63,13 @@ export class AuthService {
     const token = this.getToken();
     if (!token) return false;
     
-    try {
-      // 解析JWT token的payload
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      // 檢查token是否過期
-      return payload.exp * 1000 > Date.now();
-    } catch {
+    // 檢查token是否有效
+    if (!this.isTokenValid(token)) {
+      this.removeToken();  // 如果token無效，清除所有認證信息
       return false;
     }
+    
+    return true;
   }
 
   // 獲取認證headers
