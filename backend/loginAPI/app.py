@@ -261,12 +261,16 @@ def login():
         if not user[2]:  # email_verified
             return jsonify({'error': 'Please verify your email first'}), 403
 
-        token = create_access_token({'username': username})
+        token = create_access_token({
+            'username': username,
+            'login_type': 'general'  # 標記為一般帳號登入
+        })
         
         response = make_response(jsonify({
             'message': 'Login successful!',
             'username': username,
-            'email': user[1]
+            'email': user[1],
+            'login_type': 'general'
         }), 200)
 
         cookie_settings = get_cookie_settings(token)
@@ -422,7 +426,11 @@ def change_password():
 def check_login():
     token = request.cookies.get('token')
     data = verify_token(token)
-    return jsonify({'message': f'User {data["username"]} is logged in'}), 200
+    return jsonify({
+        'message': f'User {data["username"]} is logged in',
+        'username': data['username'],
+        'login_type': data.get('login_type', 'general')
+    }), 200
 
 # 登出 API
 @app.route('/logout', methods=['POST'])

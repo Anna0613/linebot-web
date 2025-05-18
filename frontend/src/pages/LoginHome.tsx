@@ -24,39 +24,43 @@ const LoginHome = () => {
   useEffect(() => {
     const token = searchParams.get('token');
     const displayName = searchParams.get('display_name');
+    const loginType = searchParams.get('login_type');
   
     const verify = async () => {
       setLoading(true);
-      if (token) {
-        localStorage.setItem('auth_token', token);
-        const userData = await verifyLineToken(token);
-        if (userData) {
-          setUser(userData);
-          setLoading(false);
-        } else {
-          setError('LINE Token 驗證失敗');
-          navigate('/line-login');
-        }
-      } else if (displayName) {
-        setUser({ display_name: displayName });
-        setLoading(false);
-      } else {
-        const storedToken = localStorage.getItem('auth_token');
-        if (storedToken) {
-          const userData = await verifyLineToken(storedToken);
+      try {
+        if (token && loginType === 'line') {
+          // LINE登入驗證流程
+          localStorage.setItem('auth_token', token);
+          const userData = await verifyLineToken(token);
           if (userData) {
             setUser(userData);
-            setLoading(false);
           } else {
-            setTimeout(() => {
-              checkLoginStatus();
-            }, 3000); // 延遲 3 秒
+            setError('LINE Token 驗證失敗');
+            navigate('/line-login');
           }
+        } else if (token) {
+          // 一般帳號登入流程
+          localStorage.setItem('auth_token', token);
+          await checkLoginStatus();
+        } else if (displayName) {
+          setUser({ display_name: displayName });
         } else {
-          setTimeout(() => {
-            checkLoginStatus();
-          }, 3000); // 延遲 3 秒
+          // 檢查已存在的登入狀態
+          const storedToken = localStorage.getItem('auth_token');
+          if (storedToken) {
+            await checkLoginStatus();
+          } else {
+            setError('請先登入');
+            navigate('/login');
+          }
         }
+      } catch (error) {
+        console.error('驗證錯誤:', error);
+        setError('驗證失敗');
+        navigate('/login');
+      } finally {
+        setLoading(false);
       }
     };
   
