@@ -106,11 +106,49 @@ const Login = () => {
         throw new Error(response.error);
       }
 
+      // 打印檢查能否從 localStorage 獲取 token
+      console.log('登入後檢查 token:', AuthService.getToken());
+
+      // 確保我們獲取到了 token，嘗試從不同來源
+      let token = AuthService.getToken();
+      
+      // 如果沒有從 AuthService 獲取到，直接從響應中獲取並設置
+      if (!token && response.data && response.data.token) {
+        AuthService.setToken(response.data.token);
+        token = response.data.token;
+        console.log('直接從響應設置 token');
+      }
+
+      if (!token) {
+        console.error("找不到登入 token，將嘗試直接使用響應數據繼續");
+        // 即使沒有 token，也嘗試繼續以響應數據驅動
+        if (response.data && response.data.username) {
+          showAlert("登入成功！", "success");
+          setTimeout(() => {
+            navigate("/index2", { 
+              state: { 
+                username: response.data.username, 
+                directLogin: true 
+              } 
+            });
+          }, 1000);
+          return;
+        } else {
+          throw new Error("登入失敗，無法獲取 token 或用戶信息");
+        }
+      }
+
       showAlert("登入成功！", "success");
-      navigate("/index2");
+      
+      // 確保使用 setTimeout 使警告訊息能被看到，然後再跳轉
+      setTimeout(() => {
+        navigate("/index2");
+      }, 1000);
     } catch (error: any) {
       console.error("錯誤:", error);
-      showAlert(error.message, "error");
+      showAlert(error.message || "登入失敗，請重試", "error");
+      // 清除可能存在的無效 token
+      AuthService.removeToken();
     } finally {
       setLoading(false);
     }

@@ -22,15 +22,17 @@ export class ApiClient {
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     const { status } = response;
     
-    if (status === 401) {
-      // Token過期或無效，清除認證信息
-      AuthService.clearAuth();
-      window.location.href = '/login';
-      return { error: '認證已過期，請重新登入', status };
-    }
-
     try {
       const data = await response.json();
+      
+      if (status === 401) {
+        // Token過期或無效，清除認證信息但不立即重定向
+        // 讓調用方決定如何處理認證失敗
+        console.warn('認證失敗:', data.error || '認證已過期，請重新登入');
+        AuthService.clearAuth();
+        return { error: data.error || '認證已過期，請重新登入', status };
+      }
+      
       return status >= 200 && status < 300
         ? { data, status }
         : { error: data.error || '請求失敗', status };
@@ -119,27 +121,52 @@ export class ApiClient {
 
   // 登入方法
   async login(username: string, password: string): Promise<ApiResponse> {
-    const response = await this.post(
-      `${API_CONFIG.AUTH.BASE_URL}${API_CONFIG.AUTH.ENDPOINTS.LOGIN}`,
-      { username, password },
-    );
-
-    if (response.data) {
-      // 設置認證信息
-      const { token } = response.data;
-      if (token) {
-        AuthService.setToken(token);
-        // 同時也設置到 localStorage 作為備用
-        localStorage.setItem('auth_token', token);
-      }
-      const { username, email } = response.data;
-      AuthService.setUser({
-        username,
-        email,
+    try {
+      const response = await fetch(`${API_CONFIG.AUTH.BASE_URL}${API_CONFIG.AUTH.ENDPOINTS.LOGIN}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include',
       });
-    }
 
-    return response;
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return {
+          error: data.error || '登入失敗',
+          status: response.status,
+        };
+      }
+
+      // 確保直接從回應中提取 token
+      if (data && data.token) {
+        // 直接設置 token 到 localStorage
+        AuthService.setToken(data.token);
+        
+        // 如果有用戶信息，也保存它
+        if (data.username) {
+          AuthService.setUser({
+            username: data.username,
+            email: data.email || '',
+          });
+        }
+      } else {
+        console.warn('回應中沒有找到 token');
+      }
+
+      return {
+        data,
+        status: response.status,
+      };
+    } catch (error) {
+      console.error('登入請求發生錯誤:', error);
+      return {
+        error: '網絡請求失敗',
+        status: 0,
+      };
+    }
   }
 
   // 登出方法

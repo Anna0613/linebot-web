@@ -16,6 +16,7 @@ import tenacity
 import secrets
 import string
 from werkzeug.security import generate_password_hash
+import time
 
 # 配置日誌
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -361,36 +362,63 @@ def line_callback():
 def verify_line_token():
     token = request.json.get('token')
     logger.debug(f"Verifying token: {token}")
-    try:
-        decoded = verify_token(token)
-        if decoded.get('login_type') != 'line':
-            logger.error("Not a LINE login token")
-            return jsonify({"error": "Invalid token type"}), 401
-        line_user = LineUser.query.filter_by(line_id=decoded['line_id']).first()
-        if not line_user:
-            logger.error("LINE account not found")
-            return jsonify({"error": "LINE account not found"}), 404
-        user = line_user.user
-        if user:
-            logger.info(f"Token verified for user: {line_user.line_id}")
-            return jsonify({
-                'line_id': line_user.line_id,
-                'display_name': line_user.display_name,
-                'picture_url': line_user.picture_url,
-                'username': user.username,
-                'email': user.email
-            })
-        logger.error("User not found")
-        return jsonify({"error": "User not found"}), 404
-    except ExpiredSignatureError as e:
-        logger.error(f"Token expired: {str(e)}")
-        return jsonify({"error": "Token has expired"}), 401
-    except InvalidTokenError as e:
-        logger.error(f"Invalid token: {str(e)}")
-        return jsonify({"error": str(e)}), 401
-    except Exception as e:
-        logger.error(f"Unexpected error during token verification: {str(e)}")
-        return jsonify({"error": "An unexpected error occurred"}), 500
+    
+    if not token:
+        logger.error("Token missing")
+        return jsonify({"error": "Token is missing"}), 400
+    
+    # 增加重試機制
+    max_retries = 3
+    retry_count = 0
+    retry_delay = 1  # 初始延遲（秒）
+    
+    while retry_count < max_retries:
+        try:
+            decoded = verify_token(token)
+            if decoded.get('login_type') != 'line':
+                logger.error("Not a LINE login token")
+                return jsonify({"error": "Invalid token type"}), 401
+                
+            line_user = LineUser.query.filter_by(line_id=decoded['line_id']).first()
+            if not line_user:
+                logger.error("LINE account not found")
+                return jsonify({"error": "LINE account not found"}), 404
+                
+            user = line_user.user
+            if user:
+                logger.info(f"Token verified for user: {line_user.line_id}")
+                return jsonify({
+                    'line_id': line_user.line_id,
+                    'display_name': line_user.display_name,
+                    'picture_url': line_user.picture_url,
+                    'username': user.username,
+                    'email': user.email
+                })
+                
+            logger.error("User not found")
+            return jsonify({"error": "User not found"}), 404
+            
+        except ExpiredSignatureError as e:
+            logger.error(f"Token expired: {str(e)}")
+            return jsonify({"error": "Token has expired"}), 401
+            
+        except InvalidTokenError as e:
+            # 對於無效的 token，嘗試重試
+            retry_count += 1
+            if retry_count < max_retries:
+                logger.warning(f"Invalid token, retrying ({retry_count}/{max_retries}): {str(e)}")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # 指數退避
+            else:
+                logger.error(f"Invalid token after {max_retries} retries: {str(e)}")
+                return jsonify({"error": str(e)}), 401
+                
+        except Exception as e:
+            logger.error(f"Unexpected error during token verification: {str(e)}")
+            return jsonify({"error": "An unexpected error occurred"}), 500
+            
+    # 如果所有重試都失敗
+    return jsonify({"error": "Failed to verify token after multiple attempts"}), 401
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('LINE_LOGIN_PORT', 5502)), debug=True, use_reloader=False)

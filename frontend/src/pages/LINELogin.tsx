@@ -6,6 +6,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import { AuthService } from '../services/auth';
+import { LineLoginService } from '../services/lineLogin';
 
 interface User {
   line_id: string;
@@ -26,36 +28,29 @@ const LINELogin: React.FC = () => {
 
     if (token) {
       setLoading(true);
-      localStorage.setItem('line_token', token);
-      verifyToken(token).then((userData) => {
-        if (userData) {
-          setUser(userData);
+      AuthService.setToken(token);
+      
+      const lineLoginService = LineLoginService.getInstance();
+      lineLoginService.verifyToken(token)
+        .then((response) => {
+          if (response.error) {
+            throw new Error(response.error);
+          }
+          setUser(response as User);
           navigate('/index2');
-        }
-      }).catch((err) => {
-        setError('Failed to verify token');
-        console.error(err);
-      }).finally(() => {
-        setLoading(false);
-      });
+        })
+        .catch((err) => {
+          setError('Failed to verify token');
+          console.error(err);
+          AuthService.removeToken();
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     } else if (displayName) {
       setUser({ line_id: '', display_name: displayName, picture_url: '' });
     }
   }, [searchParams]);
-  const verifyToken = async (token: string): Promise<User | null> => {
-    try {
-      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
-      if (!response.ok) throw new Error('Token verification failed');
-      return await response.json();
-    } catch (error) {
-      console.error('Error verifying token:', error);
-      return null;
-    }
-  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

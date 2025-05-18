@@ -9,22 +9,13 @@ export interface AuthUser {
 }
 
 export class AuthService {
-  // 獲取token，優先從cookie獲取，如果沒有則從localStorage獲取
+  // 獲取token，統一使用localStorage
   static getToken(): string | null {
-    // 嘗試從cookie獲取token
-    const cookies = document.cookie.split(';');
-    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
-    if (tokenCookie) {
-      return tokenCookie.split('=')[1];
-    }
-    
-    // 如果cookie中沒有，則從localStorage獲取
     return localStorage.getItem(TOKEN_KEY);
   }
 
   // 設置token和用戶信息
   static setToken(token: string): void {
-    // 同時保存在localStorage作為備用
     localStorage.setItem(TOKEN_KEY, token);
   }
 
@@ -33,7 +24,7 @@ export class AuthService {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USERNAME_KEY);
     localStorage.removeItem(EMAIL_KEY);
-    // 同時清除cookie中的token
+    // 清除cookie中的token以確保不會有舊token留在cookies中
     document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   }
 

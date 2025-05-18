@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import Footer2 from '../components/LoginHome/Footer2';
 import Navbar2 from '../components/LoginHome/Navbar2';
 import HomeBotfly from '../components/LoginHome/HomeBotfly';
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import { AuthService } from '../services/auth';
+import { LineLoginService } from '../services/lineLogin';
 
 interface User {
   line_id?: string;
@@ -17,6 +19,7 @@ interface User {
 const LoginHome = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,11 +28,24 @@ const LoginHome = () => {
     const token = searchParams.get('token');
     const displayName = searchParams.get('display_name');
     const loginType = searchParams.get('login_type');
+    
+    // 檢查 location.state 是否存在並包含 directLogin 標記
+    const stateData = location.state as { username?: string; directLogin?: boolean } | null;
+    const directLoginUser = stateData?.directLogin ? stateData.username : null;
   
-  const verify = async () => {
+    const verify = async () => {
       setLoading(true);
+      
+      // 如果是從登入頁面直接重定向過來的
+      if (directLoginUser) {
+        setUser({ display_name: directLoginUser, username: directLoginUser });
+        setLoading(false);
+        return;
+      }
+      
       try {
-        const storedToken = token || localStorage.getItem('auth_token');
+        // 使用 AuthService 獲取 token，而不是直接從 localStorage 獲取
+        const storedToken = token || AuthService.getToken();
         if (!storedToken) {
           setError('請先登入');
           navigate('/login');
@@ -37,25 +53,36 @@ const LoginHome = () => {
         }
         
         if (loginType === 'line') {
-          // LINE登入驗證流程
-          const userData = await verifyLineToken(storedToken);
-          if (userData) {
-            setUser(userData);
-            localStorage.setItem('auth_token', storedToken);
-          } else {
+          // LINE登入驗證流程，使用帶有重試機制的方法
+          const lineLoginService = LineLoginService.getInstance();
+          try {
+            const response = await lineLoginService.verifyToken(storedToken);
+            if (response.error) {
+              throw new Error(response.error);
+            }
+            
+            setUser(response as User);
+            // 使用 AuthService 保存 token
+            AuthService.setToken(storedToken);
+          } catch (err) {
+            console.error('LINE Token 驗證失敗:', err);
             setError('LINE Token 驗證失敗');
+            AuthService.removeToken();
             navigate('/line-login');
           }
         } else if (displayName) {
           setUser({ display_name: displayName });
         } else {
           // 一般帳號登入流程或檢查已存在的登入狀態
-          localStorage.setItem('auth_token', storedToken);
+          // 使用 AuthService 保存 token
+          AuthService.setToken(storedToken);
           await checkLoginStatus();
         }
       } catch (error) {
         console.error('驗證錯誤:', error);
         setError('驗證失敗');
+        // 錯誤時清除 token
+        AuthService.removeToken();
         navigate('/login');
       } finally {
         setLoading(false);
@@ -63,7 +90,8 @@ const LoginHome = () => {
     };
   
     verify();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, location.state]);
+
   const verifyLineToken = async (token: string): Promise<User | null> => {
     try {
       const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
@@ -82,7 +110,7 @@ const LoginHome = () => {
 
   const checkLoginStatus = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = AuthService.getToken();
       if (!token) {
         throw new Error('No token found');
       }

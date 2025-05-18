@@ -42,23 +42,37 @@ export class LineLoginService {
     }
   }
 
-  // 驗證LINE登入token
-  public async verifyToken(token: string): Promise<LineLoginResponse> {
-    try {
-      const response = await this.apiClient.post<LineLoginResponse>(
-        `${API_CONFIG.LINE_LOGIN.BASE_URL}${API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN}`,
-        { token }
-      );
+  // 驗證LINE登入token，增加重試機制
+  public async verifyToken(token: string, maxRetries = 3): Promise<LineLoginResponse> {
+    let retries = 0;
+    let lastError: Error | null = null;
 
-      if (response.error) {
-        throw new Error(response.error);
+    while (retries < maxRetries) {
+      try {
+        const response = await this.apiClient.post<LineLoginResponse>(
+          `${API_CONFIG.LINE_LOGIN.BASE_URL}${API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN}`,
+          { token }
+        );
+
+        if (response.error) {
+          throw new Error(response.error);
+        }
+
+        return response.data || {};
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Token驗證失敗');
+        retries++;
+        
+        // 如果還有重試次數，等待一段時間後重試
+        if (retries < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * retries)); // 逐次增加等待時間
+          console.log(`嘗試重新驗證 LINE token，第 ${retries} 次...`);
+        }
       }
-
-      return response.data || {};
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Token驗證失敗'
-      };
     }
+
+    return {
+      error: lastError?.message || 'Token驗證失敗，已達最大重試次數'
+    };
   }
 }

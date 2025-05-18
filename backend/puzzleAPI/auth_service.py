@@ -51,12 +51,33 @@ def verify_token(token: str) -> dict:
 # Cookie配置
 def get_cookie_settings(token: str):
     """獲取Cookie設置"""
-    return {
+    # 判斷是否在本地開發環境
+    is_development = os.getenv('ENVIRONMENT', 'production').lower() == 'development'
+    
+    settings = {
         "key": "token",
         "value": token,
         "httponly": True,
-        "secure": True,
-        "samesite": "none",
         "max_age": ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         "path": "/",
     }
+    
+    # 在生產環境設置更嚴格的選項，開發環境下使用較寬鬆的設置
+    if not is_development:
+        settings.update({
+            "secure": True,
+            "samesite": "lax",  # 使用 lax 以支援現代瀏覽器
+        })
+        
+        # 只在生產環境下設置domain
+        # 注意：不要在本地開發中設置 domain，這可能會導致無法正常設置 cookie
+        if os.getenv('DOMAIN'):
+            settings["domain"] = os.getenv('DOMAIN')
+    else:
+        # 本地開發環境設置
+        settings.update({
+            "secure": False,  # 本地開發通常用 http
+            "samesite": None,  # 允許跨域使用
+        })
+    
+    return settings

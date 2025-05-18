@@ -122,26 +122,26 @@ def token_required(f):
                 data = verify_token(token)
                 if data:
                     return f(*args, **kwargs)
+                # 如果解析成功但驗證失敗，直接返回錯誤
+                return jsonify({'error': 'Invalid token from Authorization header'}), 401
             except Exception as e:
-                auth_error = str(e)
+                # Authorization header 中的 token 無效，返回具體錯誤
+                return jsonify({'error': f'Invalid token: {str(e)}'}), 401
         
-        # 如果 header 中的 token 無效，則嘗試從 cookies 獲取
-        if not token or not data:
-            token = request.cookies.get('token')
-            if token:
-                try:
-                    data = verify_token(token)
-                    if data:
-                        return f(*args, **kwargs)
-                except Exception as e:
-                    auth_error = str(e)
+        # 只有當 Authorization header 不存在時，才嘗試從 cookies 獲取
+        token = request.cookies.get('token')
+        if token:
+            try:
+                data = verify_token(token)
+                if data:
+                    return f(*args, **kwargs)
+                # cookie token 驗證失敗
+                return jsonify({'error': 'Invalid token from cookie'}), 401
+            except Exception as e:
+                return jsonify({'error': f'Invalid token from cookie: {str(e)}'}), 401
         
-        # 如果兩種方式都失敗
-        if auth_error:
-            return jsonify({'error': f'Invalid token: {auth_error}'}), 401
+        # 如果既沒有 header 也沒有 cookie
         return jsonify({'error': 'Token is missing'}), 401
-            
-        return f(*args, **kwargs)
     return decorated
 
 # 註冊 API
@@ -297,11 +297,20 @@ def login():
             'message': 'Login successful!',
             'username': username,
             'email': user[1],
+            'token': token,
             'login_type': 'general'
         }), 200)
 
+        # 設置 cookie，確保適當的 SameSite 屬性
         cookie_settings = get_cookie_settings(token)
         response.set_cookie(**cookie_settings)
+        
+        # 添加額外的 CORS header，確保能處理跨域情況
+        origin = request.headers.get('Origin')
+        if origin in allowed_origins or origin.startswith('http://localhost:'):
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+        
         return response
     finally:
         cur.close()
@@ -451,14 +460,16 @@ def change_password():
 @app.route('/check_login', methods=['GET'])
 @token_required
 def check_login():
-    # 嘗試從 Authorization header 獲取 token
+    # 優先使用 Authorization header 中的 token
     auth_header = request.headers.get('Authorization')
     if auth_header:
         token = extract_token_from_header(auth_header)
+        data = verify_token(token)
     else:
+        # 只有在 Authorization header 不存在時才使用 cookie
         token = request.cookies.get('token')
-
-    data = verify_token(token)
+        data = verify_token(token)
+    
     return jsonify({
         'message': f'User {data["username"]} is logged in',
         'username': data['username'],
