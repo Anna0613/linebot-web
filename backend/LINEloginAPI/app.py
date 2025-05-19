@@ -35,28 +35,46 @@ for var in required_env_vars:
         sys.exit(1)
 
 app = Flask(__name__)
+
+# 定義允許的來源清單
+allowed_origins = [
+    "http://localhost:8080",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://127.0.0.1:5173",
+    "http://127.0.0.1:8080",
+    "https://127.0.0.1:8080",
+    "http://line-login.jkl921102.org",
+    "https://line-login.jkl921102.org"
+]
+
+if os.getenv('FRONTEND_URL'):
+    allowed_origins.append(os.getenv('FRONTEND_URL'))
+
+# 配置 CORS
 CORS(app, 
      supports_credentials=True,
      resources={r"/api/*": {
-         "origins": [
-             "http://localhost:8080",
-             "http://localhost:3000",
-             "http://localhost:5173",
-             "https://localhost:5173",
-             "http://127.0.0.1:5173",
-             "https://127.0.0.1:5173",
-             "http://127.0.0.1:8080",
-             "https://127.0.0.1:8080",
-             "http://line-login.jkl921102.org",
-             "https://line-login.jkl921102.org",
-             os.getenv('FRONTEND_URL')
-         ],
+         "origins": allowed_origins,
          "allow_headers": ["Content-Type", "Authorization", "Referer", "User-Agent", 
                          "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform"],
          "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          "expose_headers": ["Set-Cookie"]
      }}
 )
+
+# 添加自定義 CORS 處理
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin:
+        # 檢查是否為允許的來源
+        if origin in allowed_origins or any(origin.startswith(allowed) for allowed in allowed_origins):
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
 
 # 資料庫配置
 app.config['SQLALCHEMY_DATABASE_URI'] = (

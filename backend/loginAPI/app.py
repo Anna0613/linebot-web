@@ -63,7 +63,7 @@ CORS(app,
 @app.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
-    if origin in allowed_origins or origin.startswith('http://localhost:'):
+    if origin is not None and (origin in allowed_origins or origin.startswith('http://localhost:')):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
