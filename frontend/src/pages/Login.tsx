@@ -128,7 +128,8 @@ const Login = () => {
             navigate("/index2", { 
               state: { 
                 username: response.data.username, 
-                directLogin: true 
+                directLogin: true,
+                loginType: 'general'
               } 
             });
           }, 1000);

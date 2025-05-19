@@ -38,14 +38,14 @@ const Setting: React.FC = () => {
       setLoading(true);
       if (token) {
         localStorage.setItem('auth_token', token);
-        const userData = await verifyLineToken(token);
+        const userData = await verifyToken(token);
         if (userData) {
           setUser(userData);
           setDisplayName(userData.display_name);
           setEmail(userData.email || "");
           setUserImage(userData.picture_url || null);
         } else {
-          setError('LINE Token 驗證失敗');
+          setError('驗證失敗，請重新登入');
           navigate('/line-login');
         }
         setLoading(false);
@@ -57,7 +57,7 @@ const Setting: React.FC = () => {
       } else {
         const storedToken = localStorage.getItem('auth_token');
         if (storedToken) {
-          const userData = await verifyLineToken(storedToken);
+          const userData = await verifyToken(storedToken);
           if (userData) {
             setUser(userData);
             setDisplayName(userData.display_name);
@@ -75,17 +75,58 @@ const Setting: React.FC = () => {
 
     verify();
   }, [searchParams, navigate]);
-  const verifyLineToken = async (token: string): Promise<User | null> => {
+  const verifyToken = async (token: string): Promise<User | null> => {
     try {
-      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
+      // 從token中解析登入類型
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const loginType = tokenData.login_type;
+
+      let response;
+      if (loginType === 'line') {
+        // LINE登入驗證
+        response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({ token }),
+        });
+      } else {
+        // 一般帳號驗證
+        response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN), {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+        });
+      }
+
       if (!response.ok) throw new Error('Token 驗證失敗');
-      return await response.json();
+      const data = await response.json();
+
+      // 針對一般帳號登入的回應格式處理
+      if (loginType !== 'line') {
+        const username = data.message.split('User ')[1].split(' is logged in')[0];
+        return {
+          display_name: username,
+          username: username,
+          email: data.email || '',
+          isLineUser: false
+        };
+      }
+
+      // LINE登入的回應已經符合User格式
+      return {
+        ...data,
+        isLineUser: true
+      };
     } catch (error) {
-      console.error('驗證 LINE token 錯誤:', error);
+      console.error('驗證 token 錯誤:', error);
       return null;
     }
   };

@@ -44,16 +44,25 @@ const LoginHome = () => {
       }
       
       try {
-        // 使用 AuthService 獲取 token，而不是直接從 localStorage 獲取
+        // 檢查是否是從一般帳號登入頁面直接跳轉過來的
+        if (directLoginUser || loginType === 'general') {
+          setUser({ 
+            display_name: directLoginUser || displayName, 
+            username: directLoginUser || displayName 
+          });
+          return;
+        }
+
+        // 使用 AuthService 獲取 token
         const storedToken = token || AuthService.getToken();
         if (!storedToken) {
           setError('請先登入');
           navigate('/login');
           return;
         }
-        
+
         if (loginType === 'line') {
-          // LINE登入驗證流程，使用帶有重試機制的方法
+          // LINE登入驗證流程
           const lineLoginService = LineLoginService.getInstance();
           try {
             const response = await lineLoginService.verifyToken(storedToken);
@@ -62,7 +71,6 @@ const LoginHome = () => {
             }
             
             setUser(response as User);
-            // 使用 AuthService 保存 token
             AuthService.setToken(storedToken);
           } catch (err) {
             console.error('LINE Token 驗證失敗:', err);
@@ -73,9 +81,7 @@ const LoginHome = () => {
         } else if (displayName) {
           setUser({ display_name: displayName });
         } else {
-          // 一般帳號登入流程或檢查已存在的登入狀態
-          // 使用 AuthService 保存 token
-          AuthService.setToken(storedToken);
+          // 其他情況使用一般的 check_login API
           await checkLoginStatus();
         }
       } catch (error) {

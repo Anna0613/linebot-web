@@ -61,7 +61,8 @@ CORS(app,
          "allow_headers": ["Content-Type", "Authorization", "Referer", "User-Agent", 
                          "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform"],
          "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-         "expose_headers": ["Set-Cookie"]
+         "expose_headers": ["Set-Cookie"],
+         "max_age": 3600
      }}
 )
 
@@ -74,6 +75,12 @@ def after_request(response):
         if origin in allowed_origins or any(origin.startswith(allowed) for allowed in allowed_origins):
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Credentials'] = 'true'
+            
+            # 如果是 preflight request
+            if request.method == 'OPTIONS':
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Referer, User-Agent, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform'
+                response.headers['Access-Control-Max-Age'] = '3600'
     return response
 
 # 資料庫配置
@@ -393,25 +400,44 @@ def verify_line_token():
     while retry_count < max_retries:
         try:
             decoded = verify_token(token)
-            if decoded.get('login_type') != 'line':
-                logger.error("Not a LINE login token")
-                return jsonify({"error": "Invalid token type"}), 401
-                
-            line_user = LineUser.query.filter_by(line_id=decoded['line_id']).first()
-            if not line_user:
-                logger.error("LINE account not found")
-                return jsonify({"error": "LINE account not found"}), 404
-                
-            user = line_user.user
-            if user:
-                logger.info(f"Token verified for user: {line_user.line_id}")
-                return jsonify({
-                    'line_id': line_user.line_id,
-                    'display_name': line_user.display_name,
-                    'picture_url': line_user.picture_url,
-                    'username': user.username,
-                    'email': user.email
-                })
+            login_type = decoded.get('login_type', '')
+
+            if login_type == 'line':
+                # LINE登入驗證
+                if not decoded.get('line_id'):
+                    logger.error("LINE ID missing in token")
+                    return jsonify({"error": "Invalid token data"}), 401
+
+                line_user = LineUser.query.filter_by(line_id=decoded['line_id']).first()
+                if not line_user:
+                    logger.error("LINE account not found")
+                    return jsonify({"error": "LINE account not found"}), 404
+                    
+                user = line_user.user
+                if user:
+                    logger.info(f"Token verified for LINE user: {line_user.line_id}")
+                    return jsonify({
+                        'line_id': line_user.line_id,
+                        'display_name': line_user.display_name,
+                        'picture_url': line_user.picture_url,
+                        'username': user.username,
+                        'email': user.email,
+                        'login_type': 'line'
+                    })
+            elif login_type == 'general':
+                # 一般帳號驗證
+                user = User.query.filter_by(username=decoded.get('username')).first()
+                if user:
+                    logger.info(f"Token verified for general user: {user.username}")
+                    return jsonify({
+                        'display_name': user.username,
+                        'username': user.username,
+                        'email': user.email,
+                        'login_type': 'general'
+                    })
+            else:
+                logger.error(f"Invalid login type: {login_type}")
+                return jsonify({"error": "Invalid login type"}), 401
                 
             logger.error("User not found")
             return jsonify({"error": "User not found"}), 404
