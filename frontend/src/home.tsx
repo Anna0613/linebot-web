@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import ForgetThePassword from "./pages/ForgetThePassword";
 import Register from "./pages/Register";
+import LINELogin from "./pages/LINELogin";
 import EmailVerification from "./pages/EmailVerification";
 import NotFound from "./pages/NotFound";
 import Index2 from "./pages/LoginHome";
@@ -41,7 +42,7 @@ const App = () => (
           <Route path="/verify-email" element={<EmailVerification />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/editbot" element={<Editbot />} />
-
+          <Route path="/line-login" element={<LINELogin />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

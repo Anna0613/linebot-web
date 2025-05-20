@@ -180,7 +180,20 @@ const handleRemoveImage = () => {
   };
 
   const handleConnect = () => {
-    navigate('/line-login');
+    // 確保有用戶資訊和token
+    const token = localStorage.getItem('auth_token');
+    if (!user || !token) {
+      console.error('No user data or token available');
+      return;
+    }
+
+    // 將當前用戶資訊作為查詢參數傳遞
+    const queryParams = new URLSearchParams({
+      linking_user_id: user.username || '',
+      token: token
+    });
+    
+    navigate(`/line-login?${queryParams.toString()}`);
   };
 
   const handleDisconnect = async () => {

@@ -222,8 +222,10 @@ def line_login():
 def line_callback():
     code = request.args.get('code')
     state = request.args.get('state')
+    linking_user_id = request.args.get('linking_user_id')
+    linking_token = request.args.get('linking_token')
     
-    logger.debug(f"Callback received: code={code}, state={state}")
+    logger.debug(f"Callback received: code={code}, state={state}, linking_user_id={linking_user_id}")
     if not code:
         logger.error("Authorization code missing")
         return jsonify({"error": "Authorization code missing"}), 400
@@ -244,6 +246,17 @@ def line_callback():
         tokens = response.json()
         access_token = tokens.get('access_token')
         logger.debug(f"Access token obtained: {access_token}")
+
+        # 驗證linking_token（如果存在）
+        if linking_token and linking_user_id:
+            try:
+                # 解析token獲取用戶信息
+                decoded_token = verify_token(linking_token)
+                if decoded_token.get('username') != linking_user_id:
+                    raise ValueError("Token username mismatch")
+            except Exception as e:
+                logger.error(f"Failed to verify linking token: {e}")
+                return jsonify({"error": "Invalid linking token"}), 400
     except requests.RequestException as e:
         logger.error(f"Failed to obtain access token: {e}")
         return jsonify({"error": "Failed to obtain access token"}), 400
@@ -268,16 +281,44 @@ def line_callback():
         display_name = display_name[:255] if display_name else None
         picture_url = picture_url[:255] if picture_url else None
 
-        line_user = LineUser.query.filter_by(line_id=line_id).first()
-        if line_user:
-            logger.info(f"Existing LINE user found: line_id={line_id}, updating data")
+        if linking_user_id:
+            # 尋找要連結的用戶
+            user = User.query.filter_by(username=linking_user_id).first()
+            if not user:
+                logger.error(f"User not found for linking: {linking_user_id}")
+                return jsonify({"error": "User not found"}), 404
+
+            # 檢查是否已有LINE帳號連結
+            existing_line_user = LineUser.query.filter_by(line_id=line_id).first()
+            if existing_line_user:
+                if existing_line_user.user_id != user.id:
+                    logger.error(f"LINE account already linked to different user: {line_id}")
+                    return jsonify({"error": "LINE account already linked to different user"}), 400
+                # 更新現有LINE連結
+                existing_line_user.display_name = display_name
+                existing_line_user.picture_url = picture_url
+            else:
+                # 創建新的LINE連結
+                line_user = LineUser(
+                    user_id=user.id,
+                    line_id=line_id,
+                    display_name=display_name,
+                    picture_url=picture_url
+                )
+                db.session.add(line_user)
+            db.session.commit()
+            logger.info(f"LINE account linked to user: {linking_user_id}")
+            user = User.query.filter_by(username=linking_user_id).first()
+        elif LineUser.query.filter_by(line_id=line_id).first():
+            # 已存在的LINE用戶登入
+            line_user = LineUser.query.filter_by(line_id=line_id).first()
             line_user.display_name = display_name
             line_user.picture_url = picture_url
             db.session.commit()
             logger.info(f"LINE user updated: line_id={line_id}, display_name={display_name}")
             user = line_user.user
         else:
-            # 嘗試從 id_token 中獲取 email
+            # 新用戶，嘗試從 id_token 中獲取 email
             email = None
             try:
                 id_token = tokens.get('id_token')

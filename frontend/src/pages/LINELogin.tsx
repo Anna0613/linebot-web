@@ -25,32 +25,54 @@ const LINELogin: React.FC = () => {
   useEffect(() => {
     const token = searchParams.get('token');
     const displayName = searchParams.get('display_name');
+    const linkingUserId = searchParams.get('linking_user_id');
 
-    if (token) {
-      setLoading(true);
-      AuthService.setToken(token);
-      
-      const lineLoginService = LineLoginService.getInstance();
-      lineLoginService.verifyToken(token)
-        .then((response) => {
+    const handleLogin = async () => {
+      if (!token) {
+        if (displayName) {
+          setUser({ line_id: '', display_name: displayName, picture_url: '' });
+        }
+        return;
+      }
+
+      try {
+        setLoading(true);
+        AuthService.setToken(token);
+        const lineLoginService = LineLoginService.getInstance();
+
+        // 如果是連接已有帳號的情況
+        if (linkingUserId) {
+          const response = await lineLoginService.getLoginUrl();
+          if (response.error) {
+            throw new Error(response.error);
+          }
+          if (response.login_url) {
+            // 將連接資訊添加到URL
+            const loginUrl = new URL(response.login_url);
+            loginUrl.searchParams.append('linking_user_id', linkingUserId);
+            loginUrl.searchParams.append('linking_token', token);
+            window.location.href = loginUrl.toString();
+          }
+        } else {
+          // 一般LINE登入流程
+          const response = await lineLoginService.verifyToken(token);
           if (response.error) {
             throw new Error(response.error);
           }
           setUser(response as User);
           navigate('/index2');
-        })
-        .catch((err) => {
-          setError('Failed to verify token');
-          console.error(err);
-          AuthService.removeToken();
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else if (displayName) {
-      setUser({ line_id: '', display_name: displayName, picture_url: '' });
-    }
-  }, [searchParams]);
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err instanceof Error ? err.message : '驗證失敗');
+        AuthService.removeToken();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    handleLogin();
+  }, [searchParams, navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
