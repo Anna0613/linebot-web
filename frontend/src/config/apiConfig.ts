@@ -10,6 +10,7 @@ export const API_CONFIG = {
     ENDPOINTS: {
       LINE_LOGIN: '/line-login',
       VERIFY_TOKEN: '/verify-token',
+      DISCONNECT: '/disconnect',
     },
   },
   AUTH: {

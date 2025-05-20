@@ -116,7 +116,7 @@ const Setting: React.FC = () => {
           display_name: username,
           username: username,
           email: data.email || '',
-          isLineUser: false
+          isLineUser: false,
         };
       }
 
@@ -175,8 +175,35 @@ const Setting: React.FC = () => {
     }
   };
 
-  const handleRemoveImage = () => {
+const handleRemoveImage = () => {
     setUserImage(null);
+  };
+
+  const handleConnect = () => {
+    navigate('/line-login');
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.DISCONNECT), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        setUser(prev => prev ? { ...prev, isLineUser: false, line_id: undefined } : null);
+      } else {
+        const errorData = await response.json();
+        console.error('中斷 LINE 連結失敗:', errorData);
+      }
+    } catch (error) {
+      console.error('中斷 LINE 連結時發生錯誤:', error);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -329,15 +356,18 @@ const Setting: React.FC = () => {
                 <img src="/專題圖片/line-logo.svg" alt="LINE" className="w-10 h-10" />
                 <div>
                   <div className="text-base font-semibold">LINE</div>
-                  <div className="text-sm text-gray-700">{user?.display_name}</div>
+                  {user?.isLineUser && (
+                    <div className="text-sm text-gray-700">{user?.display_name}</div>
+                  )}
                 </div>
               </div>
               <Button
                 className="rounded-md h-9"
                 variant="outline"
                 size="sm"
+                onClick={() => user?.isLineUser ? handleDisconnect() : handleConnect()}
               >
-                中斷連結
+                {user?.isLineUser ? '中斷連結' : '連接帳號'}
               </Button>
             </div>
           </div>
