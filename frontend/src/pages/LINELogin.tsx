@@ -6,6 +6,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import { AuthService } from '../services/auth';
+import { LineLoginService } from '../services/lineLogin';
 
 interface User {
   line_id: string;
@@ -23,39 +25,54 @@ const LINELogin: React.FC = () => {
   useEffect(() => {
     const token = searchParams.get('token');
     const displayName = searchParams.get('display_name');
+    const linkingUserId = searchParams.get('linking_user_id');
 
-    if (token) {
-      setLoading(true);
-      localStorage.setItem('line_token', token);
-      verifyToken(token).then((userData) => {
-        if (userData) {
-          setUser(userData);
+    const handleLogin = async () => {
+      if (!token) {
+        if (displayName) {
+          setUser({ line_id: '', display_name: displayName, picture_url: '' });
+        }
+        return;
+      }
+
+      try {
+        setLoading(true);
+        AuthService.setToken(token);
+        const lineLoginService = LineLoginService.getInstance();
+
+        // 如果是連接已有帳號的情況
+        if (linkingUserId) {
+          const response = await lineLoginService.getLoginUrl();
+          if (response.error) {
+            throw new Error(response.error);
+          }
+          if (response.login_url) {
+            // 將連接資訊添加到URL
+            const loginUrl = new URL(response.login_url);
+            loginUrl.searchParams.append('linking_user_id', linkingUserId);
+            loginUrl.searchParams.append('linking_token', token);
+            window.location.href = loginUrl.toString();
+          }
+        } else {
+          // 一般LINE登入流程
+          const response = await lineLoginService.verifyToken(token);
+          if (response.error) {
+            throw new Error(response.error);
+          }
+          setUser(response as User);
           navigate('/index2');
         }
-      }).catch((err) => {
-        setError('Failed to verify token');
+      } catch (err) {
         console.error(err);
-      }).finally(() => {
+        setError(err instanceof Error ? err.message : '驗證失敗');
+        AuthService.removeToken();
+      } finally {
         setLoading(false);
-      });
-    } else if (displayName) {
-      setUser({ line_id: '', display_name: displayName, picture_url: '' });
-    }
-  }, [searchParams]);
-  const verifyToken = async (token: string): Promise<User | null> => {
-    try {
-      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
-      if (!response.ok) throw new Error('Token verification failed');
-      return await response.json();
-    } catch (error) {
-      console.error('Error verifying token:', error);
-      return null;
-    }
-  };
+      }
+    };
+
+    handleLogin();
+  }, [searchParams, navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

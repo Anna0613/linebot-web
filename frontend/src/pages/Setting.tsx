@@ -6,6 +6,7 @@ import Footer from "@/components/Index/Footer";
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import { AuthService } from '../services/auth';
 
 interface User {
   line_id?: string;
@@ -36,88 +37,106 @@ const Setting: React.FC = () => {
 
     const verify = async () => {
       setLoading(true);
-      if (token) {
-        localStorage.setItem('auth_token', token);
-        const userData = await verifyLineToken(token);
-        if (userData) {
-          setUser(userData);
-          setDisplayName(userData.display_name);
-          setEmail(userData.email || "");
-          setUserImage(userData.picture_url || null);
-        } else {
-          setError('LINE Token 驗證失敗');
-          navigate('/line-login');
+      
+      try {
+        // 如果URL中有token，先存儲它
+        if (token) {
+          console.log('儲存URL中的token到localStorage');
+          AuthService.setToken(token);
         }
-        setLoading(false);
-      } else if (displayNameParam) {
-        const fallbackUser = { display_name: displayNameParam };
-        setUser(fallbackUser);
-        setDisplayName(displayNameParam);
-        setLoading(false);
-      } else {
-        const storedToken = localStorage.getItem('auth_token');
+        
+        // 統一使用AuthService獲取token
+        const storedToken = AuthService.getToken();
+        
         if (storedToken) {
-          const userData = await verifyLineToken(storedToken);
+          const userData = await verifyToken(storedToken);
           if (userData) {
             setUser(userData);
             setDisplayName(userData.display_name);
             setEmail(userData.email || "");
             setUserImage(userData.picture_url || null);
-            setLoading(false);
           } else {
-            setTimeout(() => checkLoginStatus(), 3000);
+            setError('驗證失敗，請重新登入');
+            AuthService.removeToken();
+            navigate('/login');
           }
+        } else if (displayNameParam) {
+          // 回退方案：使用URL參數中的display_name
+          const fallbackUser = { 
+            display_name: displayNameParam,
+            isLineUser: false
+          };
+          setUser(fallbackUser);
+          setDisplayName(displayNameParam);
         } else {
-          setTimeout(() => checkLoginStatus(), 3000);
+          setError('請先登入');
+          navigate('/login');
         }
+      } catch (error) {
+        console.error('驗證過程發生錯誤:', error);
+        setError('驗證失敗，請重新登入');
+        AuthService.removeToken();
+        navigate('/login');
+      } finally {
+        setLoading(false);
       }
     };
 
     verify();
   }, [searchParams, navigate]);
-  const verifyLineToken = async (token: string): Promise<User | null> => {
+  const verifyToken = async (token: string): Promise<User | null> => {
     try {
-      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
-      if (!response.ok) throw new Error('Token 驗證失敗');
-      return await response.json();
-    } catch (error) {
-      console.error('驗證 LINE token 錯誤:', error);
-      return null;
-    }
-  };
-  const nativeFetch = window.fetch.bind(window);
-  const checkLoginStatus = async () => {
-    try {
-      const response = await nativeFetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN), {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const username = data.message.split('User ')[1].split(' is logged in')[0];
-        const fallbackUser = { display_name: username, username };
-        setUser(fallbackUser);
-        setDisplayName(username);
+      // 從token中解析登入類型
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const loginType = tokenData.login_type;
+
+      let response;
+      if (loginType === 'line') {
+        // LINE登入驗證
+        response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({ token }),
+        });
       } else {
-        const errorData = await response.json();
-        console.error('check_login error:', errorData);
-        setError('請先登入');
-        navigate('/login');
+        // 一般帳號驗證
+        response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN), {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+        });
       }
-      setLoading(false);
+
+      if (!response.ok) throw new Error('Token 驗證失敗');
+      const data = await response.json();
+
+      // 針對一般帳號登入的回應格式處理
+      if (loginType !== 'line') {
+        const username = data.message.split('User ')[1].split(' is logged in')[0];
+        return {
+          display_name: username,
+          username: username,
+          email: data.email || '',
+          isLineUser: false,
+        };
+      }
+
+      // LINE登入的回應已經符合User格式
+      return {
+        ...data,
+        isLineUser: true
+      };
     } catch (error) {
-      console.error('檢查登入狀態錯誤:', error);
-      setError('請先登入');
-      navigate('/login');
-      setLoading(false);
+      console.error('驗證 token 錯誤:', error);
+      return null;
     }
   };
 
@@ -134,8 +153,49 @@ const Setting: React.FC = () => {
     }
   };
 
-  const handleRemoveImage = () => {
+const handleRemoveImage = () => {
     setUserImage(null);
+  };
+
+  const handleConnect = () => {
+    // 確保有用戶資訊和token
+    const token = AuthService.getToken();
+    if (!user || !token) {
+      console.error('No user data or token available');
+      return;
+    }
+
+    // 將當前用戶資訊作為查詢參數傳遞
+    const queryParams = new URLSearchParams({
+      linking_user_id: user.username || '',
+      token: token
+    });
+    
+    navigate(`/line-login?${queryParams.toString()}`);
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      const token = AuthService.getToken();
+      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.DISCONNECT), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        setUser(prev => prev ? { ...prev, isLineUser: false, line_id: undefined } : null);
+      } else {
+        const errorData = await response.json();
+        console.error('中斷 LINE 連結失敗:', errorData);
+      }
+    } catch (error) {
+      console.error('中斷 LINE 連結時發生錯誤:', error);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -288,15 +348,18 @@ const Setting: React.FC = () => {
                 <img src="/專題圖片/line-logo.svg" alt="LINE" className="w-10 h-10" />
                 <div>
                   <div className="text-base font-semibold">LINE</div>
-                  <div className="text-sm text-gray-700">{user?.display_name}</div>
+                  {user?.isLineUser && (
+                    <div className="text-sm text-gray-700">{user?.display_name}</div>
+                  )}
                 </div>
               </div>
               <Button
                 className="rounded-md h-9"
                 variant="outline"
                 size="sm"
+                onClick={() => user?.isLineUser ? handleDisconnect() : handleConnect()}
               >
-                中斷連結
+                {user?.isLineUser ? '中斷連結' : '連接帳號'}
               </Button>
             </div>
           </div>

@@ -156,26 +156,30 @@ const Register = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        let errorMessage = "註冊失敗";
+        let errorMessage;
         
-        switch (errorData.error) {
-          case "USERNAME_EXISTS":
-            errorMessage = "此使用者名稱已被使用";
-            break;
-          case "EMAIL_EXISTS":
-            errorMessage = "此電子郵件已被註冊";
-            break;
-          case "INVALID_USERNAME":
-            errorMessage = "使用者名稱格式不正確";
-            break;
-          case "INVALID_EMAIL":
-            errorMessage = "電子郵件格式不正確";
-            break;
-          case "INVALID_PASSWORD":
-            errorMessage = "密碼格式不正確";
-            break;
-          default:
-            errorMessage = errorData.message || "註冊失敗，請稍後再試";
+        if (response.status === 409) {
+          errorMessage = "此帳號或電子郵件已被註冊";
+        } else {
+          switch (errorData.error) {
+            case "USERNAME_EXISTS":
+              errorMessage = "此使用者名稱已被使用";
+              break;
+            case "EMAIL_EXISTS":
+              errorMessage = "此電子郵件已被註冊";
+              break;
+            case "INVALID_USERNAME":
+              errorMessage = "使用者名稱格式不正確";
+              break;
+            case "INVALID_EMAIL":
+              errorMessage = "電子郵件格式不正確";
+              break;
+            case "INVALID_PASSWORD":
+              errorMessage = "密碼格式不正確";
+              break;
+            default:
+              errorMessage = errorData.error || errorData.message || "註冊失敗，請稍後再試";
+          }
         }
         
         throw new Error(errorMessage);

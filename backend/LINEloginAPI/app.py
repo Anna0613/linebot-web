@@ -5,13 +5,18 @@ import requests
 import os
 from dotenv import load_dotenv
 import urllib.parse
-import jwt
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
+from auth_service import create_access_token, verify_token
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 import logging
 import sys
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql import text
 import tenacity
+import secrets
+import string
+from werkzeug.security import generate_password_hash
+import time
 
 # 配置日誌
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -30,11 +35,53 @@ for var in required_env_vars:
         sys.exit(1)
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": [
+
+# 定義允許的來源清單
+allowed_origins = [
     "http://localhost:8080",
-    "http://192.168.0.112:8080",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://127.0.0.1:5173",
+    "http://127.0.0.1:8080",
+    "https://127.0.0.1:8080",
+    "http://line-login.jkl921102.org",
     "https://line-login.jkl921102.org"
-]}})
+]
+
+if os.getenv('FRONTEND_URL'):
+    allowed_origins.append(os.getenv('FRONTEND_URL'))
+
+# 配置 CORS
+CORS(app, 
+     supports_credentials=True,
+     resources={r"/api/*": {
+         "origins": allowed_origins,
+         "allow_headers": ["Content-Type", "Authorization", "Referer", "User-Agent", 
+                         "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform"],
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "expose_headers": ["Set-Cookie"],
+         "max_age": 3600
+     }}
+)
+
+# 添加自定義 CORS 處理
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin:
+        # 檢查是否為允許的來源
+        if origin in allowed_origins or any(origin.startswith(allowed) for allowed in allowed_origins):
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            
+            # 如果是 preflight request
+            if request.method == 'OPTIONS':
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Referer, User-Agent, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform'
+                response.headers['Access-Control-Max-Age'] = '3600'
+    return response
 
 # 資料庫配置
 app.config['SQLALCHEMY_DATABASE_URI'] = (
@@ -52,14 +99,28 @@ db = SQLAlchemy(app)
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.UUID(as_uuid=True), primary_key=True, server_default=db.text("uuid_generate_v4()"))
+    username = db.Column(db.String(255), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), unique=True)
+    email_verified = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    line_account = db.relationship('LineUser', backref='user', uselist=False)
+
+    def __repr__(self):
+        return f"<User {self.username}>"
+
+# LINE User 模型
+class LineUser(db.Model):
+    __tablename__ = 'line_users'
+    id = db.Column(db.UUID(as_uuid=True), primary_key=True, server_default=db.text("uuid_generate_v4()"))
+    user_id = db.Column(db.UUID(as_uuid=True), db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     line_id = db.Column(db.String(255), unique=True, nullable=False)
     display_name = db.Column(db.String(255))
-    email = db.Column(db.String(255))
     picture_url = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return f"<User {self.display_name}>"
+        return f"<LineUser {self.display_name}>"
 
 # 重試機制
 @tenacity.retry(
@@ -157,11 +218,14 @@ def line_login():
 # 支持多個回調路徑
 @app.route('/')
 @app.route('/line/callback')
+@app.route('/line-login')
 def line_callback():
     code = request.args.get('code')
     state = request.args.get('state')
+    linking_user_id = request.args.get('linking_user_id')
+    linking_token = request.args.get('linking_token')
     
-    logger.debug(f"Callback received: code={code}, state={state}")
+    logger.debug(f"Callback received: code={code}, state={state}, linking_user_id={linking_user_id}")
     if not code:
         logger.error("Authorization code missing")
         return jsonify({"error": "Authorization code missing"}), 400
@@ -182,6 +246,17 @@ def line_callback():
         tokens = response.json()
         access_token = tokens.get('access_token')
         logger.debug(f"Access token obtained: {access_token}")
+
+        # 驗證linking_token（如果存在）
+        if linking_token and linking_user_id:
+            try:
+                # 解析token獲取用戶信息
+                decoded_token = verify_token(linking_token)
+                if decoded_token.get('username') != linking_user_id:
+                    raise ValueError("Token username mismatch")
+            except Exception as e:
+                logger.error(f"Failed to verify linking token: {e}")
+                return jsonify({"error": "Invalid linking token"}), 400
     except requests.RequestException as e:
         logger.error(f"Failed to obtain access token: {e}")
         return jsonify({"error": "Failed to obtain access token"}), 400
@@ -206,33 +281,140 @@ def line_callback():
         display_name = display_name[:255] if display_name else None
         picture_url = picture_url[:255] if picture_url else None
 
-        user = User.query.filter_by(line_id=line_id).first()
-        if user:
-            logger.info(f"Existing user found: line_id={line_id}, updating data")
-            user.display_name = display_name
-            user.picture_url = picture_url
+        if linking_user_id:
+            # 尋找要連結的用戶
+            user = User.query.filter_by(username=linking_user_id).first()
+            if not user:
+                logger.error(f"User not found for linking: {linking_user_id}")
+                return jsonify({"error": "User not found"}), 404
+
+            # 檢查是否已有LINE帳號連結
+            existing_line_user = LineUser.query.filter_by(line_id=line_id).first()
+            if existing_line_user:
+                if existing_line_user.user_id != user.id:
+                    logger.error(f"LINE account already linked to different user: {line_id}")
+                    return jsonify({"error": "LINE account already linked to different user"}), 400
+                # 更新現有LINE連結
+                existing_line_user.display_name = display_name
+                existing_line_user.picture_url = picture_url
+            else:
+                # 創建新的LINE連結
+                line_user = LineUser(
+                    user_id=user.id,
+                    line_id=line_id,
+                    display_name=display_name,
+                    picture_url=picture_url
+                )
+                db.session.add(line_user)
             db.session.commit()
-            logger.info(f"User updated: line_id={line_id}, display_name={display_name}")
+            logger.info(f"LINE account linked to user: {linking_user_id}")
+            user = User.query.filter_by(username=linking_user_id).first()
+        elif LineUser.query.filter_by(line_id=line_id).first():
+            # 已存在的LINE用戶登入
+            line_user = LineUser.query.filter_by(line_id=line_id).first()
+            line_user.display_name = display_name
+            line_user.picture_url = picture_url
+            db.session.commit()
+            logger.info(f"LINE user updated: line_id={line_id}, display_name={display_name}")
+            user = line_user.user
         else:
-            logger.debug(f"Creating new user with line_id={line_id}, display_name={display_name}, picture_url={picture_url}")
-            user = User(
-                line_id=line_id,
-                display_name=display_name,
-                picture_url=picture_url
-            )
-            db.session.add(user)
-            db.session.commit()
-            logger.info(f"New user created: line_id={line_id}, display_name={display_name}")
+            # 新用戶，嘗試從 id_token 中獲取 email
+            email = None
+            try:
+                id_token = tokens.get('id_token')
+                if id_token:
+                    id_token_info = verify_token(id_token, secret=os.getenv('LINE_CHANNEL_SECRET'), 
+                                               verify_exp=False,
+                                               audience=os.getenv('LINE_CHANNEL_ID'))
+                    email = id_token_info.get('email')
+                    logger.debug(f"Got email from id_token: {email}")
+            except Exception as e:
+                logger.error(f"Failed to decode id_token: {e}")
+
+            if email:
+                # 檢查 email 是否已被使用
+                existing_user = User.query.filter_by(email=email).first()
+                if existing_user:
+                    logger.info(f"Found existing user with email: {email}")
+                    # 如果用戶已存在，創建或更新其 LINE 連結
+                    line_user = LineUser.query.filter_by(user_id=existing_user.id).first()
+                    if line_user:
+                        line_user.line_id = line_id
+                        line_user.display_name = display_name
+                        line_user.picture_url = picture_url
+                    else:
+                        line_user = LineUser(
+                            user_id=existing_user.id,
+                            line_id=line_id,
+                            display_name=display_name,
+                            picture_url=picture_url
+                        )
+                        db.session.add(line_user)
+                    db.session.commit()
+                    user = existing_user
+                    logger.info(f"Updated existing user with LINE info: {line_id}")
+                else:
+                    # 創建新用戶及其 LINE 連結
+                    random_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+                    hashed_password = generate_password_hash(random_password)
+                    
+                    # 創建基本用戶
+                    new_user = User(
+                        username=display_name,
+                        password=hashed_password,
+                        email=email,
+                        email_verified=True  # LINE 用戶自動驗證
+                    )
+                    db.session.add(new_user)
+                    db.session.flush()  # 取得新用戶 ID
+                    
+                    # 創建 LINE 用戶連結
+                    line_user = LineUser(
+                        user_id=new_user.id,
+                        line_id=line_id,
+                        display_name=display_name,
+                        picture_url=picture_url
+                    )
+                    db.session.add(line_user)
+                    db.session.commit()
+                    user = new_user
+                    logger.info(f"New user and LINE account created with email: {email}")
+            else:
+                # 如果沒有 email，創建新用戶和 LINE 連結
+                random_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+                hashed_password = generate_password_hash(random_password)
+                
+                # 創建基本用戶
+                new_user = User(
+                    username=display_name,
+                    password=hashed_password,
+                    email_verified=True  # LINE 用戶自動驗證
+                )
+                db.session.add(new_user)
+                db.session.flush()  # 取得新用戶 ID
+                
+                # 創建 LINE 用戶連結
+                line_user = LineUser(
+                    user_id=new_user.id,
+                    line_id=line_id,
+                    display_name=display_name,
+                    picture_url=picture_url
+                )
+                db.session.add(line_user)
+                db.session.commit()
+                user = new_user
+                logger.info(f"New user and LINE account created without email: {line_id}")
     except Exception as e:
         logger.error(f"Database error in line callback: {str(e)}", exc_info=True)
         db.session.rollback()
         return jsonify({"error": "Failed to save user data", "details": str(e)}), 500
 
     try:
-        token = jwt.encode({
-            'line_id': line_id,
-            'exp': datetime.now(timezone.utc) + timedelta(hours=1)
-        }, os.getenv('JWT_SECRET'), algorithm='HS256')
+        token = create_access_token({
+            'username': user.username,
+            'line_id': user.line_account.line_id if user.line_account else None,
+            'login_type': 'line'
+        })
         logger.debug(f"JWT token generated: {token}")
     except Exception as e:
         logger.error(f"JWT encoding error: {e}")
@@ -243,27 +425,85 @@ def line_callback():
     return redirect(frontend_url)
 
 @app.route('/api/verify-token', methods=['POST'])
-def verify_token():
+def verify_line_token():
     token = request.json.get('token')
     logger.debug(f"Verifying token: {token}")
-    try:
-        decoded = jwt.decode(token, os.getenv('JWT_SECRET'), algorithms=['HS256'])
-        user = User.query.filter_by(line_id=decoded['line_id']).first()
-        if user:
-            logger.info(f"Token verified for user: {user.line_id}")
-            return jsonify({
-                'line_id': user.line_id,
-                'display_name': user.display_name,
-                'picture_url': user.picture_url
-            })
-        logger.error("User not found")
-        return jsonify({"error": "User not found"}), 404
-    except jwt.ExpiredSignatureError:
-        logger.error("Token expired")
-        return jsonify({"error": "Token expired"}), 401
-    except jwt.InvalidTokenError:
-        logger.error("Invalid token")
-        return jsonify({"error": "Invalid token"}), 401
+    
+    if not token:
+        logger.error("Token missing")
+        return jsonify({"error": "Token is missing"}), 400
+    
+    # 增加重試機制
+    max_retries = 3
+    retry_count = 0
+    retry_delay = 1  # 初始延遲（秒）
+    
+    while retry_count < max_retries:
+        try:
+            decoded = verify_token(token)
+            login_type = decoded.get('login_type', '')
+
+            if login_type == 'line':
+                # LINE登入驗證
+                if not decoded.get('line_id'):
+                    logger.error("LINE ID missing in token")
+                    return jsonify({"error": "Invalid token data"}), 401
+
+                line_user = LineUser.query.filter_by(line_id=decoded['line_id']).first()
+                if not line_user:
+                    logger.error("LINE account not found")
+                    return jsonify({"error": "LINE account not found"}), 404
+                    
+                user = line_user.user
+                if user:
+                    logger.info(f"Token verified for LINE user: {line_user.line_id}")
+                    return jsonify({
+                        'line_id': line_user.line_id,
+                        'display_name': line_user.display_name,
+                        'picture_url': line_user.picture_url,
+                        'username': user.username,
+                        'email': user.email,
+                        'login_type': 'line'
+                    })
+            elif login_type == 'general':
+                # 一般帳號驗證
+                user = User.query.filter_by(username=decoded.get('username')).first()
+                if user:
+                    logger.info(f"Token verified for general user: {user.username}")
+                    return jsonify({
+                        'display_name': user.username,
+                        'username': user.username,
+                        'email': user.email,
+                        'login_type': 'general'
+                    })
+            else:
+                logger.error(f"Invalid login type: {login_type}")
+                return jsonify({"error": "Invalid login type"}), 401
+                
+            logger.error("User not found")
+            return jsonify({"error": "User not found"}), 404
+            
+        except ExpiredSignatureError as e:
+            logger.error(f"Token expired: {str(e)}")
+            return jsonify({"error": "Token has expired"}), 401
+            
+        except InvalidTokenError as e:
+            # 對於無效的 token，嘗試重試
+            retry_count += 1
+            if retry_count < max_retries:
+                logger.warning(f"Invalid token, retrying ({retry_count}/{max_retries}): {str(e)}")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # 指數退避
+            else:
+                logger.error(f"Invalid token after {max_retries} retries: {str(e)}")
+                return jsonify({"error": str(e)}), 401
+                
+        except Exception as e:
+            logger.error(f"Unexpected error during token verification: {str(e)}")
+            return jsonify({"error": "An unexpected error occurred"}), 500
+            
+    # 如果所有重試都失敗
+    return jsonify({"error": "Failed to verify token after multiple attempts"}), 401
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('LINE_LOGIN_PORT', 5502)), debug=True, use_reloader=False)

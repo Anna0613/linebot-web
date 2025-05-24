@@ -9,19 +9,19 @@ import { CustomAlert } from "@/components/ui/custom-alert";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
 import "@/components/ui/loader.css";
-import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import { LineLoginService } from '../services/lineLogin';
+import { ApiClient } from '../services/api';
+import { AuthService } from '../services/auth';
 
 const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
 
-  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   
-  // Alert state
   const [alert, setAlert] = useState({
     show: false,
     message: '',
@@ -33,46 +33,54 @@ const Login = () => {
     setTimeout(() => setAlert(prev => ({ ...prev, show: false })), 3000);
   };
 
-  const verifyToken = async (token: string) => {
-    try {
-      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
-      if (!response.ok) throw new Error('Token verification failed');
-      return await response.json();
-    } catch (error) {
-      console.error('Token 驗證失敗:', error);
-      return null;
-    }
-  };
-
   useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
-      verifyToken(token).then((user) => {
-        if (user && user.display_name) {
-          console.log("LINE 登入成功", user);
-          localStorage.setItem("line_token", token);
-          localStorage.setItem("username", user.display_name);
-          localStorage.setItem("email", user.email || '');
-          showAlert("登入成功！", "success");
-          navigate("/index2");
-        } else {
-          showAlert("LINE 登入驗證失敗，請重試", "error");
-        }
-      });
+      verifyLineLogin(token);
     }
   }, [searchParams]);
+
+  const verifyLineLogin = async (token: string) => {
+    try {
+      const lineLoginService = LineLoginService.getInstance();
+      const result = await lineLoginService.verifyToken(token);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      if (result.display_name) {
+        localStorage.setItem("line_token", token);
+        localStorage.setItem("username", result.display_name);
+        if (result.email) {
+          localStorage.setItem("email", result.email);
+        }
+        showAlert("登入成功！", "success");
+        navigate("/index2");
+      } else {
+        throw new Error("LINE 登入驗證失敗");
+      }
+    } catch (error) {
+      console.error('LINE登入驗證失敗:', error);
+      showAlert("LINE 登入驗證失敗，請重試", "error");
+    }
+  };
 
   const handleLINELogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.LINE_LOGIN));
-      const data = await response.json();
-      if (!data.login_url) throw new Error("登入連結取得失敗");
-      window.location.href = data.login_url;
+      const lineLoginService = LineLoginService.getInstance();
+      const result = await lineLoginService.getLoginUrl();
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      if (!result.login_url) {
+        throw new Error("登入連結取得失敗");
+      }
+
+      window.location.href = result.login_url;
     } catch (error) {
       console.error("LINE login error:", error);
       showAlert("LINE 登入失敗，請稍後再試", "error");
@@ -80,63 +88,69 @@ const Login = () => {
     }
   };
   
-  const nativeFetch = window.fetch.bind(window);
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-  
+
     if (!username || !password) {
       showAlert("請輸入使用者名稱和密碼", "error");
       setLoading(false);
       return;
     }
-  
-    const data = { username, password };
-  
+
     try {
-      const response = await nativeFetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.LOGIN), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        let errorMessage = "登入失敗";
-        
-        // 根據不同錯誤類型顯示不同信息
-        switch (errorData.error) {
-          case "INVALID_PASSWORD":
-            errorMessage = "密碼錯誤，請重新輸入";
-            break;
-          case "USER_NOT_FOUND":
-            errorMessage = "找不到此使用者，請確認帳號是否正確";
-            break;
-          case "EMAIL_NOT_VERIFIED":
-            errorMessage = "請先完成電子郵件驗證";
-            break;
-          case "ACCOUNT_LOCKED":
-            errorMessage = "帳號已被鎖定，請聯繫客服";
-            break;
-          default:
-            errorMessage = errorData.message || "登入失敗，請稍後再試";
-        }
-        
-        throw new Error(errorMessage);
+      const apiClient = ApiClient.getInstance();
+      const response = await apiClient.login(username, password);
+
+      if (response.error) {
+        throw new Error(response.error);
       }
-  
-      const resData = await response.json();
-      localStorage.setItem("username", username);
-      localStorage.setItem("email", resData.email || "");
-  
+
+      // 打印檢查能否從 localStorage 獲取 token
+      console.log('登入後檢查 token:', AuthService.getToken());
+
+      // 確保我們獲取到了 token，嘗試從不同來源
+      let token = AuthService.getToken();
+      
+      // 如果沒有從 AuthService 獲取到，直接從響應中獲取並設置
+      if (!token && response.data && response.data.token) {
+        AuthService.setToken(response.data.token);
+        token = response.data.token;
+        console.log('直接從響應設置 token');
+      }
+
+      if (!token) {
+        console.error("找不到登入 token，將嘗試直接使用響應數據繼續");
+        // 即使沒有 token，也嘗試繼續以響應數據驅動
+        if (response.data && response.data.username) {
+          showAlert("登入成功！", "success");
+          setTimeout(() => {
+            navigate("/index2", { 
+              state: { 
+                username: response.data.username, 
+                directLogin: true,
+                loginType: 'general'
+              } 
+            });
+          }, 1000);
+          return;
+        } else {
+          throw new Error("登入失敗，無法獲取 token 或用戶信息");
+        }
+      }
+
       showAlert("登入成功！", "success");
-      navigate("/index2");
+      
+      // 確保使用 setTimeout 使警告訊息能被看到，然後再跳轉
+      setTimeout(() => {
+        navigate("/index2");
+      }, 1000);
     } catch (error: any) {
       console.error("錯誤:", error);
-      showAlert(error.message, "error");
+      showAlert(error.message || "登入失敗，請重試", "error");
+      // 清除可能存在的無效 token
+      AuthService.removeToken();
+    } finally {
       setLoading(false);
     }
   };
@@ -185,7 +199,7 @@ const Login = () => {
             <form className="space-y-4 xs:space-y-5 sm:space-y-6 max-w-[280px] sm:max-w-full mx-auto" onSubmit={handleLogin}>
               <div className="space-y-1.5">
                 <Label htmlFor="username" className="text-sm sm:text-base">使用者名稱：</Label>
-              <Input
+                <Input
                   id="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
