@@ -13,7 +13,8 @@ interface User {
   line_id?: string;
   display_name: string;
   picture_url?: string;
-  username?: string; // 新增以支援帳號密碼登入
+  username?: string;
+  isLineUser?: boolean;
 }
 
 const LoginHome = () => {
@@ -36,58 +37,111 @@ const LoginHome = () => {
     const verify = async () => {
       setLoading(true);
       
-      // 如果是從登入頁面直接重定向過來的
-      if (directLoginUser) {
-        setUser({ display_name: directLoginUser, username: directLoginUser });
-        setLoading(false);
-        return;
-      }
-      
       try {
-        // 檢查是否是從一般帳號登入頁面直接跳轉過來的
-        if (directLoginUser || loginType === 'general') {
+        // 如果是從登入頁面直接重定向過來的
+        if (directLoginUser) {
           setUser({ 
-            display_name: directLoginUser || displayName, 
-            username: directLoginUser || displayName 
+            display_name: directLoginUser, 
+            username: directLoginUser,
+            isLineUser: false
           });
+          setLoading(false);
           return;
         }
 
-        // 使用 AuthService 獲取 token
-        const storedToken = token || AuthService.getToken();
-        if (!storedToken) {
-          setError('請先登入');
-          navigate('/login');
-          return;
-        }
-
-        if (loginType === 'line') {
-          // LINE登入驗證流程
-          const lineLoginService = LineLoginService.getInstance();
+        // 優先處理 URL 中的 token（來自 LINE 登入回調）
+        if (token) {
+          console.log('處理 URL 中的 token:', token);
+          
+          // 將 token 儲存到 localStorage
+          AuthService.setToken(token);
+          
           try {
-            const response = await lineLoginService.verifyToken(storedToken);
-            if (response.error) {
-              throw new Error(response.error);
-            }
+            // 從 token 中解析登入類型
+            const tokenData = JSON.parse(atob(token.split('.')[1]));
+            const tokenLoginType = tokenData.login_type;
             
-            setUser(response as User);
-            AuthService.setToken(storedToken);
-          } catch (err) {
-            console.error('LINE Token 驗證失敗:', err);
-            setError('LINE Token 驗證失敗');
+            console.log('Token 登入類型:', tokenLoginType);
+            
+            if (tokenLoginType === 'line') {
+              // LINE登入驗證流程
+              const lineLoginService = LineLoginService.getInstance();
+              const response = await lineLoginService.verifyToken(token);
+              
+              if (response.error) {
+                throw new Error(response.error);
+              }
+              
+              console.log('LINE 驗證成功:', response);
+              setUser({
+                ...response,
+                isLineUser: true
+              } as User);
+              
+              // 清除 URL 參數，避免重複處理
+              navigate('/index2', { replace: true });
+              
+            } else {
+              // 一般帳號驗證
+              await checkLoginStatus();
+            }
+          } catch (tokenError) {
+            console.error('Token 解析或驗證失敗:', tokenError);
+            setError('Token 驗證失敗，請重新登入');
             AuthService.removeToken();
-            navigate('/line-login');
+            navigate('/login');
           }
-        } else if (displayName) {
-          setUser({ display_name: displayName });
+          
         } else {
-          // 其他情況使用一般的 check_login API
-          await checkLoginStatus();
+          // 檢查是否有已存儲的 token
+          const storedToken = AuthService.getToken();
+          
+          if (storedToken) {
+            console.log('使用已存儲的 token 進行驗證');
+            
+            try {
+              // 從已存儲的 token 判斷登入類型
+              const tokenData = JSON.parse(atob(storedToken.split('.')[1]));
+              const tokenLoginType = tokenData.login_type;
+              
+              if (tokenLoginType === 'line') {
+                // LINE登入驗證流程
+                const lineLoginService = LineLoginService.getInstance();
+                const response = await lineLoginService.verifyToken(storedToken);
+                
+                if (response.error) {
+                  throw new Error(response.error);
+                }
+                
+                setUser({
+                  ...response,
+                  isLineUser: true
+                } as User);
+              } else {
+                // 一般帳號驗證
+                await checkLoginStatus();
+              }
+            } catch (error) {
+              console.error('已存儲 token 驗證失敗:', error);
+              AuthService.removeToken();
+              setError('登入狀態已過期，請重新登入');
+              navigate('/login');
+            }
+          } else if (displayName) {
+            // 回退方案：使用 displayName 參數
+            setUser({ 
+              display_name: displayName,
+              isLineUser: false
+            });
+          } else {
+            setError('請先登入');
+            navigate('/login');
+          }
         }
+        
       } catch (error) {
         console.error('驗證錯誤:', error);
-        setError('驗證失敗');
-        // 錯誤時清除 token
+        setError('驗證失敗，請重新登入');
         AuthService.removeToken();
         navigate('/login');
       } finally {

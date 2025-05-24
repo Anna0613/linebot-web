@@ -6,6 +6,7 @@ import Footer from "@/components/Index/Footer";
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import { AuthService } from '../services/auth';
 
 interface User {
   line_id?: string;
@@ -36,26 +37,17 @@ const Setting: React.FC = () => {
 
     const verify = async () => {
       setLoading(true);
-      if (token) {
-        localStorage.setItem('auth_token', token);
-        const userData = await verifyToken(token);
-        if (userData) {
-          setUser(userData);
-          setDisplayName(userData.display_name);
-          setEmail(userData.email || "");
-          setUserImage(userData.picture_url || null);
-        } else {
-          setError('驗證失敗，請重新登入');
-          navigate('/line-login');
+      
+      try {
+        // 如果URL中有token，先存儲它
+        if (token) {
+          console.log('儲存URL中的token到localStorage');
+          AuthService.setToken(token);
         }
-        setLoading(false);
-      } else if (displayNameParam) {
-        const fallbackUser = { display_name: displayNameParam };
-        setUser(fallbackUser);
-        setDisplayName(displayNameParam);
-        setLoading(false);
-      } else {
-        const storedToken = localStorage.getItem('auth_token');
+        
+        // 統一使用AuthService獲取token
+        const storedToken = AuthService.getToken();
+        
         if (storedToken) {
           const userData = await verifyToken(storedToken);
           if (userData) {
@@ -63,13 +55,30 @@ const Setting: React.FC = () => {
             setDisplayName(userData.display_name);
             setEmail(userData.email || "");
             setUserImage(userData.picture_url || null);
-            setLoading(false);
           } else {
-            setTimeout(() => checkLoginStatus(), 3000);
+            setError('驗證失敗，請重新登入');
+            AuthService.removeToken();
+            navigate('/login');
           }
+        } else if (displayNameParam) {
+          // 回退方案：使用URL參數中的display_name
+          const fallbackUser = { 
+            display_name: displayNameParam,
+            isLineUser: false
+          };
+          setUser(fallbackUser);
+          setDisplayName(displayNameParam);
         } else {
-          setTimeout(() => checkLoginStatus(), 3000);
+          setError('請先登入');
+          navigate('/login');
         }
+      } catch (error) {
+        console.error('驗證過程發生錯誤:', error);
+        setError('驗證失敗，請重新登入');
+        AuthService.removeToken();
+        navigate('/login');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -130,37 +139,6 @@ const Setting: React.FC = () => {
       return null;
     }
   };
-  const nativeFetch = window.fetch.bind(window);
-  const checkLoginStatus = async () => {
-    try {
-      const response = await nativeFetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN), {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const username = data.message.split('User ')[1].split(' is logged in')[0];
-        const fallbackUser = { display_name: username, username };
-        setUser(fallbackUser);
-        setDisplayName(username);
-      } else {
-        const errorData = await response.json();
-        console.error('check_login error:', errorData);
-        setError('請先登入');
-        navigate('/login');
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error('檢查登入狀態錯誤:', error);
-      setError('請先登入');
-      navigate('/login');
-      setLoading(false);
-    }
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -181,7 +159,7 @@ const handleRemoveImage = () => {
 
   const handleConnect = () => {
     // 確保有用戶資訊和token
-    const token = localStorage.getItem('auth_token');
+    const token = AuthService.getToken();
     if (!user || !token) {
       console.error('No user data or token available');
       return;
@@ -198,12 +176,13 @@ const handleRemoveImage = () => {
 
   const handleDisconnect = async () => {
     try {
+      const token = AuthService.getToken();
       const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.DISCONNECT), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          'Authorization': `Bearer ${token}`
         },
         credentials: 'include'
       });
