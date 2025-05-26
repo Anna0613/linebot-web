@@ -478,9 +478,28 @@ def check_login():
         token = request.cookies.get('token')
         data = verify_token(token)
     
+    username = data['username']
+    
+    # 從資料庫獲取用戶的email資訊
+    conn = get_db_connection()
+    email = None
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute('SELECT email FROM users WHERE username = %s', (username,))
+            result = cur.fetchone()
+            if result:
+                email = result[0]
+        except Exception as e:
+            print(f"Error fetching email: {e}")
+        finally:
+            cur.close()
+            conn.close()
+    
     return jsonify({
-        'message': f'User {data["username"]} is logged in',
-        'username': data['username'],
+        'message': f'User {username} is logged in',
+        'username': username,
+        'email': email,
         'login_type': data.get('login_type', 'general')
     }), 200
 

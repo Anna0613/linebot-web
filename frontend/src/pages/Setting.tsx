@@ -63,9 +63,11 @@ const Setting: React.FC = () => {
             setDisplayName(userData.display_name);
             setEmail(userData.email || "");
             
-            // 為一般用戶載入頭像
+            // 為一般用戶載入頭像和完整資料
             if (!userData.isLineUser) {
               await loadUserAvatar();
+              // 載入完整的用戶資料，包括email
+              await loadUserProfile();
             } else {
               setUserImage(userData.picture_url || null);
             }
@@ -108,6 +110,26 @@ const Setting: React.FC = () => {
       }
     } catch (error) {
       console.error('載入頭像失敗:', error);
+    }
+  };
+
+  // 載入用戶完整資料
+  const loadUserProfile = async () => {
+    try {
+      const response = await apiClient.getProfile();
+      if (response.status === 200 && response.data) {
+        const profileData = response.data;
+        // 更新email資料
+        setEmail(profileData.email || "");
+        // 更新用戶資料
+        setUser(prev => prev ? { 
+          ...prev, 
+          email: profileData.email,
+          username: profileData.username 
+        } : null);
+      }
+    } catch (error) {
+      console.error('載入用戶資料失敗:', error);
     }
   };
 
@@ -445,49 +467,58 @@ const Setting: React.FC = () => {
 
         <hr className="border-t border-gray-300" />
 
-        {!user?.isLineUser && (
-          <section>
-            <h3 className="text-lg font-semibold mb-1">電子郵件</h3>
+        <section>
+          <h3 className="text-lg font-semibold mb-1">電子郵件</h3>
 
-            {isEditingEmail ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-[600px]"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setEmail(user?.email || "");
-                    setIsEditingEmail(false);
-                  }}
-                >
-                  取消
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleUpdateEmail}
-                >
-                  儲存
-                </Button>
-              </div>
-            ) : (
-              <div className="flex justify-between items-center">
-                <span className="text-base">{email}</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsEditingEmail(true)}
-                >
-                  編輯
-                </Button>
-              </div>
-            )}
-          </section>
-        )}
+          {user?.isLineUser ? (
+            // LINE用戶顯示email但不可編輯
+            <div className="flex justify-between items-center">
+              <span className="text-base">{email || "未設定"}</span>
+              <span className="text-sm text-gray-500">LINE用戶無法修改電子郵件</span>
+            </div>
+          ) : (
+            // 一般用戶可以編輯email
+            <>
+              {isEditingEmail ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-[600px]"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setEmail(user?.email || "");
+                      setIsEditingEmail(false);
+                    }}
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleUpdateEmail}
+                  >
+                    儲存
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center">
+                  <span className="text-base">{email || "未設定"}</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsEditingEmail(true)}
+                  >
+                    編輯
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
 
         <hr className="border-t border-gray-300" />
         
