@@ -176,6 +176,8 @@ const Setting: React.FC = () => {
           const response = await apiClient.updateAvatar(avatar);
           if (response.status === 200) {
             setUserImage(avatar);
+            // 觸發自定義事件通知其他組件更新頭像
+            window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { avatar } }));
             toast({
               title: "頭像更新成功",
               description: "您的頭像已經更新",
@@ -187,6 +189,8 @@ const Setting: React.FC = () => {
           const response = await apiClient.deleteAvatar();
           if (response.status === 200) {
             setUserImage(null);
+            // 觸發自定義事件通知其他組件更新頭像
+            window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { avatar: null } }));
             toast({
               title: "頭像已刪除",
               description: "您的頭像已經刪除",
