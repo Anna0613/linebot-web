@@ -3,10 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import Navbar2 from "@/components/LoginHome/Navbar2";
 import Footer from "@/components/Index/Footer";
+import AvatarUpload from "@/components/AvatarUpload/AvatarUpload";
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { AuthService } from '../services/auth';
+import { ApiClient } from '../services/api';
+import { useToast } from '../hooks/use-toast';
 
 interface User {
   line_id?: string;
@@ -15,6 +18,7 @@ interface User {
   email?: string;
   username?: string;
   isLineUser?: boolean;
+  avatar?: string;
 }
 
 const Setting: React.FC = () => {
@@ -30,6 +34,10 @@ const Setting: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  
+  const { toast } = useToast();
+  const apiClient = ApiClient.getInstance();
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -54,7 +62,13 @@ const Setting: React.FC = () => {
             setUser(userData);
             setDisplayName(userData.display_name);
             setEmail(userData.email || "");
-            setUserImage(userData.picture_url || null);
+            
+            // 為一般用戶載入頭像
+            if (!userData.isLineUser) {
+              await loadUserAvatar();
+            } else {
+              setUserImage(userData.picture_url || null);
+            }
           } else {
             setError('驗證失敗，請重新登入');
             AuthService.removeToken();
@@ -84,6 +98,19 @@ const Setting: React.FC = () => {
 
     verify();
   }, [searchParams, navigate]);
+
+  // 載入用戶頭像
+  const loadUserAvatar = async () => {
+    try {
+      const response = await apiClient.getAvatar();
+      if (response.status === 200 && response.data?.avatar) {
+        setUserImage(response.data.avatar);
+      }
+    } catch (error) {
+      console.error('載入頭像失敗:', error);
+    }
+  };
+
   const verifyToken = async (token: string): Promise<User | null> => {
     try {
       // 從token中解析登入類型
@@ -140,6 +167,52 @@ const Setting: React.FC = () => {
     }
   };
 
+  // 處理頭像變更
+  const handleAvatarChange = async (avatar: string | null) => {
+    if (!user?.isLineUser) {
+      setAvatarLoading(true);
+      try {
+        if (avatar) {
+          const response = await apiClient.updateAvatar(avatar);
+          if (response.status === 200) {
+            setUserImage(avatar);
+            toast({
+              title: "頭像更新成功",
+              description: "您的頭像已經更新",
+            });
+          } else {
+            throw new Error(response.error || '更新頭像失敗');
+          }
+        } else {
+          const response = await apiClient.deleteAvatar();
+          if (response.status === 200) {
+            setUserImage(null);
+            toast({
+              title: "頭像已刪除",
+              description: "您的頭像已經刪除",
+            });
+          } else {
+            throw new Error(response.error || '刪除頭像失敗');
+          }
+        }
+      } catch (error) {
+        console.error('頭像操作失敗:', error);
+        toast({
+          variant: "destructive",
+          title: "操作失敗",
+          description: error instanceof Error ? error.message : '操作失敗，請稍後再試',
+        });
+      } finally {
+        setAvatarLoading(false);
+      }
+    }
+  };
+
+  // 處理頭像刪除
+  const handleAvatarDelete = async () => {
+    await handleAvatarChange(null);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -153,7 +226,7 @@ const Setting: React.FC = () => {
     }
   };
 
-const handleRemoveImage = () => {
+  const handleRemoveImage = () => {
     setUserImage(null);
   };
 
@@ -209,9 +282,12 @@ const handleRemoveImage = () => {
       <Navbar2 user={user} />
       <div className="max-w-3xl mx-auto p-6 pt-32 space-y-8 pb-16">
         <h2 className="text-3xl font-bold mb-6">設定</h2>
+        
+        {/* 頭像上傳區域 */}
         <section>
-          <h3 className="text-lg font-semibold mb-2">個人檔案照片</h3>
-          <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold mb-4">個人檔案照片</h3>
+          {user?.isLineUser ? (
+            // LINE用戶顯示現有頭像，不可編輯
             <div className="flex items-center gap-4">
               {userImage ? (
                 <img src={userImage} alt="user" className="w-20 h-20 rounded-full object-cover" />
@@ -220,124 +296,120 @@ const handleRemoveImage = () => {
                   無照片
                 </div>
               )}
+              <p className="text-sm text-gray-500">LINE用戶的頭像來自LINE平台，無法在此修改。</p>
             </div>
-            <div className="flex gap-2">
-              {userImage && (
-                <Button
-                className="rounded-md h-9"
-                variant="destructive"
-                size="sm"
-                onClick={() => setShowConfirmModal(true)}
-              >
-                移除照片
-              </Button>              
-              )}
-              <Button className="rounded-md h-9" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>變更照片</Button>
-              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-            </div>
-          </div>
+          ) : (
+            // 一般用戶可以上傳頭像
+            <AvatarUpload
+              currentAvatar={userImage}
+              onAvatarChange={handleAvatarChange}
+              onAvatarDelete={handleAvatarDelete}
+              username={user?.username || user?.display_name || 'User'}
+              disabled={avatarLoading}
+            />
+          )}
         </section>
 
         <hr className="border-t border-gray-300" />
 
         <section>
-        <h3 className="text-lg font-semibold mb-1">名稱</h3>
+          <h3 className="text-lg font-semibold mb-1">名稱</h3>
 
-        {isEditingName ? (
-          <div className="flex justify-between items-center gap-2">
-            <Input
-              id="displayName"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-[600px]"
-            />
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setDisplayName(user?.display_name || "");
-                  setIsEditingName(false);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setUser((prev) => prev ? { ...prev, display_name: displayName } : null);
-                  setIsEditingName(false);
-                }}
-              >
-                儲存
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex justify-between items-center">
-            <span className="text-base">{displayName}</span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsEditingName(true)}
-            >
-              編輯
-            </Button>
-          </div>
-        )}
-      </section>
-
-
-        <hr className="border-t border-gray-300" />
-
-        {!user?.isLineUser && (
-        <section>
-          <h3 className="text-lg font-semibold mb-1">電子郵件</h3>
-
-          {isEditingEmail ? (
-            <div className="flex items-center gap-2">
+          {isEditingName ? (
+            <div className="flex justify-between items-center gap-2">
               <Input
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="displayName"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
                 className="w-[600px]"
               />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setEmail(user?.email || "");
-                  setIsEditingEmail(false);
-                }}
-              >
-                取消
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setUser((prev) => prev ? { ...prev, email: email } : null);
-                  setIsEditingEmail(false);
-                }}
-              >
-                儲存
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setDisplayName(user?.display_name || "");
+                    setIsEditingName(false);
+                  }}
+                >
+                  取消
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setUser((prev) => prev ? { ...prev, display_name: displayName } : null);
+                    setIsEditingName(false);
+                  }}
+                >
+                  儲存
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="flex justify-between items-center">
-              <span className="text-base">{email}</span>
+              <span className="text-base">{displayName}</span>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setIsEditingEmail(true)}
+                onClick={() => setIsEditingName(true)}
               >
                 編輯
               </Button>
             </div>
           )}
         </section>
-      )}
 
         <hr className="border-t border-gray-300" />
+
+        {!user?.isLineUser && (
+          <section>
+            <h3 className="text-lg font-semibold mb-1">電子郵件</h3>
+
+            {isEditingEmail ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-[600px]"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEmail(user?.email || "");
+                    setIsEditingEmail(false);
+                  }}
+                >
+                  取消
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setUser((prev) => prev ? { ...prev, email: email } : null);
+                    setIsEditingEmail(false);
+                  }}
+                >
+                  儲存
+                </Button>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center">
+                <span className="text-base">{email}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsEditingEmail(true)}
+                >
+                  編輯
+                </Button>
+              </div>
+            )}
+          </section>
+        )}
+
+        <hr className="border-t border-gray-300" />
+        
         <section className="space-y-2">
           <h3 className="text-lg font-semibold">已連結的社交帳號</h3>
           <p className="text-sm text-gray-500">你用於登入 LINE Bot 製作輔助系統 的服務</p>
@@ -391,6 +463,7 @@ const handleRemoveImage = () => {
           <Button className="rounded-md h-9" variant="destructive" onClick={handleDeleteAccount}>刪除帳號</Button>
         </section>
       </div>
+      
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 w-[300px] text-center shadow-lg">
