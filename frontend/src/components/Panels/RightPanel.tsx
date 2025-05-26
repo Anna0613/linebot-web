@@ -1,6 +1,13 @@
+import { useToast } from "@/hooks/use-toast";
+
 const RightPanel = () => {
+    const { toast } = useToast();
+
     const handleExport = () => {
-      alert('這裡將會導出 JSON！🚀');
+      toast({
+        title: "匯出功能",
+        description: "這裡將會導出 JSON！🚀",
+      });
     };
   
     return (

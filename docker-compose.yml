@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   login_api:
     build:
@@ -21,6 +19,7 @@ services:
       - "5501:5501"
     networks:
       - linebot_network
+      - frontend
     restart: unless-stopped
 
   puzzle_api:
@@ -39,6 +38,7 @@ services:
       - "5503:5503"
     networks:
       - linebot_network
+      - frontend
     restart: unless-stopped
 
   line_login_api:
@@ -57,9 +57,33 @@ services:
       - "5502:5502"
     networks:
       - linebot_network
+      - frontend
+    restart: unless-stopped
+
+  setting_api:
+    build:
+      context: ./backend/SettingAPI
+      dockerfile: Dockerfile
+    container_name: setting_api
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - DB_HOST=sql.jkl921102.org
+      - DB_PORT=5432
+      - DB_NAME=LineBot_01
+      - DB_USER=11131230
+      - DB_PASSWORD=11131230
+      - PORT_SETTING=5004
+    ports:
+      - "5004:5004"
+    networks:
+      - linebot_network
+      - frontend
     restart: unless-stopped
 
 networks:
   linebot_network:
     name: linebot_network
     driver: bridge
+  frontend:
+    name: frontend
+    external: true

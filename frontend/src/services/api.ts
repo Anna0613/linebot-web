@@ -192,4 +192,31 @@ export class ApiClient {
       return false;
     }
   }
+
+  // 獲取用戶資料
+  async getProfile(): Promise<ApiResponse> {
+    return this.get(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.GET_PROFILE}`);
+  }
+
+  // 更新用戶資料
+  async updateProfile(profileData: { username?: string; email?: string }): Promise<ApiResponse> {
+    return this.put(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.UPDATE_PROFILE}`, profileData);
+  }
+
+  // 獲取用戶頭像
+  async getAvatar(): Promise<ApiResponse> {
+    return this.get(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.GET_AVATAR}`);
+  }
+
+  // 更新用戶頭像
+  async updateAvatar(avatar: string): Promise<ApiResponse> {
+    return this.put(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.UPDATE_AVATAR}`, {
+      avatar
+    });
+  }
+
+  // 刪除用戶頭像
+  async deleteAvatar(): Promise<ApiResponse> {
+    return this.delete(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.DELETE_AVATAR}`);
+  }
 }

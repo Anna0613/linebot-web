@@ -383,6 +383,14 @@ def forgot_password():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
+# 重置密碼重定向 - 處理從email點擊的連結
+@app.route('/reset-password/<token>', methods=['GET'])
+def reset_password_redirect(token):
+    # 根據環境設定前端URL
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8080')
+    reset_url = f"{frontend_url}/reset-password/{token}"
+    return redirect(reset_url)
+
 # 重置密碼 API
 @app.route('/reset_password/<token>', methods=['POST'])
 def reset_password(token):

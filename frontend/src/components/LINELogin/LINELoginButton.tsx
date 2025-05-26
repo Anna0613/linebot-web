@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
-import { useToast } from '../ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { API_CONFIG, getApiUrl } from '../../config/apiConfig';
 
 interface LINELoginButtonProps {
