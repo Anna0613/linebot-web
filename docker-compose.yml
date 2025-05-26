@@ -72,9 +72,9 @@ services:
       - DB_NAME=LineBot_01
       - DB_USER=11131230
       - DB_PASSWORD=11131230
-      - PORT_SETTING=5004
+      - PORT_SETTING=5504
     ports:
-      - "5004:5004"
+      - "5504:5504"
     networks:
       - linebot_network
       - frontend

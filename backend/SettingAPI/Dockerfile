@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 暴露端口
-EXPOSE 5004
+EXPOSE 5504
 
 # 運行應用程式
 CMD ["python", "app.py"]

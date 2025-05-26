@@ -54,6 +54,19 @@ CORS(app,
     }
 )
 
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        origin = request.headers.get('Origin')
+        if origin and (origin in allowed_origins or origin.startswith('http://localhost:')):
+            response = make_response()
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer, User-Agent, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform'
+            response.headers['Access-Control-Max-Age'] = '600'
+            return response
+
 @app.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
@@ -64,9 +77,6 @@ def after_request(response):
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer, User-Agent, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform'
         response.headers['Access-Control-Expose-Headers'] = 'Set-Cookie'
         response.headers['Access-Control-Max-Age'] = '600'
-        
-        if request.method == 'OPTIONS':
-            response.status_code = 200
     return response
 
 # 配置安全性設置
@@ -431,7 +441,7 @@ def health_check():
     }), 200
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT_SETTING', 5503))
+    port = int(os.getenv('PORT_SETTING', 5504))
     app.run(
         host='0.0.0.0',
         port=port,
