@@ -4,8 +4,8 @@ import { Label } from "@/components/ui/label";
 import Navbar2 from "@/components/LoginHome/Navbar2";
 import Footer from "@/components/Index/Footer";
 import AvatarUpload from "@/components/AvatarUpload/AvatarUpload";
-import React, { useEffect, useState, useRef } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { AuthService } from '../services/auth';
 import { ApiClient } from '../services/api';
@@ -78,7 +78,7 @@ const Setting: React.FC = () => {
           // 回退方案：使用URL參數中的display_name
           const fallbackUser = { 
             display_name: displayNameParam,
-            isLineUser: false
+            isLineUser: false,
           };
           setUser(fallbackUser);
           setDisplayName(displayNameParam);
@@ -124,7 +124,7 @@ const Setting: React.FC = () => {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
           },
           credentials: 'include',
           body: JSON.stringify({ token }),
@@ -137,7 +137,7 @@ const Setting: React.FC = () => {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
           },
         });
       }
@@ -159,7 +159,7 @@ const Setting: React.FC = () => {
       // LINE登入的回應已經符合User格式
       return {
         ...data,
-        isLineUser: true
+        isLineUser: true,
       };
     } catch (error) {
       console.error('驗證 token 錯誤:', error);
@@ -245,7 +245,7 @@ const Setting: React.FC = () => {
     // 將當前用戶資訊作為查詢參數傳遞
     const queryParams = new URLSearchParams({
       linking_user_id: user.username || '',
-      token: token
+      token: token,
     });
     
     navigate(`/line-login?${queryParams.toString()}`);
@@ -259,13 +259,13 @@ const Setting: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (response.ok) {
-        setUser(prev => prev ? { ...prev, isLineUser: false, line_id: undefined } : null);
+        setUser(prev => (prev ? { ...prev, isLineUser: false, line_id: undefined } : null));
       } else {
         const errorData = await response.json();
         console.error('中斷 LINE 連結失敗:', errorData);
@@ -276,7 +276,7 @@ const Setting: React.FC = () => {
   };
 
   const handleDeleteAccount = () => {
-    alert("⚠️ 你點了刪除帳號（這裡可改成 API 呼叫）");
+    console.warn("⚠️ 你點了刪除帳號（這裡可改成 API 呼叫）");
   };
 
   if (loading) return <div className="p-10 text-center">載入中...</div>;
@@ -341,7 +341,7 @@ const Setting: React.FC = () => {
                 <Button
                   size="sm"
                   onClick={() => {
-                    setUser((prev) => prev ? { ...prev, display_name: displayName } : null);
+                    setUser((prev) => (prev ? { ...prev, display_name: displayName } : null));
                     setIsEditingName(false);
                   }}
                 >
@@ -390,7 +390,7 @@ const Setting: React.FC = () => {
                 <Button
                   size="sm"
                   onClick={() => {
-                    setUser((prev) => prev ? { ...prev, email: email } : null);
+                    setUser((prev) => (prev ? { ...prev, email: email } : null));
                     setIsEditingEmail(false);
                   }}
                 >
@@ -433,7 +433,7 @@ const Setting: React.FC = () => {
                 className="rounded-md h-9"
                 variant="outline"
                 size="sm"
-                onClick={() => user?.isLineUser ? handleDisconnect() : handleConnect()}
+                onClick={() => (user?.isLineUser ? handleDisconnect() : handleConnect())}
               >
                 {user?.isLineUser ? '中斷連結' : '連接帳號'}
               </Button>
