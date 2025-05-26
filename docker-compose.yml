@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   login_api:
     build:
@@ -88,4 +86,4 @@ networks:
     driver: bridge
   frontend:
     name: frontend
-    driver: bridge
+    external: true

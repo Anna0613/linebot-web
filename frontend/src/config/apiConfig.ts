@@ -30,6 +30,7 @@ export const API_CONFIG = {
     BASE_URL: SETTING_API_URL,
     ENDPOINTS: {
       GET_PROFILE: '/profile',
+      UPDATE_PROFILE: '/profile',
       GET_AVATAR: '/avatar',
       UPDATE_AVATAR: '/avatar',
       DELETE_AVATAR: '/avatar',

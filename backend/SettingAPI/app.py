@@ -8,7 +8,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from functools import wraps
 
-from auth_service import verify_token, extract_token_from_header
+from auth_service import verify_token, extract_token_from_header, create_access_token
 
 # 載入 .env
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
@@ -304,6 +304,119 @@ def get_profile():
         
     except Exception as e:
         return jsonify({'error': f'Error retrieving profile: {str(e)}'}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+# 更新用戶設定
+@app.route('/profile', methods=['PUT'])
+@token_required
+def update_profile():
+    data = request.json
+    current_username = request.current_user.get('username')
+    current_login_type = request.current_user.get('login_type', 'general')
+    
+    # 取得要更新的欄位
+    new_username = data.get('username')
+    new_email = data.get('email')
+    
+    # 驗證輸入
+    if not new_username and not new_email:
+        return jsonify({'error': 'No data provided for update'}), 400
+    
+    # 驗證用戶名稱格式（如果有提供）
+    if new_username:
+        if not re.match(r'^[a-zA-Z0-9_]{3,20}$', new_username):
+            return jsonify({'error': 'Username must be 3-20 characters long and contain only letters, numbers, and underscores'}), 400
+    
+    # 驗證電子郵件格式（如果有提供）
+    if new_email:
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, new_email):
+            return jsonify({'error': 'Invalid email format'}), 400
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'error': 'Database connection failed'}), 500
+
+    try:
+        cur = conn.cursor()
+        
+        # 檢查新用戶名是否已存在（如果有提供新用戶名）
+        if new_username and new_username != current_username:
+            cur.execute('SELECT id FROM users WHERE username = %s', (new_username,))
+            if cur.fetchone():
+                return jsonify({'error': 'Username already exists'}), 409
+        
+        # 檢查新電子郵件是否已存在（如果有提供新電子郵件）
+        if new_email:
+            cur.execute('SELECT id FROM users WHERE email = %s AND username != %s', (new_email, current_username))
+            if cur.fetchone():
+                return jsonify({'error': 'Email already exists'}), 409
+        
+        # 建立更新查詢
+        update_fields = []
+        update_values = []
+        
+        if new_username:
+            update_fields.append('username = %s')
+            update_values.append(new_username)
+        
+        if new_email:
+            update_fields.append('email = %s')
+            update_values.append(new_email)
+            # 如果更新email，重置驗證狀態
+            update_fields.append('email_verified = %s')
+            update_values.append(False)
+        
+        update_values.append(current_username)  # WHERE 條件的參數
+        
+        # 執行更新
+        update_query = f'UPDATE users SET {", ".join(update_fields)} WHERE username = %s RETURNING id, username, email, email_verified'
+        cur.execute(update_query, update_values)
+        
+        result = cur.fetchone()
+        if not result:
+            return jsonify({'error': 'User not found'}), 404
+        
+        conn.commit()
+        
+        # 準備回應數據
+        updated_data = {
+            'username': result[1],
+            'email': result[2],
+            'email_verified': result[3],
+            'message': 'Profile updated successfully'
+        }
+        
+        # 如果用戶名稱有更新，生成新的 JWT token
+        if new_username and new_username != current_username:
+            # 創建新的 token 數據
+            token_data = {
+                'username': new_username,
+                'login_type': current_login_type
+            }
+            
+            # 生成新的 token
+            new_token = create_access_token(token_data)
+            
+            updated_data['username_changed'] = True
+            updated_data['new_token'] = new_token
+            updated_data['message'] += '. Username has been changed and new token generated.'
+        
+        return jsonify(updated_data), 200
+        
+    except psycopg2.IntegrityError as e:
+        conn.rollback()
+        if 'username' in str(e):
+            return jsonify({'error': 'Username already exists'}), 409
+        elif 'email' in str(e):
+            return jsonify({'error': 'Email already exists'}), 409
+        else:
+            return jsonify({'error': 'Database integrity error'}), 400
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': f'Error updating profile: {str(e)}'}), 500
     finally:
         cur.close()
         conn.close()

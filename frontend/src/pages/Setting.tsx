@@ -279,6 +279,89 @@ const Setting: React.FC = () => {
     console.warn("⚠️ 你點了刪除帳號（這裡可改成 API 呼叫）");
   };
 
+  // 處理名稱更新
+  const handleUpdateDisplayName = async () => {
+    if (!displayName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "名稱不能為空",
+        description: "請輸入有效的名稱",
+      });
+      return;
+    }
+
+    try {
+      const response = await apiClient.updateProfile({ username: displayName });
+      if (response.status === 200) {
+        // 如果用戶名稱有更新且返回了新的 token，更新本地存儲的 token
+        if (response.data?.username_changed && response.data?.new_token) {
+          AuthService.setToken(response.data.new_token);
+          console.log('用戶名稱已更新，新 token 已保存');
+        }
+        
+        setUser((prev) => (prev ? { ...prev, display_name: displayName, username: displayName } : null));
+        setIsEditingName(false);
+        toast({
+          title: "名稱更新成功",
+          description: "您的名稱已經更新",
+        });
+      } else {
+        throw new Error(response.error || '更新名稱失敗');
+      }
+    } catch (error) {
+      console.error('更新名稱失敗:', error);
+      toast({
+        variant: "destructive",
+        title: "更新失敗",
+        description: error instanceof Error ? error.message : '更新名稱失敗，請稍後再試',
+      });
+    }
+  };
+
+  // 處理電子郵件更新
+  const handleUpdateEmail = async () => {
+    if (!email.trim()) {
+      toast({
+        variant: "destructive",
+        title: "電子郵件不能為空",
+        description: "請輸入有效的電子郵件",
+      });
+      return;
+    }
+
+    // 簡單的電子郵件格式驗證
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        variant: "destructive",
+        title: "電子郵件格式不正確",
+        description: "請輸入有效的電子郵件格式",
+      });
+      return;
+    }
+
+    try {
+      const response = await apiClient.updateProfile({ email: email });
+      if (response.status === 200) {
+        setUser((prev) => (prev ? { ...prev, email: email } : null));
+        setIsEditingEmail(false);
+        toast({
+          title: "電子郵件更新成功",
+          description: "您的電子郵件已經更新",
+        });
+      } else {
+        throw new Error(response.error || '更新電子郵件失敗');
+      }
+    } catch (error) {
+      console.error('更新電子郵件失敗:', error);
+      toast({
+        variant: "destructive",
+        title: "更新失敗",
+        description: error instanceof Error ? error.message : '更新電子郵件失敗，請稍後再試',
+      });
+    }
+  };
+
   if (loading) return <div className="p-10 text-center">載入中...</div>;
 
   return (
@@ -340,10 +423,7 @@ const Setting: React.FC = () => {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => {
-                    setUser((prev) => (prev ? { ...prev, display_name: displayName } : null));
-                    setIsEditingName(false);
-                  }}
+                  onClick={handleUpdateDisplayName}
                 >
                   儲存
                 </Button>
@@ -389,10 +469,7 @@ const Setting: React.FC = () => {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => {
-                    setUser((prev) => (prev ? { ...prev, email: email } : null));
-                    setIsEditingEmail(false);
-                  }}
+                  onClick={handleUpdateEmail}
                 >
                   儲存
                 </Button>
