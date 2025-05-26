@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Card, CardContent } from '../ui/card';
 import { Upload, X, User, Camera, Trash2 } from 'lucide-react';
-import { useToast } from '../../hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface AvatarUploadProps {
   currentAvatar?: string | null;

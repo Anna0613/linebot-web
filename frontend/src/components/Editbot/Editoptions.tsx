@@ -1,5 +1,6 @@
 // EditOptions.tsx
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 type EditOptions = {
   onClose: () => void;
@@ -8,11 +9,24 @@ type EditOptions = {
 
 const EditOptions = ({ onClose, onConfirm }: EditOptions) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const isSelected = (option: string) =>
     selectedOption === option
       ? "bg-[#FFD59E] text-[#4B4B4B]"
       : "bg-[#FFF7E0] text-[#4B4B4B] hover:bg-[#f4b1a5]";
+
+  const handleConfirm = () => {
+    if (selectedOption) {
+      onConfirm(selectedOption);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "請選擇選項",
+        description: "請選擇一個選項",
+      });
+    }
+  };
 
   return (
     <div className="w-full sm:w-[320px] h-[520px] rounded-[25px] bg-white border border-black shadow-[-15px_15px_0_#819780] p-6 flex flex-col justify-between items-center">
@@ -42,13 +56,7 @@ const EditOptions = ({ onClose, onConfirm }: EditOptions) => {
         </button>
         <button
           className="flex-1 bg-[#A0D6B4] text-white py-2 rounded-md font-bold shadow hover:brightness-90 transition"
-          onClick={() => {
-            if (selectedOption) {
-              onConfirm(selectedOption);
-            } else {
-              alert("請選擇一個選項");
-            }
-          }}
+          onClick={handleConfirm}
         >
           確定
         </button>

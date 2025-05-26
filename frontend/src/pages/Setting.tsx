@@ -9,7 +9,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { AuthService } from '../services/auth';
 import { ApiClient } from '../services/api';
-import { useToast } from '../hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
   line_id?: string;

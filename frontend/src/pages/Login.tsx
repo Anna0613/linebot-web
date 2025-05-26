@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader } from "@/components/ui/loader";
-import { CustomAlert } from "@/components/ui/custom-alert";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
 import "@/components/ui/loader.css";
@@ -17,22 +17,12 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   
-  const [alert, setAlert] = useState({
-    show: false,
-    message: '',
-    type: 'error' as 'success' | 'error' | 'info'
-  });
-
-  const showAlert = (message: string, type: 'success' | 'error' | 'info') => {
-    setAlert({ show: true, message, type });
-    setTimeout(() => setAlert(prev => ({ ...prev, show: false })), 3000);
-  };
-
   useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
@@ -55,14 +45,21 @@ const Login = () => {
         if (result.email) {
           localStorage.setItem("email", result.email);
         }
-        showAlert("登入成功！", "success");
+        toast({
+          title: "登入成功！",
+          description: "歡迎回來",
+        });
         navigate("/index2");
       } else {
         throw new Error("LINE 登入驗證失敗");
       }
     } catch (error) {
       console.error('LINE登入驗證失敗:', error);
-      showAlert("LINE 登入驗證失敗，請重試", "error");
+      toast({
+        variant: "destructive",
+        title: "登入失敗",
+        description: "LINE 登入驗證失敗，請重試",
+      });
     }
   };
 
@@ -83,7 +80,11 @@ const Login = () => {
       window.location.href = result.login_url;
     } catch (error) {
       console.error("LINE login error:", error);
-      showAlert("LINE 登入失敗，請稍後再試", "error");
+      toast({
+        variant: "destructive",
+        title: "登入失敗",
+        description: "LINE 登入失敗，請稍後再試",
+      });
       setLoading(false);
     }
   };
@@ -93,7 +94,11 @@ const Login = () => {
     setLoading(true);
 
     if (!username || !password) {
-      showAlert("請輸入使用者名稱和密碼", "error");
+      toast({
+        variant: "destructive",
+        title: "輸入錯誤",
+        description: "請輸入使用者名稱和密碼",
+      });
       setLoading(false);
       return;
     }
@@ -123,7 +128,10 @@ const Login = () => {
         console.error("找不到登入 token，將嘗試直接使用響應數據繼續");
         // 即使沒有 token，也嘗試繼續以響應數據驅動
         if (response.data && response.data.username) {
-          showAlert("登入成功！", "success");
+          toast({
+            title: "登入成功！",
+            description: "歡迎回來",
+          });
           setTimeout(() => {
             navigate("/index2", { 
               state: { 
@@ -139,7 +147,10 @@ const Login = () => {
         }
       }
 
-      showAlert("登入成功！", "success");
+      toast({
+        title: "登入成功！",
+        description: "歡迎回來",
+      });
       
       // 確保使用 setTimeout 使警告訊息能被看到，然後再跳轉
       setTimeout(() => {
@@ -147,7 +158,11 @@ const Login = () => {
       }, 1000);
     } catch (error: any) {
       console.error("錯誤:", error);
-      showAlert(error.message || "登入失敗，請重試", "error");
+      toast({
+        variant: "destructive",
+        title: "登入失敗",
+        description: error.message || "登入失敗，請重試",
+      });
       // 清除可能存在的無效 token
       AuthService.removeToken();
     } finally {
@@ -159,12 +174,6 @@ const Login = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       {loading && <Loader fullPage />}
-      <CustomAlert 
-        isOpen={alert.show}
-        message={alert.message}
-        type={alert.type}
-        onClose={() => setAlert(prev => ({ ...prev, show: false }))}
-      />
 
       <div className="flex-1 flex items-center justify-center py-6 xs:py-8 sm:py-12 px-3 sm:px-6 lg:px-8 mt-14 sm:mt-16 md:mt-20">
         <div className="w-full max-w-[88%] xs:max-w-[85%] sm:max-w-md">

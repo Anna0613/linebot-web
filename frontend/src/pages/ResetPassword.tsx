@@ -1,91 +1,114 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
-import { CustomAlert } from "@/components/ui/custom-alert";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
 import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 const ResetPassword = () => {
-  const [searchParams] = useSearchParams();
+  const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
-  // Alert state
-  const [alert, setAlert] = useState({
-    show: false,
-    message: '',
-    type: 'info' as 'success' | 'error' | 'info'
-  });
 
-  const showAlert = (message: string, type: 'success' | 'error' | 'info') => {
-    setAlert({ show: true, message, type });
-    setTimeout(() => setAlert(prev => ({ ...prev, show: false })), 3000);
-  };
-
-  const validatePassword = () => {
+  const validateForm = () => {
     if (!password) {
-      showAlert("請輸入新密碼", "error");
+      toast({
+        variant: "destructive",
+        title: "輸入錯誤",
+        description: "請輸入新密碼",
+      });
       return false;
     }
 
     if (password.length < 8) {
-      showAlert("密碼長度至少需要8位", "error");
+      toast({
+        variant: "destructive",
+        title: "密碼錯誤",
+        description: "密碼長度至少需要8位",
+      });
       return false;
     }
 
-    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password)) {
-      showAlert("密碼需要包含至少一個字母和一個數字", "error");
+    if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(password)) {
+      toast({
+        variant: "destructive",
+        title: "密碼錯誤",
+        description: "密碼需要包含至少一個字母和一個數字",
+      });
       return false;
     }
 
     if (password !== confirmPassword) {
-      showAlert("確認密碼與密碼不符", "error");
+      toast({
+        variant: "destructive",
+        title: "密碼錯誤",
+        description: "確認密碼與密碼不符",
+      });
       return false;
     }
 
     return true;
   };
 
+  useEffect(() => {
+    if (!token) {
+      toast({
+        variant: "destructive",
+        title: "連結無效",
+        description: "無效的重設連結",
+      });
+      navigate('/login');
+    }
+  }, [token, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validatePassword()) {
-      return;
-    }
-
-    const token = searchParams.get('token');
-    if (!token) {
-      showAlert("無效的重設連結", "error");
-      return;
-    }
-
     setLoading(true);
 
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.RESET_PASSWORD(token)), {
+      const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.RESET_PASSWORD(token!)), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ new_password: password }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        showAlert("密碼重設成功！", "success");
-        setTimeout(() => navigate("/login"), 2000);
-      } else {
-        showAlert(data.error || "密碼重設失敗，請重試", "error");
+      if (!response.ok) {
+        throw new Error(data.error || "密碼重設失敗，請重試");
       }
-    } catch (error) {
-      console.error('重設密碼錯誤:', error);
-      showAlert("重設密碼時發生錯誤，請稍後再試", "error");
+
+      toast({
+        title: "重設成功",
+        description: "密碼重設成功！",
+      });
+
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+    } catch (error: any) {
+      console.error("重設密碼錯誤:", error);
+      toast({
+        variant: "destructive",
+        title: "重設失敗",
+        description: "重設密碼時發生錯誤，請稍後再試",
+      });
     } finally {
       setLoading(false);
     }
@@ -95,12 +118,6 @@ const ResetPassword = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       {loading && <Loader fullPage />}
-      <CustomAlert 
-        isOpen={alert.show}
-        message={alert.message}
-        type={alert.type}
-        onClose={() => setAlert(prev => ({ ...prev, show: false }))}
-      />
 
       <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
