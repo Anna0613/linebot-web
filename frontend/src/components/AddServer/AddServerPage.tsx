@@ -41,11 +41,24 @@ const AddServerPage = () => {
           />
         </div>
 
+      <Link
+          to="/how to establish"
+          className="inline-block bg-white p-2 rounded-full shadow hover:bg-gray-100 transition"
+          title="上一頁"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-[#F4B8AD]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+        </Link>
+        {/* 右箭頭（下一頁） */}
         <Link
           to="/block"
-          className="inline-block text-white bg-[#F4B8AD] px-6 py-2 text-base font-semibold rounded hover:bg-[#e6998a] transition duration-200 shadow-sm"
+          className="inline-block bg-[#F4B8AD] p-2 rounded-full shadow hover:bg-[#e6998a] transition"
+          title="下一頁"
         >
-          NEXT
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14m-6-6l6 6-6 6" />
+          </svg>
         </Link>
       </form>
     </div>

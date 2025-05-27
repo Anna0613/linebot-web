@@ -6,7 +6,7 @@ import Footer2 from '../components/LoginHome/Footer2';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
-
+import { Link } from 'react-router-dom';
 interface User {
   line_id?: string;
   display_name: string;
@@ -115,6 +115,17 @@ const Block = () => {
           <MiddlePanel />
           <RightPanel />
       </div>
+      <div className="mt-10 flex justify-center w-full">
+    <Link
+      to="/add server"
+      className="bg-white p-3 rounded-full shadow hover:bg-gray-100 transition"
+      title="上一頁"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-[#F4B8AD]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+      </svg>
+    </Link>
+  </div>
       </main>
       <Footer2 />
     </div>

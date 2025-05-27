@@ -44,9 +44,12 @@ const StepFour = () => {
       <div className="mt-10 mb-10">
         <Link
           to="/add server"
-          className="inline-block text-white bg-[#F4B8AD] px-6 h-11 text-lg font-bold rounded hover:bg-[#e6998a] transition flex items-center justify-center"
+          className="inline-block bg-[#F4B8AD] p-2 rounded-full shadow hover:bg-[#e6998a] transition"
+          title="下一頁"
         >
-          NEXT
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14m-6-6l6 6-6 6" />
+          </svg>
         </Link>
       </div>
     </div>
