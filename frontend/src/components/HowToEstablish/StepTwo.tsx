@@ -1,41 +1,114 @@
 import React from 'react';
+import { Plus, ArrowRight } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 const StepTwo = () => {
   return (
-    <div className="relative w-full flex flex-col items-center pt-0 pb-0 bg-[#FFFDFA]">
+    <section className="py-20 px-6 bg-gradient-to-br from-[#F8F6F3] to-[#FFFDFA] relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-20 left-0 w-80 h-80 bg-accent/5 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+      
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          
+          {/* Image Section */}
+          <div className="order-1 relative fade-in-element">
+            <div className="relative">
+              <div className="glassmorphism p-6 rounded-3xl shadow-glass-lg">
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="relative">
+                    <img
+                      src="/專題圖片/p3.png"
+                      alt="LINE Developers Provider 建立頁面"
+                      className="w-full rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                    />
+                    {/* Highlight indicator */}
+                    <div className="absolute top-4 right-4 w-32 h-12 border-2 border-red-500 rounded-full opacity-75 animate-pulse"></div>
+                  </div>
+                  
+                  <div className="relative">
+                    <img
+                      src="/專題圖片/p4.png"
+                      alt="Provider 建立表單"
+                      className="w-full h-48 object-cover rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Floating elements */}
+              <div className="absolute -top-6 -right-6 w-10 h-10 bg-accent/20 rounded-full animate-float"></div>
+              <div className="absolute -bottom-6 -left-6 w-8 h-8 bg-primary/20 rounded-full animate-float" style={{ animationDelay: '1.5s' }}></div>
+            </div>
+          </div>
 
-      <img
-        src="/專題圖片/step2.svg"
-        alt="Step 2 Background"
-        className="max-w-[1296px] w-full h-auto"
-      />
-
-      <div className="absolute top-[4%] w-full flex justify-center items-start gap-x-6">
-        <img
-          src="/專題圖片/p3.png"
-          alt="Photo 3"
-          className="w-[770px] animate__animated animate__fadeIn"
-        />
-        <img
-          src="/專題圖片/p4.png"
-          alt="Photo 4"
-          className="w-[460px] h-[230px] animate__animated animate__fadeIn"
-        />
+          {/* Content Section */}
+          <div className="order-2 space-y-8 fade-in-element" style={{ animationDelay: '0.2s' }}>
+            <div className="space-y-4">
+              <div className="inline-flex items-center px-4 py-2 bg-accent/10 rounded-full text-accent font-medium text-sm">
+                <span>第二步</span>
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight">
+                建立 <span className="text-gradient">Provider</span>
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
+                Provider 是管理您所有 LINE Bot 服務的容器，每個開發者都需要先建立 Provider。
+              </p>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-glass">
+                <h3 className="text-xl font-semibold text-foreground mb-3">操作步驟：</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start space-x-3">
+                    <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-accent">1</span>
+                    </div>
+                    <span className="text-muted-foreground">登入LINE Developers後，點選「Create」按鈕</span>
+                  </li>
+                  <li className="flex items-start space-x-3">
+                    <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-accent">2</span>
+                    </div>
+                    <span className="text-muted-foreground">輸入Provider名稱（建議使用英文）</span>
+                  </li>
+                  <li className="flex items-start space-x-3">
+                    <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-accent">3</span>
+                    </div>
+                    <span className="text-muted-foreground">點擊「Create」完成Provider建立</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-200/50">
+                <div className="flex items-start space-x-3">
+                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs text-white font-bold">!</span>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-blue-900 mb-1">小提示</h4>
+                    <p className="text-sm text-blue-700">Provider名稱建議使用有意義的英文名稱，之後無法修改。一個開發者可以建立多個Provider來管理不同的專案。</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all group">
+                  <Plus className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                  建立 Provider
+                </Button>
+                <Button variant="outline" size="lg" className="rounded-full">
+                  查看範例
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="absolute top-[54%] left-[460px] w-[160px] h-[60px] border-4 border-red-500 rounded-[50%/50%]" />
-      <div className="absolute top-[70.5%] left-[112px] text-[#41624f] text-left">
-        <h2 className="text-[80px] lg:text-[130px] font-bold leading-none mb-2 min-h-[160px]">Step 2.</h2>
-      </div>
-      <div className="absolute top-[67%] right-[100px] text-[#e8e4dd] text-left space-y-3">
-        <h3 className="text-[36px] lg:text-[40px] font-semibold">建立 Provider</h3>
-        <p className="text-[24px] lg:text-[30px] leading-relaxed">
-          登入 LINE Developers 網站後，點選 Create 建立一個
-        </p>
-        <p className="text-[24px] lg:text-[30px] leading-relaxed">
-          Provider，輸入名稱，點擊 Create 就能建立 Provider。
-        </p>
-      </div>
-    </div>
+    </section>
   );
 };
 
