@@ -165,7 +165,7 @@ const AddServerPage = () => {
               <span className="text-[#F4CD41] mr-2">•</span>
               如果遇到問題，請參考我們的{' '}
               <Link 
-                to="/how-to-establish" 
+                to="/how%20to%20establish" 
                 className="text-[#1a1a40] underline hover:text-[#F4CD41] transition-colors"
               >
                 建立教學
