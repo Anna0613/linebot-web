@@ -219,4 +219,9 @@ export class ApiClient {
   async deleteAvatar(): Promise<ApiResponse> {
     return this.delete(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.DELETE_AVATAR}`);
   }
+
+  // 重新發送驗證email
+  async resendVerificationEmail(username: string): Promise<ApiResponse> {
+    return this.post(`${API_CONFIG.AUTH.BASE_URL}/resend_verification`, { username });
+  }
 }

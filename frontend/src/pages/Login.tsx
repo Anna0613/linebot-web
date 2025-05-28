@@ -22,6 +22,9 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [showEmailVerificationPrompt, setShowEmailVerificationPrompt] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   
   useEffect(() => {
     const token = searchParams.get('token');
@@ -29,6 +32,19 @@ const Login = () => {
       verifyLineLogin(token);
     }
   }, [searchParams]);
+
+  // 冷卻計時器
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      interval = setInterval(() => {
+        setResendCooldown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [resendCooldown]);
 
   const verifyLineLogin = async (token: string) => {
     try {
@@ -108,6 +124,17 @@ const Login = () => {
       const response = await apiClient.login(username, password);
 
       if (response.error) {
+        // 檢查是否為email未驗證錯誤（403狀態碼）
+        if (response.status === 403 && response.error.includes('verify your email')) {
+          setShowEmailVerificationPrompt(true);
+          toast({
+            variant: "destructive",
+            title: "需要驗證電子郵件",
+            description: "請先驗證您的電子郵件地址才能登入",
+          });
+          setLoading(false);
+          return;
+        }
         throw new Error(response.error);
       }
 
@@ -170,6 +197,46 @@ const Login = () => {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (resendCooldown > 0 || isResendingEmail || !username) {
+      return;
+    }
+
+    setIsResendingEmail(true);
+    try {
+      const apiClient = ApiClient.getInstance();
+      const response = await apiClient.resendVerificationEmail(username);
+
+      if (response.error) {
+        if (response.status === 429 && response.data?.remaining_seconds) {
+          setResendCooldown(response.data.remaining_seconds);
+          toast({
+            variant: "destructive",
+            title: "請稍候",
+            description: response.error,
+          });
+        } else {
+          throw new Error(response.error);
+        }
+      } else {
+        setResendCooldown(60); // 設定60秒冷卻時間
+        toast({
+          title: "驗證郵件已重新發送",
+          description: "請檢查您的信箱（包含垃圾郵件資料夾）",
+        });
+      }
+    } catch (error: any) {
+      console.error("重新發送驗證郵件失敗:", error);
+      toast({
+        variant: "destructive",
+        title: "發送失敗",
+        description: error.message || "重新發送驗證郵件失敗，請稍後再試",
+      });
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -211,7 +278,10 @@ const Login = () => {
                 <Input
                   id="username"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setShowEmailVerificationPrompt(false);
+                  }}
                   required
                   className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
                   placeholder="請輸入使用者名稱"
@@ -269,6 +339,41 @@ const Login = () => {
                 )}
               </Button>
             </form>
+
+            {/* Email 驗證提示 */}
+            {showEmailVerificationPrompt && (
+              <div className="mt-4 xs:mt-5 sm:mt-6 bg-yellow-50/80 border border-yellow-200 rounded-xl p-4 max-w-[280px] sm:max-w-full mx-auto">
+                <div className="text-center space-y-3">
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-medium">需要驗證電子郵件</p>
+                    <p className="text-xs mt-1">請檢查您的信箱並點擊驗證連結</p>
+                  </div>
+                  
+                  <Button
+                    onClick={handleResendVerification}
+                    disabled={resendCooldown > 0 || isResendingEmail}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs bg-white/50 hover:bg-white/80 border-yellow-300 text-yellow-800"
+                  >
+                    {isResendingEmail ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-3 h-3 border border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
+                        發送中...
+                      </span>
+                    ) : resendCooldown > 0 ? (
+                      `重新發送 (${resendCooldown}s)`
+                    ) : (
+                      '重新發送驗證郵件'
+                    )}
+                  </Button>
+                  
+                  <p className="text-xs text-yellow-700">
+                    沒收到郵件？請檢查垃圾郵件資料夾
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 xs:mt-5 sm:mt-6 text-center text-xs xs:text-sm">
               <span className="text-muted-foreground">沒有帳號?</span>{' '}

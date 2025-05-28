@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import os
 from flask_cors import CORS
-from datetime import timedelta
+from datetime import timedelta, timezone
 from dotenv import load_dotenv
 from functools import wraps
 from flask_mail import Mail, Message
@@ -509,6 +509,104 @@ def logout():
     response = make_response(jsonify({'message': 'Logged out successfully!'}), 200)
     response.set_cookie('token', '', expires=0)
     return response
+
+# 重新發送驗證郵件 API
+@app.route('/resend_verification', methods=['POST'])
+def resend_verification():
+    try:
+        data = request.json
+        username = data.get('username')
+
+        if not username:
+            return jsonify({'error': 'Username is required'}), 400
+
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+
+        try:
+            cur = conn.cursor()
+            # 檢查用戶是否存在且未驗證
+            cur.execute('SELECT email, email_verified, last_verification_sent FROM users WHERE username = %s', (username,))
+            user = cur.fetchone()
+            
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            email, email_verified, last_verification_sent = user
+            
+            if email_verified:
+                return jsonify({'error': 'Email is already verified'}), 400
+            
+            # 檢查冷卻時間（60秒）
+            if last_verification_sent:
+                from datetime import datetime, timedelta, timezone
+                
+                # 確保 last_verification_sent 是 timezone-aware
+                if last_verification_sent.tzinfo is None:
+                    # 如果是 naive datetime，假設它是 UTC
+                    last_verification_sent = last_verification_sent.replace(tzinfo=timezone.utc)
+                
+                now = datetime.now(timezone.utc)
+                cooldown_time = last_verification_sent + timedelta(seconds=60)
+                
+                if now < cooldown_time:
+                    remaining_seconds = int((cooldown_time - now).total_seconds())
+                    return jsonify({
+                        'error': f'請等待 {remaining_seconds} 秒後再重新發送',
+                        'remaining_seconds': remaining_seconds
+                    }), 429
+            
+            # 更新最後發送時間
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            cur.execute('UPDATE users SET last_verification_sent = %s WHERE username = %s', (now, username))
+            conn.commit()
+            
+            # 發送驗證郵件
+            token = ts.dumps(email, salt='email-verify')
+            verify_url = f"https://login-api.jkl921102.org/verify_email/{token}"
+            msg = Message('重新發送 - 請驗證您的電子郵件', 
+                         sender=app.config['MAIL_USERNAME'], 
+                         recipients=[email])
+            msg.html = f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h1 style="color: #333; text-align: center; margin-bottom: 30px;">重新發送驗證郵件</h1>
+                <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                    我們已重新發送驗證郵件。請點擊下方按鈕完成電子郵件驗證：
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{verify_url}" 
+                       style="background-color: #F4CD41; 
+                              color: #1a1a40; 
+                              padding: 12px 30px; 
+                              text-decoration: none; 
+                              border-radius: 25px; 
+                              font-weight: bold; 
+                              display: inline-block;">
+                        驗證電子郵件
+                    </a>
+                </div>
+                <p style="color: #888; font-size: 14px; text-align: center; margin-top: 30px;">
+                    此連結將在24小時後失效。<br>
+                    如果您持續收不到驗證郵件，請檢查垃圾郵件資料夾。
+                </p>
+            </div>
+            '''
+            mail.send(msg)
+
+            return jsonify({'message': 'Verification email resent successfully!'}), 200
+            
+        except Exception as e:
+            return jsonify({'error': f'Error: {str(e)}'}), 500
+        finally:
+            if cur:
+                cur.close()
+            if conn:
+                conn.close()
+                
+    except Exception as e:
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT_LOGIN', 5501))
