@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Loader } from "@/components/ui/loader";
 import Navbar2 from "@/components/LoginHome/Navbar2";
 import Footer from "@/components/Index/Footer";
 import AvatarUpload from "@/components/AvatarUpload/AvatarUpload";
@@ -384,7 +385,7 @@ const Setting: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-10 text-center">載入中...</div>;
+  if (loading) return <Loader fullPage />;
 
   return (
     <>
