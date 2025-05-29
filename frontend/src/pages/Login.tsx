@@ -27,11 +27,16 @@ const Login = () => {
   const [isResendingEmail, setIsResendingEmail] = useState(false);
   
   useEffect(() => {
+    if (AuthService.isAuthenticated()) {
+      navigate('/index2', { replace: true });
+      return;
+    }
+    
     const token = searchParams.get('token');
     if (token) {
       verifyLineLogin(token);
     }
-  }, [searchParams]);
+  }, [searchParams, navigate]);
 
   // 冷卻計時器
   useEffect(() => {
@@ -65,7 +70,7 @@ const Login = () => {
           title: "登入成功！",
           description: "歡迎回來",
         });
-        navigate("/index2");
+        navigate("/index2", { replace: true });
       } else {
         throw new Error("LINE 登入驗證失敗");
       }
@@ -160,13 +165,7 @@ const Login = () => {
             description: "歡迎回來",
           });
           setTimeout(() => {
-            navigate("/index2", { 
-              state: { 
-                username: response.data.username, 
-                directLogin: true,
-                loginType: 'general'
-              } 
-            });
+            navigate("/index2", { replace: true });
           }, 1000);
           return;
         } else {
@@ -181,7 +180,7 @@ const Login = () => {
       
       // 確保使用 setTimeout 使警告訊息能被看到，然後再跳轉
       setTimeout(() => {
-        navigate("/index2");
+        navigate("/index2", { replace: true });
       }, 1000);
     } catch (error: any) {
       console.error("錯誤:", error);

@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { ChevronRight, CheckCircle, Circle } from 'lucide-react';
+import { useAuthGuard } from '../hooks/useAuthGuard';
 
 interface User {
   line_id?: string;
@@ -23,6 +24,13 @@ const HowToEstablish = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
+
+  // 使用身份驗證保護Hook
+  useAuthGuard({
+    requireAuth: true,
+    preventBackToLogin: true,
+    redirectTo: '/login'
+  });
 
   const steps = [
     { id: 1, title: '註冊 LINE Developer', completed: false },

@@ -11,6 +11,7 @@ import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { AuthService } from '../services/auth';
 import { ApiClient } from '../services/api';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthGuard } from '../hooks/useAuthGuard';
 
 interface User {
   line_id?: string;
@@ -42,6 +43,13 @@ const Setting: React.FC = () => {
   
   const { toast } = useToast();
   const apiClient = ApiClient.getInstance();
+
+  // 使用身份驗證保護Hook
+  useAuthGuard({
+    requireAuth: true,
+    preventBackToLogin: true,
+    redirectTo: '/login'
+  });
 
   useEffect(() => {
     const token = searchParams.get('token');

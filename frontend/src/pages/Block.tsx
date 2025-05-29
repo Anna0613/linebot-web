@@ -4,9 +4,10 @@ import RightPanel from '../components/Panels/RightPanel';
 import Navbar3 from '../components/Panels/Navbar3';
 import Footer2 from '../components/LoginHome/Footer2';
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
-import { Link } from 'react-router-dom';
+import { useAuthGuard } from '../hooks/useAuthGuard';
+
 interface User {
   line_id?: string;
   display_name: string;
@@ -20,6 +21,13 @@ const Block = () => {
       const [user, setUser] = useState<User | null>(null);
       const [error, setError] = useState<string | null>(null);
       const [loading, setLoading] = useState(true);
+    
+      // 使用身份驗證保護Hook
+      useAuthGuard({
+        requireAuth: true,
+        preventBackToLogin: true,
+        redirectTo: '/login'
+      });
     
       useEffect(() => {
         const token = searchParams.get('token');
