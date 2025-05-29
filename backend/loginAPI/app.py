@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from functools import wraps
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+import re
 
 from auth_service import (
     verify_password, get_password_hash, create_access_token,
@@ -264,11 +265,11 @@ def verify_email_token():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
-    username = data.get('username')
+    username_or_email = data.get('username')  # 可以是用戶名稱或 email
     password = data.get('password')
 
-    if not all([username, password]):
-        return jsonify({'error': 'Username and password are required'}), 400
+    if not all([username_or_email, password]):
+        return jsonify({'error': 'Username/Email and password are required'}), 400
 
     conn = get_db_connection()
     if not conn:
@@ -276,18 +277,36 @@ def login():
 
     try:
         cur = conn.cursor()
-        cur.execute(
-            'SELECT password, email, email_verified FROM users WHERE username = %s',
-            (username,)
-        )
+        
+        # 判斷輸入的是 email 還是用戶名稱
+        # 使用正則表達式進行更準確的 email 格式檢查
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        is_email = re.match(email_pattern, username_or_email) is not None
+        
+        if is_email:
+            # 使用 email 登入
+            cur.execute(
+                'SELECT username, password, email, email_verified FROM users WHERE email = %s',
+                (username_or_email,)
+            )
+        else:
+            # 使用用戶名稱登入
+            cur.execute(
+                'SELECT username, password, email, email_verified FROM users WHERE username = %s',
+                (username_or_email,)
+            )
+        
         user = cur.fetchone()
 
-        if not user or not verify_password(password, user[0]):
+        if not user or not verify_password(password, user[1]):
             return jsonify({'error': 'Invalid credentials'}), 401
         
-        if not user[2]:  # email_verified
+        if not user[3]:  # email_verified
             return jsonify({'error': 'Please verify your email first'}), 403
 
+        username = user[0]  # 從資料庫取得實際的用戶名稱
+        email = user[2]
+        
         token = create_access_token({
             'username': username,
             'login_type': 'general'  # 標記為一般帳號登入
@@ -296,9 +315,10 @@ def login():
         response = make_response(jsonify({
             'message': 'Login successful!',
             'username': username,
-            'email': user[1],
+            'email': email,
             'token': token,
-            'login_type': 'general'
+            'login_type': 'general',
+            'login_method': 'email' if is_email else 'username'  # 記錄登入方式
         }), 200)
 
         # 設置 cookie，確保適當的 SameSite 屬性
@@ -515,10 +535,10 @@ def logout():
 def resend_verification():
     try:
         data = request.json
-        username = data.get('username')
+        username_or_email = data.get('username')  # 可以是用戶名稱或 email
 
-        if not username:
-            return jsonify({'error': 'Username is required'}), 400
+        if not username_or_email:
+            return jsonify({'error': 'Username or email is required'}), 400
 
         conn = get_db_connection()
         if not conn:
@@ -526,14 +546,24 @@ def resend_verification():
 
         try:
             cur = conn.cursor()
-            # 檢查用戶是否存在且未驗證
-            cur.execute('SELECT email, email_verified, last_verification_sent FROM users WHERE username = %s', (username,))
+            
+            # 判斷輸入的是 email 還是用戶名稱
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            is_email = re.match(email_pattern, username_or_email) is not None
+            
+            if is_email:
+                # 使用 email 查詢
+                cur.execute('SELECT username, email, email_verified, last_verification_sent FROM users WHERE email = %s', (username_or_email,))
+            else:
+                # 使用用戶名稱查詢
+                cur.execute('SELECT username, email, email_verified, last_verification_sent FROM users WHERE username = %s', (username_or_email,))
+            
             user = cur.fetchone()
             
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
-            email, email_verified, last_verification_sent = user
+            username, email, email_verified, last_verification_sent = user
             
             if email_verified:
                 return jsonify({'error': 'Email is already verified'}), 400
@@ -560,7 +590,10 @@ def resend_verification():
             # 更新最後發送時間
             from datetime import datetime, timezone
             now = datetime.now(timezone.utc)
-            cur.execute('UPDATE users SET last_verification_sent = %s WHERE username = %s', (now, username))
+            if is_email:
+                cur.execute('UPDATE users SET last_verification_sent = %s WHERE email = %s', (now, username_or_email))
+            else:
+                cur.execute('UPDATE users SET last_verification_sent = %s WHERE username = %s', (now, username_or_email))
             conn.commit()
             
             # 發送驗證郵件

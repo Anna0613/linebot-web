@@ -113,7 +113,7 @@ const Login = () => {
       toast({
         variant: "destructive",
         title: "輸入錯誤",
-        description: "請輸入使用者名稱和密碼",
+        description: "請輸入使用者名稱或電子郵件以及密碼",
       });
       setLoading(false);
       return;
@@ -274,7 +274,7 @@ const Login = () => {
 
             <form className="space-y-4 xs:space-y-5 sm:space-y-6 max-w-[280px] sm:max-w-full mx-auto" onSubmit={handleLogin}>
               <div className="space-y-1.5">
-                <Label htmlFor="username" className="text-sm sm:text-base">使用者名稱：</Label>
+                <Label htmlFor="username" className="text-sm sm:text-base">使用者名稱或電子郵件：</Label>
                 <Input
                   id="username"
                   value={username}
@@ -284,8 +284,9 @@ const Login = () => {
                   }}
                   required
                   className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
-                  placeholder="請輸入使用者名稱"
+                  placeholder="請輸入使用者名稱或電子郵件"
                 />
+                <p className="text-xs text-gray-500 mt-1">您可以使用註冊時的用戶名稱或電子郵件登入</p>
               </div>
 
               <div className="space-y-1.5">
