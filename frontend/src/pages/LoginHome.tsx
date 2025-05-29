@@ -9,6 +9,7 @@ import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { AuthService } from '../services/auth';
 import { LineLoginService } from '../services/lineLogin';
 import { useAuthGuard } from '../hooks/useAuthGuard';
+import { useHistoryGuard } from '../hooks/useHistoryGuard';
 
 interface User {
   line_id?: string;
@@ -31,6 +32,14 @@ const LoginHome = () => {
     requireAuth: true,
     preventBackToLogin: true,
     redirectTo: '/login'
+  });
+
+  // 使用歷史管理Hook，允許在受保護的頁面間導航
+  useHistoryGuard({
+    preventBack: true,
+    replaceHistory: true,
+    allowedBackPaths: ['/index2', '/setting', '/add server', '/block', '/how to establish', '/editbot'],
+    fallbackPath: '/index2'
   });
 
   useEffect(() => {

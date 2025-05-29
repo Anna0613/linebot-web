@@ -70,6 +70,10 @@ const Login = () => {
           title: "登入成功！",
           description: "歡迎回來",
         });
+        
+        // 清除登入前的歷史記錄
+        window.history.replaceState(null, '', '/login');
+        
         navigate("/index2", { replace: true });
       } else {
         throw new Error("LINE 登入驗證失敗");
@@ -177,6 +181,9 @@ const Login = () => {
         title: "登入成功！",
         description: "歡迎回來",
       });
+      
+      // 清除登入前的歷史記錄
+      window.history.replaceState(null, '', '/login');
       
       // 確保使用 setTimeout 使警告訊息能被看到，然後再跳轉
       setTimeout(() => {
