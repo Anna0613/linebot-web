@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
 import 'animate.css';
 import { API_CONFIG, getApiUrl } from '../../config/apiConfig';
 import { ApiClient } from '../../services/api';
+import { AuthService } from '../../services/auth';
 
 // 定義 User 介面
 interface User {
@@ -29,6 +30,7 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const apiClient = ApiClient.getInstance();
+  const navigate = useNavigate();
 
   // 載入用戶頭像
   const loadUserAvatar = async () => {
@@ -127,15 +129,20 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
         method: 'POST',
         credentials: 'include',
       });
-      // 清除 LINE 登入相關資料
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('username');
-      localStorage.removeItem('email');
+      // 使用 AuthService 清除所有認證資料
+      AuthService.clearAuth();
+      // 清除其他可能的 LINE 登入相關資料
       localStorage.removeItem('line_token');
       setShowDropdown(false);
-      window.location.href = '/login'; // 重定向到登入頁面
+      // 使用 React Router 進行導航
+      navigate('/login');
     } catch (error) {
       console.error('登出失敗:', error);
+      // 即使後端請求失敗，也要清除前端的認證資料
+      AuthService.clearAuth();
+      localStorage.removeItem('line_token');
+      setShowDropdown(false);
+      navigate('/login');
     }
   };
 
