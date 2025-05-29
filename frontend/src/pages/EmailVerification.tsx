@@ -24,7 +24,7 @@ const EmailVerification = () => {
       }
 
       try {
-        const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.VERIFY_EMAIL), {
+        const response = await fetch(getApiUrl(API_CONFIG.SETTING.BASE_URL, '/verify-email'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),

@@ -17,6 +17,7 @@ interface User {
   display_name: string;
   picture_url?: string;
   email?: string;
+  email_verified?: boolean;
   username?: string;
   isLineUser?: boolean;
   avatar?: string;
@@ -31,6 +32,8 @@ const Setting: React.FC = () => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [email, setEmail] = useState("");            
   const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [isResendingEmailVerification, setIsResendingEmailVerification] = useState(false);
   const [userImage, setUserImage] = useState<string | null>(null); 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -122,10 +125,12 @@ const Setting: React.FC = () => {
         const profileData = response.data;
         // 更新email資料
         setEmail(profileData.email || "");
+        setEmailVerified(profileData.email_verified || false);
         // 更新用戶資料
         setUser(prev => prev ? { 
           ...prev, 
           email: profileData.email,
+          email_verified: profileData.email_verified,
           username: profileData.username 
         } : null);
       }
@@ -366,12 +371,23 @@ const Setting: React.FC = () => {
     try {
       const response = await apiClient.updateProfile({ email: email });
       if (response.status === 200) {
-        setUser((prev) => (prev ? { ...prev, email: email } : null));
+        // 更新用戶狀態
+        setUser((prev) => (prev ? { ...prev, email: email, email_verified: response.data.email_verified } : null));
+        setEmailVerified(response.data.email_verified || false);
         setIsEditingEmail(false);
-        toast({
-          title: "電子郵件更新成功",
-          description: "您的電子郵件已經更新",
-        });
+        
+        // 檢查是否發送了驗證郵件
+        if (response.data.email_verification_sent) {
+          toast({
+            title: "電子郵件更新成功",
+            description: "驗證郵件已發送到您的新電子郵件地址，請查收並點擊驗證連結",
+          });
+        } else {
+          toast({
+            title: "電子郵件更新成功",
+            description: "您的電子郵件已經更新",
+          });
+        }
       } else {
         throw new Error(response.error || '更新電子郵件失敗');
       }
@@ -382,6 +398,31 @@ const Setting: React.FC = () => {
         title: "更新失敗",
         description: error instanceof Error ? error.message : '更新電子郵件失敗，請稍後再試',
       });
+    }
+  };
+
+  // 重新發送email驗證
+  const handleResendEmailVerification = async () => {
+    setIsResendingEmailVerification(true);
+    try {
+      const response = await apiClient.resendEmailVerification();
+      if (response.status === 200) {
+        toast({
+          title: "驗證郵件已重新發送",
+          description: "請檢查您的信箱並點擊驗證連結",
+        });
+      } else {
+        throw new Error(response.error || '發送驗證郵件失敗');
+      }
+    } catch (error) {
+      console.error('發送驗證郵件失敗:', error);
+      toast({
+        variant: "destructive",
+        title: "發送失敗",
+        description: error instanceof Error ? error.message : '發送驗證郵件失敗，請稍後再試',
+      });
+    } finally {
+      setIsResendingEmailVerification(false);
     }
   };
 
@@ -474,7 +515,14 @@ const Setting: React.FC = () => {
           {user?.isLineUser ? (
             // LINE用戶顯示email但不可編輯
             <div className="flex justify-between items-center">
-              <span className="text-base">{email || "未設定"}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-base">{email || "未設定"}</span>
+                {email && (
+                  <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                    已驗證
+                  </span>
+                )}
+              </div>
               <span className="text-sm text-gray-500">LINE用戶無法修改電子郵件</span>
             </div>
           ) : (
@@ -506,15 +554,46 @@ const Setting: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="flex justify-between items-center">
-                  <span className="text-base">{email || "未設定"}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsEditingEmail(true)}
-                  >
-                    編輯
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{email || "未設定"}</span>
+                      {email && (
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            emailVerified
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {emailVerified ? '已驗證' : '未驗證'}
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsEditingEmail(true)}
+                    >
+                      編輯
+                    </Button>
+                  </div>
+                  {email && !emailVerified && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-yellow-600">
+                        請驗證您的電子郵件地址以確保帳戶安全
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="link"
+                        className="text-blue-600 hover:text-blue-800 p-0 h-auto"
+                        onClick={handleResendEmailVerification}
+                        disabled={isResendingEmailVerification}
+                      >
+                        {isResendingEmailVerification ? '發送中...' : '重新發送驗證郵件'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </>

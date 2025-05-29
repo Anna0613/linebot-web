@@ -34,6 +34,7 @@ export const API_CONFIG = {
       GET_AVATAR: '/avatar',
       UPDATE_AVATAR: '/avatar',
       DELETE_AVATAR: '/avatar',
+      RESEND_EMAIL_VERIFICATION: '/resend-email-verification',
     },
   },
   PUZZLE: {

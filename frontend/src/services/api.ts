@@ -224,4 +224,9 @@ export class ApiClient {
   async resendVerificationEmail(username: string): Promise<ApiResponse> {
     return this.post(`${API_CONFIG.AUTH.BASE_URL}/resend_verification`, { username });
   }
+
+  // 重新發送Setting API的email驗證
+  async resendEmailVerification(): Promise<ApiResponse> {
+    return this.post(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.RESEND_EMAIL_VERIFICATION}`);
+  }
 }

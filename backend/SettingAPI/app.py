@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, redirect
 import psycopg2
 import os
 import base64
@@ -7,6 +7,8 @@ from flask_cors import CORS
 from datetime import datetime
 from dotenv import load_dotenv
 from functools import wraps
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 
 from auth_service import verify_token, extract_token_from_header, create_access_token
 
@@ -81,6 +83,18 @@ def after_request(response):
 
 # 配置安全性設置
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(32))
+
+# 郵件配置
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
+mail = Mail(app)
+
+# Token 生成器
+ts = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # 資料庫連接
 def get_db_connection():
@@ -352,6 +366,15 @@ def update_profile():
     try:
         cur = conn.cursor()
         
+        # 獲取當前用戶信息
+        cur.execute('SELECT email FROM users WHERE username = %s', (current_username,))
+        current_user_data = cur.fetchone()
+        if not current_user_data:
+            return jsonify({'error': 'User not found'}), 404
+        
+        current_email = current_user_data[0]
+        email_changed = new_email and new_email != current_email
+        
         # 檢查新用戶名是否已存在（如果有提供新用戶名）
         if new_username and new_username != current_username:
             cur.execute('SELECT id FROM users WHERE username = %s', (new_username,))
@@ -391,6 +414,47 @@ def update_profile():
         
         conn.commit()
         
+        # 如果email有變更，發送驗證郵件
+        if email_changed:
+            try:
+                if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
+                    print('Warning: Email configuration not properly set, skipping email verification')
+                else:
+                    # 發送email驗證郵件
+                    token = ts.dumps(new_email, salt='email-verify')
+                    verify_url = f"https://setting-api.jkl921102.org/verify_email/{token}"
+                    msg = Message('電子郵件驗證 - 請驗證您的新電子郵件地址', 
+                                 sender=app.config['MAIL_USERNAME'], 
+                                 recipients=[new_email])
+                    msg.html = f'''
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h1 style="color: #333; text-align: center; margin-bottom: 30px;">電子郵件地址變更</h1>
+                        <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                            您的電子郵件地址已更新，請點擊下方按鈕完成新電子郵件地址的驗證：
+                        </p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{verify_url}" 
+                               style="background-color: #F4CD41; 
+                                      color: #1a1a40; 
+                                      padding: 12px 30px; 
+                                      text-decoration: none; 
+                                      border-radius: 25px; 
+                                      font-weight: bold; 
+                                      display: inline-block;">
+                                驗證新電子郵件
+                            </a>
+                        </div>
+                        <p style="color: #888; font-size: 14px; text-align: center; margin-top: 30px;">
+                            此連結將在24小時後失效。<br>
+                            如果這不是您發起的變更，請立即聯繫客服。
+                        </p>
+                    </div>
+                    '''
+                    mail.send(msg)
+            except Exception as e:
+                print(f'Failed to send verification email: {str(e)}')
+                # 不因郵件發送失敗而回滾資料庫更新
+        
         # 準備回應數據
         updated_data = {
             'username': result[1],
@@ -398,6 +462,10 @@ def update_profile():
             'email_verified': result[3],
             'message': 'Profile updated successfully'
         }
+        
+        if email_changed:
+            updated_data['email_verification_sent'] = True
+            updated_data['message'] += '. Email verification sent to new address.'
         
         # 如果用戶名稱有更新，生成新的 JWT token
         if new_username and new_username != current_username:
@@ -431,6 +499,81 @@ def update_profile():
         cur.close()
         conn.close()
 
+# 重新發送email驗證
+@app.route('/resend-email-verification', methods=['POST'])
+@token_required
+def resend_email_verification():
+    current_username = request.current_user.get('username')
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'error': 'Database connection failed'}), 500
+
+    try:
+        cur = conn.cursor()
+        
+        # 獲取用戶email和驗證狀態
+        cur.execute('SELECT email, email_verified FROM users WHERE username = %s', (current_username,))
+        result = cur.fetchone()
+        
+        if not result:
+            return jsonify({'error': 'User not found'}), 404
+        
+        email, email_verified = result
+        
+        if email_verified:
+            return jsonify({'error': 'Email is already verified'}), 400
+        
+        if not email:
+            return jsonify({'error': 'No email address associated with this account'}), 400
+        
+        # 檢查email配置
+        if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
+            return jsonify({'error': 'Email service is not configured'}), 500
+        
+        # 發送驗證郵件
+        token = ts.dumps(email, salt='email-verify')
+        verify_url = f"https://setting-api.jkl921102.org/verify_email/{token}"
+        msg = Message('重新發送 - 請驗證您的電子郵件', 
+                     sender=app.config['MAIL_USERNAME'], 
+                     recipients=[email])
+        msg.html = f'''
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #333; text-align: center; margin-bottom: 30px;">重新發送驗證郵件</h1>
+            <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                我們已重新發送驗證郵件。請點擊下方按鈕完成電子郵件驗證：
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{verify_url}" 
+                   style="background-color: #F4CD41; 
+                          color: #1a1a40; 
+                          padding: 12px 30px; 
+                          text-decoration: none; 
+                          border-radius: 25px; 
+                          font-weight: bold; 
+                          display: inline-block;">
+                    驗證電子郵件
+                </a>
+            </div>
+            <p style="color: #888; font-size: 14px; text-align: center; margin-top: 30px;">
+                此連結將在24小時後失效。<br>
+                如果您持續遇到問題，請聯繫客服。
+            </p>
+        </div>
+        '''
+        mail.send(msg)
+        
+        return jsonify({
+            'message': 'Verification email sent successfully',
+            'email': email
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': f'Error sending verification email: {str(e)}'}), 500
+    finally:
+        cur.close()
+        conn.close()
+
 # 健康檢查
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -439,6 +582,70 @@ def health_check():
         'service': 'Setting API',
         'timestamp': datetime.now().isoformat()
     }), 200
+
+# Email驗證端點
+@app.route('/verify-email', methods=['POST'])
+def verify_email_token():
+    try:
+        data = request.json
+        token = data.get('token') if data else None
+        
+        if not token:
+            return jsonify({'error': 'Token is required'}), 400
+
+        # 解析token獲取email
+        email = ts.loads(token, salt='email-verify', max_age=86400)  # 24小時有效
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+
+        try:
+            cur = conn.cursor()
+            
+            # 更新email驗證狀態
+            cur.execute(
+                'UPDATE users SET email_verified = TRUE WHERE email = %s AND email_verified = FALSE RETURNING username',
+                (email,)
+            )
+            result = cur.fetchone()
+            
+            if not result:
+                return jsonify({'error': 'Email already verified or invalid'}), 400
+
+            conn.commit()
+            
+            return jsonify({
+                'message': 'Email verified successfully!',
+                'username': result[0]
+            }), 200
+            
+        except Exception as e:
+            conn.rollback()
+            return jsonify({'error': f'Database error: {str(e)}'}), 500
+        finally:
+            cur.close()
+            
+    except SignatureExpired:
+        return jsonify({'error': 'Verification link has expired'}), 400
+    except BadSignature:
+        return jsonify({'error': 'Invalid verification link'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Error verifying email: {str(e)}'}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+# Email驗證重定向端點（處理從郵件點擊的連結）
+@app.route('/verify_email/<token>', methods=['GET'])
+def verify_email_redirect(token):
+    try:
+        # 重定向到前端的驗證頁面，並帶上token參數
+        frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8080')
+        verify_url = f"{frontend_url}/verify-email?token={token}"
+        return redirect(verify_url)
+    except Exception as e:
+        return jsonify({'error': f'Redirect error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT_SETTING', 5504))
