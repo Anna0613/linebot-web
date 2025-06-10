@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
+import { ApiClient } from '../../services/api';
 
 // 定義 User 介面
 interface User {
@@ -7,6 +8,8 @@ interface User {
   display_name: string;
   picture_url?: string;
   username?: string;
+  avatar?: string;
+  isLineUser?: boolean;
 }
 
 interface HomeBotflyProps {
@@ -17,13 +20,48 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
   const [userImage, setUserImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const apiClient = ApiClient.getInstance();
+
+  // 載入用戶頭像
+  const loadUserAvatar = async () => {
+    if (user && !user.isLineUser && !user.picture_url) {
+      try {
+        const response = await apiClient.getAvatar();
+        if (response.status === 200 && response.data?.avatar) {
+          setUserImage(response.data.avatar);
+        }
+      } catch (error) {
+        console.error('載入頭像失敗:', error);
+      }
+    }
+  };
 
   useEffect(() => {
-    // 若 user 存在，設置 userImage
     if (user?.picture_url) {
+      // LINE 用戶或有 picture_url 的用戶
       setUserImage(user.picture_url);
+    } else if (user?.avatar) {
+      // 有 avatar 資料的用戶
+      setUserImage(user.avatar);
+    } else if (user && !user.isLineUser) {
+      // 非 LINE 用戶，從後端載入頭像
+      loadUserAvatar();
+    } else {
+      setUserImage(null);
     }
   }, [user]);
+
+  // 監聽自定義事件來更新頭像
+  useEffect(() => {
+    const handleAvatarUpdate = (event: CustomEvent) => {
+      setUserImage(event.detail.avatar);
+    };
+
+    window.addEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
+    return () => {
+      window.removeEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
+    };
+  }, []);
 
   const toggleDropdown = () => setShowDropdown(!showDropdown);
   const closeDropdown = () => setShowDropdown(false);

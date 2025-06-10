@@ -1,55 +1,166 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Key, Copy, ArrowRight, CheckCircle } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 const StepFour = () => {
   return (
-    <div className="relative w-full flex flex-col items-center pt-0 pb-0 bg-[#FFFDFA]">
+    <section className="py-20 px-6 bg-gradient-to-br from-[#F8F6F3] to-[#FFFDFA] relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-20 left-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl"></div>
+      
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          
+          {/* Image Section */}
+          <div className="order-1 relative fade-in-element">
+            <div className="relative">
+              <div className="glassmorphism p-6 rounded-3xl shadow-glass-lg">
+                <div className="space-y-4">
+                  <img
+                    src="/專題圖片/p7.png"
+                    alt="LINE Channel secret 設定頁面"
+                    className="w-full rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                  />
+                  <img
+                    src="/專題圖片/p8.png"
+                    alt="Channel access token 設定頁面"
+                    className="w-full rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                  />
+                </div>
+                
+                {/* Highlight indicators */}
+                <div className="absolute top-16 right-8 w-20 h-10 border-2 border-red-500 rounded-full opacity-75 animate-pulse"></div>
+                <div className="absolute bottom-20 right-12 w-36 h-18 border-2 border-red-500 rounded-full opacity-75 animate-pulse"></div>
+              </div>
+              
+              {/* Floating elements */}
+              <div className="absolute -top-6 -left-6 w-10 h-10 bg-primary/20 rounded-full animate-float"></div>
+              <div className="absolute -bottom-6 -right-6 w-8 h-8 bg-accent/20 rounded-full animate-float" style={{ animationDelay: '1.5s' }}></div>
+            </div>
+          </div>
 
-      <img
-        src="/專題圖片/step4.svg"
-        alt="Step 4 Background"
-        className="max-w-[1296px] w-full h-auto block"
-        style={{ margin: 0, padding: 0 }}
-      />
+          {/* Content Section */}
+          <div className="order-2 space-y-8 fade-in-element" style={{ animationDelay: '0.2s' }}>
+            <div className="space-y-4">
+              <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary font-medium text-sm">
+                <span>第四步</span>
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight">
+                取得 <span className="text-gradient">API 金鑰</span>
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
+                取得 Channel secret 和 Channel access token，這兩個金鑰是您的 LINE Bot 與 LINE 平台通訊的重要憑證。
+              </p>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-glass">
+                <h3 className="text-xl font-semibold text-foreground mb-4">操作步驟：</h3>
+                
+                {/* Channel Secret */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-medium text-foreground mb-3 flex items-center">
+                    <Key className="w-5 h-5 mr-2 text-primary" />
+                    取得 Channel Secret
+                  </h4>
+                  <ul className="space-y-2 ml-7">
+                    <li className="flex items-start space-x-3">
+                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-primary">1</span>
+                      </div>
+                      <span className="text-muted-foreground text-sm">進入 Basic settings 頁面</span>
+                    </li>
+                    <li className="flex items-start space-x-3">
+                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-primary">2</span>
+                      </div>
+                      <span className="text-muted-foreground text-sm">往下滑找到 Channel secret 欄位</span>
+                    </li>
+                    <li className="flex items-start space-x-3">
+                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-primary">3</span>
+                      </div>
+                      <span className="text-muted-foreground text-sm">複製 Channel secret 值</span>
+                    </li>
+                  </ul>
+                </div>
 
-      <div className="absolute top-[7%] w-full flex flex-col items-end pr-[163px] gap-0">
-        <img
-          src="/專題圖片/p7.png"
-          alt="Photo 7"
-          className="w-[660px] animate__animated animate__fadeIn"
-        />
-        <img
-          src="/專題圖片/p8.png"
-          alt="Photo 8"
-          className="w-[600px] animate__animated animate__fadeIn translate-x-[61.5px]"
-        />
-      </div>
-
-      <div className="absolute top-[200px] left-[700px] w-[100px] h-[50px] border-4 border-red-500 rounded-[50%/50%]" />
-      <div className="absolute top-[580px] left-[790px] w-[180px] h-[90px] border-4 border-red-500 rounded-[50%/50%]" />
-
-      <div className="absolute top-[3.5%] left-[85px] text-[#e8e4dd] text-left space-y-7">
-        <h2 className="text-[100px] lg:text-[130px] font-bold leading-none mb-2 min-h-[150px]">Step 4.</h2>
-        <h3 className="text-[28px] lg:text-[40px] font-semibold">取得 LINE Channel secret</h3>
-        <h3 className="text-[28px] lg:text-[40px] font-semibold">和 Channel access token</h3>
-        <div className="space-y-4">
-          <p className="text-[18px] lg:text-[30px] leading-relaxed">進入Basic settings，往下滑找到Channel</p>
-          <p className="text-[18px] lg:text-[30px] leading-relaxed">secret。前往Messaging API settings，往</p>
-          <p className="text-[18px] lg:text-[30px] leading-relaxed">下滑找到Channel access token，點選lssue</p>
-          <p className="text-[18px] lg:text-[30px] leading-relaxed">產生。把這兩個都複製下來，並貼到我們網</p>
-          <p className="text-[18px] lg:text-[30px] leading-relaxed">站裡。</p>
+                {/* Channel Access Token */}
+                <div>
+                  <h4 className="text-lg font-medium text-foreground mb-3 flex items-center">
+                    <Copy className="w-5 h-5 mr-2 text-accent" />
+                    取得 Channel Access Token
+                  </h4>
+                  <ul className="space-y-2 ml-7">
+                    <li className="flex items-start space-x-3">
+                      <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-accent">1</span>
+                      </div>
+                      <span className="text-muted-foreground text-sm">前往 Messaging API settings 頁面</span>
+                    </li>
+                    <li className="flex items-start space-x-3">
+                      <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-accent">2</span>
+                      </div>
+                      <span className="text-muted-foreground text-sm">找到 Channel access token 區塊</span>
+                    </li>
+                    <li className="flex items-start space-x-3">
+                      <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-accent">3</span>
+                      </div>
+                      <span className="text-muted-foreground text-sm">點擊「Issue」按鈕產生 token</span>
+                    </li>
+                    <li className="flex items-start space-x-3">
+                      <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-accent">4</span>
+                      </div>
+                      <span className="text-muted-foreground text-sm">複製產生的 access token</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="bg-red-50/50 rounded-xl p-4 border border-red-200/50">
+                <div className="flex items-start space-x-3">
+                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs text-white font-bold">!</span>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-red-900 mb-1">重要提醒</h4>
+                    <p className="text-sm text-red-700">請妥善保管這兩個金鑰，不要公開分享。這些是您的 LINE Bot 身份驗證憑證。</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-green-50/50 rounded-xl p-4 border border-green-200/50">
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-green-900 mb-1">下一步</h4>
+                    <p className="text-sm text-green-700">取得金鑰後，將它們貼到我們的網站中，就可以開始設定您的 LINE Bot 伺服器了。</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link to="/add server" className="inline-flex">
+                  <Button size="lg" className="bg-[#F4CD41] hover:bg-[#e6bc00] text-foreground rounded-full shadow-lg hover:shadow-xl transition-all group w-full sm:w-auto">
+                    開始設定伺服器
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                  </Button>
+                </Link>
+                <Button variant="outline" size="lg" className="rounded-full">
+                  查看範例設定
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div className="mt-10 mb-10">
-        <Link
-          to="/add server"
-          className="inline-block text-white bg-[#F4B8AD] px-6 h-11 text-lg font-bold rounded hover:bg-[#e6998a] transition flex items-center justify-center"
-        >
-          NEXT
-        </Link>
-      </div>
-    </div>
+    </section>
   );
 };
 

@@ -2,6 +2,7 @@
 const LINE_LOGIN_API_URL = import.meta.env.VITE_LINE_LOGIN_API_URL || 'https://line-login.jkl921102.org';
 const LOGIN_API_URL = import.meta.env.VITE_LOGIN_API_URL || 'https://login-api.jkl921102.org';
 const PUZZLE_API_URL = import.meta.env.VITE_PUZZLE_API_URL || 'https://puzzle-api.jkl921102.org';
+const SETTING_API_URL = import.meta.env.VITE_SETTING_API_URL || 'https://setting-api.jkl921102.org';
 
 export const API_CONFIG = {
   LINE_LOGIN: {
@@ -23,6 +24,17 @@ export const API_CONFIG = {
       VERIFY_EMAIL: '/verify-email',
       FORGOT_PASSWORD: '/forgot_password',
       RESET_PASSWORD: (token: string) => `/reset_password/${token}`,
+    },
+  },
+  SETTING: {
+    BASE_URL: SETTING_API_URL,
+    ENDPOINTS: {
+      GET_PROFILE: '/profile',
+      UPDATE_PROFILE: '/profile',
+      GET_AVATAR: '/avatar',
+      UPDATE_AVATAR: '/avatar',
+      DELETE_AVATAR: '/avatar',
+      RESEND_EMAIL_VERIFICATION: '/resend-email-verification',
     },
   },
   PUZZLE: {

@@ -3,11 +3,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import os
 from flask_cors import CORS
-from datetime import timedelta
+from datetime import timedelta, timezone
 from dotenv import load_dotenv
 from functools import wraps
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+import re
 
 from auth_service import (
     verify_password, get_password_hash, create_access_token,
@@ -264,11 +265,11 @@ def verify_email_token():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
-    username = data.get('username')
+    username_or_email = data.get('username')  # 可以是用戶名稱或 email
     password = data.get('password')
 
-    if not all([username, password]):
-        return jsonify({'error': 'Username and password are required'}), 400
+    if not all([username_or_email, password]):
+        return jsonify({'error': 'Username/Email and password are required'}), 400
 
     conn = get_db_connection()
     if not conn:
@@ -276,18 +277,36 @@ def login():
 
     try:
         cur = conn.cursor()
-        cur.execute(
-            'SELECT password, email, email_verified FROM users WHERE username = %s',
-            (username,)
-        )
+        
+        # 判斷輸入的是 email 還是用戶名稱
+        # 使用正則表達式進行更準確的 email 格式檢查
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        is_email = re.match(email_pattern, username_or_email) is not None
+        
+        if is_email:
+            # 使用 email 登入
+            cur.execute(
+                'SELECT username, password, email, email_verified FROM users WHERE email = %s',
+                (username_or_email,)
+            )
+        else:
+            # 使用用戶名稱登入
+            cur.execute(
+                'SELECT username, password, email, email_verified FROM users WHERE username = %s',
+                (username_or_email,)
+            )
+        
         user = cur.fetchone()
 
-        if not user or not verify_password(password, user[0]):
+        if not user or not verify_password(password, user[1]):
             return jsonify({'error': 'Invalid credentials'}), 401
         
-        if not user[2]:  # email_verified
+        if not user[3]:  # email_verified
             return jsonify({'error': 'Please verify your email first'}), 403
 
+        username = user[0]  # 從資料庫取得實際的用戶名稱
+        email = user[2]
+        
         token = create_access_token({
             'username': username,
             'login_type': 'general'  # 標記為一般帳號登入
@@ -296,9 +315,10 @@ def login():
         response = make_response(jsonify({
             'message': 'Login successful!',
             'username': username,
-            'email': user[1],
+            'email': email,
             'token': token,
-            'login_type': 'general'
+            'login_type': 'general',
+            'login_method': 'email' if is_email else 'username'  # 記錄登入方式
         }), 200)
 
         # 設置 cookie，確保適當的 SameSite 屬性
@@ -382,6 +402,14 @@ def forgot_password():
                 conn.close()
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+# 重置密碼重定向 - 處理從email點擊的連結
+@app.route('/reset-password/<token>', methods=['GET'])
+def reset_password_redirect(token):
+    # 根據環境設定前端URL
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8080')
+    reset_url = f"{frontend_url}/reset-password/{token}"
+    return redirect(reset_url)
 
 # 重置密碼 API
 @app.route('/reset_password/<token>', methods=['POST'])
@@ -470,9 +498,28 @@ def check_login():
         token = request.cookies.get('token')
         data = verify_token(token)
     
+    username = data['username']
+    
+    # 從資料庫獲取用戶的email資訊
+    conn = get_db_connection()
+    email = None
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute('SELECT email FROM users WHERE username = %s', (username,))
+            result = cur.fetchone()
+            if result:
+                email = result[0]
+        except Exception as e:
+            print(f"Error fetching email: {e}")
+        finally:
+            cur.close()
+            conn.close()
+    
     return jsonify({
-        'message': f'User {data["username"]} is logged in',
-        'username': data['username'],
+        'message': f'User {username} is logged in',
+        'username': username,
+        'email': email,
         'login_type': data.get('login_type', 'general')
     }), 200
 
@@ -482,6 +529,117 @@ def logout():
     response = make_response(jsonify({'message': 'Logged out successfully!'}), 200)
     response.set_cookie('token', '', expires=0)
     return response
+
+# 重新發送驗證郵件 API
+@app.route('/resend_verification', methods=['POST'])
+def resend_verification():
+    try:
+        data = request.json
+        username_or_email = data.get('username')  # 可以是用戶名稱或 email
+
+        if not username_or_email:
+            return jsonify({'error': 'Username or email is required'}), 400
+
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+
+        try:
+            cur = conn.cursor()
+            
+            # 判斷輸入的是 email 還是用戶名稱
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            is_email = re.match(email_pattern, username_or_email) is not None
+            
+            if is_email:
+                # 使用 email 查詢
+                cur.execute('SELECT username, email, email_verified, last_verification_sent FROM users WHERE email = %s', (username_or_email,))
+            else:
+                # 使用用戶名稱查詢
+                cur.execute('SELECT username, email, email_verified, last_verification_sent FROM users WHERE username = %s', (username_or_email,))
+            
+            user = cur.fetchone()
+            
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            username, email, email_verified, last_verification_sent = user
+            
+            if email_verified:
+                return jsonify({'error': 'Email is already verified'}), 400
+            
+            # 檢查冷卻時間（60秒）
+            if last_verification_sent:
+                from datetime import datetime, timedelta, timezone
+                
+                # 確保 last_verification_sent 是 timezone-aware
+                if last_verification_sent.tzinfo is None:
+                    # 如果是 naive datetime，假設它是 UTC
+                    last_verification_sent = last_verification_sent.replace(tzinfo=timezone.utc)
+                
+                now = datetime.now(timezone.utc)
+                cooldown_time = last_verification_sent + timedelta(seconds=60)
+                
+                if now < cooldown_time:
+                    remaining_seconds = int((cooldown_time - now).total_seconds())
+                    return jsonify({
+                        'error': f'請等待 {remaining_seconds} 秒後再重新發送',
+                        'remaining_seconds': remaining_seconds
+                    }), 429
+            
+            # 更新最後發送時間
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            if is_email:
+                cur.execute('UPDATE users SET last_verification_sent = %s WHERE email = %s', (now, username_or_email))
+            else:
+                cur.execute('UPDATE users SET last_verification_sent = %s WHERE username = %s', (now, username_or_email))
+            conn.commit()
+            
+            # 發送驗證郵件
+            token = ts.dumps(email, salt='email-verify')
+            verify_url = f"https://login-api.jkl921102.org/verify_email/{token}"
+            msg = Message('重新發送 - 請驗證您的電子郵件', 
+                         sender=app.config['MAIL_USERNAME'], 
+                         recipients=[email])
+            msg.html = f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h1 style="color: #333; text-align: center; margin-bottom: 30px;">重新發送驗證郵件</h1>
+                <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                    我們已重新發送驗證郵件。請點擊下方按鈕完成電子郵件驗證：
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{verify_url}" 
+                       style="background-color: #F4CD41; 
+                              color: #1a1a40; 
+                              padding: 12px 30px; 
+                              text-decoration: none; 
+                              border-radius: 25px; 
+                              font-weight: bold; 
+                              display: inline-block;">
+                        驗證電子郵件
+                    </a>
+                </div>
+                <p style="color: #888; font-size: 14px; text-align: center; margin-top: 30px;">
+                    此連結將在24小時後失效。<br>
+                    如果您持續收不到驗證郵件，請檢查垃圾郵件資料夾。
+                </p>
+            </div>
+            '''
+            mail.send(msg)
+
+            return jsonify({'message': 'Verification email resent successfully!'}), 200
+            
+        except Exception as e:
+            return jsonify({'error': f'Error: {str(e)}'}), 500
+        finally:
+            if cur:
+                cur.close()
+            if conn:
+                conn.close()
+                
+    except Exception as e:
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT_LOGIN', 5501))

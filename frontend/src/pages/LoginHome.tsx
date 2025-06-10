@@ -8,6 +8,8 @@ import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { AuthService } from '../services/auth';
 import { LineLoginService } from '../services/lineLogin';
+import { useAuthGuard } from '../hooks/useAuthGuard';
+import { useHistoryGuard } from '../hooks/useHistoryGuard';
 
 interface User {
   line_id?: string;
@@ -24,6 +26,21 @@ const LoginHome = () => {
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 使用身份驗證保護Hook
+  useAuthGuard({
+    requireAuth: true,
+    preventBackToLogin: true,
+    redirectTo: '/login'
+  });
+
+  // 使用歷史管理Hook，允許在受保護的頁面間導航
+  useHistoryGuard({
+    preventBack: true,
+    replaceHistory: true,
+    allowedBackPaths: ['/index2', '/setting', '/add server', '/block', '/how to establish', '/editbot'],
+    fallbackPath: '/index2'
+  });
 
   useEffect(() => {
     const token = searchParams.get('token');

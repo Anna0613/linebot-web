@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
 import 'animate.css';
 import { API_CONFIG, getApiUrl } from '../../config/apiConfig';
+import { ApiClient } from '../../services/api';
+import { AuthService } from '../../services/auth';
 
 // 定義 User 介面
 interface User {
@@ -12,6 +14,8 @@ interface User {
   display_name: string;
   picture_url?: string;
   username?: string;
+  avatar?: string;
+  isLineUser?: boolean;
 }
 
 interface Navbar3Props {
@@ -25,13 +29,49 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
   const [userImage, setUserImage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const apiClient = ApiClient.getInstance();
+  const navigate = useNavigate();
+
+  // 載入用戶頭像
+  const loadUserAvatar = async () => {
+    if (user && !user.isLineUser && !user.picture_url) {
+      try {
+        const response = await apiClient.getAvatar();
+        if (response.status === 200 && response.data?.avatar) {
+          setUserImage(response.data.avatar);
+        }
+      } catch (error) {
+        console.error('載入頭像失敗:', error);
+      }
+    }
+  };
 
   useEffect(() => {
-    // 若 user 存在，優先使用 user.picture_url
     if (user?.picture_url) {
+      // LINE 用戶或有 picture_url 的用戶
       setUserImage(user.picture_url);
+    } else if (user?.avatar) {
+      // 有 avatar 資料的用戶
+      setUserImage(user.avatar);
+    } else if (user && !user.isLineUser) {
+      // 非 LINE 用戶，從後端載入頭像
+      loadUserAvatar();
+    } else {
+      setUserImage(null);
     }
   }, [user]);
+
+  // 監聽自定義事件來更新頭像
+  useEffect(() => {
+    const handleAvatarUpdate = (event: CustomEvent) => {
+      setUserImage(event.detail.avatar);
+    };
+
+    window.addEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
+    return () => {
+      window.removeEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -89,15 +129,20 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
         method: 'POST',
         credentials: 'include',
       });
-      // 清除 LINE 登入相關資料
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('username');
-      localStorage.removeItem('email');
+      // 使用 AuthService 清除所有認證資料
+      AuthService.clearAuth();
+      // 清除其他可能的 LINE 登入相關資料
       localStorage.removeItem('line_token');
       setShowDropdown(false);
-      window.location.href = '/login'; // 重定向到登入頁面
+      // 使用 React Router 進行導航
+      navigate('/login');
     } catch (error) {
       console.error('登出失敗:', error);
+      // 即使後端請求失敗，也要清除前端的認證資料
+      AuthService.clearAuth();
+      localStorage.removeItem('line_token');
+      setShowDropdown(false);
+      navigate('/login');
     }
   };
 

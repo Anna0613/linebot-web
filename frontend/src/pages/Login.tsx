@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader } from "@/components/ui/loader";
-import { CustomAlert } from "@/components/ui/custom-alert";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
 import "@/components/ui/loader.css";
@@ -17,28 +17,39 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [showEmailVerificationPrompt, setShowEmailVerificationPrompt] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   
-  const [alert, setAlert] = useState({
-    show: false,
-    message: '',
-    type: 'error' as 'success' | 'error' | 'info'
-  });
-
-  const showAlert = (message: string, type: 'success' | 'error' | 'info') => {
-    setAlert({ show: true, message, type });
-    setTimeout(() => setAlert(prev => ({ ...prev, show: false })), 3000);
-  };
-
   useEffect(() => {
+    if (AuthService.isAuthenticated()) {
+      navigate('/index2', { replace: true });
+      return;
+    }
+    
     const token = searchParams.get('token');
     if (token) {
       verifyLineLogin(token);
     }
-  }, [searchParams]);
+  }, [searchParams, navigate]);
+
+  // 冷卻計時器
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      interval = setInterval(() => {
+        setResendCooldown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [resendCooldown]);
 
   const verifyLineLogin = async (token: string) => {
     try {
@@ -55,14 +66,25 @@ const Login = () => {
         if (result.email) {
           localStorage.setItem("email", result.email);
         }
-        showAlert("登入成功！", "success");
-        navigate("/index2");
+        toast({
+          title: "登入成功！",
+          description: "歡迎回來",
+        });
+        
+        // 清除登入前的歷史記錄
+        window.history.replaceState(null, '', '/login');
+        
+        navigate("/index2", { replace: true });
       } else {
         throw new Error("LINE 登入驗證失敗");
       }
     } catch (error) {
       console.error('LINE登入驗證失敗:', error);
-      showAlert("LINE 登入驗證失敗，請重試", "error");
+      toast({
+        variant: "destructive",
+        title: "登入失敗",
+        description: "LINE 登入驗證失敗，請重試",
+      });
     }
   };
 
@@ -83,7 +105,11 @@ const Login = () => {
       window.location.href = result.login_url;
     } catch (error) {
       console.error("LINE login error:", error);
-      showAlert("LINE 登入失敗，請稍後再試", "error");
+      toast({
+        variant: "destructive",
+        title: "登入失敗",
+        description: "LINE 登入失敗，請稍後再試",
+      });
       setLoading(false);
     }
   };
@@ -93,7 +119,11 @@ const Login = () => {
     setLoading(true);
 
     if (!username || !password) {
-      showAlert("請輸入使用者名稱和密碼", "error");
+      toast({
+        variant: "destructive",
+        title: "輸入錯誤",
+        description: "請輸入使用者名稱或電子郵件以及密碼",
+      });
       setLoading(false);
       return;
     }
@@ -103,6 +133,17 @@ const Login = () => {
       const response = await apiClient.login(username, password);
 
       if (response.error) {
+        // 檢查是否為email未驗證錯誤（403狀態碼）
+        if (response.status === 403 && response.error.includes('verify your email')) {
+          setShowEmailVerificationPrompt(true);
+          toast({
+            variant: "destructive",
+            title: "需要驗證電子郵件",
+            description: "請先驗證您的電子郵件地址才能登入",
+          });
+          setLoading(false);
+          return;
+        }
         throw new Error(response.error);
       }
 
@@ -123,15 +164,12 @@ const Login = () => {
         console.error("找不到登入 token，將嘗試直接使用響應數據繼續");
         // 即使沒有 token，也嘗試繼續以響應數據驅動
         if (response.data && response.data.username) {
-          showAlert("登入成功！", "success");
+          toast({
+            title: "登入成功！",
+            description: "歡迎回來",
+          });
           setTimeout(() => {
-            navigate("/index2", { 
-              state: { 
-                username: response.data.username, 
-                directLogin: true,
-                loginType: 'general'
-              } 
-            });
+            navigate("/index2", { replace: true });
           }, 1000);
           return;
         } else {
@@ -139,15 +177,25 @@ const Login = () => {
         }
       }
 
-      showAlert("登入成功！", "success");
+      toast({
+        title: "登入成功！",
+        description: "歡迎回來",
+      });
+      
+      // 清除登入前的歷史記錄
+      window.history.replaceState(null, '', '/login');
       
       // 確保使用 setTimeout 使警告訊息能被看到，然後再跳轉
       setTimeout(() => {
-        navigate("/index2");
+        navigate("/index2", { replace: true });
       }, 1000);
     } catch (error: any) {
       console.error("錯誤:", error);
-      showAlert(error.message || "登入失敗，請重試", "error");
+      toast({
+        variant: "destructive",
+        title: "登入失敗",
+        description: error.message || "登入失敗，請重試",
+      });
       // 清除可能存在的無效 token
       AuthService.removeToken();
     } finally {
@@ -155,16 +203,50 @@ const Login = () => {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (resendCooldown > 0 || isResendingEmail || !username) {
+      return;
+    }
+
+    setIsResendingEmail(true);
+    try {
+      const apiClient = ApiClient.getInstance();
+      const response = await apiClient.resendVerificationEmail(username);
+
+      if (response.error) {
+        if (response.status === 429 && response.data?.remaining_seconds) {
+          setResendCooldown(response.data.remaining_seconds);
+          toast({
+            variant: "destructive",
+            title: "請稍候",
+            description: response.error,
+          });
+        } else {
+          throw new Error(response.error);
+        }
+      } else {
+        setResendCooldown(60); // 設定60秒冷卻時間
+        toast({
+          title: "驗證郵件已重新發送",
+          description: "請檢查您的信箱（包含垃圾郵件資料夾）",
+        });
+      }
+    } catch (error: any) {
+      console.error("重新發送驗證郵件失敗:", error);
+      toast({
+        variant: "destructive",
+        title: "發送失敗",
+        description: error.message || "重新發送驗證郵件失敗，請稍後再試",
+      });
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       {loading && <Loader fullPage />}
-      <CustomAlert 
-        isOpen={alert.show}
-        message={alert.message}
-        type={alert.type}
-        onClose={() => setAlert(prev => ({ ...prev, show: false }))}
-      />
 
       <div className="flex-1 flex items-center justify-center py-6 xs:py-8 sm:py-12 px-3 sm:px-6 lg:px-8 mt-14 sm:mt-16 md:mt-20">
         <div className="w-full max-w-[88%] xs:max-w-[85%] sm:max-w-md">
@@ -198,15 +280,19 @@ const Login = () => {
 
             <form className="space-y-4 xs:space-y-5 sm:space-y-6 max-w-[280px] sm:max-w-full mx-auto" onSubmit={handleLogin}>
               <div className="space-y-1.5">
-                <Label htmlFor="username" className="text-sm sm:text-base">使用者名稱：</Label>
+                <Label htmlFor="username" className="text-sm sm:text-base">使用者名稱或電子郵件：</Label>
                 <Input
                   id="username"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setShowEmailVerificationPrompt(false);
+                  }}
                   required
                   className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
-                  placeholder="請輸入使用者名稱"
+                  placeholder="請輸入使用者名稱或電子郵件"
                 />
+                <p className="text-xs text-gray-500 mt-1">您可以使用註冊時的用戶名稱或電子郵件登入</p>
               </div>
 
               <div className="space-y-1.5">
@@ -260,6 +346,41 @@ const Login = () => {
                 )}
               </Button>
             </form>
+
+            {/* Email 驗證提示 */}
+            {showEmailVerificationPrompt && (
+              <div className="mt-4 xs:mt-5 sm:mt-6 bg-yellow-50/80 border border-yellow-200 rounded-xl p-4 max-w-[280px] sm:max-w-full mx-auto">
+                <div className="text-center space-y-3">
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-medium">需要驗證電子郵件</p>
+                    <p className="text-xs mt-1">請檢查您的信箱並點擊驗證連結</p>
+                  </div>
+                  
+                  <Button
+                    onClick={handleResendVerification}
+                    disabled={resendCooldown > 0 || isResendingEmail}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs bg-white/50 hover:bg-white/80 border-yellow-300 text-yellow-800"
+                  >
+                    {isResendingEmail ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-3 h-3 border border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
+                        發送中...
+                      </span>
+                    ) : resendCooldown > 0 ? (
+                      `重新發送 (${resendCooldown}s)`
+                    ) : (
+                      '重新發送驗證郵件'
+                    )}
+                  </Button>
+                  
+                  <p className="text-xs text-yellow-700">
+                    沒收到郵件？請檢查垃圾郵件資料夾
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 xs:mt-5 sm:mt-6 text-center text-xs xs:text-sm">
               <span className="text-muted-foreground">沒有帳號?</span>{' '}

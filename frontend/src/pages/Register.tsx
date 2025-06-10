@@ -5,138 +5,159 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader } from "@/components/ui/loader";
-import { CustomAlert } from "@/components/ui/custom-alert";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from '../components/Index/Navbar';
 import Footer from '../components/Index/Footer';
 import "@/components/ui/loader.css";
+import { LineLoginService } from '../services/lineLogin';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 const Register = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    agreeTerms: false
-  });
-
-  // Alert state
-  const [alert, setAlert] = useState({
-    show: false,
-    message: '',
-    type: 'error' as 'success' | 'error' | 'info'
-  });
-
-  const showAlert = (message: string, type: 'success' | 'error' | 'info') => {
-    setAlert({ show: true, message, type });
-    setTimeout(() => setAlert(prev => ({ ...prev, show: false })), 3000);
-  };
-
-  const verifyToken = async (token: string) => {
-    try {
-      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
-      if (!response.ok) throw new Error('Token verification failed');
-      return await response.json();
-    } catch (error) {
-      console.error('Token 驗證失敗:', error);
-      return null;
-    }
-  };
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
-      setLoading(true);
-      verifyToken(token).then((user) => {
-        if (user && user.display_name) {
-          console.log('LINE 使用者資料:', user);
-          localStorage.setItem('line_token', token);
-          localStorage.setItem('username', user.display_name);
-          localStorage.setItem('email', user.email || '');
-          showAlert("註冊成功！", "success");
-          navigate('/index2');
-        } else {
-          showAlert("LINE 驗證失敗：未取得有效的使用者資料", "error");
-          setLoading(false);
-        }
-      });
+      verifyLineLogin(token);
     }
   }, [searchParams]);
+
+  const verifyLineLogin = async (token: string) => {
+    try {
+      const lineLoginService = LineLoginService.getInstance();
+      const result = await lineLoginService.verifyToken(token);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      if (result.display_name) {
+        localStorage.setItem("line_token", token);
+        localStorage.setItem("username", result.display_name);
+        if (result.email) {
+          localStorage.setItem("email", result.email);
+        }
+        toast({
+          title: "註冊成功！",
+          description: "歡迎加入我們",
+        });
+        navigate("/index2");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "驗證失敗",
+          description: "LINE 驗證失敗：未取得有效的使用者資料",
+        });
+      }
+    } catch (error) {
+      console.error('LINE登入驗證失敗:', error);
+      toast({
+        variant: "destructive",
+        title: "登入失敗",
+        description: "LINE 登入失敗，請稍後再試",
+      });
+    }
+  };
 
   const handleLINELogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.LINE_LOGIN));
-      const data = await response.json();
-      if (!data.login_url) throw new Error("登入連結取得失敗");
-      window.location.href = data.login_url;
+      const lineLoginService = LineLoginService.getInstance();
+      const result = await lineLoginService.getLoginUrl();
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      if (!result.login_url) {
+        throw new Error("登入連結取得失敗");
+      }
+
+      window.location.href = result.login_url;
     } catch (error) {
       console.error("LINE login error:", error);
-      showAlert("LINE 登入失敗，請稍後再試", "error");
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleCheckboxChange = (checked: boolean) => {
-    setFormData(prev => ({ ...prev, agreeTerms: checked }));
-  };
-
   const validateForm = () => {
-    const { fullName, email, password, confirmPassword, agreeTerms } = formData;
-
-    if (!fullName || !email || !password || !confirmPassword) {
-      showAlert("請填寫所有必填欄位", "error");
+    if (!username || !password || !confirmPassword || !email) {
+      toast({
+        variant: "destructive",
+        title: "輸入錯誤",
+        description: "請填寫所有必填欄位",
+      });
       return false;
     }
 
-    if (fullName.length < 2) {
-      showAlert("使用者名稱至少需要2個字元", "error");
+    if (username.length < 2) {
+      toast({
+        variant: "destructive",
+        title: "輸入錯誤",
+        description: "使用者名稱至少需要2個字元",
+      });
       return false;
     }
 
     if (password.length < 8) {
-      showAlert("密碼長度至少需要8位", "error");
+      toast({
+        variant: "destructive",
+        title: "密碼錯誤",
+        description: "密碼長度至少需要8位",
+      });
       return false;
     }
 
-    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password)) {
-      showAlert("密碼需要包含至少一個字母和一個數字", "error");
+    if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(password)) {
+      toast({
+        variant: "destructive",
+        title: "密碼錯誤",
+        description: "密碼需要包含至少一個字母和一個數字",
+      });
       return false;
     }
 
     if (password !== confirmPassword) {
-      showAlert("確認密碼與密碼不符", "error");
+      toast({
+        variant: "destructive",
+        title: "密碼錯誤",
+        description: "確認密碼與密碼不符",
+      });
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      showAlert("請輸入有效的電子郵件地址", "error");
+      toast({
+        variant: "destructive",
+        title: "電子郵件錯誤",
+        description: "請輸入有效的電子郵件地址",
+      });
       return false;
     }
 
-    if (!agreeTerms) {
-      showAlert("請閱讀並同意服務條款與隱私權政策", "error");
+    if (!agreeToTerms) {
+      toast({
+        variant: "destructive",
+        title: "條款同意",
+        description: "請閱讀並同意服務條款與隱私權政策",
+      });
       return false;
     }
 
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -145,13 +166,11 @@ const Register = () => {
       return;
     }
 
-    const { fullName, email, password } = formData;
-
     try {
       const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.REGISTER), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: fullName, email, password })
+        body: JSON.stringify({ username, email, password })
       });
 
       if (!response.ok) {
@@ -186,27 +205,34 @@ const Register = () => {
       }
 
       const resData = await response.json();
-      showAlert("註冊成功！請檢查電子郵件以完成驗證", "success");
-      localStorage.setItem("username", fullName);
-      localStorage.setItem("email", email);
-      setTimeout(() => navigate("/index2"), 2000);
+      toast({
+        title: "註冊成功！",
+        description: "請檢查電子郵件以完成驗證",
+      });
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (error: any) {
       console.error("註冊錯誤:", error);
-      showAlert(error.message, "error");
+      toast({
+        variant: "destructive",
+        title: "註冊失敗",
+        description: error.message,
+      });
+    } finally {
       setLoading(false);
     }
+  };
+
+  const handleAgreeToTermsChange = (checked: boolean | "indeterminate") => {
+    setAgreeToTerms(checked === true);
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       {loading && <Loader fullPage />}
-      <CustomAlert 
-        isOpen={alert.show}
-        message={alert.message}
-        type={alert.type}
-        onClose={() => setAlert(prev => ({ ...prev, show: false }))}
-      />
 
       <div className="flex-1 flex items-center justify-center py-6 xs:py-8 sm:py-12 px-3 sm:px-6 lg:px-8 mt-14 sm:mt-16 md:mt-20">
         <div className="w-full max-w-[88%] xs:max-w-[85%] sm:max-w-md">
@@ -238,16 +264,16 @@ const Register = () => {
               </div>
             </div>
 
-            <form className="space-y-4 xs:space-y-5 sm:space-y-6 max-w-[280px] sm:max-w-full mx-auto" onSubmit={handleSubmit}>
+            <form className="space-y-4 xs:space-y-5 sm:space-y-6 max-w-[280px] sm:max-w-full mx-auto" onSubmit={handleRegister}>
               <div className="space-y-1.5 w-full">
-                <Label htmlFor="fullName">使用者名稱：</Label>
+                <Label htmlFor="username">使用者名稱：</Label>
                 <Input
-                  id="fullName"
-                  name="fullName"
+                  id="username"
+                  name="username"
                   type="text"
                   placeholder="至少2個字元"
-                  value={formData.fullName}
-                  onChange={handleChange}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                   className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
                 />
@@ -260,8 +286,8 @@ const Register = () => {
                   name="email"
                   type="email"
                   placeholder="your@email.com"
-                  value={formData.email}
-                  onChange={handleChange}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
                 />
@@ -274,8 +300,8 @@ const Register = () => {
                   name="password"
                   type="password"
                   placeholder="至少8位，含字母和數字"
-                  value={formData.password}
-                  onChange={handleChange}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
                 />
@@ -288,8 +314,8 @@ const Register = () => {
                   name="confirmPassword"
                   type="password"
                   placeholder="請再次輸入密碼"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   className="rounded-lg h-11 text-base focus:ring-2 focus:ring-[#F4CD41] focus:border-transparent transition-all duration-200"
                 />
@@ -298,8 +324,8 @@ const Register = () => {
               <div className="flex items-start space-x-2 mt-2 max-w-[280px] sm:max-w-full mx-auto">
                 <Checkbox
                   id="agree-terms"
-                  checked={formData.agreeTerms}
-                  onCheckedChange={handleCheckboxChange}
+                  checked={agreeToTerms}
+                  onCheckedChange={handleAgreeToTermsChange}
                   required
                 />
                 <Label htmlFor="agree-terms" className="text-xs sm:text-sm font-normal leading-tight">
