@@ -68,7 +68,7 @@ const Mybot = ({ onEdit, onDelete }: MybotProps) => {
                         : "bg-[#FFD59E] text-[#5A2C1D] hover:brightness-90"
                     }`}
                   >
-                    {selectedId === bot.id ? "取消" : "選擇"}
+                    {selectedId === bot.id ? "取消" : "選擇" }
                   </button>
                 </td>
                 <td className="py-2 flex gap-2">
