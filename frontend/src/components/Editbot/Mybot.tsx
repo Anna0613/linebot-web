@@ -7,6 +7,7 @@ type MybotProps = {
 
 const Mybot = ({ onEdit, onDelete }: MybotProps) => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [botList, setBotList] = useState([
     { id: 1, name: "小幫手Bot" },
     { id: 2, name: "客服Bot" },
@@ -18,23 +19,25 @@ const Mybot = ({ onEdit, onDelete }: MybotProps) => {
   };
 
   const handleDelete = (id: number) => {
-    // 刪除資料
     setBotList(prevList => prevList.filter(bot => bot.id !== id));
-    // 清除選中狀態
     setSelectedId(null);
-    // 通知父層
     if (onDelete) onDelete(id);
   };
+
+  const filteredList = searchTerm
+    ? botList.filter(bot => bot.name.includes(searchTerm))
+    : botList;
 
   return (
     <div className="relative w-full xs:w-[520px] sm:w-[580px] md:w-[624px] h-[360px] xs:h-[400px] sm:h-[460px] md:h-[520px] rounded-[12px] xs:rounded-[15px] sm:rounded-[20px] md:rounded-[25px] bg-white border border-black shadow-[-6px_6px_0_#819780] xs:shadow-[-8px_8px_0_#819780] sm:shadow-[-12px_12px_0_#819780] md:shadow-[-15px_15px_0_#819780] p-2 xs:p-3 sm:p-4 md:p-5 flex-shrink-0 flex flex-col transition-all duration-300">
       <h2 className="text-center text-[20px] sm:text-[26px] font-bold text-[#383A45] mb-3 sm:mb-4">
         我的LINE Bot
       </h2>
-
       <input
         type="text"
         placeholder="搜尋"
+        value={searchTerm}
+        onChange={e => setSearchTerm(e.target.value)}
         className="w-full p-2 border rounded mb-4"
       />
 
@@ -48,56 +51,62 @@ const Mybot = ({ onEdit, onDelete }: MybotProps) => {
           </tr>
         </thead>
         <tbody>
-          {botList.map((bot, index) => (
-            <tr
-              key={bot.id}
-              className="border-b border-gray-200 hover:bg-[#f9f3f1] transition"
-            >
-              <td className="py-2">{index + 1}</td>
-              <td className="py-2">{bot.name}</td>
-              <td className="py-2">
-                <button
-                  onClick={() => handleSelect(bot.id)}
-                  className={`px-3 py-1 rounded transition font-bold ${
-                    selectedId === bot.id
-                      ? "bg-[#F6B1B1] text-white"
-                      : "bg-[#FFD59E] text-[#5A2C1D] hover:brightness-90"
-                  }`}
-                >
-                  {selectedId === bot.id ? "取消" : "選擇"}
-                </button>
-              </td>
-              <td className="py-2 flex gap-2">
-                <button
-                  onClick={() =>
-                    selectedId === bot.id && onEdit(bot.id)
-                  }
-                  disabled={selectedId !== bot.id}
-                  className={`px-3 py-1 rounded transition font-bold ${
-                    selectedId === bot.id
-                      ? "bg-[#A0D6B4] text-white hover:brightness-90"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
-                >
-                  修改
-                </button>
+          {filteredList.length > 0 ? (
+            filteredList.map((bot, index) => (
+              <tr
+                key={bot.id}
+                className="border-b border-gray-200 hover:bg-[#f9f3f1] transition"
+              >
+                <td className="py-2">{index + 1}</td>
+                <td className="py-2">{bot.name}</td>
+                <td className="py-2">
+                  <button
+                    onClick={() => handleSelect(bot.id)}
+                    className={`px-3 py-1 rounded transition font-bold ${
+                      selectedId === bot.id
+                        ? "bg-[#F6B1B1] text-white"
+                        : "bg-[#FFD59E] text-[#5A2C1D] hover:brightness-90"
+                    }`}
+                  >
+                    {selectedId === bot.id ? "取消" : "選擇"}
+                  </button>
+                </td>
+                <td className="py-2 flex gap-2">
+                  <button
+                    onClick={() => selectedId === bot.id && onEdit(bot.id)}
+                    disabled={selectedId !== bot.id}
+                    className={`px-3 py-1 rounded transition font-bold ${
+                      selectedId === bot.id
+                        ? "bg-[#A0D6B4] text-white hover:brightness-90"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    修改
+                  </button>
 
-                <button
-                  onClick={() =>
-                    selectedId === bot.id && handleDelete(bot.id)
-                  }
-                  disabled={selectedId !== bot.id}
-                  className={`px-3 py-1 rounded transition font-bold ${
-                    selectedId === bot.id
-                      ? "bg-[#FF8C8C] text-white hover:brightness-90"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
-                >
-                  刪除
-                </button>
+                  <button
+                    onClick={() =>
+                      selectedId === bot.id && handleDelete(bot.id)
+                    }
+                    disabled={selectedId !== bot.id}
+                    className={`px-3 py-1 rounded transition font-bold ${
+                      selectedId === bot.id
+                        ? "bg-[#FF8C8C] text-white hover:brightness-90"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    刪除
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={4} className="py-4 text-center text-gray-400">
+                找不到符合的 Bot 名稱
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
