@@ -123,7 +123,11 @@ const Editbot = () => {
       <Navbar3 user={user} />
       <main className="pt-32 flex flex-col items-center">
         <div className="flex flex-row gap-[35px] justify-center items-start px-6 mb-24">
-          <Mybot onEdit={handleEdit} />
+          <Mybot onEdit={handleEdit}
+          onDelete={(id: number) => {
+            setEditingBotId(null); 
+            }}
+            />
           {editingBotId !== null && (
             <Editoptions onClose={handleEditClose} onConfirm={handleEditConfirm} />
           )}
