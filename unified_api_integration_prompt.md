@@ -154,13 +154,342 @@ PUT /api/user/email             # 更改 Email
 PUT /api/user/password          # 更改密碼
 ```
 
+## 資料庫架構設計
+
+### 1. 資料庫概覽
+- **資料庫類型**: PostgreSQL
+- **主鍵策略**: UUID (使用 uuid-ossp 擴展)
+- **ORM 框架**: SQLAlchemy
+- **連接方式**: 連接池管理
+
+### 2. 核心資料表設計
+
+#### User 表 (用戶基本資料)
+```sql
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    email_verified BOOLEAN DEFAULT FALSE,
+    avatar TEXT NULL,  -- Base64 編碼的頭像資料
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 索引優化
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_email_verified ON users(email_verified);
+```
+
+#### LineUser 表 (LINE 帳號關聯)
+```sql
+CREATE TABLE line_users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    line_user_id VARCHAR(255) UNIQUE NOT NULL,  -- LINE 平台的 user ID
+    display_name VARCHAR(255),
+    picture_url TEXT,
+    status_message TEXT,
+    linked_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 索引優化
+CREATE INDEX idx_line_users_user_id ON line_users(user_id);
+CREATE INDEX idx_line_users_line_user_id ON line_users(line_user_id);
+```
+
+#### Bot 表 (Bot 基本資料)
+```sql
+CREATE TABLE bots (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    channel_token TEXT NOT NULL,
+    channel_secret TEXT NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 索引優化
+CREATE INDEX idx_bots_user_id ON bots(user_id);
+CREATE INDEX idx_bots_is_active ON bots(is_active);
+
+-- 用戶 Bot 數量限制觸發器
+CREATE OR REPLACE FUNCTION check_user_bot_limit()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (SELECT COUNT(*) FROM bots WHERE user_id = NEW.user_id AND is_active = TRUE) > 3 THEN
+        RAISE EXCEPTION 'User cannot have more than 3 active bots';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_check_user_bot_limit
+    BEFORE INSERT OR UPDATE ON bots
+    FOR EACH ROW EXECUTE FUNCTION check_user_bot_limit();
+```
+
+#### BotCode 表 (Bot 程式碼)
+```sql
+CREATE TABLE bot_codes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    bot_id UUID NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    code TEXT NOT NULL,
+    language VARCHAR(20) DEFAULT 'python',
+    version INTEGER DEFAULT 1,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 索引優化
+CREATE INDEX idx_bot_codes_user_id ON bot_codes(user_id);
+CREATE INDEX idx_bot_codes_bot_id ON bot_codes(bot_id);
+CREATE INDEX idx_bot_codes_is_active ON bot_codes(is_active);
+
+-- 用戶 BotCode 數量限制觸發器
+CREATE OR REPLACE FUNCTION check_user_botcode_limit()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (SELECT COUNT(*) FROM bot_codes WHERE user_id = NEW.user_id AND is_active = TRUE) > 3 THEN
+        RAISE EXCEPTION 'User cannot have more than 3 active bot codes';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_check_user_botcode_limit
+    BEFORE INSERT OR UPDATE ON bot_codes
+    FOR EACH ROW EXECUTE FUNCTION check_user_botcode_limit();
+```
+
+#### FlexMessage 表 (Flex Message 範本)
+```sql
+CREATE TABLE flex_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    content JSONB NOT NULL,  -- 使用 JSONB 儲存 Flex Message 結構
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 索引優化
+CREATE INDEX idx_flex_messages_user_id ON flex_messages(user_id);
+CREATE INDEX idx_flex_messages_is_active ON flex_messages(is_active);
+CREATE INDEX idx_flex_messages_content ON flex_messages USING GIN (content);
+
+-- 用戶 FlexMessage 數量限制觸發器
+CREATE OR REPLACE FUNCTION check_user_flexmessage_limit()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (SELECT COUNT(*) FROM flex_messages WHERE user_id = NEW.user_id AND is_active = TRUE) > 10 THEN
+        RAISE EXCEPTION 'User cannot have more than 10 active flex messages';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_check_user_flexmessage_limit
+    BEFORE INSERT OR UPDATE ON flex_messages
+    FOR EACH ROW EXECUTE FUNCTION check_user_flexmessage_limit();
+```
+
+#### EmailVerificationToken 表 (Email 驗證 Token)
+```sql
+CREATE TABLE email_verification_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) NOT NULL,  -- 要驗證的 Email
+    token_type VARCHAR(20) NOT NULL CHECK (token_type IN ('verify', 'reset')),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used_at TIMESTAMP WITH TIME ZONE NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 索引優化
+CREATE INDEX idx_email_tokens_user_id ON email_verification_tokens(user_id);
+CREATE INDEX idx_email_tokens_token ON email_verification_tokens(token);
+CREATE INDEX idx_email_tokens_expires ON email_verification_tokens(expires_at);
+
+-- 自動清理過期 Token
+CREATE OR REPLACE FUNCTION cleanup_expired_tokens()
+RETURNS void AS $$
+BEGIN
+    DELETE FROM email_verification_tokens
+    WHERE expires_at < NOW() - INTERVAL '7 days';
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### 3. 資料表關聯圖 (ERD)
+```mermaid
+erDiagram
+    users ||--o{ line_users : "1對0或1"
+    users ||--o{ bots : "1對多(最多3個)"
+    users ||--o{ bot_codes : "1對多(最多3個)"
+    users ||--o{ flex_messages : "1對多(最多10個)"
+    users ||--o{ email_verification_tokens : "1對多"
+    bots ||--o{ bot_codes : "1對多"
+    
+    users {
+        uuid id PK
+        string username UK
+        string email UK
+        string password_hash
+        boolean email_verified
+        text avatar
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    line_users {
+        uuid id PK
+        uuid user_id FK
+        string line_user_id UK
+        string display_name
+        string picture_url
+        string status_message
+        timestamp linked_at
+        timestamp updated_at
+    }
+    
+    bots {
+        uuid id PK
+        uuid user_id FK
+        string name
+        text channel_token
+        text channel_secret
+        text description
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    bot_codes {
+        uuid id PK
+        uuid user_id FK
+        uuid bot_id FK
+        string name
+        text code
+        string language
+        integer version
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    flex_messages {
+        uuid id PK
+        uuid user_id FK
+        string name
+        jsonb content
+        text description
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    email_verification_tokens {
+        uuid id PK
+        uuid user_id FK
+        string token UK
+        string email
+        string token_type
+        timestamp expires_at
+        timestamp used_at
+        timestamp created_at
+    }
+```
+
+### 4. SQLAlchemy 模型定義
+
+#### models/user.py
+```python
+from sqlalchemy import Column, String, Boolean, Text, DateTime, func
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+import uuid
+
+class User(Base):
+    __tablename__ = 'users'
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    email_verified = Column(Boolean, default=False, index=True)
+    avatar = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # 關聯關係
+    line_user = relationship("LineUser", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    bots = relationship("Bot", back_populates="user", cascade="all, delete-orphan")
+    bot_codes = relationship("BotCode", back_populates="user", cascade="all, delete-orphan")
+    flex_messages = relationship("FlexMessage", back_populates="user", cascade="all, delete-orphan")
+    email_tokens = relationship("EmailVerificationToken", back_populates="user", cascade="all, delete-orphan")
+```
+
+#### models/line_user.py
+```python
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, func
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
+class LineUser(Base):
+    __tablename__ = 'line_users'
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    line_user_id = Column(String(255), unique=True, nullable=False, index=True)
+    display_name = Column(String(255))
+    picture_url = Column(Text)
+    status_message = Column(Text)
+    linked_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # 關聯關係
+    user = relationship("User", back_populates="line_user")
+```
+
+### 5. 資料庫初始化腳本
+```sql
+-- 啟用 UUID 擴展
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 創建所有表格和索引
+-- (包含上述所有 CREATE TABLE 和 CREATE INDEX 語句)
+
+-- 插入系統管理員帳號 (可選)
+INSERT INTO users (username, email, password_hash, email_verified)
+VALUES ('admin', 'admin@example.com', 'hashed_password_here', TRUE);
+
+-- 設定資料庫連接池參數
+ALTER SYSTEM SET max_connections = 200;
+ALTER SYSTEM SET shared_buffers = '256MB';
+ALTER SYSTEM SET effective_cache_size = '1GB';
+```
+
 ## 技術實作要求
 
 ### 1. 資料庫整合
 - 使用 SQLAlchemy ORM 統一資料庫操作
-- 保持現有的 UUID 主鍵設計
+- 實作上述完整的資料模型
 - 維持所有外鍵關聯完整性
-- 支援 PostgreSQL 的 uuid-ossp 擴展
+- 實作資源限制觸發器
+- 支援資料庫連接池管理
 
 ### 2. 認證授權機制
 - 統一的 JWT Token 處理
