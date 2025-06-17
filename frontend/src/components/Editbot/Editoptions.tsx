@@ -4,10 +4,11 @@ import { useToast } from "@/hooks/use-toast";
 
 type EditOptions = {
   onClose: () => void;
-  onConfirm: (option: string) => void;
+  onConfirm: (option: string, botId?: string) => void;
+  botId?: string;
 };
 
-const EditOptions = ({ onClose, onConfirm }: EditOptions) => {
+const EditOptions = ({ onClose, onConfirm, botId }: EditOptions) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -18,7 +19,7 @@ const EditOptions = ({ onClose, onConfirm }: EditOptions) => {
 
   const handleConfirm = () => {
     if (selectedOption) {
-      onConfirm(selectedOption);
+      onConfirm(selectedOption, botId);
     } else {
       toast({
         variant: "destructive",

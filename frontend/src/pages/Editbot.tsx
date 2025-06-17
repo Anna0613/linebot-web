@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar3 from '../components/Panels/Navbar3';
 import Footer from '../components/Index/Footer'
 import Editoptions from '../components/Editbot/Editoptions';
-import Mybot from '@/components/Editbot/Mybot';
+import Mybot, { MybotRef } from '@/components/Editbot/Mybot';
+import BotEditModal from '../components/Editbot/BotEditModal';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 interface User {
@@ -19,7 +20,10 @@ const Editbot = () => {
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [editingBotId, setEditingBotId] = useState<number | null>(null);
+  const [editingBotId, setEditingBotId] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editType, setEditType] = useState<'name' | 'token' | 'secret' | 'all'>('name');
+  const mybotRef = useRef<MybotRef>(null);
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -105,7 +109,7 @@ const Editbot = () => {
     }
   };
 
-  const handleEdit = (botId: number) => {
+  const handleEdit = (botId: string) => {
     setEditingBotId(botId);
   };
   
@@ -113,8 +117,49 @@ const Editbot = () => {
     setEditingBotId(null);
   };
   
-  const handleEditConfirm = (option: string) => {
-    console.log(`Bot ${editingBotId} 修改項目: ${option}`);
+  const handleEditConfirm = (option: string, botId?: string) => {
+    const targetBotId = botId || editingBotId;
+    if (!targetBotId) return;
+
+    console.log(`Bot ${targetBotId} 修改項目: ${option}`);
+    
+    // 根據選項設置編輯類型並打開編輯模態框
+    switch (option) {
+      case 'name':
+        setEditType('name');
+        setShowEditModal(true);
+        break;
+      case 'message':
+        // 目前 API 中沒有單獨的訊息欄位，可能需要修改 channel_token
+        setEditType('token');
+        setShowEditModal(true);
+        break;
+      case 'logic':
+        // Bot 邏輯可能涉及多個欄位，或者跳轉到其他頁面
+        // 這裡暫時打開完整編輯模態框
+        setEditType('all');
+        setShowEditModal(true);
+        break;
+      default:
+        console.log('未知的修改選項');
+    }
+    
+    // 不要立即關閉 editingBotId，因為我們需要它來傳遞給 BotEditModal
+    // setEditingBotId(null);
+  };
+
+  const handleEditModalClose = () => {
+    setShowEditModal(false);
+    setEditingBotId(null);
+  };
+
+  const handleBotUpdated = () => {
+    // 重新載入Bot列表
+    if (mybotRef.current && mybotRef.current.refreshBots) {
+      mybotRef.current.refreshBots();
+    }
+    // 關閉模態框和重置狀態
+    setShowEditModal(false);
     setEditingBotId(null);
   };
   
@@ -123,13 +168,31 @@ const Editbot = () => {
       <Navbar3 user={user} />
       <main className="pt-32 flex flex-col items-center">
         <div className="flex flex-row gap-[35px] justify-center items-start px-6 mb-24">
-          <Mybot onEdit={handleEdit} />
+          <Mybot 
+            onEdit={handleEdit} 
+            ref={mybotRef}
+          />
           {editingBotId !== null && (
-            <Editoptions onClose={handleEditClose} onConfirm={handleEditConfirm} />
+            <Editoptions 
+              onClose={handleEditClose} 
+              onConfirm={handleEditConfirm} 
+              botId={editingBotId}
+            />
           )}
         </div>
       </main>
       <Footer />
+      
+      {/* Bot 編輯模態框 */}
+      {showEditModal && editingBotId && (
+        <BotEditModal
+          isOpen={showEditModal}
+          onClose={handleEditModalClose}
+          botId={editingBotId}
+          editType={editType}
+          onBotUpdated={handleBotUpdated}
+        />
+      )}
     </div>
   );
 

@@ -229,4 +229,30 @@ export class ApiClient {
   async resendEmailVerification(): Promise<ApiResponse> {
     return this.post(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.RESEND_EMAIL_VERIFICATION}`);
   }
+
+  // Bot 管理相關 API
+  // 獲取用戶的所有 bot
+  async getBots(): Promise<ApiResponse> {
+    return this.get(`${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.GET_BOTS}`);
+  }
+
+  // 創建新的 bot
+  async createBot(botData: { name: string; channel_token: string; channel_secret: string }): Promise<ApiResponse> {
+    return this.post(`${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.CREATE_BOT}`, botData);
+  }
+
+  // 更新 bot
+  async updateBot(botId: string, botData: { name?: string; channel_token?: string; channel_secret?: string }): Promise<ApiResponse> {
+    return this.put(`${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.UPDATE_BOT(botId)}`, botData);
+  }
+
+  // 刪除 bot
+  async deleteBot(botId: string): Promise<ApiResponse> {
+    return this.delete(`${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.DELETE_BOT(botId)}`);
+  }
+
+  // 獲取單個 bot
+  async getBot(botId: string): Promise<ApiResponse> {
+    return this.get(`${API_CONFIG.PUZZLE.BASE_URL}/bots/${botId}`);
+  }
 }
