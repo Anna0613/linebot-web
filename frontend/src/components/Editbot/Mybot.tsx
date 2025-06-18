@@ -19,6 +19,44 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
   const { toast } = useToast();
   const apiClient = ApiClient.getInstance();
 
+  const handleDelete = async (botId: string, botName: string) => {
+    if (!confirm(`確定要刪除機器人「${botName}」嗎？此操作無法撤銷。`)) {
+      return;
+    }
+
+    try {
+      const response = await apiClient.deleteBot(botId);
+      
+      if (response.error) {
+        toast({
+          variant: "destructive",
+          title: "刪除失敗",
+          description: response.error,
+        });
+      } else {
+        toast({
+          title: "刪除成功",
+          description: `機器人「${botName}」已成功刪除`,
+        });
+        
+        // 刪除成功後重新載入Bot列表
+        await fetchBots();
+        
+        // 如果刪除的Bot正在被選中，則清除選中狀態
+        if (selectedId === botId) {
+          setSelectedId(null);
+        }
+      }
+    } catch (error) {
+      console.error('刪除Bot發生錯誤:', error);
+      toast({
+        variant: "destructive",
+        title: "刪除失敗",
+        description: "刪除機器人時發生錯誤",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchBots();
   }, []);
@@ -90,13 +128,14 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                 <th className="py-2">編號</th>
                 <th className="py-2">Bot 名稱</th>
                 <th className="py-2">操作</th>
-                <th className="py-2"> </th>
+                <th className="py-2">修改</th>
+                <th className="py-2">刪除</th>
               </tr>
             </thead>
             <tbody>
               {filteredBots.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-center py-4 text-gray-500">
+                  <td colSpan={5} className="text-center py-4 text-gray-500">
                     {botList.length === 0 ? "尚無Bot資料" : "沒有找到符合的Bot"}
                   </td>
                 </tr>
@@ -125,6 +164,18 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                           }`}
                       >
                         修改
+                      </button>
+                    </td>
+                    <td className="py-2">
+                      <button
+                        onClick={() => selectedId === bot.id && handleDelete(bot.id, bot.name)}
+                        disabled={selectedId !== bot.id}
+                        className={`px-3 py-1 rounded transition font-bold
+                          ${selectedId === bot.id 
+                            ? "bg-[#F6B1B1] text-white hover:brightness-90" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          }`}
+                      >
+                        刪除
                       </button>
                     </td>
                   </tr>
