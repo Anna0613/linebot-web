@@ -17,6 +17,8 @@ import HowToEstablish from "./pages/HowToEstablish";
 import Setting from "./pages/Setting";
 import ResetPassword from "./pages/ResetPassword";
 import Editbot from "./pages/Editbot";
+import About from "./pages/About";
+import Describe from "./pages/Describe";
 
 
 
@@ -42,6 +44,8 @@ const App = () => (
           <Route path="/verify-email" element={<EmailVerification />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/editbot" element={<Editbot />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/describe" element={<Describe />} />
           <Route path="/line-login" element={<LINELogin />} />
         </Routes>
       </BrowserRouter>

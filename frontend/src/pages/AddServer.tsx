@@ -105,13 +105,14 @@ const AddServer = () => {
       }
     };
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className=" pt-24 min-h-screen flex flex-col">
       <Navbar2 user={user} />
       <main className="flex-1">
         <AddServerPage />
       </main>
       <Footer2 />
     </div>
+    
   );
 };
 
