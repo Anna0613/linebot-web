@@ -213,7 +213,7 @@ export class ApiClient {
   // 更新用戶頭像
   async updateAvatar(avatar: string): Promise<ApiResponse> {
     return this.put(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.UPDATE_AVATAR}`, {
-      avatar
+      avatar_base64: avatar
     });
   }
 
