@@ -16,15 +16,16 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/lo
 
 async def get_current_user(
     request: Request,
-    db: Session = Depends(get_db),
-    token: Optional[str] = Depends(oauth2_scheme)
+    db: Session = Depends(get_db)
 ) -> User:
     """取得當前用戶"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="無法驗證身份憑證",
+        detail="Not authenticated",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    token = None
     
     # 首先嘗試從 Authorization header 獲取 token
     auth_header = request.headers.get('Authorization')
@@ -34,13 +35,12 @@ async def get_current_user(
         except HTTPException:
             # Authorization header 無效，嘗試從 cookie 獲取
             token = request.cookies.get('token')
-            if not token:
-                raise credentials_exception
-    elif not token:
-        # 如果既沒有 header 也沒有通過 OAuth2 scheme 獲取到 token，嘗試從 cookie
+    else:
+        # 如果沒有 Authorization header，嘗試從 cookie 獲取
         token = request.cookies.get('token')
-        if not token:
-            raise credentials_exception
+    
+    if not token:
+        raise credentials_exception
     
     try:
         payload = verify_token(token)

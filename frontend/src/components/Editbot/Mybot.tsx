@@ -68,11 +68,21 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
       
       if (response.error) {
         console.error('獲取Bot列表失敗:', response.error);
-        toast({
-          variant: "destructive",
-          title: "錯誤",
-          description: response.error,
-        });
+        
+        // 檢查是否為身份驗證錯誤
+        if (response.status === 401 || response.status === 403) {
+          toast({
+            variant: "destructive",
+            title: "身份驗證失敗",
+            description: "請重新登入後再試",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "錯誤",
+            description: response.error || "無法載入Bot列表",
+          });
+        }
         setBotList([]);
       } else {
         setBotList(response.data || []);

@@ -133,33 +133,43 @@ const HowToEstablish = () => {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
+          ...(localStorage.getItem('auth_token') && { 
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}` 
+          })
         },
       });
-              if (response.ok) {
-          const data = await response.json();
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // 檢查新的 API 回應格式 (authenticated + user)
+        if (data.authenticated && data.user) {
+          setUser({ 
+            display_name: data.user.username, 
+            username: data.user.username 
+          });
+        } else if (data.authenticated === false) {
+          // 明確處理未登入情況
+          console.log('用戶未登入，重定向到登入頁面');
+          setError('請先登入以查看此頁面');
+          navigate('/login');
+          return;
+        }
+        // 相容舊格式：檢查 data.message 是否存在且格式正確
+        else if (data.message && typeof data.message === 'string') {
+          const messagePattern = /User (.+?) is logged in/;
+          const match = data.message.match(messagePattern);
           
-          // 檢查新的 API 回應格式 (authenticated + user)
-          if (data.authenticated && data.user) {
-            setUser({ 
-              display_name: data.user.username, 
-              username: data.user.username 
-            });
-          }
-          // 相容舊格式：檢查 data.message 是否存在且格式正確
-          else if (data.message && typeof data.message === 'string') {
-            const messagePattern = /User (.+?) is logged in/;
-            const match = data.message.match(messagePattern);
-            
-            if (match && match[1]) {
-              const username = match[1];
-              setUser({ display_name: username, username });
-            } else {
-              throw new Error('無法從回應中解析用戶名稱');
-            }
+          if (match && match[1]) {
+            const username = match[1];
+            setUser({ display_name: username, username });
           } else {
-            throw new Error('無效的 API 回應格式');
+            throw new Error('無法從回應中解析用戶名稱');
           }
         } else {
+          throw new Error('無效的 API 回應格式');
+        }
+      } else {
         const errorData = await response.json();
         console.error('check_login error:', errorData);
         setError('請先登入');
@@ -210,7 +220,7 @@ const HowToEstablish = () => {
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-glass max-w-3xl mx-auto">
             <div className="flex items-center justify-between">
               {steps.map((step, index) => (
-                <React.Fragment key={step.id}>
+                <div key={step.id}>
                   <div 
                     className={`flex flex-col items-center cursor-pointer transition-all duration-300 ${
                       currentStep >= step.id ? 'opacity-100' : 'opacity-50'
@@ -241,7 +251,7 @@ const HowToEstablish = () => {
                       currentStep > step.id ? 'bg-line' : 'bg-gray-200'
                     }`}></div>
                   )}
-                </React.Fragment>
+                </div>
               ))}
             </div>
           </div>
