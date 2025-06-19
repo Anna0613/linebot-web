@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar3 from '../components/Panels/Navbar3';
-import Footer from '../components/Index/Footer'
-import Editoptions from '../components/Editbot/Editoptions';
+import Footer2 from '../components/LoginHome/Footer2';
 import Mybot, { MybotRef } from '@/components/Editbot/Mybot';
 import BotEditModal from '../components/Editbot/BotEditModal';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
@@ -129,43 +128,11 @@ const Editbot = () => {
     }
   };
 
-  const handleEdit = (botId: string) => {
+  // 直接處理編輯請求，不再需要中間的選項步驟
+  const handleEdit = (botId: string, editType: 'name' | 'token' | 'secret' | 'all') => {
     setEditingBotId(botId);
-  };
-  
-  const handleEditClose = () => {
-    setEditingBotId(null);
-  };
-  
-  const handleEditConfirm = (option: string, botId?: string) => {
-    const targetBotId = botId || editingBotId;
-    if (!targetBotId) return;
-
-    console.log(`Bot ${targetBotId} 修改項目: ${option}`);
-    
-    // 根據選項設置編輯類型並打開編輯模態框
-    switch (option) {
-      case 'name':
-        setEditType('name');
-        setShowEditModal(true);
-        break;
-      case 'message':
-        // 目前 API 中沒有單獨的訊息欄位，可能需要修改 channel_token
-        setEditType('token');
-        setShowEditModal(true);
-        break;
-      case 'logic':
-        // Bot 邏輯可能涉及多個欄位，或者跳轉到其他頁面
-        // 這裡暫時打開完整編輯模態框
-        setEditType('all');
-        setShowEditModal(true);
-        break;
-      default:
-        console.log('未知的修改選項');
-    }
-    
-    // 不要立即關閉 editingBotId，因為我們需要它來傳遞給 BotEditModal
-    // setEditingBotId(null);
+    setEditType(editType);
+    setShowEditModal(true);
   };
 
   const handleEditModalClose = () => {
@@ -184,38 +151,30 @@ const Editbot = () => {
   };
   
   return (
-    <div>
+    <div className="min-h-screen flex flex-col bg-[#FFFDFA]">
       <Navbar3 user={user} />
       <main className="pt-32 flex flex-col items-center">
-        <div className="flex flex-row gap-[35px] justify-center items-start px-6 mb-24">
+        <div className="flex gap-[35px] px-6 mb-24 justify-center items-start">
           <Mybot 
             onEdit={handleEdit} 
             ref={mybotRef}
           />
-          {editingBotId !== null && (
-            <Editoptions 
-              onClose={handleEditClose} 
-              onConfirm={handleEditConfirm} 
+
+          {/* 編輯模態框 */}
+          {showEditModal && editingBotId && (
+            <BotEditModal
+              isOpen={showEditModal}
+              onClose={handleEditModalClose}
               botId={editingBotId}
+              editType={editType}
+              onBotUpdated={handleBotUpdated}
             />
           )}
         </div>
       </main>
-      <Footer />
-      
-      {/* Bot 編輯模態框 */}
-      {showEditModal && editingBotId && (
-        <BotEditModal
-          isOpen={showEditModal}
-          onClose={handleEditModalClose}
-          botId={editingBotId}
-          editType={editType}
-          onBotUpdated={handleBotUpdated}
-        />
-      )}
+      <Footer2 />
     </div>
   );
-
 };
 
 export default Editbot;

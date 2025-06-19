@@ -1,0 +1,910 @@
+# 🎨 LineBot Web - UI 設計系統指南
+
+> 基於 `/block` 和 `/editbot` 頁面的完整設計風格分析與統一規範
+
+## 📋 目錄
+- [設計理念](#設計理念)
+- [顏色系統](#顏色系統)
+- [字體系統](#字體系統)
+- [卡片設計](#卡片設計)
+- [按鈕系統](#按鈕系統)
+- [間距系統](#間距系統)
+- [陰影系統](#陰影系統)
+- [圓角系統](#圓角系統)
+- [響應式設計](#響應式設計)
+- [動畫效果](#動畫效果)
+- [互動狀態](#互動狀態)
+- [表格系統](#表格系統)
+- [圖標系統](#圖標系統)
+- [導航系統](#導航系統)
+- [組件模式](#組件模式)
+- [開發規範](#開發規範)
+
+---
+
+## 🎯 設計理念
+
+LineBot Web 系統採用**溫暖、友善且專業**的設計語言，強調：
+- 🔆 **溫暖感**: 使用暖色調背景 `#FFFDFA`
+- 🛡️ **安全感**: 明確的邊框和陰影定義
+- 🎯 **專業性**: 清晰的層級結構和一致的互動模式
+- 📱 **響應式**: 完整的多設備支援
+
+---
+
+## 🌈 顏色系統
+
+### 主要色彩調色板
+
+```css
+/* === 品牌主色 === */
+:root {
+  /* 主要文字色彩 */
+  --text-primary: #1a1a40;        /* 深藍色 - 主標題 */
+  --text-secondary: #383A45;      /* 深灰藍 - 卡片標題 */
+  --text-content: #5A2C1D;        /* 深棕色 - 內容文字 */
+  --text-muted: #4B4B4B;          /* 中性灰 - 輔助文字 */
+  
+  /* 背景色系 */
+  --bg-primary: #FFFDFA;          /* 頁面主背景 - 暖白 */
+  --bg-card: #FFFFFF;             /* 卡片背景 - 純白 */
+  --bg-light-cream: #FFF7E0;      /* 淺奶油色 - 選項背景 */
+  --bg-hover: #f9f3f1;            /* 表格懸浮背景 */
+  
+  /* 功能性色彩 */
+  --success: #A0D6B4;             /* 成功/確認 */
+  --warning: #FFD59E;             /* 警告/選擇 */
+  --danger: #F6B1B1;              /* 危險/取消 */
+  --info: #8ECAE6;                /* 信息提示 */
+  
+  /* 特色陰影 */
+  --shadow-primary: #819780;      /* 主要卡片陰影色 */
+  --border-primary: #000000;      /* 主要邊框色 */
+  
+  /* 分類色彩 */
+  --category-container: #F4A261;  /* 容器分類 */
+  --category-block: #2A9D8F;      /* 區塊分類 */
+  --category-component: #8ECAE6;  /* 元件分類 */
+  --category-style: #CDB4DB;      /* 樣式分類 */
+}
+```
+
+### 顏色使用指南
+
+| 顏色 | 用途 | Tailwind Class | Hex Code |
+|------|------|----------------|----------|
+| 深藍 | 主標題、導航標題 | `text-[#1a1a40]` | `#1a1a40` |
+| 深灰藍 | 卡片標題 | `text-[#383A45]` | `#383A45` |
+| 深棕 | 內容文字、表格標題 | `text-[#5A2C1D]` | `#5A2C1D` |
+| 暖白 | 頁面背景 | `bg-[#FFFDFA]` | `#FFFDFA` |
+| 成功綠 | 確認按鈕 | `bg-[#A0D6B4]` | `#A0D6B4` |
+| 警告橙 | 選擇按鈕 | `bg-[#FFD59E]` | `#FFD59E` |
+| 危險紅 | 取消按鈕 | `bg-[#F6B1B1]` | `#F6B1B1` |
+
+---
+
+## 🔤 字體系統
+
+### 字體層級與規範
+
+```css
+/* === 標題系統 === */
+.text-main-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+.text-card-title {
+  font-size: clamp(20px, 2.5vw, 26px);
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.text-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-content);
+  line-height: 1.4;
+}
+
+/* === 內容文字 === */
+.text-body {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text-content);
+  line-height: 1.5;
+}
+
+.text-body-sm {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-content);
+  line-height: 1.4;
+}
+
+/* === 按鈕文字 === */
+.text-button {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.text-button-sm {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* === 輔助文字 === */
+.text-helper {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.text-placeholder {
+  font-size: 14px;
+  font-weight: 400;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+```
+
+### Tailwind CSS 對應類別
+
+```css
+/* 主標題 */
+.main-title { @apply text-[28px] font-bold text-[#1a1a40] leading-tight tracking-wide; }
+
+/* 卡片標題 */
+.card-title { @apply text-[20px] sm:text-[26px] font-bold text-[#383A45] text-center; }
+
+/* 按鈕文字 */
+.btn-text { @apply text-base font-bold; }
+
+/* 內容文字 */
+.content-text { @apply text-sm sm:text-base text-[#5A2C1D]; }
+```
+
+---
+
+## 📦 卡片設計
+
+### 主要卡片樣式
+
+```css
+/* === 基礎卡片 === */
+.card-primary {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: clamp(12px, 2vw, 25px);
+  box-shadow: 
+    -6px 6px 0 var(--shadow-primary),   /* xs */
+    -8px 8px 0 var(--shadow-primary),   /* sm */
+    -12px 12px 0 var(--shadow-primary), /* md */
+    -15px 15px 0 var(--shadow-primary); /* lg */
+  padding: clamp(8px, 2vw, 20px);
+  position: relative;
+}
+
+/* === 響應式尺寸 === */
+.card-panel {
+  width: clamp(352px, 80vw, 624px);
+  height: clamp(360px, 60vh, 520px);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+/* === 卡片變體 === */
+.card-left-panel {
+  /* 左側工具面板 */
+  width: 352px;
+  height: 520px;
+  position: relative;
+}
+
+.card-middle-panel {
+  /* 中間工作區域 */
+  width: clamp(520px, 70vw, 624px);
+  height: clamp(360px, 60vh, 520px);
+}
+
+.card-edit-options {
+  /* 編輯選項卡片 */
+  width: 320px;
+  height: 520px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+```
+
+### Tailwind CSS 實現
+
+```html
+<!-- 基礎卡片 -->
+<div class="
+  w-full xs:w-[520px] sm:w-[580px] md:w-[624px] 
+  h-[360px] xs:h-[400px] sm:h-[460px] md:h-[520px] 
+  rounded-[12px] xs:rounded-[15px] sm:rounded-[20px] md:rounded-[25px] 
+  bg-white border border-black 
+  shadow-[-6px_6px_0_#819780] xs:shadow-[-8px_8px_0_#819780] 
+  sm:shadow-[-12px_12px_0_#819780] md:shadow-[-15px_15px_0_#819780] 
+  p-2 xs:p-3 sm:p-4 md:p-5 
+  flex-shrink-0 flex flex-col 
+  transition-all duration-300
+">
+  <!-- 卡片內容 -->
+</div>
+```
+
+---
+
+## 🔘 按鈕系統
+
+### 按鈕類型與樣式
+
+```css
+/* === 基礎按鈕樣式 === */
+.btn-base {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.2;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* === 功能性按鈕 === */
+.btn-success {
+  background: var(--success);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn-success:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn-warning {
+  background: var(--warning);
+  color: var(--text-content);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn-warning:hover {
+  filter: brightness(0.9);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn-danger:hover {
+  filter: brightness(0.9);
+}
+
+/* === 選項按鈕 === */
+.btn-option {
+  background: var(--bg-light-cream);
+  color: var(--text-muted);
+  height: 48px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+.btn-option:hover {
+  background: #f4b1a5;
+}
+.btn-option.selected {
+  background: var(--warning);
+  color: var(--text-muted);
+}
+
+/* === 圖標按鈕 === */
+.btn-icon {
+  padding: 6px 8px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+.btn-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  background: #f9fafb;
+}
+
+/* === 禁用狀態 === */
+.btn-disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.btn-disabled:hover {
+  transform: none;
+  filter: none;
+}
+```
+
+### 按鈕使用範例
+
+```html
+<!-- 成功按鈕 -->
+<button class="px-3 py-1 rounded bg-[#A0D6B4] text-white font-bold shadow hover:brightness-90 transition">
+  確定
+</button>
+
+<!-- 警告按鈕 -->
+<button class="px-3 py-1 rounded bg-[#FFD59E] text-[#5A2C1D] font-bold shadow hover:brightness-90 transition">
+  選擇
+</button>
+
+<!-- 危險按鈕 -->
+<button class="px-3 py-1 rounded bg-[#F6B1B1] text-white font-bold shadow hover:brightness-90 transition">
+  刪除
+</button>
+
+<!-- 圖標按鈕 -->
+<button class="p-2 bg-white rounded-lg shadow-sm hover:shadow-md hover:bg-gray-50 hover:scale-110 transition-all duration-200">
+  <svg class="w-5 h-5" fill="#454658">...</svg>
+</button>
+```
+
+---
+
+## 📐 間距系統
+
+### 標準間距規範
+
+```css
+/* === 間距變數 === */
+:root {
+  /* 微小間距 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+  
+  /* 組件間距 */
+  --gap-component: 16px;
+  --gap-section: 24px;
+  --gap-panel: 35px;
+  
+  /* 內邊距 */
+  --padding-xs: 8px;
+  --padding-sm: 12px;
+  --padding-md: 16px;
+  --padding-lg: 20px;
+  --padding-xl: 24px;
+  
+  /* 外邊距 */
+  --margin-section: 96px;     /* 區段間距 */
+  --margin-header: 128px;     /* 頂部導航偏移 */
+  --margin-bottom: 96px;      /* 底部間距 */
+}
+```
+
+### 間距應用指南
+
+| 用途 | 間距值 | Tailwind Class | 說明 |
+|------|--------|----------------|------|
+| 卡片間距 | 35px | `gap-[35px]` | 主要面板間距 |
+| 按鈕內邊距 | 8px 12px | `px-3 py-2` | 標準按鈕內邊距 |
+| 標題下間距 | 16px | `mb-4` | 標題與內容間距 |
+| 表格單元格 | 8px 0 | `py-2` | 表格單元格內邊距 |
+| 頁面頂部偏移 | 128px | `pt-32` | 固定導航偏移 |
+| 頁面底部間距 | 96px | `mb-24` | 內容與底部間距 |
+
+---
+
+## 🎭 陰影系統
+
+### 陰影層級
+
+```css
+/* === 陰影定義 === */
+:root {
+  /* 主要特色陰影 */
+  --shadow-primary-xs: -6px 6px 0 var(--shadow-primary);
+  --shadow-primary-sm: -8px 8px 0 var(--shadow-primary);
+  --shadow-primary-md: -12px 12px 0 var(--shadow-primary);
+  --shadow-primary-lg: -15px 15px 0 var(--shadow-primary);
+  
+  /* 標準陰影 */
+  --shadow-xs: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+  --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+  --shadow-xl: 0 16px 32px rgba(0,0,0,0.1);
+}
+
+/* === 陰影類別 === */
+.shadow-card {
+  box-shadow: var(--shadow-primary-lg);
+}
+
+.shadow-button {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-hover {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-modal {
+  box-shadow: var(--shadow-xl);
+}
+```
+
+### 陰影使用場景
+
+- **主要卡片**: 使用特色綠色陰影 `shadow-[-15px_15px_0_#819780]`
+- **按鈕元素**: 使用輕量陰影 `shadow-sm`
+- **懸浮狀態**: 使用中等陰影 `shadow-md`
+- **模態框**: 使用重型陰影 `shadow-xl`
+
+---
+
+## 🔄 圓角系統
+
+### 圓角規範
+
+```css
+/* === 圓角變數 === */
+:root {
+  --radius-xs: 4px;    /* 輸入框 */
+  --radius-sm: 6px;    /* 按鈕 */
+  --radius-md: 8px;    /* 圖標按鈕 */
+  --radius-lg: 12px;   /* 小卡片 */
+  --radius-xl: 16px;   /* 中等卡片 */
+  --radius-2xl: 20px;  /* 大卡片 */
+  --radius-3xl: 25px;  /* 主要卡片 */
+  --radius-full: 50%;  /* 圓形頭像 */
+}
+```
+
+### 響應式圓角
+
+```css
+/* 響應式卡片圓角 */
+.radius-responsive {
+  border-radius: 12px;  /* xs */
+  border-radius: 15px;  /* sm */
+  border-radius: 20px;  /* md */
+  border-radius: 25px;  /* lg */
+}
+```
+
+### Tailwind 對應
+
+```css
+/* 主要卡片 */
+.card { @apply rounded-[12px] xs:rounded-[15px] sm:rounded-[20px] md:rounded-[25px]; }
+
+/* 按鈕 */
+.button { @apply rounded-md; /* 6px */ }
+
+/* 輸入框 */
+.input { @apply rounded; /* 4px */ }
+
+/* 圓形元素 */
+.avatar { @apply rounded-full; }
+```
+
+---
+
+## 📱 響應式設計
+
+### 斷點系統
+
+```css
+/* === Tailwind 斷點 === */
+/* xs: 475px  - 小型手機 */
+/* sm: 640px  - 大型手機 */
+/* md: 768px  - 平板 */
+/* lg: 1024px - 小型桌面 */
+/* xl: 1280px - 大型桌面 */
+/* 2xl: 1536px - 超大桌面 */
+```
+
+### 響應式組件尺寸
+
+```css
+/* === 卡片響應式尺寸 === */
+.responsive-card {
+  /* 寬度 */
+  width: 352px;     /* sm - 基礎寬度 */
+  width: 520px;     /* xs - 稍大手機 */
+  width: 580px;     /* sm - 平板豎屏 */
+  width: 624px;     /* md - 平板橫屏/小桌面 */
+  
+  /* 高度 */
+  height: 360px;    /* xs - 緊湊高度 */
+  height: 400px;    /* sm - 標準高度 */
+  height: 460px;    /* md - 舒適高度 */
+  height: 520px;    /* lg - 寬敞高度 */
+  
+  /* 內邊距 */
+  padding: 8px;     /* xs */
+  padding: 12px;    /* sm */
+  padding: 16px;    /* md */
+  padding: 20px;    /* lg */
+  
+  /* 圓角 */
+  border-radius: 12px;  /* xs */
+  border-radius: 15px;  /* sm */
+  border-radius: 20px;  /* md */
+  border-radius: 25px;  /* lg */
+  
+  /* 陰影 */
+  box-shadow: -6px 6px 0 #819780;    /* xs */
+  box-shadow: -8px 8px 0 #819780;    /* sm */
+  box-shadow: -12px 12px 0 #819780;  /* md */
+  box-shadow: -15px 15px 0 #819780;  /* lg */
+}
+```
+
+### 響應式字體
+
+```css
+/* === 響應式字體大小 === */
+.text-responsive-title {
+  font-size: clamp(20px, 2.5vw, 26px);
+}
+
+.text-responsive-body {
+  font-size: clamp(14px, 1.5vw, 16px);
+}
+
+.text-responsive-helper {
+  font-size: clamp(12px, 1.2vw, 14px);
+}
+```
+
+---
+
+## ✨ 動畫效果
+
+### 基礎動畫
+
+```css
+/* === 過渡動畫 === */
+.transition-base {
+  transition: all 0.2s ease;
+}
+
+.transition-fast {
+  transition: all 0.15s ease;
+}
+
+.transition-slow {
+  transition: all 0.3s ease;
+}
+
+/* === 懸浮效果 === */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-scale-sm {
+  transition: transform 0.2s ease;
+}
+.hover-scale-sm:hover {
+  transform: scale(1.02);
+}
+
+/* === 亮度調整 === */
+.hover-brightness {
+  transition: filter 0.2s ease;
+}
+.hover-brightness:hover {
+  filter: brightness(0.9);
+}
+
+/* === 背景變化 === */
+.hover-bg {
+  transition: background-color 0.2s ease;
+}
+
+/* === 載入動畫 === */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.loading-pulse {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* === 淡入動畫 === */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+```
+
+### Tailwind 動畫類別
+
+```html
+<!-- 基礎過渡 -->
+<div class="transition-all duration-200 ease-in-out">
+
+<!-- 懸浮縮放 -->
+<button class="hover:scale-110 transition-transform duration-200">
+
+<!-- 亮度調整 -->
+<button class="hover:brightness-90 transition-all duration-200">
+
+<!-- 背景變化 -->
+<tr class="hover:bg-[#f9f3f1] transition-colors duration-200">
+```
+
+---
+
+## 🎯 互動狀態
+
+### 狀態系統
+
+```css
+/* === 按鈕狀態 === */
+.btn-state {
+  /* 預設狀態 */
+  background: var(--bg-light-cream);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.btn-state:hover {
+  /* 懸浮狀態 */
+  background: #f4b1a5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn-state:active {
+  /* 點擊狀態 */
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-state.selected {
+  /* 選中狀態 */
+  background: var(--warning);
+  color: var(--text-muted);
+}
+
+.btn-state:disabled {
+  /* 禁用狀態 */
+  background: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-state:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* === 表格行狀態 === */
+.table-row {
+  transition: background-color 0.2s ease;
+}
+
+.table-row:hover {
+  background: var(--bg-hover);
+}
+
+.table-row.selected {
+  background: rgba(255, 213, 158, 0.3);
+}
+
+/* === 輸入框狀態 === */
+.input-field {
+  border: 1px solid #d1d5db;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: var(--info);
+  box-shadow: 0 0 0 3px rgba(140, 202, 230, 0.1);
+  outline: none;
+}
+
+.input-field:invalid {
+  border-color: var(--danger);
+}
+```
+
+### 狀態指示器
+
+```css
+/* === 載入狀態 === */
+.loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* === 成功狀態 === */
+.success-indicator {
+  color: var(--success);
+}
+
+/* === 錯誤狀態 === */
+.error-indicator {
+  color: var(--danger);
+}
+```
+
+---
+
+## 📊 表格系統
+
+### 表格樣式
+
+```css
+/* === 表格容器 === */
+.table-container {
+  width: 100%;
+  border-top: 1px solid #d1d5db;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+/* === 表格標題 === */
+.table-header {
+  color: var(--text-content);
+  font-weight: 700;
+  font-size: 14px;
+  border-bottom: 1px solid #d1d5db;
+  padding: 8px 0;
+  text-align: left;
+}
+
+/* === 表格行 === */
+.table-row {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.2s ease;
+}
+
+.table-row:hover {
+  background: var(--bg-hover);
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+/* === 表格單元格 === */
+.table-cell {
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text-content);
+  vertical-align: middle;
+}
+
+/* === 空狀態 === */
+.table-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: #6b7280;
+  font-size: 14px;
+}
+```
+
+### 表格範例
+
+```html
+<div class="flex-1 overflow-hidden">
+  <table class="w-full text-left border-t border-gray-300">
+    <thead>
+      <tr class="text-[#5A2C1D] font-bold border-b border-gray-300">
+        <th class="py-2">編號</th>
+        <th class="py-2">Bot 名稱</th>
+        <th class="py-2">操作</th>
+        <th class="py-2">修改</th>
+        <th class="py-2">刪除</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="border-b border-gray-200 hover:bg-[#f9f3f1] transition">
+        <td class="py-2">1</td>
+        <td class="py-2">我的機器人</td>
+        <td class="py-2">
+          <button class="px-3 py-1 rounded bg-[#FFD59E] text-[#5A2C1D] font-bold hover:brightness-90 transition">
+            選擇
+          </button>
+        </td>
+        <!-- 更多單元格... -->
+      </tr>
+    </tbody>
+  </table>
+</div>
+```
+
+---
+
+## 🖼️ 圖標系統
+
+### 圖標尺寸
+
+```css
+/* === 圖標尺寸 === */
+.icon-xs { width: 12px; height: 12px; }
+.icon-sm { width: 16px; height: 16px; }
+.icon-md { width: 20px; height: 20px; }
+.icon-lg { width: 24px; height: 24px; }
+.icon-xl { width: 28px; height: 28px; }
+.icon-2xl { width: 32px; height: 32px; }
+
+/* === 圖標樣式 === */
+.icon-fill {
+  fill: #454658;
+}
+
+.icon-stroke {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.icon-interactive {
+  transition: all 0.2s ease;
+}
+
+.icon-interactive:hover {
+  transform: scale(1.1);
+  opacity: 0.8;
+}
+```
+
+### 常用圖標與用途
+
+| 圖標 | 用途 | SVG Path | 尺寸 |
+|------|------|----------|------|
+| 🏠 | 首頁導航 | `M575.8 255.5c0 18-15 32.1-32 32.1h-32l.7 160.1c0 2.7-.2 5.4-.5 8.1V472c0 22.1-17.9 40-40 40H456c-1.1 0-2.2 0-3.3-.1c-1.4 .1-2.8 .1-4.2 .1H416 392c-22.1 0-40-17.9-40-40V448 384c0-17.7-14.3-32-32-32H256c-17.7 0-32 14.3-32 32v64 24c0 22.1-17.9 40-40 40H160 128.1c-1.5 0-3-.1-4.5-.2c-1.2 .1-2.4 .2-3.6 .2H104c-22.1 0-40-17.9-40-40V360c0-.9 0-1.9 .1-2.8V287.6H32c-18 0-32.1-14-32.1-32c0-9 3-17 10-24L266.4 8c7-7 15-8 22-8s15 2 21 7L564.8 231.5c8 7 12 15 11 24z` | 28px |
+| 📁 | 文件/分類 | `M448 480L64 480c-35.3 0-64-28.7-64-64L0 192l512 0 0 224c0 35.3-28.7 64-64 64zm64-320L0 160 0 96C0 60.7 28.7 32 64 32l128 0c20.1 0 39.1 9.5 51.2 25.6l19.2 25.6c6 8.1 15.5 12.8 25.6 12.8l160 0c35.3 0 64 28.7 64 64z` | 24px |

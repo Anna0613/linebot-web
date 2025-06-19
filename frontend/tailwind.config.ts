@@ -95,6 +95,14 @@ const config: Config = {
           "0%": { transform: "scale(0.95)", opacity: "0" },
           "100%": { transform: "scale(1)", opacity: "1" },
         },
+        "slide-down": {
+          "0%": { height: "0", opacity: "0", transform: "translateY(-10px)" },
+          "100%": { height: "auto", opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-up": {
+          "0%": { height: "auto", opacity: "1", transform: "translateY(0)" },
+          "100%": { height: "0", opacity: "0", transform: "translateY(-10px)" },
+        },
         float: {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-10px)" },
@@ -115,6 +123,8 @@ const config: Config = {
         "fade-in": "fade-in 0.5s ease-out forwards",
         "fade-out": "fade-out 0.5s ease-out forwards",
         "scale-in": "scale-in 0.3s ease-out forwards",
+        "slide-down": "slide-down 0.3s ease-out forwards",
+        "slide-up": "slide-up 0.3s ease-out forwards",
         float: "float 6s ease-in-out infinite",
         "pulse-light": "pulse-light 3s ease-in-out infinite",
         "gradient-flow": "gradient-flow 10s ease infinite",
