@@ -235,31 +235,34 @@ const HowToEstablish = () => {
       <Navbar2 user={user}/>
       
       {/* 主要內容區域 */}
-      <div className="pt-16 md:pt-20 pb-16 px-6">
+      <div className="pt-14 sm:pt-16 md:pt-20 pb-12 sm:pb-16 px-4 sm:px-6">
         {/* 標題區域 */}
-        <div className="text-center mb-12 fade-in-element">
-          <h1 className="text-[#1a1a40] text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
+        <div className="text-center mb-8 sm:mb-12 fade-in-element">
+          <h1 className="text-[#1a1a40] text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] font-bold mb-3 sm:mb-4 leading-tight tracking-wide px-2">
             LINE Bot 建立教學
           </h1>
-          <p className="text-[#5A2C1D] text-xl leading-relaxed max-w-3xl mx-auto">
+          <p className="text-[#5A2C1D] text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto px-4">
             跟著我們的詳細步驟，輕鬆建立您的第一個 LINE Bot
           </p>
         </div>
 
         {/* 進度指示器 */}
-        <div className="max-w-4xl mx-auto mb-12">
-          <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-[#F4A261]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-[#383A45] text-xl font-bold">教學進度</h2>
-              <span className="text-[#5A2C1D] font-medium">第 {currentStep} 步，共 4 步</span>
+        <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
+          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border-l-4 border-[#F4A261]">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
+              <h2 className="text-[#383A45] text-lg sm:text-xl font-bold text-center sm:text-left">教學進度</h2>
+              <span className="text-[#5A2C1D] font-medium text-sm sm:text-base text-center sm:text-right">
+                第 {currentStep} 步，共 4 步
+              </span>
             </div>
             
-            <div className="grid grid-cols-4 gap-4">
+            {/* 桌面版進度指示器 */}
+            <div className="hidden sm:grid sm:grid-cols-4 gap-3 md:gap-4">
               {[1, 2, 3, 4].map((step) => (
                 <button
                   key={step}
                   onClick={() => goToStep(step)}
-                  className={`p-4 rounded-lg text-center transition-all duration-200 ${
+                  className={`p-3 md:p-4 rounded-lg text-center transition-all duration-200 ${
                     step === currentStep
                       ? 'bg-[#F4A261] text-white shadow-lg transform scale-105'
                       : step < currentStep
@@ -267,8 +270,8 @@ const HowToEstablish = () => {
                       : 'bg-gray-100 text-[#5A2C1D] hover:bg-gray-200'
                   }`}
                 >
-                  <div className="font-bold text-lg mb-1">步驟 {step}</div>
-                  <div className="text-sm">
+                  <div className="font-bold text-base md:text-lg mb-1">步驟 {step}</div>
+                  <div className="text-xs md:text-sm">
                     {step === 1 && '建立頻道'}
                     {step === 2 && '設定 Webhook'}
                     {step === 3 && '取得金鑰'}
@@ -277,10 +280,47 @@ const HowToEstablish = () => {
                 </button>
               ))}
             </div>
+
+            {/* 手機版進度指示器 */}
+            <div className="sm:hidden space-y-3">
+              {[1, 2, 3, 4].map((step) => (
+                <button
+                  key={step}
+                  onClick={() => goToStep(step)}
+                  className={`w-full p-3 rounded-lg text-left transition-all duration-200 flex items-center justify-between ${
+                    step === currentStep
+                      ? 'bg-[#F4A261] text-white shadow-lg'
+                      : step < currentStep
+                      ? 'bg-[#A0D6B4] text-white'
+                      : 'bg-gray-100 text-[#5A2C1D] hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="font-bold text-lg">步驟 {step}</div>
+                    <div className="text-sm">
+                      {step === 1 && '建立頻道'}
+                      {step === 2 && '設定 Webhook'}
+                      {step === 3 && '取得金鑰'}
+                      {step === 4 && '完成設定'}
+                    </div>
+                  </div>
+                  {step === currentStep && (
+                    <div className="w-3 h-3 bg-white rounded-full"></div>
+                  )}
+                  {step < currentStep && (
+                    <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
             
             {/* 進度條 */}
-            <div className="mt-6">
-              <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div className="mt-4 sm:mt-6">
+              <div className="bg-gray-200 rounded-full h-2 sm:h-3 overflow-hidden">
                 <div 
                   className="bg-gradient-to-r from-[#F4A261] to-[#A0D6B4] h-full rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${(currentStep / 4) * 100}%` }}
@@ -297,22 +337,24 @@ const HowToEstablish = () => {
 
         {/* 行動呼籲區域 */}
         {currentStep === 4 && (
-          <div className="max-w-4xl mx-auto mt-16">
-            <div className="bg-gradient-to-r from-[#8ECAE6] to-[#A0D6B4] rounded-lg shadow-lg p-12 text-white text-center">
-              <h2 className="text-white text-[28px] font-bold mb-6">恭喜！您已完成所有設定</h2>
-              <p className="text-white/90 text-lg mb-8 leading-relaxed">
+          <div className="max-w-4xl mx-auto mt-12 sm:mt-16">
+            <div className="bg-gradient-to-r from-[#8ECAE6] to-[#A0D6B4] rounded-lg shadow-lg p-6 sm:p-8 md:p-12 text-white text-center">
+              <h2 className="text-white text-xl sm:text-2xl md:text-[28px] font-bold mb-4 sm:mb-6">
+                恭喜！您已完成所有設定
+              </h2>
+              <p className="text-white/90 text-base sm:text-lg mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto">
                 現在您可以開始建立您的第一個 LINE Bot 了
               </p>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center max-w-md mx-auto">
                 <button 
                   onClick={() => window.location.href = '/add%20server'}
-                  className="px-8 py-4 bg-white text-[#383A45] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-lg"
+                  className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-[#383A45] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
                 >
                   立即建立 Bot
                 </button>
                 <button 
                   onClick={() => setCurrentStep(1)}
-                  className="px-8 py-4 bg-[#FFD59E] text-[#5A2C1D] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-lg"
+                  className="px-6 sm:px-8 py-3 sm:py-4 bg-[#FFD59E] text-[#5A2C1D] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
                 >
                   重新查看教學
                 </button>

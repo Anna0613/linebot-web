@@ -149,54 +149,72 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
   return (
     <>
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white bg-opacity-100`}>
-        <div className="w-full px-6 flex items-center justify-between h-16 md:h-20">
-          <div className="flex items-center gap-4">
-            <button className="text-[#1a1a40]" onClick={toggleMobileMenu}>
-              <Menu size={28} />
+        <div className="w-full px-4 sm:px-6 flex items-center justify-between h-14 sm:h-16 md:h-20">
+          {/* 左側：漢堡選單和Logo */}
+          <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+            <button 
+              className="text-[#1a1a40] p-1 hover:bg-gray-100 rounded-md transition-colors" 
+              onClick={toggleMobileMenu}
+              aria-label="開啟選單"
+            >
+              <Menu size={24} className="sm:hidden" />
+              <Menu size={28} className="hidden sm:block" />
             </button>
-            <Link to="/index2" className="flex items-center space-x-3 z-10 ml-2">
-              <img src="/專題圖片/logo.svg" alt="Logo" className="h-12 w-auto" />
-              <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">LINE Bot 製作輔助系統</h6>
+            <Link to="/index2" className="flex items-center space-x-2 sm:space-x-3 z-10 min-w-0">
+              <img src="/專題圖片/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0" />
+              <h6 className="text-lg sm:text-xl md:text-[28px] font-bold text-[#1a1a40] tracking-wide truncate">
+                <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
+                <span className="lg:hidden">LINE Bot 系統</span>
+              </h6>
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center space-x-4">
-            <LanguageToggle />
+          {/* 右側：桌面版按鈕和用戶資訊 */}
+          <div className="hidden md:flex items-center space-x-3 lg:space-x-4 flex-shrink-0">
+            <div className="hidden lg:block">
+              <LanguageToggle />
+            </div>
             <Link to="/how to establish">
-              <div className="circle-question">
+              <div className="circle-question p-2 hover:bg-gray-100 rounded-full transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-4 h-4 fill-[#454658]">
                   <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm169.8-90.7c7.9-22.3 29.1-37.3 52.8-37.3l58.3 0c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24l0-13.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1l-58.3 0c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z" />
                 </svg>
               </div>
             </Link>
             <Link to="/block">
-              <Button className="bg-[#F4CD41] text-[#1a1a40] font-bold rounded-[5px] text-[16px] hover:bg-[#e6bc00]">建立設計</Button>
+              <Button className="bg-[#F4CD41] text-[#1a1a40] font-bold rounded-[5px] text-sm lg:text-[16px] hover:bg-[#e6bc00] px-3 lg:px-4 h-8 lg:h-10">
+                建立設計
+              </Button>
             </Link>
 
+            {/* 用戶頭像下拉選單 */}
             <div className="relative" ref={dropdownRef}>
-              <button onClick={toggleDropdown} className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-200 overflow-hidden">
+              <button 
+                onClick={toggleDropdown} 
+                className="flex items-center justify-center h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-gray-200 overflow-hidden hover:ring-2 hover:ring-[#F4CD41] transition-all"
+              >
                 {userImage || user?.picture_url ? (
                   <img src={userImage || user?.picture_url} alt="User" className="h-full w-full object-cover" />
                 ) : (
-                  <svg className="h-6 w-6 text-gray-700" viewBox="0 0 24 24" fill="currentColor">
+                  <svg className="h-5 w-5 lg:h-6 lg:w-6 text-gray-700" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v2h20v-2c0-3.33-6.67-5-10-5z" />
                   </svg>
                 )}
               </button>
 
               {showDropdown && (
-                <div className="absolute right-0 mt-3 w-[260px] bg-white border shadow-xl rounded-lg z-50 p-4">
-                  <button onClick={() => setShowDropdown(false)} className="absolute top-2 right-2 text-gray-500 text-xl">×</button>
+                <div className="absolute right-0 mt-3 w-[240px] lg:w-[260px] bg-white border shadow-xl rounded-lg z-50 p-4">
+                  <button onClick={() => setShowDropdown(false)} className="absolute top-2 right-2 text-gray-500 text-xl hover:bg-gray-100 rounded-full w-6 h-6 flex items-center justify-center">×</button>
                   <div className="flex flex-col items-center cursor-pointer mb-4" onClick={() => fileInputRef.current?.click()}>
                     {userImage || user?.picture_url ? (
-                      <img src={userImage || user?.picture_url} alt="User Detail" className="w-16 h-16 rounded-full mb-2 object-cover" />
+                      <img src={userImage || user?.picture_url} alt="User Detail" className="w-14 h-14 lg:w-16 lg:h-16 rounded-full mb-2 object-cover" />
                     ) : (
-                      <svg className="w-16 h-16 text-gray-400 mb-2" viewBox="0 0 24 24" fill="currentColor">
+                      <svg className="w-14 h-14 lg:w-16 lg:h-16 text-gray-400 mb-2" viewBox="0 0 24 24" fill="currentColor">
                         <circle cx="12" cy="12" r="10" />
                       </svg>
                     )}
-                    <span className="font-medium">{user?.display_name || "未登入"}</span>
-                    <small className="text-gray-500">{user?.line_id || user?.username || "未登入"}</small>
+                    <span className="font-medium text-sm lg:text-base">{user?.display_name || "未登入"}</span>
+                    <small className="text-gray-500 text-xs lg:text-sm">{user?.line_id || user?.username || "未登入"}</small>
                     <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                   </div>
 
@@ -259,7 +277,7 @@ const Navbar2: React.FC<Navbar2Props> = ({ user }) => {
             <li><Link to="/how to establish" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">如何建立LINE Bot</Link></li>
             <li><Link to="/add server" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">建立LINE Bot</Link></li>
             <li><Link to="/block" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">開始設計LINE Bot</Link></li>
-            <li><Link to="/editbot" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">修改LINE Bot</Link></li>
+            <li><Link to="/editbot" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">LINE Bot 管理</Link></li>
             <li><Link to="/about" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">關於</Link></li>
           </ul>
         </div>

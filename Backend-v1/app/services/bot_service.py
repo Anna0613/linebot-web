@@ -2,11 +2,14 @@
 Bot 管理服務模組
 處理 Bot 的 CRUD 操作、Flex 訊息管理、程式碼管理等
 """
+import logging
 from typing import List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 import json
+
+logger = logging.getLogger(__name__)
 
 from app.models.bot import Bot, FlexMessage, BotCode
 from app.schemas.bot import (
@@ -82,8 +85,18 @@ class BotService:
     @staticmethod
     def get_bot(db: Session, bot_id: str, user_id: UUID) -> BotResponse:
         """取得特定 Bot"""
+        try:
+            # 將字符串 UUID 轉換為 UUID 對象
+            from uuid import UUID as PyUUID
+            bot_uuid = PyUUID(bot_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無效的 Bot ID 格式"
+            )
+        
         bot = db.query(Bot).filter(
-            Bot.id == bot_id,
+            Bot.id == bot_uuid,
             Bot.user_id == user_id
         ).first()
         
@@ -106,8 +119,18 @@ class BotService:
     @staticmethod
     def update_bot(db: Session, bot_id: str, user_id: UUID, bot_data: BotUpdate) -> BotResponse:
         """更新 Bot"""
+        try:
+            # 將字符串 UUID 轉換為 UUID 對象
+            from uuid import UUID as PyUUID
+            bot_uuid = PyUUID(bot_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無效的 Bot ID 格式"
+            )
+        
         bot = db.query(Bot).filter(
-            Bot.id == bot_id,
+            Bot.id == bot_uuid,
             Bot.user_id == user_id
         ).first()
         
@@ -122,7 +145,7 @@ class BotService:
             existing_bot = db.query(Bot).filter(
                 Bot.user_id == user_id,
                 Bot.name == bot_data.name,
-                Bot.id != bot_id
+                Bot.id != bot_uuid
             ).first()
             if existing_bot:
                 raise HTTPException(
@@ -151,19 +174,53 @@ class BotService:
     @staticmethod
     def delete_bot(db: Session, bot_id: str, user_id: UUID) -> Dict[str, str]:
         """刪除 Bot"""
+        logger.info(f"嘗試刪除 Bot: bot_id={bot_id}, user_id={user_id}")
+        
+        try:
+            # 將字符串 UUID 轉換為 UUID 對象
+            from uuid import UUID as PyUUID
+            bot_uuid = PyUUID(bot_id)
+            logger.debug(f"UUID 轉換成功: {bot_uuid}")
+        except ValueError as e:
+            logger.error(f"UUID 轉換失敗: {bot_id}, 錯誤: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無效的 Bot ID 格式"
+            )
+        
         bot = db.query(Bot).filter(
-            Bot.id == bot_id,
+            Bot.id == bot_uuid,
             Bot.user_id == user_id
         ).first()
         
         if not bot:
+            logger.warning(f"Bot 不存在: bot_uuid={bot_uuid}, user_id={user_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Bot 不存在"
             )
         
-        db.delete(bot)
-        db.commit()
+        logger.info(f"找到 Bot，準備刪除: bot_name={bot.name}")
+        
+        try:
+            # 手動刪除相關的 BotCode 記錄（如果存在）
+            from app.models.bot import BotCode
+            bot_codes = db.query(BotCode).filter(BotCode.bot_id == bot_uuid).all()
+            for code in bot_codes:
+                logger.debug(f"刪除相關的 BotCode: {code.id}")
+                db.delete(code)
+            
+            # 刪除 Bot 本身
+            db.delete(bot)
+            db.commit()
+            logger.info(f"Bot 刪除成功: bot_id={bot_id}")
+        except Exception as e:
+            logger.error(f"刪除 Bot 時發生錯誤: {e}")
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"刪除 Bot 時發生錯誤: {str(e)}"
+            )
         
         return {"message": "Bot 已成功刪除"}
     

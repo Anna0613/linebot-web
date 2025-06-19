@@ -153,12 +153,14 @@ const Editbot = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFDFA]">
       <Navbar3 user={user} />
-      <main className="pt-32 flex flex-col items-center">
-        <div className="flex gap-[35px] px-6 mb-24 justify-center items-start">
-          <Mybot 
-            onEdit={handleEdit} 
-            ref={mybotRef}
-          />
+      <main className="pt-24 sm:pt-28 md:pt-32 flex flex-col items-center flex-1">
+        <div className="w-full max-w-7xl px-4 sm:px-6 mb-16 sm:mb-20 md:mb-24 flex justify-center items-start">
+          <div className="w-full max-w-4xl">
+            <Mybot 
+              onEdit={handleEdit} 
+              ref={mybotRef}
+            />
+          </div>
 
           {/* 編輯模態框 */}
           {showEditModal && editingBotId && (

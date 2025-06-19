@@ -123,7 +123,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
             {
               link: "/editbot",
               img: "/專題圖片/editbot.svg",
-              title: "修改LINE Bot",
+              title: "LINE Bot 管理",
               desc: ["更新與優化現有機器人", "增強機器人效能與體驗"],
             },
           ].map(({ link, img, title, desc }) => (

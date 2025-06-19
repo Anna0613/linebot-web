@@ -115,47 +115,47 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
   );
 
   return (
-    <div className="w-full sm:w-[624px] h-[400px] sm:h-[520px] rounded-[15px] sm:rounded-[25px] bg-white border border-black shadow-[-8px_8px_0_#819780] sm:shadow-[-15px_15px_0_#819780] p-3 sm:p-5 flex-shrink-0 flex flex-col transition-all duration-300">
-      <h2 className="text-center text-[20px] sm:text-[26px] font-bold text-[#383A45] mb-3 sm:mb-4">我的LINE Bot</h2>
+    <div className="w-full max-w-4xl mx-auto h-[400px] sm:h-[450px] md:h-[520px] rounded-[15px] sm:rounded-[20px] md:rounded-[25px] bg-white border border-black shadow-[-8px_8px_0_#819780] sm:shadow-[-12px_12px_0_#819780] md:shadow-[-15px_15px_0_#819780] p-3 sm:p-4 md:p-5 flex-shrink-0 flex flex-col transition-all duration-300">
+      <h2 className="text-center text-lg sm:text-xl md:text-[26px] font-bold text-[#383A45] mb-3 sm:mb-4">我的LINE Bot</h2>
 
       <input 
         type="text" 
         placeholder="搜尋Bot名稱..." 
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-[#819780] transition" 
+        className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg mb-3 sm:mb-4 focus:outline-none focus:ring-2 focus:ring-[#819780] transition text-sm sm:text-base" 
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
         {loading ? (
           <div className="flex items-center justify-center h-32">
-            <div className="text-[#383A45] text-lg">載入中...</div>
+            <div className="text-[#383A45] text-base sm:text-lg">載入中...</div>
           </div>
         ) : filteredBots.length === 0 ? (
           <div className="flex items-center justify-center h-32">
-            <div className="text-gray-500 text-center">
+            <div className="text-gray-500 text-center text-sm sm:text-base">
               {botList.length === 0 ? "尚無Bot資料" : "沒有找到符合的Bot"}
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {filteredBots.map((bot, index) => (
               <div key={bot.id} className="border border-gray-200 rounded-lg overflow-hidden bg-gradient-to-r from-[#F8F9FA] to-[#E8F5E8] hover:shadow-md transition-all duration-200">
                 {/* Bot 基本資訊 */}
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-[#819780] rounded-full flex items-center justify-center font-bold text-white">
+                    <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#819780] rounded-full flex items-center justify-center font-bold text-white text-sm sm:text-base flex-shrink-0">
                         {index + 1}
                       </div>
-                      <div>
-                        <h3 className="font-bold text-[#383A45] text-lg">{bot.name}</h3>
-                        <p className="text-sm text-gray-600">ID: {bot.id}</p>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-[#383A45] text-sm sm:text-base md:text-lg truncate">{bot.name}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate">ID: {bot.id}</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2">
-                      {/* 快速編輯按鈕 */}
+                    {/* 桌面版按鈕組 */}
+                    <div className="hidden lg:flex items-center space-x-2">
                       <button
                         onClick={() => onEdit(bot.id, 'name')}
                         className="px-3 py-2 bg-[#82C29B] text-white rounded-lg hover:bg-[#6BAF88] transition-all duration-200 shadow-md text-sm font-bold"
@@ -180,7 +180,6 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                         完整編輯
                       </button>
                       
-                      {/* 更多選項按鈕 */}
                       <button
                         onClick={() => toggleExpanded(bot.id)}
                         className="px-3 py-2 bg-[#F0F0F0] text-[#383A45] rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-md text-sm font-bold"
@@ -189,59 +188,103 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                         {expandedBot === bot.id ? '收起' : '更多'}
                       </button>
                     </div>
+
+                    {/* 手機版/平板版更多按鈕 */}
+                    <div className="lg:hidden">
+                      <button
+                        onClick={() => toggleExpanded(bot.id)}
+                        className="px-3 py-2 bg-[#F0F0F0] text-[#383A45] rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-md text-xs sm:text-sm font-bold"
+                        title="更多選項"
+                      >
+                        {expandedBot === bot.id ? '收起' : '選項'}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
                 {/* 展開的詳細操作區域 */}
                 {expandedBot === bot.id && (
-                  <div className="border-t border-gray-300 bg-white p-4 animate-slide-down">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* 編輯選項 */}
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-[#383A45] text-sm mb-2">編輯選項</h4>
+                  <div className="border-t border-gray-300 bg-white p-3 sm:p-4 animate-slide-down">
+                    {/* 手機版按鈕組 */}
+                    <div className="lg:hidden mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                         <button
                           onClick={() => onEdit(bot.id, 'name')}
-                          className="w-full p-2 bg-[#82C29B] text-white rounded-lg hover:bg-[#6BAF88] transition-all duration-200 shadow-sm text-sm font-bold"
+                          className="w-full px-3 py-2 bg-[#82C29B] text-white rounded-lg hover:bg-[#6BAF88] transition-all duration-200 shadow-md text-sm font-bold"
                         >
                           修改名稱
                         </button>
+                        
                         <button
                           onClick={() => onEdit(bot.id, 'token')}
-                          className="w-full p-2 bg-[#6BAED6] text-white rounded-lg hover:bg-[#5B9BD5] transition-all duration-200 shadow-sm text-sm font-bold"
+                          className="w-full px-3 py-2 bg-[#6BAED6] text-white rounded-lg hover:bg-[#5B9BD5] transition-all duration-200 shadow-md text-sm font-bold"
                         >
-                          修改Channel Token
+                          修改Token
                         </button>
-                        <button
-                          onClick={() => onEdit(bot.id, 'secret')}
-                          className="w-full p-2 bg-[#D4A574] text-white rounded-lg hover:bg-[#C19660] transition-all duration-200 shadow-sm text-sm font-bold"
-                        >
-                          修改Channel Secret
-                        </button>
+                        
                         <button
                           onClick={() => onEdit(bot.id, 'all')}
-                          className="w-full p-2 bg-[#A6A6A6] text-white rounded-lg hover:bg-[#8C8C8C] transition-all duration-200 shadow-sm text-sm font-bold"
+                          className="w-full px-3 py-2 bg-[#A6A6A6] text-white rounded-lg hover:bg-[#8C8C8C] transition-all duration-200 shadow-md text-sm font-bold"
                         >
                           完整編輯
                         </button>
-                      </div>
-                      
-                      {/* 危險操作區域 */}
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-[#383A45] text-sm mb-2">危險操作</h4>
+                        
                         <button
                           onClick={() => handleDelete(bot.id, bot.name)}
-                          className="w-full p-2 bg-[#E74C3C] text-white rounded-lg hover:bg-[#C0392B] transition-all duration-200 shadow-sm text-sm font-bold"
+                          className="w-full px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 shadow-md text-sm font-bold"
                         >
                           刪除Bot
                         </button>
+                      </div>
+                    </div>
+
+                    {/* 桌面版額外選項 */}
+                    <div className="hidden lg:block">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-[#383A45] text-sm mb-2">編輯選項</h4>
+                          <button
+                            onClick={() => onEdit(bot.id, 'name')}
+                            className="w-full p-2 bg-[#82C29B] text-white rounded-lg hover:bg-[#6BAF88] transition-all duration-200 shadow-sm text-sm font-bold"
+                          >
+                            修改名稱
+                          </button>
+                          <button
+                            onClick={() => onEdit(bot.id, 'token')}
+                            className="w-full p-2 bg-[#6BAED6] text-white rounded-lg hover:bg-[#5B9BD5] transition-all duration-200 shadow-sm text-sm font-bold"
+                          >
+                            修改Channel Token
+                          </button>
+                          <button
+                            onClick={() => onEdit(bot.id, 'secret')}
+                            className="w-full p-2 bg-[#D4A574] text-white rounded-lg hover:bg-[#C19660] transition-all duration-200 shadow-sm text-sm font-bold"
+                          >
+                            修改Channel Secret
+                          </button>
+                          <button
+                            onClick={() => onEdit(bot.id, 'all')}
+                            className="w-full p-2 bg-[#A6A6A6] text-white rounded-lg hover:bg-[#8C8C8C] transition-all duration-200 shadow-sm text-sm font-bold"
+                          >
+                            完整編輯
+                          </button>
+                        </div>
                         
-                        {/* Bot 資訊顯示 */}
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <h5 className="font-medium text-[#383A45] text-xs mb-2">Bot 資訊</h5>
-                          <div className="text-xs text-gray-600 space-y-1">
-                            <div><span className="font-medium">Bot ID:</span> {bot.id}</div>
-                            <div><span className="font-medium">使用者ID:</span> {bot.user_id}</div>
-                            <div><span className="font-medium">狀態:</span> <span className="text-green-600">正常</span></div>
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-[#383A45] text-sm mb-2">危險操作</h4>
+                          <button
+                            onClick={() => handleDelete(bot.id, bot.name)}
+                            className="w-full p-2 bg-[#E74C3C] text-white rounded-lg hover:bg-[#C0392B] transition-all duration-200 shadow-sm text-sm font-bold"
+                          >
+                            刪除Bot
+                          </button>
+                          
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                            <h5 className="font-medium text-[#383A45] text-xs mb-2">Bot 資訊</h5>
+                            <div className="text-xs text-gray-600 space-y-1">
+                              <div><span className="font-medium">Bot ID:</span> {bot.id}</div>
+                              <div><span className="font-medium">使用者ID:</span> {bot.user_id}</div>
+                              <div><span className="font-medium">狀態:</span> <span className="text-green-600">正常</span></div>
+                            </div>
                           </div>
                         </div>
                       </div>

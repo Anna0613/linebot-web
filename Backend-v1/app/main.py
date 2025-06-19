@@ -13,7 +13,10 @@ from app.database import init_database
 from app.api.api_v1.api import api_router
 
 # 配置日誌
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
@@ -48,9 +51,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
     allow_headers=["*"],
     expose_headers=["Set-Cookie"],
+    max_age=3600,  # 預檢請求緩存時間
 )
 
 # 信任主機中間件
@@ -63,10 +67,10 @@ if settings.ENVIRONMENT == "production":
 # 全域異常處理
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"全域異常: {str(exc)}", exc_info=True)
+    logger.error(f"全域異常 - 請求 {request.method} {request.url}: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "內部伺服器錯誤"}
+        content={"detail": "內部伺服器錯誤", "error_type": type(exc).__name__}
     )
 
 # 包含 API 路由

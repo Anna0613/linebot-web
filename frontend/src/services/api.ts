@@ -35,9 +35,23 @@ export class ApiClient {
       
       return status >= 200 && status < 300
         ? { data, status }
-        : { error: data.error || '請求失敗', status };
+        : { error: data.detail || data.error || '請求失敗', status };
     } catch (e) {
-      return { error: '無法解析響應數據', status };
+      // 如果無法解析 JSON，返回 HTTP 狀態碼對應的錯誤信息
+      const errorMessages: { [key: number]: string } = {
+        400: '請求參數錯誤',
+        401: '認證失敗',
+        403: '權限不足',
+        404: '資源不存在',
+        409: '資源衝突',
+        422: '資料驗證失敗',
+        500: '伺服器內部錯誤',
+      };
+      
+      return { 
+        error: errorMessages[status] || `HTTP ${status} 錯誤`, 
+        status 
+      };
     }
   }
 
@@ -255,6 +269,6 @@ export class ApiClient {
 
   // 獲取單個 bot
   async getBot(botId: string): Promise<ApiResponse> {
-    return this.get(`${API_CONFIG.PUZZLE.BASE_URL}/bots/${botId}`);
+    return this.get(`${API_CONFIG.PUZZLE.BASE_URL}/${botId}`);
   }
 }
