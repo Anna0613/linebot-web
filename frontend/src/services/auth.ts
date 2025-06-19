@@ -1,3 +1,5 @@
+import { parseJWTToken, isTokenExpired } from '../utils/tokenUtils';
+
 // JWT相關常量
 const TOKEN_KEY = 'auth_token';
 const USERNAME_KEY = 'username';
@@ -31,8 +33,7 @@ export class AuthService {
   // 檢查token是否有效
   private static isTokenValid(token: string): boolean {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.exp * 1000 > Date.now();
+      return !isTokenExpired(token);
     } catch {
       return false;
     }

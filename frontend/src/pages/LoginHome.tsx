@@ -67,6 +67,7 @@ const LoginHome = () => {
           setUser({ 
             display_name: data.user.username, 
             username: data.user.username,
+            email: data.user.email || '',
             isLineUser: false // 這是一般登入用戶
           });
         } else {
@@ -121,7 +122,16 @@ const LoginHome = () => {
           
           try {
             // 從 token 中解析登入類型
-            const tokenData = JSON.parse(atob(token.split('.')[1]));
+            if (!token || typeof token !== 'string') {
+              throw new Error('無效的 token 格式');
+            }
+            
+            const tokenParts = token.split('.');
+            if (tokenParts.length !== 3) {
+              throw new Error('無效的 JWT token 格式');
+            }
+            
+            const tokenData = JSON.parse(atob(tokenParts[1]));
             const tokenLoginType = tokenData.login_type;
             
             console.log('Token 登入類型:', tokenLoginType);
@@ -164,7 +174,16 @@ const LoginHome = () => {
             
             try {
               // 從已存儲的 token 判斷登入類型
-              const tokenData = JSON.parse(atob(storedToken.split('.')[1]));
+              if (!storedToken || typeof storedToken !== 'string') {
+                throw new Error('無效的已存儲 token 格式');
+              }
+              
+              const tokenParts = storedToken.split('.');
+              if (tokenParts.length !== 3) {
+                throw new Error('無效的已存儲 JWT token 格式');
+              }
+              
+              const tokenData = JSON.parse(atob(tokenParts[1]));
               const tokenLoginType = tokenData.login_type;
               
               if (tokenLoginType === 'line') {

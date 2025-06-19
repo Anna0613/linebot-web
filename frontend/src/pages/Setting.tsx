@@ -149,8 +149,18 @@ const Setting: React.FC = () => {
 
   const verifyToken = async (token: string): Promise<User | null> => {
     try {
+      // 驗證 token 格式
+      if (!token || typeof token !== 'string') {
+        throw new Error('無效的 token 格式');
+      }
+
       // 從token中解析登入類型
-      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        throw new Error('無效的 JWT token 格式');
+      }
+
+      const tokenData = JSON.parse(atob(tokenParts[1]));
       const loginType = tokenData.login_type;
 
       let response;
@@ -183,13 +193,33 @@ const Setting: React.FC = () => {
 
       // 針對一般帳號登入的回應格式處理
       if (loginType !== 'line') {
-        const username = data.message.split('User ')[1].split(' is logged in')[0];
-        return {
-          display_name: username,
-          username: username,
-          email: data.email || '',
-          isLineUser: false,
-        };
+        // 檢查新的 API 回應格式 (authenticated + user)
+        if (data.authenticated && data.user) {
+          return {
+            display_name: data.user.username,
+            username: data.user.username,
+            email: data.user.email || '',
+            isLineUser: false,
+          };
+        }
+        
+        // 相容舊格式：檢查 data.message 是否存在且格式正確
+        if (data.message && typeof data.message === 'string') {
+          const messagePattern = /User (.+?) is logged in/;
+          const match = data.message.match(messagePattern);
+          
+          if (match && match[1]) {
+            const username = match[1];
+            return {
+              display_name: username,
+              username: username,
+              email: data.email || '',
+              isLineUser: false,
+            };
+          }
+        }
+        
+        throw new Error('無效的 API 回應格式');
       }
 
       // LINE登入的回應已經符合User格式

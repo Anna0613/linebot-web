@@ -90,11 +90,31 @@ const Editbot = () => {
           'Content-Type': 'application/json',
         },
       });
-      if (response.ok) {
-        const data = await response.json();
-        const username = data.message.split('User ')[1].split(' is logged in')[0];
-        setUser({ display_name: username, username });
-      } else {
+              if (response.ok) {
+          const data = await response.json();
+          
+          // 檢查新的 API 回應格式 (authenticated + user)
+          if (data.authenticated && data.user) {
+            setUser({ 
+              display_name: data.user.username, 
+              username: data.user.username 
+            });
+          }
+          // 相容舊格式：檢查 data.message 是否存在且格式正確
+          else if (data.message && typeof data.message === 'string') {
+            const messagePattern = /User (.+?) is logged in/;
+            const match = data.message.match(messagePattern);
+            
+            if (match && match[1]) {
+              const username = match[1];
+              setUser({ display_name: username, username });
+            } else {
+              throw new Error('無法從回應中解析用戶名稱');
+            }
+          } else {
+            throw new Error('無效的 API 回應格式');
+          }
+        } else {
         const errorData = await response.json();
         console.error('check_login error:', errorData);
         setError('請先登入');
