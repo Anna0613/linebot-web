@@ -1,3 +1,5 @@
 node_modules
 .env
 package-lock.json
+__pycache__/*
+Backend-v1/venv/*

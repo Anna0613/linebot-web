@@ -1,9 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: false
----
--請使用繁體中文回答
--不要開啟測試docker或啟動docker
--不要啟動本地後端API
--不要將 API 請求代理到本地後端
