@@ -109,6 +109,36 @@ async def resend_verification(
     """重新發送驗證郵件"""
     return AuthService.resend_verification_email(db, email_data.email)
 
+@router.post("/forgot_password", response_model=Dict[str, str])
+async def forgot_password(
+    email_data: ForgotPassword,
+    db: Session = Depends(get_db)
+):
+    """忘記密碼 - 發送重設連結"""
+    return AuthService.send_password_reset_email(db, email_data.email)
+
+@router.post("/reset_password/{token}", response_model=Dict[str, str])
+async def reset_password(
+    token: str,
+    password_data: dict,
+    db: Session = Depends(get_db)
+):
+    """重設密碼"""
+    new_password = password_data.get("new_password")
+    if not new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="新密碼不能為空"
+        )
+    
+    if len(new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="密碼必須至少 8 個字元"
+        )
+    
+    return AuthService.reset_password(db, token, new_password)
+
 @router.post("/logout")
 async def logout(response: Response):
     """用戶登出"""

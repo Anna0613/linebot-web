@@ -301,4 +301,65 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"郵件發送失敗: {str(e)}"
+            )
+    
+    @staticmethod
+    def send_password_reset_email(db: Session, email: str) -> Dict[str, str]:
+        """發送密碼重設郵件"""
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="郵箱地址不存在"
+            )
+        
+        # 檢查發送頻率限制
+        if user.last_verification_sent:
+            time_diff = datetime.utcnow() - user.last_verification_sent
+            if time_diff < timedelta(minutes=1):
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="請稍後再試，發送過於頻繁"
+                )
+        
+        try:
+            EmailService.send_password_reset_email(email)
+            user.last_verification_sent = datetime.utcnow()
+            db.commit()
+            return {"message": "密碼重設連結已發送至您的郵箱"}
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"郵件發送失敗: {str(e)}"
+            )
+    
+    @staticmethod
+    def reset_password(db: Session, token: str, new_password: str) -> Dict[str, str]:
+        """重設密碼"""
+        try:
+            serializer = URLSafeTimedSerializer(settings.FLASK_SECRET_KEY)
+            email = serializer.loads(token, salt='password-reset', max_age=3600)  # 1小時過期
+            
+            user = db.query(User).filter(User.email == email).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="用戶不存在"
+                )
+            
+            # 更新密碼
+            user.password = get_password_hash(new_password)
+            db.commit()
+            
+            return {"message": "密碼重設成功"}
+            
+        except SignatureExpired:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="重設連結已過期，請重新申請"
+            )
+        except BadSignature:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無效的重設連結"
             ) 
