@@ -8,6 +8,9 @@ import Login from "./pages/Login";
 import ForgetThePassword from "./pages/ForgetThePassword";
 import Register from "./pages/Register";
 import LINELogin from "./pages/LINELogin";
+import LoginSuccess from "./pages/LoginSuccess";
+import LoginError from "./pages/LoginError";
+import AuthDebug from "./pages/AuthDebug";
 import EmailVerification from "./pages/EmailVerification";
 import NotFound from "./pages/NotFound";
 import Index2 from "./pages/LoginHome";
@@ -35,18 +38,21 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/forgetthepassword" element={<ForgetThePassword />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/line-login" element={<LINELogin />} />
+          <Route path="/login-success" element={<LoginSuccess />} />
+          <Route path="/login-error" element={<LoginError />} />
+          <Route path="/auth-debug" element={<AuthDebug />} />
           <Route path="/index2" element={<Index2 />} />
           <Route path="/add server" element={<AddServer />} />
           <Route path="/block" element={<Block />} />
           <Route path="/how to establish" element={<HowToEstablish />} />
-          <Route path="*" element={<NotFound />} />
           <Route path="/setting" element={<Setting />} />
           <Route path="/verify-email" element={<EmailVerification />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/editbot" element={<Editbot />} />
           <Route path="/about" element={<About />} />
           <Route path="/describe" element={<Describe />} />
-          <Route path="/line-login" element={<LINELogin />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

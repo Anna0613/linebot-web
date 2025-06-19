@@ -72,5 +72,7 @@ def get_cookie_settings() -> Dict[str, Any]:
         "httponly": True,
         "secure": settings.ENVIRONMENT == "production",
         "samesite": "lax",
-        "max_age": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        "max_age": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "domain": None,  # 不設定 domain，讓瀏覽器自動處理
+        "path": "/"
     } 

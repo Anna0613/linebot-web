@@ -15,9 +15,10 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin }) => {
     setLoading(true);
     try {
       const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.LINE_LOGIN), {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
         },
       });
       if (!response.ok) {

@@ -12,6 +12,7 @@ from app.database import get_db
 from app.services.auth_service import AuthService
 from app.schemas.auth import UserRegister, Token, EmailVerification, ForgotPassword
 from app.core.security import get_cookie_settings
+from app.models.user import User
 
 router = APIRouter()
 
@@ -58,17 +59,23 @@ async def line_callback(
     try:
         result = AuthService.handle_line_callback(db, code, state)
         
-        # 設定 Cookie
-        cookie_settings = get_cookie_settings()
-        response.set_cookie(
-            key="token",
-            value=result["access_token"],
-            **cookie_settings
-        )
-        
-        # 重導向到前端頁面
+        # 重導向到前端，並透過 URL 參數傳遞 token
         from app.config import settings
-        return RedirectResponse(url=f"{settings.FRONTEND_URL}/login-success")
+        import urllib.parse
+        
+        token = result["access_token"]
+        user_data = result["user"]
+        
+        # 將用戶資料編碼為 URL 參數
+        params = {
+            "token": token,
+            "username": user_data["username"],
+            "email": user_data.get("email", ""),
+            "login_type": "line"
+        }
+        
+        query_string = urllib.parse.urlencode(params)
+        return RedirectResponse(url=f"{settings.FRONTEND_URL}/login-success?{query_string}")
         
     except HTTPException as e:
         # 重導向到錯誤頁面
@@ -128,8 +135,91 @@ async def check_login(
     except HTTPException:
         return {"authenticated": False}
 
+@router.post("/test-cookie")
+async def test_cookie(response: Response):
+    """測試 cookie 設定"""
+    from app.core.security import get_cookie_settings
+    cookie_settings = get_cookie_settings()
+    
+    # 設定一個測試 cookie
+    response.set_cookie(
+        key="test_token",
+        value="test_value_123456",
+        **cookie_settings
+    )
+    
+    return {
+        "message": "測試 cookie 已設定",
+        "cookie_settings": cookie_settings
+    }
+
 # 為了相容性保留的路由
 @router.post("/verify-token")
-async def verify_token_compatibility(request: Request, db: Session = Depends(get_db)):
+async def verify_token_compatibility(
+    request: Request, 
+    db: Session = Depends(get_db)
+):
     """驗證 token（相容舊版）"""
-    return await check_login(request, db) 
+    try:
+        # 從請求體取得 token
+        body = await request.json()
+        token = body.get('token')
+        
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token is missing"
+            )
+        
+        # 驗證 token
+        from app.core.security import verify_token
+        try:
+            payload = verify_token(token)
+            username = payload.get("sub")
+            login_type = payload.get("login_type")
+            
+            if not username:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token data"
+                )
+            
+            # 查找用戶
+            user = db.query(User).filter(User.username == username).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found"
+                )
+            
+            # 如果是 LINE 登入，返回 LINE 特定資料
+            if login_type == "line" and user.line_account:
+                return {
+                    "line_id": user.line_account.line_id,
+                    "display_name": user.line_account.display_name,
+                    "picture_url": user.line_account.picture_url,
+                    "username": user.username,
+                    "email": user.email,
+                    "login_type": "line"
+                }
+            else:
+                # 一般登入用戶
+                return {
+                    "username": user.username,
+                    "email": user.email,
+                    "login_type": login_type or "general"
+                }
+                
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Token validation failed: {str(e)}"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {str(e)}"
+        ) 

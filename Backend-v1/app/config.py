@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     FLASK_SECRET_KEY: str = os.getenv("FLASK_SECRET_KEY", "your-flask-secret-key")
     
     # 前端 URL
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:8080")
     
     # 郵件設定
     MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")
@@ -58,35 +58,38 @@ class Settings(BaseSettings):
     MAIL_PASSWORD: str = os.getenv("MAIL_PASSWORD", "")
     MAIL_USE_TLS: bool = True
     
-    # CORS 設定
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:8080",
-        "http://localhost:3000", 
-        "http://localhost:5173",
-        "https://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://127.0.0.1:5173",
-        "http://127.0.0.1:8080",
-        "https://127.0.0.1:8080",
-        "http://line-login.jkl921102.org",
-        "https://line-login.jkl921102.org",
-        "http://login-api.jkl921102.org",
-        "https://login-api.jkl921102.org",
-        "http://puzzle-api.jkl921102.org",
-        "https://puzzle-api.jkl921102.org",
-        "http://setting-api.jkl921102.org",
-        "https://setting-api.jkl921102.org",
-        "https://jkl921102.org",
-        "http://jkl921102.org"
-    ]
-    
-    # 添加額外的允許來源
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        extra_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
-        for origin in extra_origins:
-            if origin.strip() and origin.strip() not in self.ALLOWED_ORIGINS:
-                self.ALLOWED_ORIGINS.append(origin.strip())
+    # CORS 設定 - 預設允許的來源
+    @property
+    def ALLOWED_ORIGINS(self) -> List[str]:
+        """取得允許的 CORS 來源"""
+        default_origins = [
+            "http://localhost:8080",
+            "http://localhost:3000", 
+            "http://localhost:5173",
+            "https://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://127.0.0.1:5173",
+            "http://127.0.0.1:8080",
+            "https://127.0.0.1:8080",
+            "http://line-login.jkl921102.org",
+            "https://line-login.jkl921102.org",
+            "http://login-api.jkl921102.org",
+            "https://login-api.jkl921102.org",
+            "http://puzzle-api.jkl921102.org",
+            "https://puzzle-api.jkl921102.org",
+            "http://setting-api.jkl921102.org",
+            "https://setting-api.jkl921102.org",
+            "https://jkl921102.org",
+            "http://jkl921102.org"
+        ]
+        
+        # 從環境變數添加額外的來源
+        extra_origins_str = os.getenv("EXTRA_ALLOWED_ORIGINS", "")
+        if extra_origins_str:
+            extra_origins = [origin.strip() for origin in extra_origins_str.split(",") if origin.strip()]
+            default_origins.extend(extra_origins)
+        
+        return list(set(default_origins))  # 去重
     
     ALLOWED_HOSTS: List[str] = ["*"]  # 在生產環境中應該更嚴格
     
@@ -100,6 +103,7 @@ class Settings(BaseSettings):
     class Config:
         case_sensitive = True
         env_file = ".env"
+        extra = "ignore"  # 忽略額外的環境變數
 
 # 創建設定實例
 settings = Settings() 

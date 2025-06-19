@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie 測試</title>
+</head>
+<body>
+    <h1>Cookie 設定測試</h1>
+    <div id="result"></div>
+    
+    <script>
+        // 檢查所有 cookie
+        function checkCookies() {
+            const allCookies = document.cookie;
+            console.log('所有 cookies:', allCookies);
+            
+            // 檢查特定的 token cookie
+            const cookies = document.cookie.split(';');
+            let tokenCookie = null;
+            
+            cookies.forEach(cookie => {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'token') {
+                    tokenCookie = value;
+                }
+            });
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <h3>Cookie 檢查結果：</h3>
+                <p><strong>所有 cookies:</strong> ${allCookies || '無'}</p>
+                <p><strong>Token cookie:</strong> ${tokenCookie || '未找到'}</p>
+                <p><strong>當前 URL:</strong> ${window.location.href}</p>
+                <p><strong>域名:</strong> ${window.location.hostname}</p>
+                <p><strong>協議:</strong> ${window.location.protocol}</p>
+            `;
+        }
+        
+        // 測試設定 cookie
+        function testSetCookie() {
+            document.cookie = "test_token=test_value; path=/; SameSite=Lax";
+            console.log('已設定測試 cookie');
+            checkCookies();
+        }
+        
+        // 測試後端 cookie 設定
+        async function testBackendCookie() {
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/auth/test-cookie', {
+                    method: 'POST',
+                    credentials: 'include'  // 重要：包含 credentials
+                });
+                const data = await response.json();
+                console.log('後端 cookie 測試結果:', data);
+                
+                // 等待一秒後檢查 cookies
+                setTimeout(checkCookies, 1000);
+            } catch (error) {
+                console.error('測試後端 cookie 時發生錯誤:', error);
+            }
+        }
+        
+        // 頁面載入時檢查
+        checkCookies();
+        
+        // 添加按鈕
+        document.body.innerHTML += `
+            <br>
+            <button onclick="checkCookies()">重新檢查 Cookie</button>
+            <button onclick="testSetCookie()">測試前端設定 Cookie</button>
+            <button onclick="testBackendCookie()">測試後端設定 Cookie</button>
+            <br><br>
+            <button onclick="window.location.href='http://localhost:8000/api/v1/auth/line-login'">測試 LINE 登入</button>
+        `;
+    </script>
+</body>
+</html> 

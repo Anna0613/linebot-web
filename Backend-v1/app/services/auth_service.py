@@ -119,7 +119,7 @@ class AuthService:
         )
         
         return {
-            "line_login_url": line_login_url,
+            "login_url": line_login_url,
             "state": state
         }
     
@@ -172,6 +172,12 @@ class AuthService:
             if line_user:
                 # 已存在的 LINE 用戶，直接登入
                 user = line_user.user
+                # 更新用戶的顯示名稱和頭像（如果有變更）
+                if line_user.display_name != display_name:
+                    line_user.display_name = display_name
+                if line_user.picture_url != picture_url:
+                    line_user.picture_url = picture_url
+                db.commit()  # 確保已存在用戶也要 commit
             else:
                 # 新的 LINE 用戶，建立帳號
                 # 生成唯一的用戶名稱
@@ -219,8 +225,10 @@ class AuthService:
             }
             
         except HTTPException:
+            db.rollback()
             raise
         except Exception as e:
+            db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"LINE 登入處理失敗: {str(e)}"

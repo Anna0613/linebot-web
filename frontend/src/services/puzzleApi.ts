@@ -102,7 +102,7 @@ export class PuzzleApiService {
   static async createBot(botData: BotCreate): Promise<Bot> {
     try {
       const response = await fetch(
-        getApiUrl(this.baseUrl, '/bots'),
+        getApiUrl(this.baseUrl, API_CONFIG.PUZZLE.ENDPOINTS.CREATE_BOT),
         {
           method: 'POST',
           headers: this.getHeaders(),
@@ -129,7 +129,7 @@ export class PuzzleApiService {
   static async getBots(): Promise<Bot[]> {
     try {
       const response = await fetch(
-        getApiUrl(this.baseUrl, '/bots'),
+        getApiUrl(this.baseUrl, API_CONFIG.PUZZLE.ENDPOINTS.GET_BOTS),
         {
           method: 'GET',
           headers: this.getHeaders(),
@@ -154,7 +154,7 @@ export class PuzzleApiService {
   static async getBot(botId: string): Promise<Bot> {
     try {
       const response = await fetch(
-        getApiUrl(this.baseUrl, `/bots/${botId}`),
+        getApiUrl(this.baseUrl, `/${botId}`),
         {
           method: 'GET',
           headers: this.getHeaders(),
@@ -179,7 +179,7 @@ export class PuzzleApiService {
   static async updateBot(botId: string, botData: BotUpdate): Promise<Bot> {
     try {
       const response = await fetch(
-        getApiUrl(this.baseUrl, `/bots/${botId}`),
+        getApiUrl(this.baseUrl, API_CONFIG.PUZZLE.ENDPOINTS.UPDATE_BOT(botId)),
         {
           method: 'PUT',
           headers: this.getHeaders(),
@@ -205,7 +205,7 @@ export class PuzzleApiService {
   static async deleteBot(botId: string): Promise<void> {
     try {
       const response = await fetch(
-        getApiUrl(this.baseUrl, `/bots/${botId}`),
+        getApiUrl(this.baseUrl, API_CONFIG.PUZZLE.ENDPOINTS.DELETE_BOT(botId)),
         {
           method: 'DELETE',
           headers: this.getHeaders(),

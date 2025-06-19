@@ -26,7 +26,7 @@ export class LineLoginService {
   // 獲取LINE登入URL
   public async getLoginUrl(): Promise<LineLoginResponse> {
     try {
-      const response = await this.apiClient.get<LineLoginResponse>(
+      const response = await this.apiClient.post<LineLoginResponse>(
         `${API_CONFIG.LINE_LOGIN.BASE_URL}${API_CONFIG.LINE_LOGIN.ENDPOINTS.LINE_LOGIN}`
       );
 

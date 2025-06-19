@@ -24,3 +24,5 @@ alwaysApply: true
 /volunteer/[id]/components/hero/
 /volunteer/[id]/components/shared/ (該路由下可共享的組件)
 工具函數集中管理：將通用的工具函數（utilities）統一放置在 utils/ 目錄中。
+
+後端使用新API:linebot-web\Backend-v1

@@ -38,9 +38,44 @@ export class AuthService {
     }
   }
 
-  // 檢查是否已認證
+  // 從 cookie 中獲取 token
+  static getTokenFromCookie(): string | null {
+    if (!document.cookie) {
+      console.log('沒有任何 cookies');
+      return null;
+    }
+    
+    console.log('所有 cookies:', document.cookie);
+    console.log('當前域名:', window.location.hostname);
+    console.log('當前端口:', window.location.port);
+    
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      console.log(`檢查 cookie: ${name} = ${value}`);
+      if (name === 'token' && value) {
+        const decodedValue = decodeURIComponent(value);
+        console.log('找到 token cookie:', decodedValue);
+        return decodedValue;
+      }
+    }
+    console.log('未找到 token cookie');
+    return null;
+  }
+
+  // 檢查是否已認證（包括檢查 cookie）
   static isAuthenticated(): boolean {
-    const token = this.getToken();
+    let token = this.getToken();
+    
+    // 如果 localStorage 沒有 token，檢查 cookie
+    if (!token) {
+      token = this.getTokenFromCookie();
+      if (token) {
+        // 將 cookie 中的 token 同步到 localStorage
+        this.setToken(token);
+      }
+    }
+    
     if (!token) return false;
     
     // 檢查token是否有效
