@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import Footer2 from '../components/LoginHome/Footer2';
 import Navbar2 from '../components/LoginHome/Navbar2';
@@ -41,6 +41,52 @@ const LoginHome = () => {
     allowedBackPaths: ['/index2', '/setting', '/add server', '/block', '/how to establish', '/editbot'],
     fallbackPath: '/index2'
   });
+
+  // 使用 useCallback 來穩定 checkLoginStatus 函數
+  const checkLoginStatus = useCallback(async () => {
+    try {
+      const token = AuthService.getToken();
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN), {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('檢查登入狀態回應:', data);
+        
+        if (data.authenticated && data.user) {
+          setUser({ 
+            display_name: data.user.username, 
+            username: data.user.username,
+            isLineUser: false // 這是一般登入用戶
+          });
+        } else {
+          throw new Error('用戶未認證');
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('check_login error:', errorData);
+        throw new Error('登入狀態檢查失敗');
+      }
+      
+    } catch (error) {
+      console.error('檢查登入狀態錯誤:', error);
+      setError('請先登入');
+      AuthService.removeToken(); // 清除無效的 token
+      navigate('/login');
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -167,7 +213,7 @@ const LoginHome = () => {
     };
   
     verify();
-  }, [searchParams, navigate, location.state]);
+  }, [searchParams, checkLoginStatus]);
 
   const verifyLineToken = async (token: string): Promise<User | null> => {
     try {
@@ -181,41 +227,6 @@ const LoginHome = () => {
     } catch (error) {
       console.error('驗證 LINE token 錯誤:', error);
       return null;
-    }
-  };
-  const nativeFetch = window.fetch.bind(window); // 保存原生 fetch
-
-  const checkLoginStatus = async () => {
-    try {
-      const token = AuthService.getToken();
-      if (!token) {
-        throw new Error('No token found');
-      }
-
-      const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const username = data.message.split('User ')[1].split(' is logged in')[0];
-        setUser({ display_name: username, username });
-      } else {
-        const errorData = await response.json();
-        console.error('check_login error:', errorData);
-        setError('請先登入');
-        navigate('/login');
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error('檢查登入狀態錯誤:', error);
-      setError('請先登入');
-      navigate('/login');
-      setLoading(false);
     }
   };
 

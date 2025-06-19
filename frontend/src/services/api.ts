@@ -135,25 +135,27 @@ export class ApiClient {
       
       if (!response.ok) {
         return {
-          error: data.error || '登入失敗',
+          error: data.error || data.detail || '登入失敗',
           status: response.status,
         };
       }
 
-      // 確保直接從回應中提取 token
-      if (data && data.token) {
-        // 直接設置 token 到 localStorage
-        AuthService.setToken(data.token);
+      // 從後端 Token schema 提取 access_token
+      if (data && data.access_token) {
+        // 設置 token 到 localStorage
+        AuthService.setToken(data.access_token);
         
         // 如果有用戶信息，也保存它
-        if (data.username) {
+        if (data.user) {
           AuthService.setUser({
-            username: data.username,
-            email: data.email || '',
+            username: data.user.username,
+            email: data.user.email || '',
           });
         }
+        
+        console.log('登入成功，token 已保存:', data.access_token);
       } else {
-        console.warn('回應中沒有找到 token');
+        console.warn('回應中沒有找到 access_token:', data);
       }
 
       return {

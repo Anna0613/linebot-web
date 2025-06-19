@@ -10,7 +10,7 @@ from typing import Dict
 
 from app.database import get_db
 from app.services.auth_service import AuthService
-from app.schemas.auth import UserRegister, Token, EmailVerification, ForgotPassword
+from app.schemas.auth import UserRegister, UserLogin, Token, EmailVerification, ForgotPassword
 from app.core.security import get_cookie_settings
 from app.models.user import User
 
@@ -27,11 +27,11 @@ async def register(
 @router.post("/login", response_model=Token)
 async def login(
     response: Response,
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    login_data: UserLogin,
     db: Session = Depends(get_db)
 ):
     """用戶登入"""
-    token = AuthService.authenticate_user(db, form_data.username, form_data.password)
+    token = AuthService.authenticate_user(db, login_data.username, login_data.password)
     
     # 設定 Cookie
     cookie_settings = get_cookie_settings()

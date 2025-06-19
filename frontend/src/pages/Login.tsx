@@ -154,16 +154,16 @@ const Login = () => {
       let token = AuthService.getToken();
       
       // 如果沒有從 AuthService 獲取到，直接從響應中獲取並設置
-      if (!token && response.data && response.data.token) {
-        AuthService.setToken(response.data.token);
-        token = response.data.token;
-        console.log('直接從響應設置 token');
+      if (!token && response.data && response.data.access_token) {
+        AuthService.setToken(response.data.access_token);
+        token = response.data.access_token;
+        console.log('直接從響應設置 access_token');
       }
 
       if (!token) {
         console.error("找不到登入 token，將嘗試直接使用響應數據繼續");
         // 即使沒有 token，也嘗試繼續以響應數據驅動
-        if (response.data && response.data.username) {
+        if (response.data && response.data.user && response.data.user.username) {
           toast({
             title: "登入成功！",
             description: "歡迎回來",
