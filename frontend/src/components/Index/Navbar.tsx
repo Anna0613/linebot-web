@@ -43,11 +43,16 @@ const Navbar = () => {
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white ${isScrolled ? 'bg-opacity-90 backdrop-blur-md shadow-sm' : 'bg-opacity-100'}`}
       >
-        <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 flex items-center justify-between h-14 sm:h-16 md:h-18 lg:h-20">
+        <div className="w-full px-6 flex items-center justify-between h-16 md:h-20">
+          <div className="flex items-center gap-4">
+            <button className="text-[#1a1a40]" onClick={toggleMobileMenu}>
+              <Menu size={28} />
+            </button>
             <Link to="/" className="flex items-center space-x-3 z-10 ml-2">
               <img src="/專題圖片/logo.svg" alt="Logo" className="h-12 w-auto" />
               <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">LINE Bot 製作輔助系統</h6>
             </Link>
+          </div>
 
           <div className="hidden sm:flex items-center space-x-2 sm:space-x-4">
             <LanguageToggle />
@@ -97,6 +102,42 @@ const Navbar = () => {
               </Link>
             </div>
           </div>
+        </div>
+
+        {/* 側邊選單遮罩 */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 z-40" onClick={toggleMobileMenu} />
+        )}
+        
+        {/* 側邊選單 */}
+        <div className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="flex justify-end">
+            <button onClick={toggleMobileMenu} className="text-2xl text-gray-700">
+              <X />
+            </button>
+          </div>
+          <ul className="mt-8 space-y-4 text-[#1a1a40] text-lg">
+            <li>
+              <Link to="/" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">
+                首頁
+              </Link>
+            </li>
+            <li>
+              <Link to="/about" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">
+                關於
+              </Link>
+            </li>
+            <li>
+              <Link to="/login" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">
+                登入
+              </Link>
+            </li>
+            <li>
+              <Link to="/register" onClick={toggleMobileMenu} className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100">
+                註冊
+              </Link>
+            </li>
+          </ul>
         </div>
       </header>
 

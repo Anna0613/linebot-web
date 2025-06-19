@@ -20,9 +20,8 @@ import Setting from "./pages/Setting";
 import ResetPassword from "./pages/ResetPassword";
 import Editbot from "./pages/Editbot";
 import About from "./pages/About";
-import Describe from "./pages/Describe";
-
-
+import Language from "./pages/Language";
+import Suggest from "./pages/Suggest";
 
 const queryClient = new QueryClient();
 
@@ -50,7 +49,8 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/editbot" element={<Editbot />} />
           <Route path="/about" element={<About />} />
-          <Route path="/describe" element={<Describe />} />
+          <Route path="/language" element={<Language />} />
+          <Route path="/suggest" element={<Suggest />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

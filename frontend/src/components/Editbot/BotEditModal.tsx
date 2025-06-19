@@ -213,10 +213,11 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                 <label className="block text-sm font-medium text-[#5A2C1D] mb-1">
                   Channel Token
                 </label>
-                <textarea
+                <input
+                  type="text"
                   value={formData.channel_token}
                   onChange={(e) => setFormData({...formData, channel_token: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780] h-20 resize-none"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780]"
                   placeholder="請輸入Channel Token"
                   required
                 />

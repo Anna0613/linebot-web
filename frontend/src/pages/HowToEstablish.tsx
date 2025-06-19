@@ -1,10 +1,10 @@
+import { useState, useEffect } from 'react';
 import StepOne from '../components/HowToEstablish/StepOne';
 import StepTwo from '../components/HowToEstablish/StepTwo';
 import StepThree from '../components/HowToEstablish/StepThree';
 import StepFour from '../components/HowToEstablish/StepFour';
 import Navbar2 from '../components/LoginHome/Navbar2';
 import Footer2 from '../components/LoginHome/Footer2';
-import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { ChevronRight, CheckCircle, Circle } from 'lucide-react';
@@ -191,109 +191,136 @@ const HowToEstablish = () => {
     }
   };
 
+  const nextStep = () => {
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const goToStep = (step: number) => {
+    setCurrentStep(step);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FFFDFA] to-[#F8F6F3]">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">載入中...</p>
-        </div>
+      <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
+        <div className="text-[#5A2C1D] text-lg loading-pulse">載入教學內容...</div>
       </div>
     );
   }
 
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        return <StepOne onNext={nextStep} />;
+      case 2:
+        return <StepTwo onNext={nextStep} onPrev={prevStep} />;
+      case 3:
+        return <StepThree onNext={nextStep} onPrev={prevStep} />;
+      case 4:
+        return <StepFour onPrev={prevStep} />;
+      default:
+        return <StepOne onNext={nextStep} />;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#FFFDFA] to-[#F8F6F3]">
+    <div className="min-h-screen bg-[#FFFDFA]">
       <Navbar2 user={user}/>
       
-      {/* Hero Section */}
-      <section className="pt-32 pb-16 px-6">
-        <div className="max-w-4xl mx-auto text-center fade-in-element">
-          <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-            如何建立您的 <span className="text-gradient">LINE Bot</span>
+      {/* 主要內容區域 */}
+      <div className="pt-16 md:pt-20 pb-16 px-6">
+        {/* 標題區域 */}
+        <div className="text-center mb-12 fade-in-element">
+          <h1 className="text-[#1a1a40] text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
+            LINE Bot 建立教學
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            只需四個簡單步驟，您就能在 LINE Developers 平台上成功建立您的機器人應用程式
+          <p className="text-[#5A2C1D] text-xl leading-relaxed max-w-3xl mx-auto">
+            跟著我們的詳細步驟，輕鬆建立您的第一個 LINE Bot
           </p>
-          
-          {/* Progress Indicator */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-glass max-w-3xl mx-auto">
-            <div className="flex items-center justify-between">
-              {steps.map((step, index) => (
-                <div key={step.id}>
-                  <div 
-                    className={`flex flex-col items-center cursor-pointer transition-all duration-300 ${
-                      currentStep >= step.id ? 'opacity-100' : 'opacity-50'
-                    }`}
-                    onClick={() => scrollToStep(step.id)}
-                  >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${
-                      currentStep > step.id 
-                        ? 'bg-line text-white shadow-lg' 
-                        : currentStep === step.id 
-                        ? 'bg-primary text-white shadow-lg scale-110' 
-                        : 'bg-gray-200 text-gray-500'
-                    }`}>
-                      {currentStep > step.id ? (
-                        <CheckCircle className="w-6 h-6" />
-                      ) : (
-                        <span className="font-semibold">{step.id}</span>
-                      )}
-                    </div>
-                    <span className={`text-sm font-medium transition-colors duration-300 ${
-                      currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground'
-                    }`}>
-                      {step.title}
-                    </span>
+        </div>
+
+        {/* 進度指示器 */}
+        <div className="max-w-4xl mx-auto mb-12">
+          <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-[#F4A261]">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-[#383A45] text-xl font-bold">教學進度</h2>
+              <span className="text-[#5A2C1D] font-medium">第 {currentStep} 步，共 4 步</span>
+            </div>
+            
+            <div className="grid grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((step) => (
+                <button
+                  key={step}
+                  onClick={() => goToStep(step)}
+                  className={`p-4 rounded-lg text-center transition-all duration-200 ${
+                    step === currentStep
+                      ? 'bg-[#F4A261] text-white shadow-lg transform scale-105'
+                      : step < currentStep
+                      ? 'bg-[#A0D6B4] text-white hover:shadow-md'
+                      : 'bg-gray-100 text-[#5A2C1D] hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="font-bold text-lg mb-1">步驟 {step}</div>
+                  <div className="text-sm">
+                    {step === 1 && '建立頻道'}
+                    {step === 2 && '設定 Webhook'}
+                    {step === 3 && '取得金鑰'}
+                    {step === 4 && '完成設定'}
                   </div>
-                  {index < steps.length - 1 && (
-                    <div className={`flex-1 h-0.5 mx-4 transition-colors duration-300 ${
-                      currentStep > step.id ? 'bg-line' : 'bg-gray-200'
-                    }`}></div>
-                  )}
-                </div>
+                </button>
               ))}
+            </div>
+            
+            {/* 進度條 */}
+            <div className="mt-6">
+              <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-[#F4A261] to-[#A0D6B4] h-full rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${(currentStep / 4) * 100}%` }}
+                ></div>
+              </div>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Steps Content */}
-      <main className="flex flex-col">
-        <div id="step-1">
-          <StepOne />
+        {/* 步驟內容區域 */}
+        <div className="max-w-5xl mx-auto">
+          {renderCurrentStep()}
         </div>
-        <div id="step-2">
-          <StepTwo />
-        </div>
-        <div id="step-3">
-          <StepThree />
-        </div>
-        <div id="step-4">
-          <StepFour />
-        </div>
-      </main>
 
-      {/* Call to Action Section */}
-      <section className="py-20 px-6 bg-gradient-to-r from-primary/10 to-line/10">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
-            準備好開始建立您的 LINE Bot 了嗎？
-          </h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            完成以上步驟後，您就可以使用我們的平台輕鬆建立和管理您的 LINE Bot
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => scrollToStep(1)}
-              className="inline-flex items-center px-8 py-3 bg-white text-foreground rounded-full shadow-lg hover:shadow-xl transition-all font-medium"
-            >
-              重新開始教學
-              <ChevronRight className="ml-2 h-5 w-5" />
-            </button>
+        {/* 行動呼籲區域 */}
+        {currentStep === 4 && (
+          <div className="max-w-4xl mx-auto mt-16">
+            <div className="bg-gradient-to-r from-[#8ECAE6] to-[#A0D6B4] rounded-lg shadow-lg p-12 text-white text-center">
+              <h2 className="text-white text-[28px] font-bold mb-6">恭喜！您已完成所有設定</h2>
+              <p className="text-white/90 text-lg mb-8 leading-relaxed">
+                現在您可以開始建立您的第一個 LINE Bot 了
+              </p>
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                <button 
+                  onClick={() => window.location.href = '/add%20server'}
+                  className="px-8 py-4 bg-white text-[#383A45] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-lg"
+                >
+                  立即建立 Bot
+                </button>
+                <button 
+                  onClick={() => setCurrentStep(1)}
+                  className="px-8 py-4 bg-[#FFD59E] text-[#5A2C1D] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-lg"
+                >
+                  重新查看教學
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        )}
+      </div>
 
       <Footer2 />
     </div>
