@@ -10,7 +10,6 @@ import Register from "./pages/Register";
 import LINELogin from "./pages/LINELogin";
 import LoginSuccess from "./pages/LoginSuccess";
 import LoginError from "./pages/LoginError";
-import AuthDebug from "./pages/AuthDebug";
 import EmailVerification from "./pages/EmailVerification";
 import NotFound from "./pages/NotFound";
 import Index2 from "./pages/LoginHome";
@@ -41,7 +40,6 @@ const App = () => (
           <Route path="/line-login" element={<LINELogin />} />
           <Route path="/login-success" element={<LoginSuccess />} />
           <Route path="/login-error" element={<LoginError />} />
-          <Route path="/auth-debug" element={<AuthDebug />} />
           <Route path="/index2" element={<Index2 />} />
           <Route path="/add server" element={<AddServer />} />
           <Route path="/block" element={<Block />} />
