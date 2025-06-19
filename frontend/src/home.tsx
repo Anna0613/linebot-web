@@ -46,6 +46,7 @@ const App = () => (
           <Route path="/how to establish" element={<HowToEstablish />} />
           <Route path="/setting" element={<Setting />} />
           <Route path="/verify-email" element={<EmailVerification />} />
+          <Route path="/email-verification" element={<EmailVerification />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/editbot" element={<Editbot />} />
           <Route path="/about" element={<About />} />
