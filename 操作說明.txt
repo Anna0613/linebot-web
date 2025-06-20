@@ -1,0 +1,30 @@
+# 1. 克隆專案
+git clone <your-repository-url>
+cd linebot-web
+
+# 2. 後端設置
+cd Backend-v1
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+
+pip install -r requirements.txt
+cp env.example .env 
+#或是直接把後端.env檔案放上去
+
+# 3. 前端設置
+cd ../frontend
+npm install
+cp env.example .env
+#或是直接把前端.env檔案放上去
+
+# 4. 啟動服務
+# 終端機 1: 後端
+cd Backend-v1
+python start.py
+
+# 終端機 2: 前端
+cd frontend
+npm run dev

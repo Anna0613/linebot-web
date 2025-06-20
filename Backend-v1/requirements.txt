@@ -1,13 +1,13 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+fastapi==0.115.13
+uvicorn[standard]==0.34.3
 sqlalchemy==2.0.23
 alembic==1.12.1
 psycopg2-binary==2.9.7
 pydantic[email]==2.5.0
 pydantic-settings==2.1.0
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
-python-multipart==0.0.6
+python-multipart==0.0.20
 python-dotenv==1.0.0
 requests==2.31.0
 tenacity>=8.2.3
