@@ -2,6 +2,7 @@ import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { ApiClient } from "../../services/api";
 import { Bot } from "../../types/bot";
 import { useToast } from "@/hooks/use-toast";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 type MybotProps = {
   onEdit: (id: string, editType: 'name' | 'token' | 'secret' | 'all') => void;
@@ -16,16 +17,34 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedBot, setExpandedBot] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    botId: string;
+    botName: string;
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    botId: '',
+    botName: '',
+    isLoading: false
+  });
   const { toast } = useToast();
   const apiClient = ApiClient.getInstance();
 
-  const handleDelete = async (botId: string, botName: string) => {
-    if (!confirm(`確定要刪除機器人「${botName}」嗎？此操作無法撤銷。`)) {
-      return;
-    }
+  const handleDeleteClick = (botId: string, botName: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      botId,
+      botName,
+      isLoading: false
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
 
     try {
-      const response = await apiClient.deleteBot(botId);
+      const response = await apiClient.deleteBot(deleteDialog.botId);
       
       if (response.error) {
         toast({
@@ -36,14 +55,14 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
       } else {
         toast({
           title: "刪除成功",
-          description: `機器人「${botName}」已成功刪除`,
+          description: `機器人「${deleteDialog.botName}」已成功刪除`,
         });
         
         // 刪除成功後重新載入Bot列表
         await fetchBots();
         
         // 如果刪除的Bot正在展開，則關閉展開狀態
-        if (expandedBot === botId) {
+        if (expandedBot === deleteDialog.botId) {
           setExpandedBot(null);
         }
       }
@@ -54,7 +73,23 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
         title: "刪除失敗",
         description: "刪除機器人時發生錯誤",
       });
+    } finally {
+      setDeleteDialog({
+        isOpen: false,
+        botId: '',
+        botName: '',
+        isLoading: false
+      });
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog({
+      isOpen: false,
+      botId: '',
+      botName: '',
+      isLoading: false
+    });
   };
 
   useEffect(() => {
@@ -200,7 +235,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                         </button>
                         
                         <button
-                          onClick={() => handleDelete(bot.id, bot.name)}
+                          onClick={() => handleDeleteClick(bot.id, bot.name)}
                           className="w-full px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 shadow-md text-sm font-bold"
                         >
                           刪除Bot
@@ -214,7 +249,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                         <div className="space-y-3 w-full max-w-md">
                           <div className="flex justify-center space-x-4">
                             <button
-                              onClick={() => handleDelete(bot.id, bot.name)}
+                              onClick={() => handleDeleteClick(bot.id, bot.name)}
                               className="px-4 py-2 bg-[#E74C3C] text-white rounded-lg hover:bg-[#C0392B] transition-all duration-200 shadow-sm text-sm font-bold"
                             >
                               刪除Bot
@@ -248,6 +283,15 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
           </div>
         )}
       </div>
+
+      {/* 刪除確認對話框 */}
+      <DeleteConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        botName={deleteDialog.botName}
+        isLoading={deleteDialog.isLoading}
+      />
     </div>
   );
 });
