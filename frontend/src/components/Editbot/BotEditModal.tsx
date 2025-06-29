@@ -227,7 +227,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="px-3 py-1 bg-[#F6B1B1] text-white rounded-md text-sm font-bold hover:brightness-90 transition"
+            className="px-3 py-1 bg-[#E74C3C] text-white rounded-md text-sm font-bold hover:bg-[#C0392B] transition"
           >
             關閉
           </button>
@@ -307,7 +307,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 bg-[#F6B1B1] text-white rounded-md font-bold hover:brightness-90 transition-all duration-200"
+                  className="px-4 py-2 bg-[#E74C3C] text-white rounded-md font-bold hover:bg-[#C0392B] transition-all duration-200"
                   disabled={loading}
                 >
                   取消

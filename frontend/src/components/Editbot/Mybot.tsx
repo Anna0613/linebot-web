@@ -3,6 +3,7 @@ import { ApiClient } from "../../services/api";
 import { Bot } from "../../types/bot";
 import { useToast } from "@/hooks/use-toast";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import EditOptionModal from "./EditOptionModal";
 
 type MybotProps = {
   onEdit: (id: string, editType: 'name' | 'token' | 'secret' | 'all') => void;
@@ -27,6 +28,14 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
     botId: '',
     botName: '',
     isLoading: false
+  });
+  
+  const [editOptionModal, setEditOptionModal] = useState<{
+    isOpen: boolean;
+    botId: string;
+  }>({
+    isOpen: false,
+    botId: ''
   });
   const { toast } = useToast();
   const apiClient = ApiClient.getInstance();
@@ -90,6 +99,24 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
       botName: '',
       isLoading: false
     });
+  };
+
+  const handleEditClick = (botId: string) => {
+    setEditOptionModal({
+      isOpen: true,
+      botId
+    });
+  };
+
+  const handleEditOptionClose = () => {
+    setEditOptionModal({
+      isOpen: false,
+      botId: ''
+    });
+  };
+
+  const handleEditBasicInfo = () => {
+    onEdit(editOptionModal.botId, 'all');
   };
 
   useEffect(() => {
@@ -192,7 +219,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                     {/* 桌面版按鈕組 */}
                     <div className="hidden lg:flex items-center space-x-2">
                       <button
-                        onClick={() => onEdit(bot.id, 'all')}
+                        onClick={() => handleEditClick(bot.id)}
                         className="px-4 py-2 bg-[#82C29B] text-white rounded-lg hover:bg-[#6BAF88] transition-all duration-200 shadow-md text-sm font-bold"
                         title="編輯Bot"
                       >
@@ -228,7 +255,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                     <div className="lg:hidden mb-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                         <button
-                          onClick={() => onEdit(bot.id, 'all')}
+                          onClick={() => handleEditClick(bot.id)}
                           className="w-full px-3 py-2 bg-[#82C29B] text-white rounded-lg hover:bg-[#6BAF88] transition-all duration-200 shadow-md text-sm font-bold"
                         >
                           編輯
@@ -291,6 +318,14 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
         onConfirm={handleDeleteConfirm}
         botName={deleteDialog.botName}
         isLoading={deleteDialog.isLoading}
+      />
+
+      {/* 編輯選項模態框 */}
+      <EditOptionModal
+        isOpen={editOptionModal.isOpen}
+        onClose={handleEditOptionClose}
+        botId={editOptionModal.botId}
+        onEditBasicInfo={handleEditBasicInfo}
       />
     </div>
   );
