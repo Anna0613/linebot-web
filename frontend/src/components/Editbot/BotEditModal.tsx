@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ApiClient } from '../../services/api';
 import { Bot, BotUpdateData } from '../../types/bot';
 import { useToast } from "@/hooks/use-toast";
@@ -25,8 +25,36 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
     channel_token: '',
     channel_secret: ''
   });
+  
+  // 保存原始資料供比較使用
+  const [originalData, setOriginalData] = useState({
+    name: '',
+    channel_token: '',
+    channel_secret: ''
+  });
+  
   const { toast } = useToast();
   const apiClient = ApiClient.getInstance();
+
+  // 檢查資料是否有變化
+  const hasDataChanged = useMemo(() => {
+    switch (editType) {
+      case 'name':
+        return formData.name.trim() !== originalData.name.trim();
+      case 'token':
+        return formData.channel_token.trim() !== originalData.channel_token.trim();
+      case 'secret':
+        return formData.channel_secret.trim() !== originalData.channel_secret.trim();
+      case 'all':
+        return (
+          formData.name.trim() !== originalData.name.trim() ||
+          formData.channel_token.trim() !== originalData.channel_token.trim() ||
+          formData.channel_secret.trim() !== originalData.channel_secret.trim()
+        );
+      default:
+        return false;
+    }
+  }, [formData, originalData, editType]);
 
   useEffect(() => {
     if (isOpen && botId) {
@@ -51,11 +79,15 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
 
       const botData = response.data;
       setBot(botData);
-      setFormData({
+      
+      const initialData = {
         name: botData.name || '',
         channel_token: botData.channel_token || '',
         channel_secret: botData.channel_secret || ''
-      });
+      };
+      
+      setFormData(initialData);
+      setOriginalData(initialData); // 保存原始資料
     } catch (error) {
       console.error('獲取Bot資料失敗:', error);
       toast({
@@ -73,6 +105,16 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
     e.preventDefault();
     
     if (!bot) return;
+
+    // 檢查資料是否有變化
+    if (!hasDataChanged) {
+      toast({
+        variant: "default",
+        title: "提示",
+        description: "資料沒有任何變化，無需更新",
+      });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -164,9 +206,14 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
       case 'name': return '修改Bot名稱';
       case 'token': return '修改Channel Token';
       case 'secret': return '修改Channel Secret';
-      case 'all': return '修改Bot資料';
+      case 'all': return '編輯Bot資料';
       default: return '修改Bot';
     }
+  };
+
+  // 重置表單到原始值
+  const handleReset = () => {
+    setFormData(originalData);
   };
 
   if (!isOpen) return null;
@@ -180,7 +227,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="px-3 py-1 bg-[#E74C3C] text-white rounded-md text-sm font-bold hover:bg-[#C0392B] transition"
+            className="px-3 py-1 bg-[#F6B1B1] text-white rounded-md text-sm font-bold hover:brightness-90 transition"
           >
             關閉
           </button>
@@ -188,7 +235,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-[#5A2C1D]">載入中...</div>
+            <div className="text-[#5A2C1D] loading-pulse">載入中...</div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -201,7 +248,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780]"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780] transition-all duration-200"
                   placeholder="請輸入Bot名稱"
                   required
                 />
@@ -217,7 +264,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   type="text"
                   value={formData.channel_token}
                   onChange={(e) => setFormData({...formData, channel_token: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780]"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780] transition-all duration-200"
                   placeholder="請輸入Channel Token"
                   required
                 />
@@ -233,28 +280,59 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   type="text"
                   value={formData.channel_secret}
                   onChange={(e) => setFormData({...formData, channel_secret: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780]"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780] transition-all duration-200"
                   placeholder="請輸入Channel Secret"
                   required
                 />
               </div>
             )}
             
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-[#E74C3C] text-white rounded-md font-bold hover:bg-[#C0392B] transition"
-                disabled={loading}
-              >
-                取消
-              </button>
+            {/* 資料變化狀態指示器 */}
+            <div className="pt-2">
+              {hasDataChanged ? (
+                <div className="flex items-center text-xs text-[#8ECAE6] font-medium">
+                  <div className="w-2 h-2 bg-[#8ECAE6] rounded-full mr-2 animate-pulse"></div>
+                  檢測到資料變化
+                </div>
+              ) : (
+                <div className="flex items-center text-xs text-gray-500">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+                  資料無變化
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-between space-x-3 pt-4">
+              <div className="flex space-x-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 bg-[#F6B1B1] text-white rounded-md font-bold hover:brightness-90 transition-all duration-200"
+                  disabled={loading}
+                >
+                  取消
+                </button>
+                {hasDataChanged && (
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="px-4 py-2 bg-[#FFD59E] text-[#5A2C1D] rounded-md font-bold hover:brightness-90 transition-all duration-200"
+                    disabled={loading}
+                  >
+                    重置
+                  </button>
+                )}
+              </div>
               <button
                 type="submit"
-                className="px-4 py-2 bg-[#82C29B] text-white rounded-md font-bold hover:bg-[#6BAF88] transition"
-                disabled={loading}
+                className={`px-4 py-2 rounded-md font-bold transition-all duration-200 ${
+                  hasDataChanged
+                    ? 'bg-[#A0D6B4] text-white hover:brightness-90'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                disabled={loading || !hasDataChanged}
               >
-                {loading ? '更新中...' : '確認'}
+                {loading ? '更新中...' : '確認更新'}
               </button>
             </div>
           </form>

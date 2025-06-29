@@ -112,6 +112,10 @@
     @apply opacity-0 animate-fade-in;
   }
   
+  .loading-pulse {
+    @apply animate-pulse-light;
+  }
+  
   .section {
     @apply py-20 px-6 md:px-10 max-w-7xl mx-auto w-full;
   }
