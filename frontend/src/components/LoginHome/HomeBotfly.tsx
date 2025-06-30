@@ -100,7 +100,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
           </div>
         )}
 
-        <div className="flex flex-wrap justify-center gap-x-10 gap-y-8">
+        <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto md:max-w-none md:flex md:flex-wrap md:justify-center md:gap-x-10 md:gap-y-8">
           {[
             {
               link: "/how to establish",
@@ -128,15 +128,15 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
             },
           ].map(({ link, img, title, desc }) => (
             <Link to={link} key={title}>
-              <div className="group relative w-[300px] h-[400px] rounded-[8px] overflow-hidden hover:scale-105 transition duration-300 cursor-pointer shadow-md">
+              <div className="group relative w-full h-[180px] md:w-[300px] md:h-[400px] rounded-[8px] overflow-hidden hover:scale-105 transition duration-300 cursor-pointer shadow-md">
                 <img
                   src={img}
                   alt={title}
                   className="w-full h-full object-contain transition-opacity duration-300 group-hover:opacity-0"
                 />
-                <div className="absolute inset-0 bg-[#f2f2f2]/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 px-4 text-center">
-                  <h3 className="text-[22px] font-bold text-[#1a1a40] mb-3">{title}</h3>
-                  <div className="text-[17px] text-[#1a1a40] leading-relaxed space-y-1">
+                <div className="absolute inset-0 bg-[#f2f2f2]/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 px-2 md:px-4 text-center">
+                  <h3 className="text-[14px] md:text-[22px] font-bold text-[#1a1a40] mb-1 md:mb-3">{title}</h3>
+                  <div className="text-[11px] md:text-[17px] text-[#1a1a40] leading-relaxed space-y-0.5 md:space-y-1">
                     {desc.map((line, i) => (
                       <p key={i}>{line}</p>
                     ))}
