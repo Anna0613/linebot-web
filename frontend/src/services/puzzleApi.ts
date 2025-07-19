@@ -4,9 +4,13 @@ import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 export interface Bot {
   id: string;  // UUID as string
   name: string;
+  description?: string;
   channel_token: string;
   channel_secret: string;
   user_id: string;  // UUID as string
+  is_active?: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface BotCreate {

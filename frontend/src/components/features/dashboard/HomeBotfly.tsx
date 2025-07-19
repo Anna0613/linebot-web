@@ -1,10 +1,17 @@
-import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, Plus, Settings, FileText, Edit, Trash2 } from 'lucide-react';
+import { Bot, Plus, Settings, FileText, Edit, Trash2, Eye } from 'lucide-react';
 import { useBotManagement } from '@/hooks/useBotManagement';
 import { Loader } from "@/components/ui/loader";
+import { useToast } from "@/hooks/use-toast";
+import { ApiClient } from '@/services/api';
+import { Bot as BotType } from '@/types/bot';
+import DeleteConfirmDialog from '@/components/Editbot/DeleteConfirmDialog';
+import EditOptionModal from '@/components/Editbot/EditOptionModal';
+import BotEditModal from '@/components/Editbot/BotEditModal';
+import BotDetailsModal from './BotDetailsModal';
 
 interface User {
   line_id?: string;
@@ -19,16 +26,180 @@ interface HomeBotflyProps {
 }
 
 const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
-  const { bots, isLoading, error, fetchBots, deleteBot } = useBotManagement();
+  const { bots, isLoading, error, fetchBots } = useBotManagement();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const apiClient = ApiClient.getInstance();
+
+  // 刪除對話框狀態
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    botId: string;
+    botName: string;
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    botId: '',
+    botName: '',
+    isLoading: false
+  });
+
+  // 編輯選項模態框狀態
+  const [editOptionModal, setEditOptionModal] = useState<{
+    isOpen: boolean;
+    botId: string;
+  }>({
+    isOpen: false,
+    botId: ''
+  });
+
+  // 編輯模態框狀態
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean;
+    botId: string;
+    editType: 'name' | 'token' | 'secret' | 'all';
+  }>({
+    isOpen: false,
+    botId: '',
+    editType: 'all'
+  });
+
+  // 詳情模態框狀態
+  const [detailsModal, setDetailsModal] = useState<{
+    isOpen: boolean;
+    bot: BotType | null;
+  }>({
+    isOpen: false,
+    bot: null
+  });
 
   useEffect(() => {
     fetchBots();
   }, [fetchBots]);
 
-  const handleDeleteBot = async (botId: string) => {
-    if (window.confirm('確定要刪除這個 Bot 嗎？')) {
-      await deleteBot(botId);
+  // 處理刪除點擊
+  const handleDeleteClick = (botId: string, botName: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      botId,
+      botName,
+      isLoading: false
+    });
+  };
+
+  // 確認刪除
+  const handleDeleteConfirm = async () => {
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
+
+    try {
+      const response = await apiClient.deleteBot(deleteDialog.botId);
+      
+      if (response.error) {
+        toast({
+          variant: "destructive",
+          title: "刪除失敗",
+          description: response.error,
+        });
+      } else {
+        toast({
+          title: "刪除成功",
+          description: `機器人「${deleteDialog.botName}」已成功刪除`,
+        });
+        
+        // 重新載入Bot列表
+        await fetchBots();
+        
+        // 如果刪除的Bot正在查看詳情，則關閉詳情模態框
+        if (detailsModal.bot && detailsModal.bot.id === deleteDialog.botId) {
+          setDetailsModal({ isOpen: false, bot: null });
+        }
+      }
+    } catch (error) {
+      console.error('刪除Bot發生錯誤:', error);
+      toast({
+        variant: "destructive",
+        title: "刪除失敗",
+        description: "刪除機器人時發生錯誤",
+      });
+    } finally {
+      setDeleteDialog({
+        isOpen: false,
+        botId: '',
+        botName: '',
+        isLoading: false
+      });
     }
+  };
+
+  // 取消刪除
+  const handleDeleteCancel = () => {
+    setDeleteDialog({
+      isOpen: false,
+      botId: '',
+      botName: '',
+      isLoading: false
+    });
+  };
+
+  // 處理編輯點擊
+  const handleEditClick = (botId: string) => {
+    setEditOptionModal({
+      isOpen: true,
+      botId
+    });
+  };
+
+  // 關閉編輯選項模態框
+  const handleEditOptionClose = () => {
+    setEditOptionModal({
+      isOpen: false,
+      botId: ''
+    });
+  };
+
+  // 處理編輯基本資訊
+  const handleEditBasicInfo = () => {
+    setEditModal({
+      isOpen: true,
+      botId: editOptionModal.botId,
+      editType: 'all'
+    });
+    setEditOptionModal({ isOpen: false, botId: '' });
+  };
+
+  // 關閉編輯模態框
+  const handleEditModalClose = () => {
+    setEditModal({
+      isOpen: false,
+      botId: '',
+      editType: 'all'
+    });
+  };
+
+  // Bot更新後的回調
+  const handleBotUpdated = () => {
+    fetchBots(); // 重新載入Bot列表
+    setEditModal({
+      isOpen: false,
+      botId: '',
+      editType: 'all'
+    });
+  };
+
+  // 顯示Bot詳情
+  const showBotDetails = (bot: BotType) => {
+    setDetailsModal({
+      isOpen: true,
+      bot
+    });
+  };
+
+  // 關閉詳情模態框
+  const closeDetailsModal = () => {
+    setDetailsModal({
+      isOpen: false,
+      bot: null
+    });
   };
 
   return (
@@ -132,19 +303,26 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                       <Button
                         size="sm"
                         variant="outline"
-                        asChild
+                        onClick={() => handleEditClick(bot.id)}
+                        className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 hover:bg-blue-50"
                       >
-                        <Link to={`/bots/${bot.id}/edit`}>
-                          <Edit className="h-4 w-4" />
-                        </Link>
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleDeleteBot(bot.id)}
-                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteClick(bot.id, bot.name)}
+                        className="text-gray-500 hover:text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                       >
                         <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => showBotDetails(bot)}
+                        className="text-purple-600 hover:text-purple-700 border-purple-200 hover:border-purple-300 hover:bg-purple-50"
+                      >
+                        <Eye className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -156,8 +334,8 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">狀態:</span>
-                      <span className={`font-medium ${bot.is_active ? 'text-green-600' : 'text-gray-500'}`}>
-                        {bot.is_active ? '啟用' : '停用'}
+                      <span className="font-medium text-green-600">
+                        啟用
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -166,17 +344,12 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                         {new Date(bot.created_at).toLocaleDateString('zh-TW')}
                       </span>
                     </div>
-                    {bot.channel_access_token && (
+                    {bot.channel_token && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">頻道已設定:</span>
                         <span className="text-green-600 font-medium">是</span>
                       </div>
                     )}
-                  </div>
-                  <div className="mt-4 pt-4 border-t">
-                    <Button asChild className="w-full" size="sm">
-                      <Link to={`/bots/${bot.id}`}>查看詳情</Link>
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -184,6 +357,39 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
           </div>
         )}
       </div>
+
+      {/* 刪除確認對話框 */}
+      <DeleteConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        botName={deleteDialog.botName}
+        isLoading={deleteDialog.isLoading}
+      />
+
+      {/* 編輯選項模態框 */}
+      <EditOptionModal
+        isOpen={editOptionModal.isOpen}
+        onClose={handleEditOptionClose}
+        botId={editOptionModal.botId}
+        onEditBasicInfo={handleEditBasicInfo}
+      />
+
+      {/* 編輯模態框 */}
+      <BotEditModal
+        isOpen={editModal.isOpen}
+        onClose={handleEditModalClose}
+        botId={editModal.botId}
+        editType={editModal.editType}
+        onBotUpdated={handleBotUpdated}
+      />
+
+      {/* Bot詳情模態框 */}
+      <BotDetailsModal
+        isOpen={detailsModal.isOpen}
+        onClose={closeDetailsModal}
+        bot={detailsModal.bot}
+      />
 
       {/* Help Section */}
       <div className="mt-8 bg-blue-50 rounded-lg p-6">
