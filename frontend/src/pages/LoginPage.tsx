@@ -42,14 +42,14 @@ const LoginPage = () => {
 
     await withLoading(async () => {
       try {
-        const response = await ApiClient.login(username, password, rememberMe);
+        const response = await ApiClient.getInstance().login(username, password);
 
-        if (!response.success) {
-          if (response.message?.includes("電子郵件")) {
+        if (response.error) {
+          if (response.error.includes("電子郵件")) {
             setShowEmailVerificationPrompt(true);
-            throw new Error(response.message);
+            throw new Error(response.error);
           }
-          throw new Error(response.message || "登入失敗");
+          throw new Error(response.error || "登入失敗");
         }
 
         // 確保 token 正確設置
@@ -76,7 +76,7 @@ const LoginPage = () => {
 
   const handleResendEmail = async () => {
     try {
-      await ApiClient.resendVerificationEmail(username);
+      await ApiClient.getInstance().resendVerificationEmail(username);
       handleSuccess("驗證郵件已重新發送");
     } catch (error: unknown) {
       handleError(error, "重新發送郵件失敗");

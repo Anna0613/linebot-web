@@ -40,7 +40,7 @@ export const useAuthForm = (options: UseAuthFormOptions = {}) => {
       title: "錯誤",
       description: error instanceof Error ? error.message : defaultMessage,
     });
-    AuthService.clearToken();
+    AuthService.clearAuth();
   };
 
   const withLoading = async (asyncOperation: () => Promise<void>) => {
