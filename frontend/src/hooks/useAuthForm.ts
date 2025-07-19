@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from './use-toast';
-import { AuthService } from '../services/auth';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "./use-toast";
+import { AuthService } from "../services/auth";
 
 interface UseAuthFormOptions {
   onSuccess?: () => void;
@@ -13,15 +13,12 @@ export const useAuthForm = (options: UseAuthFormOptions = {}) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  const {
-    onSuccess,
-    successRedirect = '/dashboard'
-  } = options;
+  const { onSuccess, successRedirect = "/dashboard" } = options;
 
-  const handleSuccess = (message: string = '操作成功！') => {
+  const handleSuccess = (message: string = "操作成功！") => {
     toast({
       title: message,
-      description: '歡迎回來',
+      description: "歡迎回來",
     });
 
     if (onSuccess) {
@@ -33,19 +30,22 @@ export const useAuthForm = (options: UseAuthFormOptions = {}) => {
     }
   };
 
-  const handleError = (error: any, defaultMessage: string = '操作失敗，請重試') => {
-    console.error('錯誤:', error);
+  const handleError = (
+    error: unknown,
+    defaultMessage: string = "操作失敗，請重試"
+  ) => {
+    console.error("錯誤:", error);
     toast({
       variant: "destructive",
       title: "錯誤",
-      description: error.message || defaultMessage,
+      description: error instanceof Error ? error.message : defaultMessage,
     });
     AuthService.clearToken();
   };
 
   const withLoading = async (asyncOperation: () => Promise<void>) => {
     if (loading) return;
-    
+
     setLoading(true);
     try {
       await asyncOperation();
@@ -61,6 +61,6 @@ export const useAuthForm = (options: UseAuthFormOptions = {}) => {
     handleError,
     withLoading,
     navigate,
-    toast
+    toast,
   };
 };

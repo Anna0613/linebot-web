@@ -1,21 +1,21 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from '../components/layout/Navbar';
-import Footer from '../components/layout/Footer';
+import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
 import "@/components/ui/loader.css";
-import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 
 const ForgetPassword = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const validateEmail = (email: string) => {
     if (!email) {
       toast({
@@ -47,13 +47,19 @@ const ForgetPassword = () => {
     }
 
     try {
-      const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.FORGOT_PASSWORD), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
+      const response = await fetch(
+        getApiUrl(
+          API_CONFIG.AUTH.BASE_URL,
+          API_CONFIG.AUTH.ENDPOINTS.FORGOT_PASSWORD
+        ),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
 
       const data = await response.json();
 
@@ -73,7 +79,8 @@ const ForgetPassword = () => {
             errorMessage = "郵件發送失敗，請稍後再試";
             break;
           default:
-            errorMessage = data.error || data.message || "發送重設連結失敗，請稍後再試";
+            errorMessage =
+              data.error || data.message || "發送重設連結失敗，請稍後再試";
         }
         throw new Error(errorMessage);
       }
@@ -82,16 +89,17 @@ const ForgetPassword = () => {
         title: "郵件已發送",
         description: "重設連結已寄出，請檢查您的信箱",
       });
-      setEmail('');
+      setEmail("");
       setTimeout(() => {
         navigate("/login");
       }, 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("忘記密碼錯誤:", error);
       toast({
         variant: "destructive",
         title: "發送失敗",
-        description: error.message,
+        description:
+          error instanceof Error ? error.message : "密碼重設郵件發送失敗",
       });
     } finally {
       setLoading(false);
@@ -107,10 +115,15 @@ const ForgetPassword = () => {
         <div className="w-full max-w-md">
           <div className="text-center mb-10 fade-in-element">
             <h2 className="text-3xl font-bold">忘記密碼</h2>
-            <p className="text-sm text-muted-foreground mt-2">請輸入您的電子郵件地址以重設密碼</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              請輸入您的電子郵件地址以重設密碼
+            </p>
           </div>
 
-          <div className="glassmorphism p-8 fade-in-element" style={{ animationDelay: '0.2s' }}>
+          <div
+            className="glassmorphism p-8 fade-in-element"
+            style={{ animationDelay: "0.2s" }}
+          >
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-1">
                 <Label htmlFor="email">電子郵件：</Label>
@@ -125,17 +138,20 @@ const ForgetPassword = () => {
                 />
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={loading}
                 className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11"
               >
-                {loading ? '載入中...' : '寄送重設連結'}
+                {loading ? "載入中..." : "寄送重設連結"}
               </Button>
             </form>
 
             <div className="mt-6 text-center text-sm">
-              <Link to="/login" className="text-primary hover:text-primary/80 hover-underline">
+              <Link
+                to="/login"
+                className="text-primary hover:text-primary/80 hover-underline"
+              >
                 返回登入頁面
               </Link>
             </div>

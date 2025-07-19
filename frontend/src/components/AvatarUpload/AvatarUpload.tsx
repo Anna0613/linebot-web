@@ -1,9 +1,9 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Button } from '../ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Card, CardContent } from '../ui/card';
-import { Upload, X, User, Camera, Trash2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState, useRef, useCallback } from "react";
+import { Button } from "../ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Card, CardContent } from "../ui/card";
+import { Upload, X, User, Camera, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface AvatarUploadProps {
   currentAvatar?: string | null;
@@ -19,10 +19,10 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
   currentAvatar,
   onAvatarChange,
   onAvatarDelete,
-  username = 'User',
+  username = "User",
   maxSize = 500, // 500KB
-  allowedTypes = ['image/jpeg', 'image/png', 'image/gif'],
-  disabled = false
+  allowedTypes = ["image/jpeg", "image/png", "image/gif"],
+  disabled = false,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -30,127 +30,145 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
   const { toast } = useToast();
 
   // 壓縮圖片
-  const compressImage = useCallback((file: File, maxWidth = 200, quality = 0.8): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
+  const compressImage = useCallback(
+    (file: File, maxWidth = 200, quality = 0.8): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
 
-      img.onload = () => {
-        // 計算新尺寸，保持比例
-        let { width, height } = img;
-        if (width > height) {
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
+        img.onload = () => {
+          // 計算新尺寸，保持比例
+          let { width, height } = img;
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxWidth) {
+              width = (width * maxWidth) / height;
+              height = maxWidth;
+            }
           }
-        } else {
-          if (height > maxWidth) {
-            width = (width * maxWidth) / height;
-            height = maxWidth;
-          }
-        }
 
-        canvas.width = width;
-        canvas.height = height;
+          canvas.width = width;
+          canvas.height = height;
 
-        // 繪製並壓縮
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        resolve(dataUrl);
-      };
+          // 繪製並壓縮
+          ctx?.drawImage(img, 0, 0, width, height);
 
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = URL.createObjectURL(file);
-    });
-  }, []);
+          const dataUrl = canvas.toDataURL("image/jpeg", quality);
+          resolve(dataUrl);
+        };
+
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = URL.createObjectURL(file);
+      });
+    },
+    []
+  );
 
   // 驗證文件
-  const validateFile = useCallback((file: File): string | null => {
-    if (!allowedTypes.includes(file.type)) {
-      return `不支援的檔案格式。只允許: ${allowedTypes.map(type => type.split('/')[1]).join(', ')}`;
-    }
+  const validateFile = useCallback(
+    (file: File): string | null => {
+      if (!allowedTypes.includes(file.type)) {
+        return `不支援的檔案格式。只允許: ${allowedTypes.map((type) => type.split("/")[1]).join(", ")}`;
+      }
 
-    if (file.size > maxSize * 1024) {
-      return `檔案太大。最大允許 ${maxSize}KB`;
-    }
+      if (file.size > maxSize * 1024) {
+        return `檔案太大。最大允許 ${maxSize}KB`;
+      }
 
-    return null;
-  }, [allowedTypes, maxSize]);
+      return null;
+    },
+    [allowedTypes, maxSize]
+  );
 
   // 處理文件上傳
-  const handleFileSelect = useCallback(async (file: File) => {
-    if (disabled) return;
+  const handleFileSelect = useCallback(
+    async (file: File) => {
+      if (disabled) return;
 
-    const error = validateFile(file);
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "上傳失敗",
-        description: error,
-      });
-      return;
-    }
+      const error = validateFile(file);
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "上傳失敗",
+          description: error,
+        });
+        return;
+      }
 
-    setIsUploading(true);
+      setIsUploading(true);
 
-    try {
-      const compressedDataUrl = await compressImage(file);
-      onAvatarChange(compressedDataUrl);
-      
-      toast({
-        title: "頭像更新成功",
-        description: "您的頭像已經更新",
-      });
-    } catch (error) {
-      console.error('Error processing image:', error);
-      toast({
-        variant: "destructive",
-        title: "處理圖片失敗",
-        description: "請嘗試選擇其他圖片",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  }, [disabled, validateFile, compressImage, onAvatarChange, toast]);
+      try {
+        const compressedDataUrl = await compressImage(file);
+        onAvatarChange(compressedDataUrl);
+
+        toast({
+          title: "頭像更新成功",
+          description: "您的頭像已經更新",
+        });
+      } catch (error) {
+        console.error("Error processing image:", error);
+        toast({
+          variant: "destructive",
+          title: "處理圖片失敗",
+          description: "請嘗試選擇其他圖片",
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [disabled, validateFile, compressImage, onAvatarChange, toast]
+  );
 
   // 文件輸入變更
-  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
-    }
-    // 清空input值，允許重複選擇同一文件
-    event.target.value = '';
-  }, [handleFileSelect]);
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        handleFileSelect(file);
+      }
+      // 清空input值，允許重複選擇同一文件
+      event.target.value = "";
+    },
+    [handleFileSelect]
+  );
 
   // 拖拽處理
-  const handleDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    if (!disabled) {
-      setDragOver(true);
-    }
-  }, [disabled]);
+  const handleDragOver = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      if (!disabled) {
+        setDragOver(true);
+      }
+    },
+    [disabled]
+  );
 
   const handleDragLeave = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     setDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    setDragOver(false);
-    
-    if (disabled) return;
+  const handleDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      setDragOver(false);
 
-    const files = Array.from(event.dataTransfer.files);
-    const file = files[0];
-    
-    if (file) {
-      handleFileSelect(file);
-    }
-  }, [disabled, handleFileSelect]);
+      if (disabled) return;
+
+      const files = Array.from(event.dataTransfer.files);
+      const file = files[0];
+
+      if (file) {
+        handleFileSelect(file);
+      }
+    },
+    [disabled, handleFileSelect]
+  );
 
   // 開啟文件選擇器
   const openFileSelector = useCallback(() => {
@@ -162,12 +180,12 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
   // 刪除頭像
   const handleDeleteAvatar = useCallback(() => {
     if (disabled) return;
-    
+
     onAvatarChange(null);
     if (onAvatarDelete) {
       onAvatarDelete();
     }
-    
+
     toast({
       title: "頭像已刪除",
       description: "您的頭像已經刪除",
@@ -181,15 +199,15 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
           {/* 頭像顯示區域 */}
           <div className="relative">
             <Avatar className="w-32 h-32">
-              <AvatarImage 
-                src={currentAvatar || undefined} 
+              <AvatarImage
+                src={currentAvatar || undefined}
                 alt={`${username}的頭像`}
               />
               <AvatarFallback className="text-2xl">
                 <User className="w-16 h-16" />
               </AvatarFallback>
             </Avatar>
-            
+
             {/* 相機圖標覆蓋 */}
             {!disabled && (
               <Button
@@ -209,8 +227,8 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
             <div
               className={`
                 relative w-full border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
-                ${dragOver ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-gray-400'}
-                ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}
+                ${dragOver ? "border-primary bg-primary/5" : "border-gray-300 hover:border-gray-400"}
+                ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
               `}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -224,7 +242,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
               <p className="text-xs text-gray-400">
                 支援 JPG、PNG、GIF，最大 {maxSize}KB
               </p>
-              
+
               {isUploading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-lg">
                   <div className="text-sm text-gray-600">處理中...</div>
@@ -244,7 +262,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
               <Upload className="w-4 h-4 mr-2" />
               選擇圖片
             </Button>
-            
+
             {currentAvatar && !disabled && (
               <Button
                 variant="outline"
@@ -261,7 +279,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept={allowedTypes.join(',')}
+            accept={allowedTypes.join(",")}
             onChange={handleInputChange}
             className="hidden"
             disabled={disabled}

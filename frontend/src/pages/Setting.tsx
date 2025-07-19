@@ -1,33 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import DashboardNavbar from '@/components/layout/DashboardNavbar';
-import Footer from '@/components/layout/Footer';
-import UserProfileSection from '@/components/settings/UserProfileSection';
-import EmailManagementSection from '@/components/settings/EmailManagementSection';
-import SocialAccountSection from '@/components/settings/SocialAccountSection';
-import SecuritySection from '@/components/settings/SecuritySection';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
-import { useAuthentication } from '../hooks/useAuthentication';
-import { useUserProfile } from '../hooks/useUserProfile';
-import { useEmailManagement } from '../hooks/useEmailManagement';
-import { useToast } from '@/hooks/use-toast';
-import { LineLoginService } from '../services/lineLogin';
-import { AuthService } from '../services/auth';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import DashboardNavbar from "@/components/layout/DashboardNavbar";
+import Footer from "@/components/layout/Footer";
+import UserProfileSection from "@/components/settings/UserProfileSection";
+import EmailManagementSection from "@/components/settings/EmailManagementSection";
+import SocialAccountSection from "@/components/settings/SocialAccountSection";
+import SecuritySection from "@/components/settings/SecuritySection";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
+import { useAuthentication } from "../hooks/useAuthentication";
+import { useUserProfile } from "../hooks/useUserProfile";
+import { useEmailManagement } from "../hooks/useEmailManagement";
+import { useToast } from "@/hooks/use-toast";
+import { LineLoginService } from "../services/lineLogin";
+import { AuthService } from "../services/auth";
 
 const Setting: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [displayName, setDisplayName] = useState('');
+  const [displayName, setDisplayName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
 
   // 使用認證 hook
-  const { user: authUser, loading: authLoading, error: authError } = useAuthentication({
+  const {
+    user: authUser,
+    loading: authLoading,
+    error: authError,
+  } = useAuthentication({
     requireAuth: true,
-    preventBackToLogin: true,
-    redirectTo: '/login'
+    preventBackToLogin: false,
+    redirectTo: "/login",
   });
 
   // 使用用戶資料管理 hooks
@@ -44,7 +48,7 @@ const Setting: React.FC = () => {
     uploadAvatar,
     deleteAvatar,
     changePassword,
-    deleteAccount
+    deleteAccount,
   } = useUserProfile();
 
   // 使用電子郵件管理 hook
@@ -58,7 +62,7 @@ const Setting: React.FC = () => {
     isResendingEmailVerification,
     loadEmailStatus,
     updateEmail,
-    resendEmailVerification
+    resendEmailVerification,
   } = useEmailManagement();
 
   // 初始化用戶資料
@@ -67,7 +71,7 @@ const Setting: React.FC = () => {
       if (authUser && !authLoading) {
         setUser(authUser);
         setDisplayName(authUser.display_name);
-        setEmail(authUser.email || '');
+        setEmail(authUser.email || "");
         setEmailVerified(authUser.email_verified || false);
 
         // 載入詳細的用戶資料
@@ -76,13 +80,23 @@ const Setting: React.FC = () => {
           await loadUserAvatar();
           await loadEmailStatus();
         }
-        
+
         setProfileLoading(false);
       }
     };
 
     initializeUserData();
-  }, [authUser, authLoading, setUser, loadUserProfile, loadUserAvatar, loadEmailStatus, setProfileLoading]);
+  }, [
+    authUser,
+    authLoading,
+    setUser,
+    setEmail,
+    setEmailVerified,
+    loadUserProfile,
+    loadUserAvatar,
+    loadEmailStatus,
+    setProfileLoading,
+  ]);
 
   // 處理顯示名稱保存
   const handleSaveDisplayName = async () => {
@@ -115,11 +129,12 @@ const Setting: React.FC = () => {
       } else {
         throw new Error("無法獲取 LINE 登入連結");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "LINE 連結失敗",
-        description: error.message || "無法連結 LINE 帳號",
+        description:
+          error instanceof Error ? error.message : "無法連結 LINE 帳號",
       });
     }
   };
@@ -129,16 +144,17 @@ const Setting: React.FC = () => {
     try {
       // 這裡應該調用 API 來解除 LINE 連結
       // await apiClient.unlinkLineAccount();
-      
+
       toast({
         title: "LINE 帳號已解除連結",
         description: "您的 LINE 帳號連結已解除",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "解除連結失敗",
-        description: error.message || "無法解除 LINE 帳號連結",
+        description:
+          error instanceof Error ? error.message : "無法解除 LINE 帳號連結",
       });
     }
   };
@@ -153,7 +169,7 @@ const Setting: React.FC = () => {
     if (success) {
       AuthService.clearToken();
       localStorage.clear();
-      navigate('/');
+      navigate("/");
     }
     setShowConfirmModal(false);
   };
@@ -190,13 +206,15 @@ const Setting: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FFFDFA]">
       <DashboardNavbar user={user} />
-      
+
       <div className="pt-16 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           {/* 頁面標題 */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-[#1a1a40] mb-2">帳號設定</h1>
-            <p className="text-[#5A2C1D]">管理您的個人資料、安全設定和帳號偏好</p>
+            <p className="text-[#5A2C1D]">
+              管理您的個人資料、安全設定和帳號偏好
+            </p>
           </div>
 
           {/* 用戶資料區塊 */}
@@ -249,18 +267,18 @@ const Setting: React.FC = () => {
               <AlertTriangle className="w-6 h-6 text-red-600" />
               <h3 className="text-lg font-bold text-red-700">確認刪除帳號</h3>
             </div>
-            
+
             <p className="text-gray-700 mb-6">
               您確定要刪除帳號嗎？此操作將永久刪除您的所有資料，包括：
             </p>
-            
+
             <ul className="text-sm text-gray-600 mb-6 space-y-1">
               <li>• 個人資料和設定</li>
               <li>• 創建的所有機器人</li>
               <li>• 對話紀錄和數據</li>
               <li>• 無法復原的永久刪除</li>
             </ul>
-            
+
             <div className="flex gap-3">
               <Button
                 variant="destructive"

@@ -39,20 +39,20 @@ const App = () => (
           <Route path="/line-login" element={<LINELogin />} />
           <Route path="/login-success" element={<LoginSuccess />} />
           <Route path="/login-error" element={<LoginError />} />
-          
+
           {/* 新的語義化路由 */}
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/bots/create" element={<AddBotPage />} />
           <Route path="/bots/editor" element={<BotEditorPage />} />
           <Route path="/how-to-establish" element={<HowToEstablish />} />
-          
+
           {/* 向後兼容的舊路由 */}
           <Route path="/index2" element={<DashboardPage />} />
           <Route path="/add server" element={<AddBotPage />} />
           <Route path="/add-server" element={<AddBotPage />} />
           <Route path="/block" element={<BotEditorPage />} />
           <Route path="/how to establish" element={<HowToEstablish />} />
-          
+
           <Route path="/setting" element={<Setting />} />
           <Route path="/verify-email" element={<EmailVerification />} />
           <Route path="/email-verification" element={<EmailVerification />} />

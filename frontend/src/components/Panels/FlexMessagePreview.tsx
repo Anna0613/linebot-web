@@ -1,6 +1,36 @@
 import React from "react";
 
-const renderContent = (component, index) => {
+// Define types for Flex Message components
+interface FlexComponent {
+  type: string;
+  [key: string]: unknown;
+}
+
+interface FlexBubble {
+  type: "bubble";
+  header?: FlexComponent;
+  hero?: FlexComponent;
+  body?: FlexComponent;
+  footer?: FlexComponent;
+  backgroundColor?: string;
+  cornerRadius?: number;
+  borderColor?: string;
+  borderWidth?: string;
+  shadow?: boolean;
+  [key: string]: unknown;
+}
+
+interface FlexCarousel {
+  type: "carousel";
+  contents: FlexBubble[];
+}
+
+interface FlexMessage {
+  type: "flex";
+  contents: FlexBubble | FlexCarousel;
+}
+
+const renderContent = (component: FlexComponent, index: React.Key) => {
   if (!component || !component.type) return null;
 
   switch (component.type) {
@@ -8,7 +38,7 @@ const renderContent = (component, index) => {
       // aspectMode, aspectRatio, gravity, size
       let objectFit: string = "cover";
       if (component.aspectMode === "fit") objectFit = "contain";
-      let aspectRatioStyle: Record<string, any> = {};
+      let aspectRatioStyle: Record<string, string | number> = {};
       if (component.aspectRatio) {
         const [w, h] = component.aspectRatio.split(":").map(Number);
         if (w && h) {
@@ -25,36 +55,53 @@ const renderContent = (component, index) => {
           };
         }
       }
-      let gravityStyle: Record<string, any> = {};
-      if (component.gravity === "center") gravityStyle = { objectPosition: "center" };
+      let gravityStyle: Record<string, string> = {};
+      if (component.gravity === "center")
+        gravityStyle = { objectPosition: "center" };
       if (component.gravity === "top") gravityStyle = { objectPosition: "top" };
-      if (component.gravity === "bottom") gravityStyle = { objectPosition: "bottom" };
-      let sizeStyle: Record<string, any> = {};
-      if (component.size === "full") sizeStyle = { width: "100%", height: "100%" };
+      if (component.gravity === "bottom")
+        gravityStyle = { objectPosition: "bottom" };
+      let sizeStyle: Record<string, string> = {};
+      if (component.size === "full")
+        sizeStyle = { width: "100%", height: "100%" };
       return (
         <img
           key={index}
           src={component.url}
           alt={component.alt || "image"}
           className="w-full max-w-full object-cover rounded-md mb-2"
-          style={{
-            objectFit: objectFit,
-            ...aspectRatioStyle,
-            ...gravityStyle,
-            ...sizeStyle,
-          } as React.CSSProperties}
+          style={
+            {
+              objectFit: objectFit,
+              ...aspectRatioStyle,
+              ...gravityStyle,
+              ...sizeStyle,
+            } as React.CSSProperties
+          }
         />
       );
     }
     case "text": {
       // wrap, weight, size, align, gravity, maxLines, margin
-      let style: Record<string, any> = {
+      const style: Record<string, string | number | undefined> = {
         color: component.color || undefined,
         textDecoration: component.decoration || undefined,
         textAlign: component.align || undefined,
         margin: component.margin || undefined,
         fontWeight: component.weight || undefined,
-        fontSize: component.size ? (component.size === "xl" ? "1.25rem" : component.size === "lg" ? "1.125rem" : component.size === "md" ? "1rem" : component.size === "sm" ? "0.875rem" : component.size === "xs" ? "0.75rem" : undefined) : undefined,
+        fontSize: component.size
+          ? component.size === "xl"
+            ? "1.25rem"
+            : component.size === "lg"
+              ? "1.125rem"
+              : component.size === "md"
+                ? "1rem"
+                : component.size === "sm"
+                  ? "0.875rem"
+                  : component.size === "xs"
+                    ? "0.75rem"
+                    : undefined
+          : undefined,
         lineHeight: component.wrap ? "1.5" : undefined,
         whiteSpace: component.wrap ? "normal" : "nowrap",
         overflow: "hidden",
@@ -65,18 +112,14 @@ const renderContent = (component, index) => {
         WebkitBoxOrient: component.maxLines ? "vertical" : undefined,
       };
       return (
-        <p
-          key={index}
-          className="truncate"
-          style={style}
-        >
+        <p key={index} className="truncate" style={style}>
           {component.text}
         </p>
       );
     }
     case "icon": {
       // 支援 size, margin
-      let style: Record<string, any> = {
+      const style: Record<string, string | number | undefined> = {
         margin: component.margin || undefined,
         width: component.size || 20,
         height: component.size || 20,
@@ -97,12 +140,14 @@ const renderContent = (component, index) => {
       let layoutClass = "flex flex-col";
       if (component.layout === "horizontal") layoutClass = "flex flex-row";
       if (component.layout === "baseline") layoutClass = "flex items-baseline";
-      let style: Record<string, any> = {};
-      if (component.justifyContent) style.justifyContent = component.justifyContent;
+      const style: Record<string, string | number | undefined> = {};
+      if (component.justifyContent)
+        style.justifyContent = component.justifyContent;
       if (component.alignItems) style.alignItems = component.alignItems;
       if (component.paddingAll) style.padding = component.paddingAll;
       if (component.paddingTop) style.paddingTop = component.paddingTop;
-      if (component.paddingBottom) style.paddingBottom = component.paddingBottom;
+      if (component.paddingBottom)
+        style.paddingBottom = component.paddingBottom;
       if (component.paddingStart) style.paddingLeft = component.paddingStart;
       if (component.paddingEnd) style.paddingRight = component.paddingEnd;
       if (component.margin) style.margin = component.margin;
@@ -112,10 +157,14 @@ const renderContent = (component, index) => {
       if (component.offsetEnd) style.right = component.offsetEnd;
       if (component.width) style.width = component.width;
       if (component.height) style.height = component.height;
-      if (component.background && component.background.type === "linearGradient") {
+      if (
+        component.background &&
+        component.background.type === "linearGradient"
+      ) {
         style.background = `linear-gradient(${component.background.angle || "0deg"}, ${component.background.startColor}, ${component.background.endColor})`;
       }
-      if (component.backgroundColor) style.backgroundColor = component.backgroundColor;
+      if (component.backgroundColor)
+        style.backgroundColor = component.backgroundColor;
       if (component.borderColor) style.borderColor = component.borderColor;
       if (component.borderWidth) style.borderWidth = component.borderWidth;
       if (component.cornerRadius) style.borderRadius = component.cornerRadius;
@@ -123,8 +172,10 @@ const renderContent = (component, index) => {
 
       // 處理細線box（如 width/height = "2px"）
       const isLine =
-        (component.width === "2px" && (!component.height || component.height === "100%")) ||
-        (component.height === "2px" && (!component.width || component.width === "100%"));
+        (component.width === "2px" &&
+          (!component.height || component.height === "100%")) ||
+        (component.height === "2px" &&
+          (!component.width || component.width === "100%"));
       if (isLine) {
         layoutClass = "";
         style.display = "block";
@@ -141,24 +192,27 @@ const renderContent = (component, index) => {
       }
 
       return (
-        <div
-          key={index}
-          className={layoutClass}
-          style={style}
-        >
-          {(component.contents || []).map((child, i) => renderContent(child, `${index}-${i}`))}
+        <div key={index} className={layoutClass} style={style}>
+          {(component.contents || []).map((child, i) =>
+            renderContent(child, `${index}-${i}`)
+          )}
         </div>
       );
     }
     case "button": {
       // 支援 style, color, margin, height
-      let style: Record<string, any> = {
+      const style: Record<string, string | number | undefined> = {
         flex: component.flex !== undefined ? component.flex : undefined,
         alignSelf: component.align || undefined,
         margin: component.margin || undefined,
         height: component.height || undefined,
         color: component.color || undefined,
-        backgroundColor: component.style === "primary" ? "#82C29B" : component.style === "secondary" ? "#f5f5f5" : undefined,
+        backgroundColor:
+          component.style === "primary"
+            ? "#82C29B"
+            : component.style === "secondary"
+              ? "#f5f5f5"
+              : undefined,
       };
       return (
         <button
@@ -177,7 +231,7 @@ const renderContent = (component, index) => {
     }
     case "separator": {
       // 支援 margin, color
-      let style: Record<string, any> = {
+      const style: Record<string, string | number> = {
         width: "100%",
         height: 1,
         backgroundColor: component.color || "#e0e0e0",
@@ -204,7 +258,11 @@ const renderContent = (component, index) => {
   }
 };
 
-const FlexMessagePreview = ({ json }) => {
+interface FlexMessagePreviewProps {
+  json: FlexMessage | null | undefined;
+}
+
+const FlexMessagePreview: React.FC<FlexMessagePreviewProps> = ({ json }) => {
   if (!json || !json.contents || json.type !== "flex") {
     return <p className="text-red-500">Flex Message 格式錯誤</p>;
   }
@@ -212,7 +270,7 @@ const FlexMessagePreview = ({ json }) => {
   const contents = json.contents;
 
   // 根據 bubble 內容動態產生 style
-  const getBubbleStyle = (bubble: any): React.CSSProperties => {
+  const getBubbleStyle = (bubble: FlexBubble): React.CSSProperties => {
     return {
       width: 360,
       height: "auto",
@@ -233,7 +291,7 @@ const FlexMessagePreview = ({ json }) => {
   };
 
   // bubble區塊渲染
-  const renderBubble = (bubble: any, key?: React.Key) => (
+  const renderBubble = (bubble: FlexBubble, key?: React.Key) => (
     <div key={key} style={getBubbleStyle(bubble)}>
       {/* header */}
       {bubble.header && (
@@ -267,15 +325,15 @@ const FlexMessagePreview = ({ json }) => {
       className="w-full h-full p-2 bg-white rounded relative flex items-center justify-center"
       style={{ maxHeight: 600, maxWidth: "100%", overflow: "auto" }}
     >
-      {contents.type === "carousel"
-        ? (
-          <div style={{ display: "flex", gap: 16, overflowX: "auto", width: "100%" }}>
-            {contents.contents.map((bubble, i) => renderBubble(bubble, i))}
-          </div>
-        )
-        : contents.type === "bubble"
-        ? renderBubble(contents)
-        : null}
+      {contents.type === "carousel" ? (
+        <div
+          style={{ display: "flex", gap: 16, overflowX: "auto", width: "100%" }}
+        >
+          {contents.contents.map((bubble, i) => renderBubble(bubble, i))}
+        </div>
+      ) : contents.type === "bubble" ? (
+        renderBubble(contents)
+      ) : null}
     </div>
   );
 };

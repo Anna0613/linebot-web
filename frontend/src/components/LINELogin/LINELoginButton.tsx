@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Button } from '../ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { API_CONFIG, getApiUrl } from '../../config/apiConfig';
+import React, { useState } from "react";
+import { Button } from "../ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { API_CONFIG, getApiUrl } from "../../config/apiConfig";
 
 interface LINELoginButtonProps {
   onLogin?: () => void;
@@ -14,28 +14,37 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin }) => {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.LINE_LOGIN), {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        getApiUrl(
+          API_CONFIG.LINE_LOGIN.BASE_URL,
+          API_CONFIG.LINE_LOGIN.ENDPOINTS.LINE_LOGIN
+        ),
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       if (!data.login_url) {
-        throw new Error('Invalid response: login_url missing');
+        throw new Error("Invalid response: login_url missing");
       }
-      console.log('LINE login URL:', data.login_url); // 調試用
+      console.log("LINE login URL:", data.login_url); // 調試用
       window.location.href = data.login_url;
-    } catch (error: any) {
-      console.error('Error initiating LINE login:', error);
+    } catch (error: unknown) {
+      console.error("Error initiating LINE login:", error);
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'Failed to initiate LINE login. Please try again.',
+        variant: "destructive",
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to initiate LINE login. Please try again.",
       });
       setLoading(false);
     }
@@ -47,7 +56,7 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin }) => {
       disabled={loading}
       className="bg-green-500 hover:bg-green-600 text-white"
     >
-      {loading ? 'Loading...' : 'Login with LINE'}
+      {loading ? "Loading..." : "Login with LINE"}
     </Button>
   );
 };

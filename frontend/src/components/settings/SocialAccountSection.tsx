@@ -1,7 +1,13 @@
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Link as LinkIcon, ExternalLink, CheckCircle } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Link as LinkIcon, ExternalLink, CheckCircle } from "lucide-react";
 
 interface User {
   line_id?: string;
@@ -50,14 +56,17 @@ const SocialAccountSection = ({
                 </div>
               </div>
               {isLineLinked && (
-                <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                <Badge
+                  variant="default"
+                  className="bg-green-100 text-green-800 border-green-200"
+                >
                   <CheckCircle className="w-3 h-3 mr-1" />
                   已連結
                 </Badge>
               )}
             </div>
           </CardHeader>
-          
+
           <CardContent className="pt-0">
             {isLineLinked ? (
               <div className="space-y-3">
@@ -75,12 +84,12 @@ const SocialAccountSection = ({
                         {user.display_name}
                       </p>
                       <p className="text-xs text-green-600">
-                        LINE ID: {user.line_id || 'N/A'}
+                        LINE ID: {user.line_id || "N/A"}
                       </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -94,7 +103,9 @@ const SocialAccountSection = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open('https://line.me/ti/p/', '_blank')}
+                    onClick={() =>
+                      window.open("https://line.me/ti/p/", "_blank")
+                    }
                     className="flex items-center gap-1"
                   >
                     <ExternalLink className="w-3 h-3" />
@@ -114,13 +125,13 @@ const SocialAccountSection = ({
                     <li>• 享受更便捷的使用體驗</li>
                   </ul>
                 </div>
-                
+
                 <Button
                   onClick={onLinkLineAccount}
                   disabled={linkingInProgress}
                   className="w-full bg-green-500 hover:bg-green-600 text-white"
                 >
-                  {linkingInProgress ? '連結中...' : '連結 LINE 帳號'}
+                  {linkingInProgress ? "連結中..." : "連結 LINE 帳號"}
                 </Button>
               </div>
             )}
@@ -135,20 +146,16 @@ const SocialAccountSection = ({
                 <span className="text-white font-bold text-xs">...</span>
               </div>
               <div>
-                <CardTitle className="text-lg text-gray-500">其他平台</CardTitle>
-                <CardDescription>
-                  更多社群平台連結功能即將推出
-                </CardDescription>
+                <CardTitle className="text-lg text-gray-500">
+                  其他平台
+                </CardTitle>
+                <CardDescription>更多社群平台連結功能即將推出</CardDescription>
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent className="pt-0">
-            <Button 
-              variant="outline" 
-              disabled 
-              className="w-full"
-            >
+            <Button variant="outline" disabled className="w-full">
               敬請期待
             </Button>
           </CardContent>

@@ -1,5 +1,5 @@
-import { API_CONFIG, getApiUrl } from '../config/apiConfig';
-import { AuthService } from './auth';
+import { API_CONFIG, getApiUrl } from "../config/apiConfig";
+import { AuthService } from "./auth";
 
 export interface User {
   line_id?: string;
@@ -34,27 +34,30 @@ export class AuthenticationService {
   async verifyLineToken(token: string): Promise<User | null> {
     try {
       const response = await fetch(
-        getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN),
+        getApiUrl(
+          API_CONFIG.LINE_LOGIN.BASE_URL,
+          API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN
+        ),
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
         }
       );
 
       if (!response.ok) {
-        throw new Error('Token 驗證失敗');
+        throw new Error("Token 驗證失敗");
       }
-      
+
       const result = await response.json();
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
 
       return result as User;
     } catch (error) {
-      console.error('驗證 LINE token 錯誤:', error);
+      console.error("驗證 LINE token 錯誤:", error);
       return null;
     }
   }
@@ -66,44 +69,47 @@ export class AuthenticationService {
     try {
       const nativeFetch = window.fetch.bind(window);
       const response = await nativeFetch(
-        getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN),
+        getApiUrl(
+          API_CONFIG.AUTH.BASE_URL,
+          API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN
+        ),
         {
-          method: 'GET',
-          credentials: 'include',
+          method: "GET",
+          credentials: "include",
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            ...(AuthService.getToken() && { 
-              'Authorization': `Bearer ${AuthService.getToken()}` 
-            })
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            ...(AuthService.getToken() && {
+              Authorization: `Bearer ${AuthService.getToken()}`,
+            }),
           },
         }
       );
-      
+
       if (!response.ok) {
-        throw new Error('檢查登入狀態失敗');
+        throw new Error("檢查登入狀態失敗");
       }
 
       const data = await response.json();
-      
+
       // 處理新格式 API 回應
       if (data.authenticated && data.user) {
-        return { 
-          display_name: data.user.username, 
+        return {
+          display_name: data.user.username,
           username: data.user.username,
-          email: data.user.email
+          email: data.user.email,
         };
       }
 
       // 處理舊格式回應 (向後兼容)
-      if (data.message && typeof data.message === 'string') {
+      if (data.message && typeof data.message === "string") {
         const messagePattern = /User (.+?) is logged in/;
         const match = data.message.match(messagePattern);
-        
+
         if (match && match[1]) {
-          return { 
-            display_name: match[1], 
-            username: match[1] 
+          return {
+            display_name: match[1],
+            username: match[1],
           };
         }
       }
@@ -113,9 +119,9 @@ export class AuthenticationService {
         return null;
       }
 
-      throw new Error('無效的 API 回應格式');
+      throw new Error("無效的 API 回應格式");
     } catch (error) {
-      console.error('檢查登入狀態錯誤:', error);
+      console.error("檢查登入狀態錯誤:", error);
       return null;
     }
   }
@@ -127,16 +133,16 @@ export class AuthenticationService {
     if (token) {
       AuthService.setToken(token);
     }
-    
+
     // 設置 LINE 相關信息
     if (user.line_id) {
-      localStorage.setItem('line_token', token || '');
+      localStorage.setItem("line_token", token || "");
     }
-    
-    localStorage.setItem('username', user.display_name);
-    
+
+    localStorage.setItem("username", user.display_name);
+
     if (user.email) {
-      localStorage.setItem('email', user.email);
+      localStorage.setItem("email", user.email);
     }
   }
 
@@ -145,19 +151,19 @@ export class AuthenticationService {
    */
   clearUserSession(): void {
     AuthService.clearToken();
-    localStorage.removeItem('line_token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('email');
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem("line_token");
+    localStorage.removeItem("username");
+    localStorage.removeItem("email");
+    localStorage.removeItem("auth_token");
   }
 
   /**
    * 獲取當前用戶信息
    */
   getCurrentUser(): User | null {
-    const username = localStorage.getItem('username');
-    const email = localStorage.getItem('email');
-    
+    const username = localStorage.getItem("username");
+    const email = localStorage.getItem("email");
+
     if (!username) {
       return null;
     }
@@ -165,7 +171,7 @@ export class AuthenticationService {
     return {
       display_name: username,
       username,
-      email: email || undefined
+      email: email || undefined,
     };
   }
 
@@ -173,7 +179,7 @@ export class AuthenticationService {
    * 檢查是否已認證
    */
   isAuthenticated(): boolean {
-    return AuthService.isAuthenticated() || !!localStorage.getItem('username');
+    return AuthService.isAuthenticated() || !!localStorage.getItem("username");
   }
 
   /**
@@ -181,13 +187,13 @@ export class AuthenticationService {
    */
   async handleLineLoginSuccess(token: string): Promise<User | null> {
     const userData = await this.verifyLineToken(token);
-    
+
     if (userData) {
       this.setUserSession(userData, token);
       // 清除登入前的歷史記錄
-      window.history.replaceState(null, '', window.location.pathname);
+      window.history.replaceState(null, "", window.location.pathname);
     }
-    
+
     return userData;
   }
 
@@ -196,7 +202,7 @@ export class AuthenticationService {
    */
   handleLoginSuccess(response: LoginResponse): User | null {
     if (!response.success) {
-      throw new Error(response.message || '登入失敗');
+      throw new Error(response.message || "登入失敗");
     }
 
     // 設置 token

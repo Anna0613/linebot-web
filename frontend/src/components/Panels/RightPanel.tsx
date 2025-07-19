@@ -33,8 +33,7 @@ const RightPanel = () => {
         description: "此 JSON 不是有效的 Flex 或 Bubble 結構",
       });
     }
-
-  }, []);
+  }, [toast]);
 
   const handleExport = () => {
     if (!flexJson) return;
@@ -59,7 +58,9 @@ const RightPanel = () => {
           {isValid && flexJson ? (
             <FlexMessagePreview json={flexJson} />
           ) : (
-            <p className="text-gray-400 text-sm sm:text-base">無有效 Flex JSON</p>
+            <p className="text-gray-400 text-sm sm:text-base">
+              無有效 Flex JSON
+            </p>
           )}
         </div>
       </div>

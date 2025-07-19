@@ -26,10 +26,10 @@ const NotFound = () => {
   const handleReturnHome = () => {
     if (isAuthenticated) {
       // 已登入用戶導向 /dashboard
-      navigate('/dashboard');
+      navigate("/dashboard");
     } else {
       // 未登入用戶導向首頁 /
-      navigate('/');
+      navigate("/");
     }
   };
 
@@ -39,7 +39,7 @@ const NotFound = () => {
         <h1 className="text-4xl font-bold mb-4">404</h1>
         <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
         {isAuthenticated !== null && (
-          <Button 
+          <Button
             onClick={handleReturnHome}
             className="bg-[#F4CD41] text-[#1a1a40] font-bold rounded-[5px] text-[16px] hover:bg-[#e6bc00] px-6 py-2"
           >

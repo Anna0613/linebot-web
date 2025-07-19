@@ -1,6 +1,12 @@
-
-import { useState } from 'react';
-import { MessageSquare, Layout, Database, Server, Shield, BarChart3 } from 'lucide-react';
+import { useState } from "react";
+import {
+  MessageSquare,
+  Layout,
+  Database,
+  Server,
+  Shield,
+  BarChart3,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const features = [
@@ -13,7 +19,7 @@ const features = [
       "帶有拖拉式節點的可視化流程建構器",
       "實時預覽你的機器人的回應",
       "很多LINE Flex Messages的媒體訊息編輯器",
-      "有預先建立對話流程的範本庫"
+      "有預先建立對話流程的範本庫",
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -34,7 +40,7 @@ const features = [
         </div>
         <div className="w-full h-12 bg-line/20 rounded-full"></div>
       </div>
-    )
+    ),
   },
   {
     id: "server",
@@ -45,7 +51,7 @@ const features = [
       "使用 Docker 容器進行一鍵部署",
       "根據流量自動擴展",
       "內建 NGINX 配置以實現最佳效能",
-      "伺服器健康監控和警報"
+      "伺服器健康監控和警報",
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -71,18 +77,19 @@ const features = [
           </div>
         </div>
       </div>
-    )
+    ),
   },
   {
     id: "database",
     icon: <Database className="h-6 w-6" />,
     title: "資料庫管理",
-    description: "無需 SQL 知識即可管理您的機器人的資料。輕鬆儲存使用者互動和偏好。",
+    description:
+      "無需 SQL 知識即可管理您的機器人的資料。輕鬆儲存使用者互動和偏好。",
     details: [
       "可視化資料庫模式設計器",
       "自動資料備份和還原",
       "內建資料驗證規則",
-      "以多種格式匯出和匯入資料"
+      "以多種格式匯出和匯入資料",
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -121,7 +128,7 @@ const features = [
           <div className="h-8 w-24 rounded-full bg-primary/20"></div>
         </div>
       </div>
-    )
+    ),
   },
   {
     id: "analytics",
@@ -132,7 +139,7 @@ const features = [
       "包含關鍵指標的即時儀表板",
       "用戶參與度和對話分析",
       "訊息回覆率監控",
-      "自訂報告和數據視覺化"
+      "自訂報告和數據視覺化",
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -159,7 +166,7 @@ const features = [
           </div>
         </div>
       </div>
-    )
+    ),
   },
   {
     id: "security",
@@ -170,7 +177,7 @@ const features = [
       "所有通訊均採用 HTTPS 加密",
       "用於安全 API 存取的 JWT 身份驗證",
       "限制速率以防止濫用",
-      "定期安全審核和更新"
+      "定期安全審核和更新",
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -187,7 +194,7 @@ const features = [
           <div className="h-10 w-32 rounded-full bg-gray-100"></div>
         </div>
       </div>
-    )
+    ),
   },
   {
     id: "messaging",
@@ -198,7 +205,7 @@ const features = [
       "支援所有 LINE 訊息類型，包括 Flex Messages",
       "圖像、視訊和音訊資訊處理",
       "互動式按鈕和選單",
-      "快速回覆和持久選單選項"
+      "快速回覆和持久選單選項",
     ],
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
@@ -223,8 +230,8 @@ const features = [
           </div>
         </div>
       </div>
-    )
-  }
+    ),
+  },
 ];
 
 const Features = () => {
@@ -233,15 +240,18 @@ const Features = () => {
   return (
     <section id="features" className="section py-24">
       <div className="text-center mb-16 fade-in-element">
-        <h2 className="section-title">強大的功能， <span className="text-gradient">簡單的介面</span></h2>
+        <h2 className="section-title">
+          強大的功能， <span className="text-gradient">簡單的介面</span>
+        </h2>
         <p className="section-subtitle mx-auto">
-        我們的平台提供創建、部署和管理 LINE 機器人所需的一切，無需編寫任何程式碼。
+          我們的平台提供創建、部署和管理 LINE
+          機器人所需的一切，無需編寫任何程式碼。
         </p>
       </div>
 
-      <Tabs 
-        defaultValue="design" 
-        value={activeTab} 
+      <Tabs
+        defaultValue="design"
+        value={activeTab}
         onValueChange={setActiveTab}
         className="w-full max-w-5xl mx-auto"
       >
@@ -255,36 +265,56 @@ const Features = () => {
                 rounded-xl transition-all duration-200 border border-transparent data-[state=active]:border-border
               `}
             >
-              <div className={`p-2 rounded-full ${
-                activeTab === feature.id ? 'bg-line/10 text-line' : 'bg-muted text-muted-foreground'
-              }`}>
+              <div
+                className={`p-2 rounded-full ${
+                  activeTab === feature.id
+                    ? "bg-line/10 text-line"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
                 {feature.icon}
               </div>
-              <span className="text-xs font-medium text-center">{feature.title}</span>
+              <span className="text-xs font-medium text-center">
+                {feature.title}
+              </span>
             </TabsTrigger>
           ))}
         </TabsList>
-        
+
         {features.map((feature) => (
-          <TabsContent 
-            key={feature.id} 
+          <TabsContent
+            key={feature.id}
             value={feature.id}
             className="mt-0 fade-in-element"
           >
             <div className="glassmorphism p-6 md:p-8 lg:p-10">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                 <div className="space-y-6">
-                  <h3 className="text-2xl md:text-3xl font-bold">{feature.title}</h3>
+                  <h3 className="text-2xl md:text-3xl font-bold">
+                    {feature.title}
+                  </h3>
                   <p className="text-muted-foreground">{feature.description}</p>
-                  
+
                   <div className="pt-4">
                     <h4 className="font-medium mb-3">主要功能：</h4>
                     <ul className="space-y-2">
                       {feature.details.map((detail, index) => (
                         <li key={index} className="flex items-start">
                           <div className="h-5 w-5 rounded-full bg-line/20 text-line flex items-center justify-center flex-shrink-0 mr-3 mt-0.5">
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 12 12"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M10 3L4.5 8.5L2 6"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
                             </svg>
                           </div>
                           <span>{detail}</span>
@@ -293,11 +323,9 @@ const Features = () => {
                     </ul>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-center">
-                  <div className="animate-float">
-                    {feature.image}
-                  </div>
+                  <div className="animate-float">{feature.image}</div>
                 </div>
               </div>
             </div>

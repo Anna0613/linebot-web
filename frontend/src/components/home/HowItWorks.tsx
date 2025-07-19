@@ -1,5 +1,4 @@
-
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight } from "lucide-react";
 
 const steps = [
   {
@@ -31,12 +30,13 @@ const steps = [
         </div>
         <div className="mt-6 h-10 w-full bg-line/20 rounded-full"></div>
       </div>
-    )
+    ),
   },
   {
     number: "02",
     title: "設計機器人流程",
-    description: "使用我們的視覺化拖放編輯器來設計您的機器人的對話流程，無需編碼。",
+    description:
+      "使用我們的視覺化拖放編輯器來設計您的機器人的對話流程，無需編碼。",
     image: (
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-center mb-4">
@@ -70,7 +70,7 @@ const steps = [
           <div className="h-10 w-24 rounded-full bg-line/20"></div>
         </div>
       </div>
-    )
+    ),
   },
   {
     number: "03",
@@ -112,7 +112,7 @@ const steps = [
           </div>
         </div>
       </div>
-    )
+    ),
   },
   {
     number: "04",
@@ -132,72 +132,97 @@ const steps = [
           <div className="h-10 w-40 rounded-full bg-line/20"></div>
         </div>
       </div>
-    )
-  }
+    ),
+  },
 ];
 
 const HowItWorks = () => {
   return (
     <section id="how-it-works" className="section py-24 bg-[#FFFDFA]">
       <div className="text-center mb-16 fade-in-element">
-        <h2 className="section-title">它如何<span className="text-gradient">工作</span></h2>
+        <h2 className="section-title">
+          它如何<span className="text-gradient">工作</span>
+        </h2>
         <p className="section-subtitle mx-auto">
-        使用我們的平台可以輕鬆建立和部署您的自訂 LINE Bot。按照這些簡單的步驟即可開始。
+          使用我們的平台可以輕鬆建立和部署您的自訂 LINE
+          Bot。按照這些簡單的步驟即可開始。
         </p>
       </div>
-      
+
       <div className="relative">
         {/* Connection Line */}
         <div className="hidden lg:block absolute left-1/2 top-24 bottom-24 w-0.5 bg-gray-200 -translate-x-1/2"></div>
-        
+
         {/* Steps */}
         <div className="space-y-20 lg:space-y-0">
           {steps.map((step, index) => (
-            <div key={index} className="fade-in-element" style={{ animationDelay: `${0.2 * index}s` }}>
-              <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center ${
-                index % 2 === 1 ? 'lg:grid-flow-dense' : ''
-              }`}>
+            <div
+              key={index}
+              className="fade-in-element"
+              style={{ animationDelay: `${0.2 * index}s` }}
+            >
+              <div
+                className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center ${
+                  index % 2 === 1 ? "lg:grid-flow-dense" : ""
+                }`}
+              >
                 {/* Step image - reversed order on odd items */}
-                <div className={index % 2 === 1 ? 'lg:col-start-1' : 'lg:col-start-2'}>
+                <div
+                  className={
+                    index % 2 === 1 ? "lg:col-start-1" : "lg:col-start-2"
+                  }
+                >
                   <div className="relative">
-                    <div className="animate-float">
-                      {step.image}
-                    </div>
-                    
+                    <div className="animate-float">{step.image}</div>
+
                     {/* Step number indicator on desktop */}
                     <div className="hidden lg:flex absolute top-1/2 -translate-y-1/2 items-center justify-center z-10">
                       {index % 2 === 1 ? (
                         <div className="right-0 translate-x-1/2">
                           <div className="h-16 w-16 rounded-full bg-white shadow-lg flex items-center justify-center">
-                            <span className="text-2xl font-bold text-line">{step.number}</span>
+                            <span className="text-2xl font-bold text-line">
+                              {step.number}
+                            </span>
                           </div>
                         </div>
                       ) : (
                         <div className="left-0 -translate-x-1/2">
                           <div className="h-16 w-16 rounded-full bg-white shadow-lg flex items-center justify-center">
-                            <span className="text-2xl font-bold text-line">{step.number}</span>
+                            <span className="text-2xl font-bold text-line">
+                              {step.number}
+                            </span>
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Step content */}
-                <div className={index % 2 === 1 ? 'lg:col-start-2' : 'lg:col-start-1'}>
+                <div
+                  className={
+                    index % 2 === 1 ? "lg:col-start-2" : "lg:col-start-1"
+                  }
+                >
                   <div className="space-y-4">
                     {/* Step number indicator on mobile */}
                     <div className="flex lg:hidden items-center space-x-4 mb-2">
                       <div className="h-12 w-12 rounded-full bg-line/10 flex items-center justify-center">
-                        <span className="text-xl font-bold text-line">{step.number}</span>
+                        <span className="text-xl font-bold text-line">
+                          {step.number}
+                        </span>
                       </div>
                       {index < steps.length - 1 && (
                         <ArrowRight className="h-5 w-5 text-muted-foreground" />
                       )}
                     </div>
-                    
-                    <h3 className="text-2xl md:text-3xl font-bold">{step.title}</h3>
-                    <p className="text-muted-foreground max-w-md">{step.description}</p>
+
+                    <h3 className="text-2xl md:text-3xl font-bold">
+                      {step.title}
+                    </h3>
+                    <p className="text-muted-foreground max-w-md">
+                      {step.description}
+                    </p>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthService } from '../services/auth';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthService } from "../services/auth";
 
 interface UseAuthGuardOptions {
   redirectTo?: string;
@@ -10,17 +10,17 @@ interface UseAuthGuardOptions {
 
 export const useAuthGuard = (options: UseAuthGuardOptions = {}) => {
   const {
-    redirectTo = '/login',
+    redirectTo = "/login",
     requireAuth = true,
-    preventBackToLogin = true
+    preventBackToLogin = true,
   } = options;
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
     // 檢查認證狀態
     const isAuthenticated = AuthService.isAuthenticated();
-    
+
     if (requireAuth && !isAuthenticated) {
       navigate(redirectTo, { replace: true });
       return;
@@ -32,19 +32,19 @@ export const useAuthGuard = (options: UseAuthGuardOptions = {}) => {
       const handlePopState = (event: PopStateEvent) => {
         // 如果用戶試圖返回且沒有認證，重定向到首頁
         if (!AuthService.isAuthenticated()) {
-          navigate('/', { replace: true });
+          navigate("/", { replace: true });
         }
       };
-      
-      window.addEventListener('popstate', handlePopState);
-      
+
+      window.addEventListener("popstate", handlePopState);
+
       return () => {
-        window.removeEventListener('popstate', handlePopState);
+        window.removeEventListener("popstate", handlePopState);
       };
     }
   }, [navigate, redirectTo, requireAuth, preventBackToLogin]);
 
   return {
-    isAuthenticated: AuthService.isAuthenticated()
+    isAuthenticated: AuthService.isAuthenticated(),
   };
-}; 
+};

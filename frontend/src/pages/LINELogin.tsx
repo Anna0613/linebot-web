@@ -1,13 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import LINELoginButton from '../components/LINELogin/LINELoginButton';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
+import React, { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import LINELoginButton from "../components/LINELogin/LINELoginButton";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
-import { API_CONFIG, getApiUrl } from '../config/apiConfig';
-import { AuthService } from '../services/auth';
-import { LineLoginService } from '../services/lineLogin';
+import { API_CONFIG, getApiUrl } from "../config/apiConfig";
+import { AuthService } from "../services/auth";
+import { LineLoginService } from "../services/lineLogin";
 
 interface User {
   line_id: string;
@@ -23,14 +28,14 @@ const LINELogin: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    const displayName = searchParams.get('display_name');
-    const linkingUserId = searchParams.get('linking_user_id');
+    const token = searchParams.get("token");
+    const displayName = searchParams.get("display_name");
+    const linkingUserId = searchParams.get("linking_user_id");
 
     const handleLogin = async () => {
       if (!token) {
         if (displayName) {
-          setUser({ line_id: '', display_name: displayName, picture_url: '' });
+          setUser({ line_id: "", display_name: displayName, picture_url: "" });
         }
         return;
       }
@@ -49,8 +54,8 @@ const LINELogin: React.FC = () => {
           if (response.login_url) {
             // 將連接資訊添加到URL
             const loginUrl = new URL(response.login_url);
-            loginUrl.searchParams.append('linking_user_id', linkingUserId);
-            loginUrl.searchParams.append('linking_token', token);
+            loginUrl.searchParams.append("linking_user_id", linkingUserId);
+            loginUrl.searchParams.append("linking_token", token);
             window.location.href = loginUrl.toString();
           }
         } else {
@@ -60,11 +65,11 @@ const LINELogin: React.FC = () => {
             throw new Error(response.error);
           }
           setUser(response as User);
-          navigate('/dashboard');
+          navigate("/dashboard");
         }
       } catch (err) {
         console.error(err);
-        setError(err instanceof Error ? err.message : '驗證失敗');
+        setError(err instanceof Error ? err.message : "驗證失敗");
         AuthService.removeToken();
       } finally {
         setLoading(false);

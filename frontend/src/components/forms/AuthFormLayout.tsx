@@ -1,7 +1,13 @@
-import { ReactNode } from 'react';
-import Navbar from '../layout/Navbar';
-import Footer from '../layout/Footer';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ReactNode } from "react";
+import Navbar from "../layout/Navbar";
+import Footer from "../layout/Footer";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface AuthFormLayoutProps {
   title: string;
@@ -9,11 +15,15 @@ interface AuthFormLayoutProps {
   children: ReactNode;
 }
 
-const AuthFormLayout = ({ title, description, children }: AuthFormLayoutProps) => {
+const AuthFormLayout = ({
+  title,
+  description,
+  children,
+}: AuthFormLayoutProps) => {
   return (
     <div className="min-h-screen bg-[#FFFDFA] flex flex-col">
       <Navbar />
-      
+
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           <Card className="shadow-lg border-0 bg-white">
@@ -27,13 +37,11 @@ const AuthFormLayout = ({ title, description, children }: AuthFormLayoutProps) =
                 </CardDescription>
               )}
             </CardHeader>
-            <CardContent className="space-y-4">
-              {children}
-            </CardContent>
+            <CardContent className="space-y-4">{children}</CardContent>
           </Card>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );

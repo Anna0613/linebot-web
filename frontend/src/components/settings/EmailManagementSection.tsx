@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Loader } from '@/components/ui/loader';
-import { Badge } from '@/components/ui/badge';
-import { Mail, CheckCircle, AlertCircle, Clock } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Loader } from "@/components/ui/loader";
+import { Badge } from "@/components/ui/badge";
+import { Mail, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface EmailManagementSectionProps {
   email: string;
@@ -44,21 +44,27 @@ const EmailManagementSection = ({
       });
       return;
     }
-    
+
     await onSaveEmail();
   };
 
   const getVerificationBadge = () => {
     if (emailVerified) {
       return (
-        <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+        <Badge
+          variant="default"
+          className="bg-green-100 text-green-800 border-green-200"
+        >
           <CheckCircle className="w-3 h-3 mr-1" />
           已驗證
         </Badge>
       );
     } else {
       return (
-        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+        <Badge
+          variant="secondary"
+          className="bg-yellow-100 text-yellow-800 border-yellow-200"
+        >
           <AlertCircle className="w-3 h-3 mr-1" />
           未驗證
         </Badge>
@@ -120,7 +126,7 @@ const EmailManagementSection = ({
                 {getVerificationBadge()}
               </div>
             </div>
-            
+
             {!emailVerified && email && (
               <Button
                 variant="outline"

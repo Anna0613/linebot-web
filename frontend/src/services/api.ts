@@ -1,7 +1,7 @@
-import { AuthService } from './auth';
-import { API_CONFIG } from '../config/apiConfig';
+import { AuthService } from "./auth";
+import { API_CONFIG } from "../config/apiConfig";
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   status: number;
@@ -9,7 +9,7 @@ interface ApiResponse<T = any> {
 
 export class ApiClient {
   private static instance: ApiClient;
-  
+
   private constructor() {}
 
   static getInstance(): ApiClient {
@@ -21,113 +21,119 @@ export class ApiClient {
 
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     const { status } = response;
-    
+
     try {
       const data = await response.json();
-      
+
       if (status === 401) {
         // Token過期或無效，清除認證信息但不立即重定向
         // 讓調用方決定如何處理認證失敗
-        console.warn('認證失敗:', data.error || '認證已過期，請重新登入');
+        console.warn("認證失敗:", data.error || "認證已過期，請重新登入");
         AuthService.clearAuth();
-        return { error: data.error || '認證已過期，請重新登入', status };
+        return { error: data.error || "認證已過期，請重新登入", status };
       }
-      
+
       return status >= 200 && status < 300
         ? { data, status }
-        : { error: data.detail || data.error || '請求失敗', status };
+        : { error: data.detail || data.error || "請求失敗", status };
     } catch (e) {
       // 如果無法解析 JSON，返回 HTTP 狀態碼對應的錯誤信息
       const errorMessages: { [key: number]: string } = {
-        400: '請求參數錯誤',
-        401: '認證失敗',
-        403: '權限不足',
-        404: '資源不存在',
-        409: '資源衝突',
-        422: '資料驗證失敗',
-        500: '伺服器內部錯誤',
+        400: "請求參數錯誤",
+        401: "認證失敗",
+        403: "權限不足",
+        404: "資源不存在",
+        409: "資源衝突",
+        422: "資料驗證失敗",
+        500: "伺服器內部錯誤",
       };
-      
-      return { 
-        error: errorMessages[status] || `HTTP ${status} 錯誤`, 
-        status 
+
+      return {
+        error: errorMessages[status] || `HTTP ${status} 錯誤`,
+        status,
       };
     }
   }
 
   private getHeaders(): Headers {
     const headers = new Headers({
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     });
 
     const token = AuthService.getToken();
     if (token) {
-      headers.append('Authorization', `Bearer ${token}`);
+      headers.append("Authorization", `Bearer ${token}`);
     }
     return headers;
   }
 
-  async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+  async get<T = unknown>(endpoint: string): Promise<ApiResponse<T>> {
     try {
       const response = await fetch(endpoint, {
-        method: 'GET',
+        method: "GET",
         headers: this.getHeaders(),
-        credentials: 'include',
+        credentials: "include",
       });
       return this.handleResponse<T>(response);
     } catch (error) {
       return {
-        error: '網絡請求失敗',
+        error: "網絡請求失敗",
         status: 0,
       };
     }
   }
 
-  async post<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async post<T = unknown>(
+    endpoint: string,
+    data?: unknown
+  ): Promise<ApiResponse<T>> {
     try {
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method: "POST",
         headers: this.getHeaders(),
         body: data ? JSON.stringify(data) : undefined,
-        credentials: 'include',
+        credentials: "include",
       });
       return this.handleResponse<T>(response);
     } catch (error) {
       return {
-        error: '網絡請求失敗',
+        error: "網絡請求失敗",
         status: 0,
       };
     }
   }
 
-  async put<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async put<T = unknown>(
+    endpoint: string,
+    data?: unknown
+  ): Promise<ApiResponse<T>> {
     try {
       const response = await fetch(endpoint, {
-        method: 'PUT',
+        method: "PUT",
         headers: this.getHeaders(),
         body: data ? JSON.stringify(data) : undefined,
-        credentials: 'include',
+        credentials: "include",
       });
       return this.handleResponse<T>(response);
     } catch (error) {
       return {
-        error: '網絡請求失敗',
+        error: "網絡請求失敗",
         status: 0,
       };
     }
   }
 
-  async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+  async delete<T = unknown>(endpoint: string): Promise<ApiResponse<T>> {
     try {
       const response = await fetch(endpoint, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: this.getHeaders(),
-        credentials: 'include',
+        credentials: "include",
       });
       return this.handleResponse<T>(response);
     } catch (error) {
       return {
-        error: '網絡請求失敗',
+        error: "網絡請求失敗",
         status: 0,
       };
     }
@@ -136,20 +142,23 @@ export class ApiClient {
   // 登入方法
   async login(username: string, password: string): Promise<ApiResponse> {
     try {
-      const response = await fetch(`${API_CONFIG.AUTH.BASE_URL}${API_CONFIG.AUTH.ENDPOINTS.LOGIN}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `${API_CONFIG.AUTH.BASE_URL}${API_CONFIG.AUTH.ENDPOINTS.LOGIN}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+          credentials: "include",
+        }
+      );
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         return {
-          error: data.error || data.detail || '登入失敗',
+          error: data.error || data.detail || "登入失敗",
           status: response.status,
         };
       }
@@ -158,18 +167,18 @@ export class ApiClient {
       if (data && data.access_token) {
         // 設置 token 到 localStorage
         AuthService.setToken(data.access_token);
-        
+
         // 如果有用戶信息，也保存它
         if (data.user) {
           AuthService.setUser({
             username: data.user.username,
-            email: data.user.email || '',
+            email: data.user.email || "",
           });
         }
-        
-        console.log('登入成功，token 已保存:', data.access_token);
+
+        console.log("登入成功，token 已保存:", data.access_token);
       } else {
-        console.warn('回應中沒有找到 access_token:', data);
+        console.warn("回應中沒有找到 access_token:", data);
       }
 
       return {
@@ -177,9 +186,9 @@ export class ApiClient {
         status: response.status,
       };
     } catch (error) {
-      console.error('登入請求發生錯誤:', error);
+      console.error("登入請求發生錯誤:", error);
       return {
-        error: '網絡請求失敗',
+        error: "網絡請求失敗",
         status: 0,
       };
     }
@@ -188,7 +197,7 @@ export class ApiClient {
   // 登出方法
   async logout(): Promise<void> {
     await this.post(
-      `${API_CONFIG.AUTH.BASE_URL}${API_CONFIG.AUTH.ENDPOINTS.LOGOUT}`,
+      `${API_CONFIG.AUTH.BASE_URL}${API_CONFIG.AUTH.ENDPOINTS.LOGOUT}`
     );
     AuthService.clearAuth();
   }
@@ -201,7 +210,7 @@ export class ApiClient {
 
     try {
       const response = await this.get(
-        `${API_CONFIG.AUTH.BASE_URL}${API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN}`,
+        `${API_CONFIG.AUTH.BASE_URL}${API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN}`
       );
       return response.status === 200;
     } catch {
@@ -211,60 +220,96 @@ export class ApiClient {
 
   // 獲取用戶資料
   async getProfile(): Promise<ApiResponse> {
-    return this.get(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.GET_PROFILE}`);
+    return this.get(
+      `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.GET_PROFILE}`
+    );
   }
 
   // 更新用戶資料
-  async updateProfile(profileData: { username?: string; email?: string }): Promise<ApiResponse> {
-    return this.put(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.UPDATE_PROFILE}`, profileData);
+  async updateProfile(profileData: {
+    username?: string;
+    email?: string;
+  }): Promise<ApiResponse> {
+    return this.put(
+      `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.UPDATE_PROFILE}`,
+      profileData
+    );
   }
 
   // 獲取用戶頭像
   async getAvatar(): Promise<ApiResponse> {
-    return this.get(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.GET_AVATAR}`);
+    return this.get(
+      `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.GET_AVATAR}`
+    );
   }
 
   // 更新用戶頭像
   async updateAvatar(avatar: string): Promise<ApiResponse> {
-    return this.put(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.UPDATE_AVATAR}`, {
-      avatar_base64: avatar
-    });
+    return this.put(
+      `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.UPDATE_AVATAR}`,
+      {
+        avatar_base64: avatar,
+      }
+    );
   }
 
   // 刪除用戶頭像
   async deleteAvatar(): Promise<ApiResponse> {
-    return this.delete(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.DELETE_AVATAR}`);
+    return this.delete(
+      `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.DELETE_AVATAR}`
+    );
   }
 
   // 重新發送驗證email
   async resendVerificationEmail(username: string): Promise<ApiResponse> {
-    return this.post(`${API_CONFIG.AUTH.BASE_URL}/resend_verification`, { username });
+    return this.post(`${API_CONFIG.AUTH.BASE_URL}/resend_verification`, {
+      username,
+    });
   }
 
   // 重新發送Setting API的email驗證
   async resendEmailVerification(): Promise<ApiResponse> {
-    return this.post(`${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.RESEND_EMAIL_VERIFICATION}`);
+    return this.post(
+      `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.RESEND_EMAIL_VERIFICATION}`
+    );
   }
 
   // Bot 管理相關 API
   // 獲取用戶的所有 bot
   async getBots(): Promise<ApiResponse> {
-    return this.get(`${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.GET_BOTS}`);
+    return this.get(
+      `${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.GET_BOTS}`
+    );
   }
 
   // 創建新的 bot
-  async createBot(botData: { name: string; channel_token: string; channel_secret: string }): Promise<ApiResponse> {
-    return this.post(`${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.CREATE_BOT}`, botData);
+  async createBot(botData: {
+    name: string;
+    channel_token: string;
+    channel_secret: string;
+  }): Promise<ApiResponse> {
+    return this.post(
+      `${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.CREATE_BOT}`,
+      botData
+    );
   }
 
   // 更新 bot
-  async updateBot(botId: string, botData: { name?: string; channel_token?: string; channel_secret?: string }): Promise<ApiResponse> {
-    return this.put(`${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.UPDATE_BOT(botId)}`, botData);
+  async updateBot(
+    botId: string,
+    botData: { name?: string; channel_token?: string; channel_secret?: string }
+  ): Promise<ApiResponse> {
+    return this.put(
+      `${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.UPDATE_BOT(botId)}`,
+      botData
+    );
   }
 
   // 刪除 bot
   async deleteBot(botId: string): Promise<ApiResponse> {
-    return this.delete(`${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.DELETE_BOT(botId)}`);
+    return this.delete(
+      `${API_CONFIG.PUZZLE.BASE_URL}${API_CONFIG.PUZZLE.ENDPOINTS.DELETE_BOT(botId)}`
+    );
   }
 
   // 獲取單個 bot

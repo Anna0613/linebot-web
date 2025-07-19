@@ -1,19 +1,25 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Shield, 
-  Key, 
-  Trash2, 
-  AlertTriangle, 
-  Eye, 
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Shield,
+  Key,
+  Trash2,
+  AlertTriangle,
+  Eye,
   EyeOff,
-  CheckCircle 
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+  CheckCircle,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface SecuritySectionProps {
   onChangePassword: (oldPassword: string, newPassword: string) => Promise<void>;
@@ -28,9 +34,9 @@ const SecuritySection = ({
 }: SecuritySectionProps) => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
-    oldPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
   const [showPasswords, setShowPasswords] = useState({
     old: false,
@@ -81,39 +87,50 @@ const SecuritySection = ({
 
     setPasswordLoading(true);
     try {
-      await onChangePassword(passwordForm.oldPassword, passwordForm.newPassword);
-      
+      await onChangePassword(
+        passwordForm.oldPassword,
+        passwordForm.newPassword
+      );
+
       // 重設表單
       setPasswordForm({
-        oldPassword: '',
-        newPassword: '',
-        confirmPassword: '',
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: "",
       });
       setIsChangingPassword(false);
-      
+
       toast({
         title: "密碼更新成功",
         description: "您的密碼已成功更新",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "密碼更新失敗",
-        description: error.message || "請檢查您的現在密碼是否正確",
+        description:
+          error instanceof Error ? error.message : "請檢查您的現在密碼是否正確",
       });
     } finally {
       setPasswordLoading(false);
     }
   };
 
-  const getPasswordStrength = (password: string): { level: number; text: string; color: string } => {
-    if (password.length === 0) return { level: 0, text: '', color: 'transparent' };
-    if (password.length < 6) return { level: 1, text: '弱', color: 'red' };
-    if (password.length < 10) return { level: 2, text: '中等', color: 'orange' };
-    if (password.length >= 10 && /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      return { level: 3, text: '強', color: 'green' };
+  const getPasswordStrength = (
+    password: string
+  ): { level: number; text: string; color: string } => {
+    if (password.length === 0)
+      return { level: 0, text: "", color: "transparent" };
+    if (password.length < 6) return { level: 1, text: "弱", color: "red" };
+    if (password.length < 10)
+      return { level: 2, text: "中等", color: "orange" };
+    if (
+      password.length >= 10 &&
+      /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)
+    ) {
+      return { level: 3, text: "強", color: "green" };
     }
-    return { level: 2, text: '中等', color: 'orange' };
+    return { level: 2, text: "中等", color: "orange" };
   };
 
   const passwordStrength = getPasswordStrength(passwordForm.newPassword);
@@ -133,14 +150,12 @@ const SecuritySection = ({
               <Key className="w-4 h-4" />
               <CardTitle className="text-lg">更改密碼</CardTitle>
             </div>
-            <CardDescription>
-              定期更改密碼以保護您的帳號安全
-            </CardDescription>
+            <CardDescription>定期更改密碼以保護您的帳號安全</CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             {!isChangingPassword ? (
-              <Button 
+              <Button
                 onClick={() => setIsChangingPassword(true)}
                 variant="outline"
                 className="flex items-center gap-2"
@@ -158,7 +173,12 @@ const SecuritySection = ({
                       id="oldPassword"
                       type={showPasswords.old ? "text" : "password"}
                       value={passwordForm.oldPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, oldPassword: e.target.value }))}
+                      onChange={(e) =>
+                        setPasswordForm((prev) => ({
+                          ...prev,
+                          oldPassword: e.target.value,
+                        }))
+                      }
                       placeholder="請輸入現在的密碼"
                     />
                     <Button
@@ -166,9 +186,18 @@ const SecuritySection = ({
                       variant="ghost"
                       size="sm"
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 h-auto p-1"
-                      onClick={() => setShowPasswords(prev => ({ ...prev, old: !prev.old }))}
+                      onClick={() =>
+                        setShowPasswords((prev) => ({
+                          ...prev,
+                          old: !prev.old,
+                        }))
+                      }
                     >
-                      {showPasswords.old ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPasswords.old ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -181,7 +210,12 @@ const SecuritySection = ({
                       id="newPassword"
                       type={showPasswords.new ? "text" : "password"}
                       value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      onChange={(e) =>
+                        setPasswordForm((prev) => ({
+                          ...prev,
+                          newPassword: e.target.value,
+                        }))
+                      }
                       placeholder="請輸入新密碼（至少 6 個字元）"
                     />
                     <Button
@@ -189,15 +223,27 @@ const SecuritySection = ({
                       variant="ghost"
                       size="sm"
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 h-auto p-1"
-                      onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                      onClick={() =>
+                        setShowPasswords((prev) => ({
+                          ...prev,
+                          new: !prev.new,
+                        }))
+                      }
                     >
-                      {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPasswords.new ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
                   {passwordForm.newPassword && (
                     <div className="flex items-center gap-2 text-sm">
                       <span>密碼強度：</span>
-                      <span style={{ color: passwordStrength.color }} className="font-medium">
+                      <span
+                        style={{ color: passwordStrength.color }}
+                        className="font-medium"
+                      >
                         {passwordStrength.text}
                       </span>
                     </div>
@@ -212,7 +258,12 @@ const SecuritySection = ({
                       id="confirmPassword"
                       type={showPasswords.confirm ? "text" : "password"}
                       value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      onChange={(e) =>
+                        setPasswordForm((prev) => ({
+                          ...prev,
+                          confirmPassword: e.target.value,
+                        }))
+                      }
                       placeholder="請再次輸入新密碼"
                     />
                     <Button
@@ -220,20 +271,33 @@ const SecuritySection = ({
                       variant="ghost"
                       size="sm"
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 h-auto p-1"
-                      onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                      onClick={() =>
+                        setShowPasswords((prev) => ({
+                          ...prev,
+                          confirm: !prev.confirm,
+                        }))
+                      }
                     >
-                      {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPasswords.confirm ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
-                  {passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword && (
-                    <p className="text-sm text-red-600">密碼確認不相符</p>
-                  )}
-                  {passwordForm.confirmPassword && passwordForm.newPassword === passwordForm.confirmPassword && (
-                    <p className="text-sm text-green-600 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      密碼確認相符
-                    </p>
-                  )}
+                  {passwordForm.confirmPassword &&
+                    passwordForm.newPassword !==
+                      passwordForm.confirmPassword && (
+                      <p className="text-sm text-red-600">密碼確認不相符</p>
+                    )}
+                  {passwordForm.confirmPassword &&
+                    passwordForm.newPassword ===
+                      passwordForm.confirmPassword && (
+                      <p className="text-sm text-green-600 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        密碼確認相符
+                      </p>
+                    )}
                 </div>
 
                 {/* 操作按鈕 */}
@@ -250,9 +314,9 @@ const SecuritySection = ({
                     onClick={() => {
                       setIsChangingPassword(false);
                       setPasswordForm({
-                        oldPassword: '',
-                        newPassword: '',
-                        confirmPassword: '',
+                        oldPassword: "",
+                        newPassword: "",
+                        confirmPassword: "",
                       });
                     }}
                   >
@@ -271,11 +335,9 @@ const SecuritySection = ({
               <AlertTriangle className="w-4 h-4 text-red-600" />
               <CardTitle className="text-lg text-red-700">危險區域</CardTitle>
             </div>
-            <CardDescription>
-              以下操作無法復原，請謹慎考慮
-            </CardDescription>
+            <CardDescription>以下操作無法復原，請謹慎考慮</CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             <Alert className="border-red-200 bg-red-50 mb-4">
               <AlertTriangle className="w-4 h-4 text-red-600" />
@@ -283,7 +345,7 @@ const SecuritySection = ({
                 刪除帳號將永久移除您的所有資料，包括創建的機器人、對話紀錄等。此操作無法復原。
               </AlertDescription>
             </Alert>
-            
+
             <Button
               variant="destructive"
               onClick={onDeleteAccount}

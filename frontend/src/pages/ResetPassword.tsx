@@ -1,24 +1,24 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from '../components/layout/Navbar';
-import Footer from '../components/layout/Footer';
+import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
 import "@/components/ui/loader.css";
-import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const token = searchParams.get("token");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const validateForm = () => {
     if (!password) {
@@ -67,9 +67,9 @@ const ResetPassword = () => {
         title: "連結無效",
         description: "無效的重設連結",
       });
-      navigate('/login');
+      navigate("/login");
     }
-  }, [token, navigate]);
+  }, [token, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,13 +81,19 @@ const ResetPassword = () => {
     }
 
     try {
-      const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.RESET_PASSWORD(token!)), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ new_password: password }),
-      });
+      const response = await fetch(
+        getApiUrl(
+          API_CONFIG.AUTH.BASE_URL,
+          API_CONFIG.AUTH.ENDPOINTS.RESET_PASSWORD(token!)
+        ),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ new_password: password }),
+        }
+      );
 
       const data = await response.json();
 
@@ -101,9 +107,9 @@ const ResetPassword = () => {
       });
 
       setTimeout(() => {
-        navigate('/login');
+        navigate("/login");
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("重設密碼錯誤:", error);
       toast({
         variant: "destructive",
@@ -124,7 +130,9 @@ const ResetPassword = () => {
         <div className="max-w-md w-full">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold">重設密碼</h2>
-            <p className="text-sm text-muted-foreground mt-2">請輸入您的新密碼</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              請輸入您的新密碼
+            </p>
           </div>
 
           <div className="bg-white p-8 rounded-lg shadow-lg">
@@ -140,7 +148,9 @@ const ResetPassword = () => {
                   required
                   className="rounded-lg h-11"
                 />
-                <p className="text-sm text-gray-500">密碼至少需要8位，包含字母和數字</p>
+                <p className="text-sm text-gray-500">
+                  密碼至少需要8位，包含字母和數字
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -161,7 +171,7 @@ const ResetPassword = () => {
                 disabled={loading}
                 className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] font-bold hover:bg-[#e6bc00] h-11"
               >
-                {loading ? '處理中...' : '重設密碼'}
+                {loading ? "處理中..." : "重設密碼"}
               </Button>
             </form>
           </div>

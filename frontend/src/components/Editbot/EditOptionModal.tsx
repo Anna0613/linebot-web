@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { useNavigate } from "react-router-dom";
 
 interface EditOptionModalProps {
   isOpen: boolean;
@@ -8,11 +8,11 @@ interface EditOptionModalProps {
   onEditBasicInfo: () => void;
 }
 
-const EditOptionModal: React.FC<EditOptionModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  botId, 
-  onEditBasicInfo 
+const EditOptionModal: React.FC<EditOptionModalProps> = ({
+  isOpen,
+  onClose,
+  botId,
+  onEditBasicInfo,
 }) => {
   const navigate = useNavigate();
 
@@ -20,7 +20,7 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
 
   const handleEditFunction = () => {
     onClose();
-    navigate('/block');
+    navigate("/block");
   };
 
   const handleEditBasicInfo = () => {
@@ -45,13 +45,27 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-[#82C29B] rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
                 </svg>
               </div>
               <div className="text-left">
-                <h4 className="font-medium text-[#383A45] group-hover:text-[#819780]">編輯基本資料</h4>
-                <p className="text-sm text-gray-500">修改Bot名稱、Token、Secret等設定</p>
+                <h4 className="font-medium text-[#383A45] group-hover:text-[#819780]">
+                  編輯基本資料
+                </h4>
+                <p className="text-sm text-gray-500">
+                  修改Bot名稱、Token、Secret等設定
+                </p>
               </div>
             </div>
           </button>
@@ -62,13 +76,27 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-[#819780] rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
               </div>
               <div className="text-left">
-                <h4 className="font-medium text-[#383A45] group-hover:text-[#819780]">編輯功能</h4>
-                <p className="text-sm text-gray-500">設計Bot的回應邏輯和功能流程</p>
+                <h4 className="font-medium text-[#383A45] group-hover:text-[#819780]">
+                  編輯功能
+                </h4>
+                <p className="text-sm text-gray-500">
+                  設計Bot的回應邏輯和功能流程
+                </p>
               </div>
             </div>
           </button>
@@ -88,4 +116,4 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
   );
 };
 
-export default EditOptionModal; 
+export default EditOptionModal;

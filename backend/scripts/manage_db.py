@@ -10,7 +10,9 @@ from datetime import datetime
 from pathlib import Path
 
 # 添加專案路徑
-sys.path.append(os.path.dirname(__file__))
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
 
 from app.config import settings
 from app.database import init_database
@@ -20,7 +22,18 @@ class DatabaseManager:
     """資料庫管理器 - 提供類似 Prisma 的 ORM 管理功能"""
     
     def __init__(self):
-        self.alembic_cmd = ["venv/Scripts/python.exe", "-m", "alembic"]
+        # 動態檢測 Python 和 Alembic 路徑
+        venv_python = os.path.join(parent_dir, "venv", "Scripts", "python.exe")
+        if not os.path.exists(venv_python):
+            venv_python = os.path.join(parent_dir, "venv", "bin", "python")
+        
+        if os.path.exists(venv_python):
+            self.alembic_cmd = [venv_python, "-m", "alembic"]
+        else:
+            self.alembic_cmd = ["python", "-m", "alembic"]
+        
+        # 設定工作目錄為父目錄（backend 根目錄）
+        self.working_dir = parent_dir
     
     def status(self):
         """顯示資料庫狀態 (類似 prisma db push)"""
@@ -33,7 +46,8 @@ class DatabaseManager:
                 self.alembic_cmd + ["current"],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                cwd=self.working_dir
             )
             
             current_revision = result.stdout.strip()
@@ -47,7 +61,8 @@ class DatabaseManager:
                 self.alembic_cmd + ["heads"],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                cwd=self.working_dir
             )
             
             heads = result.stdout.strip()
@@ -76,7 +91,8 @@ class DatabaseManager:
             # 執行 migration
             result = subprocess.run(
                 self.alembic_cmd + ["upgrade", "head"],
-                check=True
+                check=True,
+                cwd=self.working_dir
             )
             
             print("✅ Migration 執行完成!")
@@ -98,7 +114,8 @@ class DatabaseManager:
         try:
             result = subprocess.run(
                 self.alembic_cmd + ["revision", "--autogenerate", "-m", message],
-                check=True
+                check=True,
+                cwd=self.working_dir
             )
             
             print("✅ Migration 檔案生成完成!")
@@ -125,13 +142,15 @@ class DatabaseManager:
             # 降級到初始狀態
             subprocess.run(
                 self.alembic_cmd + ["downgrade", "base"],
-                check=True
+                check=True,
+                cwd=self.working_dir
             )
             
             # 重新執行所有 migration
             subprocess.run(
                 self.alembic_cmd + ["upgrade", "head"],
-                check=True
+                check=True,
+                cwd=self.working_dir
             )
             
             print("✅ 資料庫重置完成!")
@@ -191,7 +210,7 @@ class DatabaseManager:
         print("=" * 50)
         
         try:
-            from db_schema_generator import get_database_schema, format_schema_report
+            from scripts.db_schema_generator import get_database_schema, format_schema_report
             
             schema_info = get_database_schema()
             report = format_schema_report(schema_info)
@@ -219,7 +238,8 @@ class DatabaseManager:
         try:
             result = subprocess.run(
                 self.alembic_cmd + ["history", "--verbose"],
-                check=True
+                check=True,
+                cwd=self.working_dir
             )
             
         except subprocess.CalledProcessError as e:

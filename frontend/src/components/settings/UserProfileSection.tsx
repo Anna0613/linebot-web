@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Loader } from '@/components/ui/loader';
-import AvatarUpload from '@/components/AvatarUpload/AvatarUpload';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useRef } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Loader } from "@/components/ui/loader";
+import AvatarUpload from "@/components/AvatarUpload/AvatarUpload";
+import { useToast } from "@/hooks/use-toast";
 
 interface User {
   line_id?: string;
@@ -43,7 +43,9 @@ const UserProfileSection = ({
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -58,7 +60,7 @@ const UserProfileSection = ({
     }
 
     // 檔案類型檢查
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       toast({
         variant: "destructive",
@@ -69,17 +71,17 @@ const UserProfileSection = ({
     }
 
     await onAvatarUpload(file);
-    
+
     // 清除 input 值以允許重複選擇同一檔案
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
       <h2 className="text-xl font-bold text-[#1a1a40] mb-4">個人資料</h2>
-      
+
       {/* 頭像區塊 */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
         <div className="relative">
@@ -96,14 +98,13 @@ const UserProfileSection = ({
             </p>
           )}
         </div>
-        
+
         <div className="flex-1">
           <Label className="text-sm font-medium text-gray-700">用戶頭像</Label>
           <p className="text-sm text-gray-500 mt-1">
-            {user?.isLineUser 
+            {user?.isLineUser
               ? "LINE 用戶的頭像將同步您的 LINE 個人資料照片"
-              : "上傳 JPG、PNG、GIF 或 WebP 格式的圖片，檔案大小不超過 5MB"
-            }
+              : "上傳 JPG、PNG、GIF 或 WebP 格式的圖片，檔案大小不超過 5MB"}
           </p>
         </div>
       </div>
@@ -153,9 +154,7 @@ const UserProfileSection = ({
             </Button>
           )}
         </div>
-        <p className="text-sm text-gray-500">
-          這是其他用戶看到的您的名稱
-        </p>
+        <p className="text-sm text-gray-500">這是其他用戶看到的您的名稱</p>
       </div>
     </div>
   );

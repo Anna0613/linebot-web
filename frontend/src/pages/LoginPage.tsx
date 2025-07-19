@@ -1,38 +1,40 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
-import AuthFormLayout from '../components/forms/AuthFormLayout';
-import EmailVerificationPrompt from '../components/forms/EmailVerificationPrompt';
-import LINELoginButton from '../components/LINELogin/LINELoginButton';
-import { useAuthForm } from '../hooks/useAuthForm';
-import { useLineLogin } from '../hooks/useLineLogin';
-import { ApiClient } from '../services/api';
-import { AuthService } from '../services/auth';
+import AuthFormLayout from "../components/forms/AuthFormLayout";
+import EmailVerificationPrompt from "../components/forms/EmailVerificationPrompt";
+import LINELoginButton from "../components/LINELogin/LINELoginButton";
+import { useAuthForm } from "../hooks/useAuthForm";
+import { useLineLogin } from "../hooks/useLineLogin";
+import { ApiClient } from "../services/api";
+import { AuthService } from "../services/auth";
 import "@/components/ui/loader.css";
 
 const LoginPage = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [showEmailVerificationPrompt, setShowEmailVerificationPrompt] = useState(false);
+  const [showEmailVerificationPrompt, setShowEmailVerificationPrompt] =
+    useState(false);
 
-  const { loading, handleSuccess, handleError, withLoading, navigate } = useAuthForm();
+  const { loading, handleSuccess, handleError, withLoading, navigate } =
+    useAuthForm();
   const { handleLINELogin } = useLineLogin();
 
   useEffect(() => {
     if (AuthService.isAuthenticated()) {
-      navigate('/dashboard', { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!username || !password) {
       handleError(new Error("請輸入帳號和密碼"), "請填寫所有必填欄位");
       return;
@@ -41,13 +43,13 @@ const LoginPage = () => {
     await withLoading(async () => {
       try {
         const response = await ApiClient.login(username, password, rememberMe);
-        
+
         if (!response.success) {
-          if (response.message?.includes('電子郵件')) {
+          if (response.message?.includes("電子郵件")) {
             setShowEmailVerificationPrompt(true);
             throw new Error(response.message);
           }
-          throw new Error(response.message || '登入失敗');
+          throw new Error(response.message || "登入失敗");
         }
 
         // 確保 token 正確設置
@@ -66,7 +68,7 @@ const LoginPage = () => {
         }
 
         handleSuccess("登入成功！");
-      } catch (error: any) {
+      } catch (error: unknown) {
         handleError(error);
       }
     });
@@ -76,18 +78,15 @@ const LoginPage = () => {
     try {
       await ApiClient.resendVerificationEmail(username);
       handleSuccess("驗證郵件已重新發送");
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleError(error, "重新發送郵件失敗");
     }
   };
 
   return (
-    <AuthFormLayout 
-      title="登入" 
-      description="歡迎回到 LINE Bot 建立平台"
-    >
+    <AuthFormLayout title="登入" description="歡迎回到 LINE Bot 建立平台">
       {showEmailVerificationPrompt && (
-        <EmailVerificationPrompt 
+        <EmailVerificationPrompt
           onResendEmail={handleResendEmail}
           initialCooldown={0}
         />
@@ -128,10 +127,12 @@ const LoginPage = () => {
               onCheckedChange={(checked) => setRememberMe(checked as boolean)}
               disabled={loading}
             />
-            <Label htmlFor="remember" className="text-sm">記住我</Label>
+            <Label htmlFor="remember" className="text-sm">
+              記住我
+            </Label>
           </div>
-          <Link 
-            to="/forgetthepassword" 
+          <Link
+            to="/forgetthepassword"
             className="text-sm text-[#F4A261] hover:underline"
           >
             忘記密碼？
@@ -156,7 +157,7 @@ const LoginPage = () => {
       <LINELoginButton onClick={handleLINELogin} disabled={loading} />
 
       <p className="text-center text-sm text-muted-foreground mt-4">
-        還沒有帳號？{' '}
+        還沒有帳號？{" "}
         <Link to="/register" className="text-[#F4A261] hover:underline">
           立即註冊
         </Link>

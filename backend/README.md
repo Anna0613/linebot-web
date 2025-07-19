@@ -15,17 +15,29 @@
 ## 架構設計
 
 ```
-app/
-├── core/           # 核心功能模組
-├── models/         # 資料模型
-├── schemas/        # Pydantic 模式
-├── api/            # API 路由
-├── services/       # 業務邏輯服務
-├── utils/          # 工具函數
-├── config.py       # 配置管理
-├── database.py     # 資料庫連接
-├── dependencies.py # 依賴注入
-└── main.py         # 主應用程式
+backend/
+├── app/                 # 主應用程式
+│   ├── core/           # 核心功能模組
+│   ├── models/         # 資料模型
+│   ├── schemas/        # Pydantic 模式
+│   ├── api/            # API 路由
+│   ├── services/       # 業務邏輯服務
+│   ├── utils/          # 工具函數
+│   ├── config.py       # 配置管理
+│   ├── database.py     # 資料庫連接
+│   ├── dependencies.py # 依賴注入
+│   └── main.py         # 主應用程式
+├── scripts/            # 管理腳本
+│   ├── manage_db.py    # 資料庫管理
+│   ├── start.py        # 服務啟動
+│   └── db_schema_generator.py # 架構生成器
+├── docs/               # 專案文檔
+│   └── DATABASE_GUIDE.md
+├── migrations/         # 資料庫遷移
+├── tests/             # 測試檔案
+├── run.py             # 快速啟動
+├── db.py              # 資料庫管理快捷方式
+└── ...配置檔案
 ```
 
 ## 安裝與部署
@@ -45,6 +57,13 @@ cp env.example .env
 
 3. 啟動應用程式：
 ```bash
+# 方法 1: 使用快速啟動腳本
+python run.py
+
+# 方法 2: 使用 scripts 目錄啟動
+python scripts/start.py
+
+# 方法 3: 直接使用 uvicorn
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -98,11 +117,22 @@ docker run -p 8000:8000 --env-file .env linebot-web-api
 3. 在 `api/api_v1/` 中新增路由
 4. 在 `api/api_v1/api.py` 中註冊路由
 
-### 資料庫遷移
+### 資料庫管理
 
-使用 Alembic 進行資料庫遷移：
+使用內建的資料庫管理工具：
 
 ```bash
+# 使用快捷方式
+python db.py status          # 檢查資料庫狀態
+python db.py migrate         # 執行遷移
+python db.py generate -m "新功能"  # 生成新遷移
+python db.py schema          # 生成架構報告
+
+# 或直接使用管理腳本
+python scripts/manage_db.py status
+python scripts/manage_db.py migrate
+
+# 傳統方式（仍然支援）
 alembic revision --autogenerate -m "描述"
 alembic upgrade head
 ```

@@ -1,7 +1,14 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Bot } from '@/types/bot';
-import { X, Bot as BotIcon, Calendar, Settings, Key, Shield } from 'lucide-react';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Bot } from "@/types/bot";
+import {
+  X,
+  Bot as BotIcon,
+  Calendar,
+  Settings,
+  Key,
+  Shield,
+} from "lucide-react";
 
 interface BotDetailsModalProps {
   isOpen: boolean;
@@ -9,7 +16,11 @@ interface BotDetailsModalProps {
   bot: Bot | null;
 }
 
-const BotDetailsModal: React.FC<BotDetailsModalProps> = ({ isOpen, onClose, bot }) => {
+const BotDetailsModal: React.FC<BotDetailsModalProps> = ({
+  isOpen,
+  onClose,
+  bot,
+}) => {
   if (!isOpen || !bot) return null;
 
   return (
@@ -23,7 +34,9 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({ isOpen, onClose, bot 
                 <BotIcon className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Bot 詳細資訊</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Bot 詳細資訊
+                </h3>
                 <p className="text-sm text-gray-600">{bot.name}</p>
               </div>
             </div>
@@ -46,20 +59,28 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({ isOpen, onClose, bot 
               <Settings className="w-4 h-4 text-gray-600" />
               <span>基本資訊</span>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <span className="text-sm font-medium text-gray-600">Bot 名稱:</span>
-                <span className="text-sm text-gray-900 text-right">{bot.name}</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Bot 名稱:
+                </span>
+                <span className="text-sm text-gray-900 text-right">
+                  {bot.name}
+                </span>
               </div>
-              
+
               {bot.description && (
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-gray-600">描述:</span>
-                  <span className="text-sm text-gray-900 text-right max-w-[200px]">{bot.description}</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    描述:
+                  </span>
+                  <span className="text-sm text-gray-900 text-right max-w-[200px]">
+                    {bot.description}
+                  </span>
                 </div>
               )}
-              
+
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-600">狀態:</span>
                 <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
@@ -75,17 +96,21 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({ isOpen, onClose, bot 
               <Key className="w-4 h-4 text-gray-600" />
               <span>技術資訊</span>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <span className="text-sm font-medium text-gray-600">Bot ID:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Bot ID:
+                </span>
                 <span className="text-xs font-mono text-gray-900 bg-white px-2 py-1 rounded border break-all">
                   {bot.id}
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-start">
-                <span className="text-sm font-medium text-gray-600">使用者 ID:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  使用者 ID:
+                </span>
                 <span className="text-xs font-mono text-gray-900 bg-white px-2 py-1 rounded border">
                   {bot.user_id}
                 </span>
@@ -99,27 +124,35 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({ isOpen, onClose, bot 
               <Shield className="w-4 h-4 text-gray-600" />
               <span>設定狀態</span>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Channel Access Token:</span>
-                <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                  bot.channel_token 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-red-100 text-red-600'
-                }`}>
-                  {bot.channel_token ? '已設定' : '未設定'}
+                <span className="text-sm font-medium text-gray-600">
+                  Channel Access Token:
+                </span>
+                <span
+                  className={`text-sm font-medium px-2 py-1 rounded-full ${
+                    bot.channel_token
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-600"
+                  }`}
+                >
+                  {bot.channel_token ? "已設定" : "未設定"}
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">Channel Secret:</span>
-                <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                  bot.channel_secret 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-red-100 text-red-600'
-                }`}>
-                  {bot.channel_secret ? '已設定' : '未設定'}
+                <span className="text-sm font-medium text-gray-600">
+                  Channel Secret:
+                </span>
+                <span
+                  className={`text-sm font-medium px-2 py-1 rounded-full ${
+                    bot.channel_secret
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-600"
+                  }`}
+                >
+                  {bot.channel_secret ? "已設定" : "未設定"}
                 </span>
               </div>
             </div>
@@ -131,33 +164,37 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({ isOpen, onClose, bot 
               <Calendar className="w-4 h-4 text-gray-600" />
               <span>時間資訊</span>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <span className="text-sm font-medium text-gray-600">建立時間:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  建立時間:
+                </span>
                 <span className="text-sm text-gray-900 text-right">
-                  {new Date(bot.created_at).toLocaleString('zh-TW', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
+                  {new Date(bot.created_at).toLocaleString("zh-TW", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
                   })}
                 </span>
               </div>
-              
+
               {bot.updated_at && (
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-gray-600">更新時間:</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    更新時間:
+                  </span>
                   <span className="text-sm text-gray-900 text-right">
-                    {new Date(bot.updated_at).toLocaleString('zh-TW', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit'
+                    {new Date(bot.updated_at).toLocaleString("zh-TW", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
                     })}
                   </span>
                 </div>

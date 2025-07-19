@@ -1,27 +1,27 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
-import AuthFormLayout from '../components/forms/AuthFormLayout';
-import LINELoginButton from '../components/LINELogin/LINELoginButton';
-import { useAuthForm } from '../hooks/useAuthForm';
-import { useLineLogin } from '../hooks/useLineLogin';
-import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import AuthFormLayout from "../components/forms/AuthFormLayout";
+import LINELoginButton from "../components/LINELogin/LINELoginButton";
+import { useAuthForm } from "../hooks/useAuthForm";
+import { useLineLogin } from "../hooks/useLineLogin";
+import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 import "@/components/ui/loader.css";
 
 const Register = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   const { loading, handleSuccess, handleError, withLoading } = useAuthForm({
-    successRedirect: '/email-verification'
+    successRedirect: "/email-verification",
   });
   const { handleLINELogin } = useLineLogin();
 
@@ -29,7 +29,7 @@ const Register = () => {
     if (!username || !password || !confirmPassword || !email) {
       throw new Error("請填寫所有必填欄位");
     }
-    
+
     if (password !== confirmPassword) {
       throw new Error("密碼確認不相符");
     }
@@ -51,35 +51,38 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     await withLoading(async () => {
       try {
         validateForm();
 
-        const response = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.REGISTER), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, email }),
-        });
+        const response = await fetch(
+          getApiUrl(
+            API_CONFIG.AUTH.BASE_URL,
+            API_CONFIG.AUTH.ENDPOINTS.REGISTER
+          ),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password, email }),
+          }
+        );
 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.message || '註冊失敗');
+          throw new Error(data.message || "註冊失敗");
         }
 
         handleSuccess("註冊成功！請檢查您的電子郵件以驗證帳號。");
-      } catch (error: any) {
+      } catch (error: unknown) {
         handleError(error);
       }
     });
   };
 
   return (
-    <AuthFormLayout 
-      title="註冊" 
-      description="建立您的 LINE Bot 建立平台帳號"
-    >
+    <AuthFormLayout title="註冊" description="建立您的 LINE Bot 建立平台帳號">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="username">使用者名稱 *</Label>
@@ -141,11 +144,11 @@ const Register = () => {
             disabled={loading}
           />
           <Label htmlFor="terms" className="text-sm">
-            我同意{' '}
+            我同意{" "}
             <Link to="/terms" className="text-[#F4A261] hover:underline">
               服務條款
-            </Link>
-            {' '}和{' '}
+            </Link>{" "}
+            和{" "}
             <Link to="/privacy" className="text-[#F4A261] hover:underline">
               隱私政策
             </Link>
@@ -170,7 +173,7 @@ const Register = () => {
       <LINELoginButton onClick={handleLINELogin} disabled={loading} />
 
       <p className="text-center text-sm text-muted-foreground mt-4">
-        已經有帳號了？{' '}
+        已經有帳號了？{" "}
         <Link to="/login" className="text-[#F4A261] hover:underline">
           立即登入
         </Link>

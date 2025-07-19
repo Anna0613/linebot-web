@@ -119,7 +119,8 @@ class AuthService:
         )
         
         return {
-            "login_url": line_login_url,
+            "url": line_login_url,
+            "login_url": line_login_url,  # 向後相容
             "state": state
         }
     

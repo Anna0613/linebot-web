@@ -18,16 +18,8 @@ export function Loader({ fullPage = false }: LoaderProps) {
   );
 
   if (fullPage) {
-    return (
-      <div className="loading-overlay">
-        {loaderContent}
-      </div>
-    );
+    return <div className="loading-overlay">{loaderContent}</div>;
   }
 
-  return (
-    <div className="button-loader">
-      {loaderContent}
-    </div>
-  );
+  return <div className="button-loader">{loaderContent}</div>;
 }

@@ -1,4 +1,10 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+  useCallback,
+} from "react";
 import { ApiClient } from "../../services/api";
 import { Bot } from "../../types/bot";
 import { useToast } from "@/hooks/use-toast";
@@ -6,7 +12,7 @@ import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import EditOptionModal from "./EditOptionModal";
 
 type MybotProps = {
-  onEdit: (id: string, editType: 'name' | 'token' | 'secret' | 'all') => void;
+  onEdit: (id: string, editType: "name" | "token" | "secret" | "all") => void;
 };
 
 export interface MybotRef {
@@ -25,17 +31,17 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
     isLoading: boolean;
   }>({
     isOpen: false,
-    botId: '',
-    botName: '',
-    isLoading: false
+    botId: "",
+    botName: "",
+    isLoading: false,
   });
-  
+
   const [editOptionModal, setEditOptionModal] = useState<{
     isOpen: boolean;
     botId: string;
   }>({
     isOpen: false,
-    botId: ''
+    botId: "",
   });
   const { toast } = useToast();
   const apiClient = ApiClient.getInstance();
@@ -45,16 +51,16 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
       isOpen: true,
       botId,
       botName,
-      isLoading: false
+      isLoading: false,
     });
   };
 
   const handleDeleteConfirm = async () => {
-    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
+    setDeleteDialog((prev) => ({ ...prev, isLoading: true }));
 
     try {
       const response = await apiClient.deleteBot(deleteDialog.botId);
-      
+
       if (response.error) {
         toast({
           variant: "destructive",
@@ -66,17 +72,17 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
           title: "刪除成功",
           description: `機器人「${deleteDialog.botName}」已成功刪除`,
         });
-        
+
         // 刪除成功後重新載入Bot列表
         await fetchBots();
-        
+
         // 如果刪除的Bot正在展開，則關閉展開狀態
         if (expandedBot === deleteDialog.botId) {
           setExpandedBot(null);
         }
       }
     } catch (error) {
-      console.error('刪除Bot發生錯誤:', error);
+      console.error("刪除Bot發生錯誤:", error);
       toast({
         variant: "destructive",
         title: "刪除失敗",
@@ -85,9 +91,9 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
     } finally {
       setDeleteDialog({
         isOpen: false,
-        botId: '',
-        botName: '',
-        isLoading: false
+        botId: "",
+        botName: "",
+        isLoading: false,
       });
     }
   };
@@ -95,42 +101,38 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
   const handleDeleteCancel = () => {
     setDeleteDialog({
       isOpen: false,
-      botId: '',
-      botName: '',
-      isLoading: false
+      botId: "",
+      botName: "",
+      isLoading: false,
     });
   };
 
   const handleEditClick = (botId: string) => {
     setEditOptionModal({
       isOpen: true,
-      botId
+      botId,
     });
   };
 
   const handleEditOptionClose = () => {
     setEditOptionModal({
       isOpen: false,
-      botId: ''
+      botId: "",
     });
   };
 
   const handleEditBasicInfo = () => {
-    onEdit(editOptionModal.botId, 'all');
+    onEdit(editOptionModal.botId, "all");
   };
 
-  useEffect(() => {
-    fetchBots();
-  }, []);
-
-  const fetchBots = async () => {
+  const fetchBots = useCallback(async () => {
     try {
       setLoading(true);
       const response = await apiClient.getBots();
-      
+
       if (response.error) {
-        console.error('獲取Bot列表失敗:', response.error);
-        
+        console.error("獲取Bot列表失敗:", response.error);
+
         // 檢查是否為身份驗證錯誤
         if (response.status === 401 || response.status === 403) {
           toast({
@@ -150,7 +152,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
         setBotList(response.data || []);
       }
     } catch (error) {
-      console.error('獲取Bot列表發生錯誤:', error);
+      console.error("獲取Bot列表發生錯誤:", error);
       toast({
         variant: "destructive",
         title: "錯誤",
@@ -160,32 +162,38 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiClient, toast]);
+
+  useEffect(() => {
+    fetchBots();
+  }, [fetchBots]);
 
   const toggleExpanded = (botId: string) => {
-    setExpandedBot(prev => (prev === botId ? null : botId));
+    setExpandedBot((prev) => (prev === botId ? null : botId));
   };
 
   // 暴露刷新方法給父組件
   useImperativeHandle(ref, () => ({
-    refreshBots: fetchBots
+    refreshBots: fetchBots,
   }));
 
   // 過濾 bot 列表
-  const filteredBots = botList.filter(bot =>
+  const filteredBots = botList.filter((bot) =>
     bot.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="w-full max-w-4xl mx-auto h-[400px] sm:h-[450px] md:h-[520px] rounded-[15px] sm:rounded-[20px] md:rounded-[25px] bg-white border border-black shadow-[-8px_8px_0_#819780] sm:shadow-[-12px_12px_0_#819780] md:shadow-[-15px_15px_0_#819780] p-3 sm:p-4 md:p-5 flex-shrink-0 flex flex-col transition-all duration-300">
-      <h2 className="text-center text-lg sm:text-xl md:text-[26px] font-bold text-[#383A45] mb-3 sm:mb-4">我的LINE Bot</h2>
+      <h2 className="text-center text-lg sm:text-xl md:text-[26px] font-bold text-[#383A45] mb-3 sm:mb-4">
+        我的LINE Bot
+      </h2>
 
-      <input 
-        type="text" 
-        placeholder="搜尋Bot名稱..." 
+      <input
+        type="text"
+        placeholder="搜尋Bot名稱..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg mb-3 sm:mb-4 focus:outline-none focus:ring-2 focus:ring-[#819780] transition text-sm sm:text-base" 
+        className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg mb-3 sm:mb-4 focus:outline-none focus:ring-2 focus:ring-[#819780] transition text-sm sm:text-base"
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
@@ -202,7 +210,10 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
         ) : (
           <div className="space-y-2 sm:space-y-3">
             {filteredBots.map((bot, index) => (
-              <div key={bot.id} className="border border-gray-200 rounded-lg overflow-hidden bg-gradient-to-r from-[#F8F9FA] to-[#E8F5E8] hover:shadow-md transition-all duration-200">
+              <div
+                key={bot.id}
+                className="border border-gray-200 rounded-lg overflow-hidden bg-gradient-to-r from-[#F8F9FA] to-[#E8F5E8] hover:shadow-md transition-all duration-200"
+              >
                 {/* Bot 基本資訊 */}
                 <div className="p-3 sm:p-4">
                   <div className="flex items-center justify-between">
@@ -211,11 +222,15 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                         {index + 1}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-[#383A45] text-sm sm:text-base md:text-lg truncate">{bot.name}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600 truncate">ID: {bot.id}</p>
+                        <h3 className="font-bold text-[#383A45] text-sm sm:text-base md:text-lg truncate">
+                          {bot.name}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate">
+                          ID: {bot.id}
+                        </p>
                       </div>
                     </div>
-                    
+
                     {/* 桌面版按鈕組 */}
                     <div className="hidden lg:flex items-center space-x-2">
                       <button
@@ -225,13 +240,13 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                       >
                         編輯
                       </button>
-                      
+
                       <button
                         onClick={() => toggleExpanded(bot.id)}
                         className="px-3 py-2 bg-[#F0F0F0] text-[#383A45] rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-md text-sm font-bold"
                         title="更多選項"
                       >
-                        {expandedBot === bot.id ? '收起' : '更多'}
+                        {expandedBot === bot.id ? "收起" : "更多"}
                       </button>
                     </div>
 
@@ -242,12 +257,12 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                         className="px-3 py-2 bg-[#F0F0F0] text-[#383A45] rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-md text-xs sm:text-sm font-bold"
                         title="更多選項"
                       >
-                        {expandedBot === bot.id ? '收起' : '選項'}
+                        {expandedBot === bot.id ? "收起" : "選項"}
                       </button>
                     </div>
                   </div>
                 </div>
-                
+
                 {/* 展開的詳細操作區域 */}
                 {expandedBot === bot.id && (
                   <div className="border-t border-gray-300 bg-white p-3 sm:p-4 animate-slide-down">
@@ -260,7 +275,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                         >
                           編輯
                         </button>
-                        
+
                         <button
                           onClick={() => handleDeleteClick(bot.id, bot.name)}
                           className="w-full px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 shadow-md text-sm font-bold"
@@ -276,27 +291,37 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                         <div className="space-y-3 w-full max-w-md">
                           <div className="flex justify-center space-x-4">
                             <button
-                              onClick={() => handleDeleteClick(bot.id, bot.name)}
+                              onClick={() =>
+                                handleDeleteClick(bot.id, bot.name)
+                              }
                               className="px-4 py-2 bg-[#E74C3C] text-white rounded-lg hover:bg-[#C0392B] transition-all duration-200 shadow-sm text-sm font-bold"
                             >
                               刪除Bot
                             </button>
                           </div>
-                          
+
                           <div className="p-4 bg-gray-50 rounded-lg">
-                            <h5 className="font-medium text-[#383A45] text-sm mb-3 text-center">Bot 資訊</h5>
+                            <h5 className="font-medium text-[#383A45] text-sm mb-3 text-center">
+                              Bot 資訊
+                            </h5>
                             <div className="text-sm text-gray-600 space-y-2">
                               <div className="flex justify-between">
-                                <span className="font-medium">Bot ID:</span> 
-                                <span className="text-xs font-mono">{bot.id}</span>
+                                <span className="font-medium">Bot ID:</span>
+                                <span className="text-xs font-mono">
+                                  {bot.id}
+                                </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="font-medium">使用者ID:</span> 
-                                <span className="text-xs font-mono">{bot.user_id}</span>
+                                <span className="font-medium">使用者ID:</span>
+                                <span className="text-xs font-mono">
+                                  {bot.user_id}
+                                </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="font-medium">狀態:</span> 
-                                <span className="text-green-600 font-medium">正常</span>
+                                <span className="font-medium">狀態:</span>
+                                <span className="text-green-600 font-medium">
+                                  正常
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -331,6 +356,6 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
   );
 });
 
-Mybot.displayName = 'Mybot';
+Mybot.displayName = "Mybot";
 
 export default Mybot;
