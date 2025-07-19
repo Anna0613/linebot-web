@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Hero from '../components/Index/Hero';
-import Features from '../components/Index/Features';
-import HowItWorks from '../components/Index/HowItWorks';
-import DemoPreview from '../components/Index/DemoPreview';
+import Hero from '../components/home/Hero';
+import Features from '../components/home/Features';
+import HowItWorks from '../components/home/HowItWorks';
+import DemoPreview from '../components/home/DemoPreview';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { AuthService } from '../services/auth';
