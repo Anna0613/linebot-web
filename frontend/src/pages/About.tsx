@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import Footer from '../components/Index/Footer';
-import Navbar from '../components/Index/Navbar';
-import Navbar2 from '../components/LoginHome/Navbar2';
+import Footer from '../components/layout/Footer';
+import Navbar from '../components/layout/Navbar';
+import DashboardNavbar from '../components/layout/DashboardNavbar';
 import { AuthService } from '../services/auth';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
@@ -76,7 +76,7 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-[#FFFDFA]">
-      {isAuthenticated ? <Navbar2 user={user} /> : <Navbar />}
+      {isAuthenticated ? <DashboardNavbar user={user} /> : <Navbar />}
       {/* 主要內容區域 */}
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
@@ -209,7 +209,7 @@ const About = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <button 
-                onClick={() => window.location.href = '/how%20to%20establish'}
+                onClick={() => window.location.href = '/how-to-establish'}
                 className="px-8 py-4 bg-[#A0D6B4] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
               >
                 查看建立教學

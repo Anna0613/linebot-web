@@ -6,14 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from '../components/Index/Navbar';
-import Footer from '../components/Index/Footer';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 import "@/components/ui/loader.css";
 import { LineLoginService } from '../services/lineLogin';
 import { ApiClient } from '../services/api';
 import { AuthService } from '../services/auth';
 
-const Login = () => {
+const LoginPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -28,7 +28,7 @@ const Login = () => {
   
   useEffect(() => {
     if (AuthService.isAuthenticated()) {
-      navigate('/index2', { replace: true });
+      navigate('/dashboard', { replace: true });
       return;
     }
     
@@ -74,7 +74,7 @@ const Login = () => {
         // 清除登入前的歷史記錄
         window.history.replaceState(null, '', '/login');
         
-        navigate("/index2", { replace: true });
+        navigate("/dashboard", { replace: true });
       } else {
         throw new Error("LINE 登入驗證失敗");
       }
@@ -169,7 +169,7 @@ const Login = () => {
             description: "歡迎回來",
           });
           setTimeout(() => {
-            navigate("/index2", { replace: true });
+            navigate("/dashboard", { replace: true });
           }, 1000);
           return;
         } else {
@@ -187,7 +187,7 @@ const Login = () => {
       
       // 確保使用 setTimeout 使警告訊息能被看到，然後再跳轉
       setTimeout(() => {
-        navigate("/index2", { replace: true });
+        navigate("/dashboard", { replace: true });
       }, 1000);
     } catch (error: any) {
       console.error("錯誤:", error);
@@ -261,7 +261,7 @@ const Login = () => {
                 disabled={loading}
                 className="w-full rounded-full bg-[#06C755] hover:bg-[#06C755]/90 text-white text-xs xs:text-sm sm:text-base font-semibold h-10 xs:h-11 sm:h-12 relative transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center gap-2"
               >
-                <img src="/專題圖片/line-logo.svg" alt="LINE" className="w-5 h-5" />
+                <img src="/assets/images/line-logo.svg" alt="LINE" className="w-5 h-5" />
                 {loading ? (
                   <span className="flex items-center gap-2">
                     載入中
@@ -409,4 +409,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginPage;

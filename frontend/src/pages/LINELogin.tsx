@@ -60,7 +60,7 @@ const LINELogin: React.FC = () => {
             throw new Error(response.error);
           }
           setUser(response as User);
-          navigate('/index2');
+          navigate('/dashboard');
         }
       } catch (err) {
         console.error(err);

@@ -67,14 +67,14 @@ const LoginSuccess: React.FC = () => {
     // 設定自動跳轉定時器
     const timer = setTimeout(() => {
       console.log('自動跳轉到主頁面');
-      navigate('/index2', { replace: true });
+      navigate('/dashboard', { replace: true });
     }, 3000);
 
     return () => clearTimeout(timer);
   }, [navigate]);
 
   const handleContinue = () => {
-    navigate('/index2', { replace: true });
+    navigate('/dashboard', { replace: true });
   };
 
   return (

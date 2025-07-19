@@ -137,7 +137,7 @@ const AddServerPage = () => {
       
       // 2秒後跳轉到區塊設定頁面
       setTimeout(() => {
-        window.location.href = `/block?botId=${createdBot.id}&botName=${encodeURIComponent(createdBot.name)}`;
+        window.location.href = `/bots/editor?botId=${createdBot.id}&botName=${encodeURIComponent(createdBot.name)}`;
       }, 2000);
     } else if (error) {
       // 顯示錯誤 Toast (如果有錯誤且沒有創建成功)
@@ -234,7 +234,7 @@ const AddServerPage = () => {
         <div className="text-center space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
-              onClick={() => window.location.href = '/block'}
+              onClick={() => window.location.href = '/bots/editor'}
               className="px-8 py-4 bg-[#A0D6B4] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
             >
               開始設計對話
@@ -360,7 +360,7 @@ const AddServerPage = () => {
 
           <div className="mt-8 text-center">
             <a 
-              href="/how%20to%20establish" 
+              href="/how-to-establish" 
               className="inline-flex items-center px-6 py-3 bg-[#CDB4DB] text-white font-bold rounded-lg shadow-lg hover:brightness-90 transition-all duration-200"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

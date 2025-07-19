@@ -25,8 +25,8 @@ const NotFound = () => {
 
   const handleReturnHome = () => {
     if (isAuthenticated) {
-      // 已登入用戶導向 /index2
-      navigate('/index2');
+      // 已登入用戶導向 /dashboard
+      navigate('/dashboard');
     } else {
       // 未登入用戶導向首頁 /
       navigate('/');

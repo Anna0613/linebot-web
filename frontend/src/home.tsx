@@ -3,8 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
 import ForgetThePassword from "./pages/ForgetThePassword";
 import Register from "./pages/Register";
 import LINELogin from "./pages/LINELogin";
@@ -12,9 +12,9 @@ import LoginSuccess from "./pages/LoginSuccess";
 import LoginError from "./pages/LoginError";
 import EmailVerification from "./pages/EmailVerification";
 import NotFound from "./pages/NotFound";
-import Index2 from "./pages/LoginHome";
-import AddServer from "./pages/AddServer";
-import Block from "./pages/Block";
+import DashboardPage from "./pages/DashboardPage";
+import AddBotPage from "./pages/AddBotPage";
+import BotEditorPage from "./pages/BotEditorPage";
 import HowToEstablish from "./pages/HowToEstablish";
 import Setting from "./pages/Setting";
 import ResetPassword from "./pages/ResetPassword";
@@ -32,17 +32,27 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/forgetthepassword" element={<ForgetThePassword />} />
           <Route path="/register" element={<Register />} />
           <Route path="/line-login" element={<LINELogin />} />
           <Route path="/login-success" element={<LoginSuccess />} />
           <Route path="/login-error" element={<LoginError />} />
-          <Route path="/index2" element={<Index2 />} />
-          <Route path="/add server" element={<AddServer />} />
-          <Route path="/block" element={<Block />} />
+          
+          {/* 新的語義化路由 */}
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/bots/create" element={<AddBotPage />} />
+          <Route path="/bots/editor" element={<BotEditorPage />} />
+          <Route path="/how-to-establish" element={<HowToEstablish />} />
+          
+          {/* 向後兼容的舊路由 */}
+          <Route path="/index2" element={<DashboardPage />} />
+          <Route path="/add server" element={<AddBotPage />} />
+          <Route path="/add-server" element={<AddBotPage />} />
+          <Route path="/block" element={<BotEditorPage />} />
           <Route path="/how to establish" element={<HowToEstablish />} />
+          
           <Route path="/setting" element={<Setting />} />
           <Route path="/verify-email" element={<EmailVerification />} />
           <Route path="/email-verification" element={<EmailVerification />} />

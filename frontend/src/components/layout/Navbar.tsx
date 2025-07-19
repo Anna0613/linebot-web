@@ -55,7 +55,7 @@ const Navbar = () => {
               <Menu size={28} className="hidden sm:block" />
             </button>
             <Link to="/" className="flex items-center space-x-2 sm:space-x-3 z-10 min-w-0">
-              <img src="/專題圖片/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0" />
+              <img src="/assets/images/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0" />
               <h6 className="text-lg sm:text-xl md:text-[28px] font-bold text-[#1a1a40] tracking-wide truncate">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
@@ -196,7 +196,7 @@ const Navbar = () => {
       >
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center hover:scale-110 transition-all duration-300">
           <img
-            src="/專題圖片/line-logo.svg"
+            src="/assets/images/line-logo.svg"
             alt="Line icon"
             className="w-full h-full object-cover"
           />

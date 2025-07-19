@@ -1,4 +1,4 @@
-import Footer from '../components/Index/Footer';
+import Footer from '../components/layout/Footer';
 
 const Suggest = () => {
   return (

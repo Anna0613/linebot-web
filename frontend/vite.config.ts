@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => ({
       allow: ['..']
     }
   },
+  publicDir: '../assets',
   plugins: [
     react(),
     mode === 'development' &&

@@ -3,8 +3,8 @@ import StepOne from '../components/HowToEstablish/StepOne';
 import StepTwo from '../components/HowToEstablish/StepTwo';
 import StepThree from '../components/HowToEstablish/StepThree';
 import StepFour from '../components/HowToEstablish/StepFour';
-import Navbar2 from '../components/LoginHome/Navbar2';
-import Footer2 from '../components/LoginHome/Footer2';
+import DashboardNavbar from '../components/layout/DashboardNavbar';
+import DashboardFooter from '../components/layout/DashboardFooter';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { ChevronRight, CheckCircle, Circle } from 'lucide-react';
@@ -232,7 +232,7 @@ const HowToEstablish = () => {
 
   return (
     <div className="min-h-screen bg-[#FFFDFA]">
-      <Navbar2 user={user}/>
+      <DashboardNavbar user={user}/>
       
       {/* 主要內容區域 */}
       <div className="pt-14 sm:pt-16 md:pt-20 pb-12 sm:pb-16 px-4 sm:px-6">
@@ -364,7 +364,7 @@ const HowToEstablish = () => {
         )}
       </div>
 
-      <Footer2 />
+      <DashboardFooter />
     </div>
   );
 };

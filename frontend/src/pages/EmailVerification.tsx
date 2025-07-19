@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
 import { CheckCircle, XCircle } from "lucide-react";
-import Navbar from '../components/Index/Navbar';
-import Footer from '../components/Index/Footer';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 

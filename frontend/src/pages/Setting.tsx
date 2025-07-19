@@ -2,8 +2,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
-import Navbar2 from "@/components/LoginHome/Navbar2";
-import Footer from "@/components/Index/Footer";
+import DashboardNavbar from "@/components/layout/DashboardNavbar";
+import Footer from "@/components/layout/Footer";
 import AvatarUpload from "@/components/AvatarUpload/AvatarUpload";
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -468,7 +468,7 @@ const Setting: React.FC = () => {
 
   return (
     <>
-      <Navbar2 user={user} />
+      <DashboardNavbar user={user} />
       <div className="max-w-3xl mx-auto p-6 pt-32 space-y-8 pb-16">
         <h2 className="text-3xl font-bold mb-6">設定</h2>
         
@@ -647,7 +647,7 @@ const Setting: React.FC = () => {
           <div className="bg-gray-100 px-4 py-3 rounded">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <img src="/專題圖片/line-logo.svg" alt="LINE" className="w-10 h-10" />
+                <img src="/assets/images/line-logo.svg" alt="LINE" className="w-10 h-10" />
                 <div>
                   <div className="text-base font-semibold">LINE</div>
                   {user?.isLineUser && (

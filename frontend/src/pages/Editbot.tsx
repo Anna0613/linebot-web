@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar3 from '../components/Panels/Navbar3';
-import Footer2 from '../components/LoginHome/Footer2';
+import DashboardFooter from '../components/layout/DashboardFooter';
 import Mybot, { MybotRef } from '@/components/Editbot/Mybot';
 import BotEditModal from '../components/Editbot/BotEditModal';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
@@ -174,7 +174,7 @@ const Editbot = () => {
           )}
         </div>
       </main>
-      <Footer2 />
+      <DashboardFooter />
     </div>
   );
 };

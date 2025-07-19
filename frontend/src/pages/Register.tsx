@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from '../components/Index/Navbar';
-import Footer from '../components/Index/Footer';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 import "@/components/ui/loader.css";
 import { LineLoginService } from '../services/lineLogin';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
@@ -50,7 +50,7 @@ const Register = () => {
           title: "註冊成功！",
           description: "歡迎加入我們",
         });
-        navigate("/index2");
+        navigate("/dashboard");
       } else {
         toast({
           variant: "destructive",
@@ -247,7 +247,7 @@ const Register = () => {
                 disabled={loading}
                 className="w-full rounded-full bg-[#06C755] hover:bg-[#06C755]/90 text-white text-xs xs:text-sm sm:text-base font-semibold h-10 xs:h-11 sm:h-12 relative transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center gap-2"
               >
-                <img src="/專題圖片/line-logo.svg" alt="LINE" className="w-5 h-5" />
+                <img src="/assets/images/line-logo.svg" alt="LINE" className="w-5 h-5" />
                 {loading ? (
                   <span className="flex items-center gap-2">
                     載入中

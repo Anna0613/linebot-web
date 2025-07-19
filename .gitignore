@@ -1,36 +1,106 @@
-node_modules
+# 環境變數文件
 .env
-package-lock.json
-__pycache__/*
-Backend-v1/venv/*
-Backend-v1/app/__pycache__/*
-Backend-v1/app/api/api_v1/__pycache__/*
-Backend-v1/app/core/__pycache__/*
-Backend-v1/app/api/__pycache__/*
-Backend-v1/app/models/__pycache__/*
-Backend-v1/app/schemas/__pycache__/*
-Backend-v1/app/services/__pycache__/*
-# Logs
-logs
-*.log
+.env.local
+.env.production
+.env.staging
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# Node.js
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+.npm
+.yarn-integrity
 
-node_modules
-dist
-dist-ssr
-*.local
+# React build
+/frontend/dist/
+/frontend/build/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.sqlite3
+
+# Docker
+.docker/
+
+# Temporary files
+tmp/
+temp/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Backup files
+*.bak
+*.backup
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.csr
+
+# Local configuration
+local_settings.py
+local_config.json

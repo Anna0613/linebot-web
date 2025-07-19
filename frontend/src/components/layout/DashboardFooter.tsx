@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
 
-const Footer2 = () => {
+const DashboardFooter = () => {
   return (
     <footer id="contact" className="bg-[#C4D4C9] pt-12 sm:pt-16 pb-6 sm:pb-8 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -151,4 +151,4 @@ const Footer2 = () => {
   );
 };
 
-export default Footer2;
+export default DashboardFooter;

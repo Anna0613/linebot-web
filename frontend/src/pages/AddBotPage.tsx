@@ -1,6 +1,6 @@
-import AddServerPage from '../components/AddServer/AddServerPage';
-import Navbar2 from '../components/LoginHome/Navbar2';
-import Footer2 from '../components/LoginHome/Footer2';
+import BotCreationForm from '../components/forms/BotCreationForm';
+import DashboardNavbar from '../components/layout/DashboardNavbar';
+import DashboardFooter from '../components/layout/DashboardFooter';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
@@ -12,7 +12,7 @@ interface User {
   username?: string; // 新增以支援帳號密碼登入
 }
 
-const AddServer = () => {
+const AddBotPage = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
@@ -137,17 +137,17 @@ const AddServer = () => {
 
   return (
     <div className="min-h-screen bg-[#FFFDFA]">
-      <Navbar2 user={user} />
+      <DashboardNavbar user={user} />
       <main className="flex-1">
         <div className="pt-16 md:pt-20 pb-16 px-6">
           <div className="max-w-4xl mx-auto">
-            <AddServerPage />
+            <BotCreationForm />
           </div>
         </div>
       </main>
-      <Footer2 />
+      <DashboardFooter />
     </div>
   );
 };
 
-export default AddServer;
+export default AddBotPage;

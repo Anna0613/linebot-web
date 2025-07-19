@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
-import Footer2 from '../components/LoginHome/Footer2';
-import Navbar2 from '../components/LoginHome/Navbar2';
-import HomeBotfly from '../components/LoginHome/HomeBotfly';
+import DashboardFooter from '../components/layout/DashboardFooter';
+import DashboardNavbar from '../components/layout/DashboardNavbar';
+import HomeBotfly from '../components/features/dashboard/HomeBotfly';
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
@@ -19,7 +19,7 @@ interface User {
   isLineUser?: boolean;
 }
 
-const LoginHome = () => {
+const DashboardPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,8 +38,8 @@ const LoginHome = () => {
   useHistoryGuard({
     preventBack: true,
     replaceHistory: true,
-    allowedBackPaths: ['/index2', '/setting', '/add server', '/block', '/how to establish', '/editbot'],
-    fallbackPath: '/index2'
+    allowedBackPaths: ['/dashboard', '/setting', '/bots/create', '/add-server', '/bots/editor', '/block', '/how-to-establish', '/editbot'],
+    fallbackPath: '/dashboard'
   });
 
   // 使用 useCallback 來穩定 checkLoginStatus 函數
@@ -152,7 +152,7 @@ const LoginHome = () => {
               } as User);
               
               // 清除 URL 參數，避免重複處理
-              navigate('/index2', { replace: true });
+              navigate('/dashboard', { replace: true });
               
             } else {
               // 一般帳號驗證
@@ -251,7 +251,7 @@ const LoginHome = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar2 user={user} />
+      <DashboardNavbar user={user} />
       <div className="mt-40 mb-20">
         {loading ? (
           <div className="flex justify-center">
@@ -263,9 +263,9 @@ const LoginHome = () => {
           <HomeBotfly user={user} />
         )}
       </div>
-      <Footer2 />
+      <DashboardFooter />
     </div>
   );
 };
 
-export default LoginHome;
+export default DashboardPage;

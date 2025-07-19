@@ -2,7 +2,7 @@ import LeftPanel from '../components/Panels/LeftPanel';
 import MiddlePanel from '../components/Panels/MiddlePanel';
 import RightPanel from '../components/Panels/RightPanel';
 import Navbar3 from '../components/Panels/Navbar3';
-import Footer2 from '../components/LoginHome/Footer2';
+import DashboardFooter from '../components/layout/DashboardFooter';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
@@ -15,7 +15,7 @@ interface User {
   username?: string; // 新增以支援帳號密碼登入
 }
 
-const Block = () => {
+const BotEditorPage = () => {
   const [searchParams] = useSearchParams();
       const navigate = useNavigate();
       const [user, setUser] = useState<User | null>(null);
@@ -70,6 +70,7 @@ const Block = () => {
       
         verify();
       }, [searchParams, navigate]);
+      
       const verifyLineToken = async (token: string): Promise<User | null> => {
         try {
           const response = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN), {
@@ -84,6 +85,7 @@ const Block = () => {
           return null;
         }
       };
+      
       const nativeFetch = window.fetch.bind(window); // 保存原生 fetch
     
       const checkLoginStatus = async () => {
@@ -134,6 +136,7 @@ const Block = () => {
           setLoading(false);
         }
       };
+      
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFDFA]">
       <Navbar3 user={user}/>
@@ -145,7 +148,7 @@ const Block = () => {
       </div>
       <div className="mt-10 flex justify-center w-full">
     <Link
-      to="/add server"
+      to="/bots/create"
       className="bg-white p-3 rounded-full shadow hover:bg-gray-100 transition"
       title="上一頁"
     >
@@ -155,9 +158,9 @@ const Block = () => {
     </Link>
   </div>
       </main>
-      <Footer2 />
+      <DashboardFooter />
     </div>
   );
 };
 
-export default Block;
+export default BotEditorPage;

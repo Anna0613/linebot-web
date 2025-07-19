@@ -19,12 +19,12 @@ const StepFour = () => {
               <div className="glassmorphism p-3 sm:p-4 md:p-6 rounded-2xl sm:rounded-3xl shadow-glass-lg">
                 <div className="space-y-3 sm:space-y-4">
                   <img
-                    src="/專題圖片/p7.png"
+                    src="/assets/images/p7.png"
                     alt="LINE Channel secret 設定頁面"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />
                   <img
-                    src="/專題圖片/p8.png"
+                    src="/assets/images/p8.png"
                     alt="Channel access token 設定頁面"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />

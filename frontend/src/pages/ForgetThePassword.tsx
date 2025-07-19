@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from '../components/Index/Navbar';
-import Footer from '../components/Index/Footer';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 

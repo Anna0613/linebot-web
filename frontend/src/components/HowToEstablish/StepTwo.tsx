@@ -19,7 +19,7 @@ const StepTwo = () => {
                 <div className="grid grid-cols-1 gap-3 sm:gap-6">
                   <div className="relative">
                     <img
-                      src="/專題圖片/p3.png"
+                      src="/assets/images/p3.png"
                       alt="LINE Developers Provider 建立頁面"
                       className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                     />
@@ -29,7 +29,7 @@ const StepTwo = () => {
                   
                   <div className="relative">
                     <img
-                      src="/專題圖片/p4.png"
+                      src="/assets/images/p4.png"
                       alt="Provider 建立表單"
                       className="w-full h-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                     />
