@@ -1,7 +1,7 @@
 """
 用戶相關的資料模型
 """
-from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -26,6 +26,12 @@ class User(Base):
     bots = relationship("Bot", back_populates="user", cascade="all, delete-orphan")
     flex_messages = relationship("FlexMessage", back_populates="user", cascade="all, delete-orphan")
     bot_codes = relationship("BotCode", back_populates="user", cascade="all, delete-orphan")
+
+    # 複合索引
+    __table_args__ = (
+        Index('idx_user_email_verified', 'email', 'email_verified'),
+        Index('idx_user_created_verified', 'created_at', 'email_verified'),
+    )
 
     def __repr__(self):
         return f"<User(id={self.id}, username={self.username})>"
