@@ -45,7 +45,10 @@ export const API_CONFIG = {
       GET_AVATAR: "/avatar",
       UPDATE_AVATAR: "/avatar",
       DELETE_AVATAR: "/avatar",
+      CHANGE_PASSWORD: "/change-password",
+      DELETE_ACCOUNT: "/delete-account",
       RESEND_EMAIL_VERIFICATION: "/resend-email-verification",
+      CHECK_EMAIL_VERIFICATION: "/check-email-verification",
     },
   },
   PUZZLE: {

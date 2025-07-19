@@ -87,23 +87,25 @@ const SecuritySection = ({
 
     setPasswordLoading(true);
     try {
-      await onChangePassword(
+      const success = await onChangePassword(
         passwordForm.oldPassword,
         passwordForm.newPassword
       );
 
-      // 重設表單
-      setPasswordForm({
-        oldPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-      setIsChangingPassword(false);
+      if (success) {
+        // 重設表單
+        setPasswordForm({
+          oldPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+        setIsChangingPassword(false);
 
-      toast({
-        title: "密碼更新成功",
-        description: "您的密碼已成功更新",
-      });
+        toast({
+          title: "密碼更新成功",
+          description: "您的密碼已成功更新",
+        });
+      }
     } catch (error: unknown) {
       toast({
         variant: "destructive",

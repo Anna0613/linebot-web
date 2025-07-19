@@ -86,11 +86,25 @@ const UserProfileSection = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
         <div className="relative">
           <AvatarUpload
-            currentImage={userImage}
-            onImageSelect={(file) => onAvatarUpload(file)}
-            onImageDelete={onAvatarDelete}
-            loading={avatarLoading}
-            disabled={user?.isLineUser}
+            currentAvatar={userImage}
+            onAvatarChange={async (avatar) => {
+              if (avatar) {
+                // AvatarUpload 組件返回 base64 字符串，需要轉換為 File 或 Blob
+                try {
+                  const response = await fetch(avatar);
+                  const blob = await response.blob();
+                  const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+                  await onAvatarUpload(file);
+                } catch (error) {
+                  console.error("Error processing avatar:", error);
+                }
+              } else {
+                await onAvatarDelete();
+              }
+            }}
+            onAvatarDelete={onAvatarDelete}
+            username={user.display_name}
+            disabled={user?.isLineUser || avatarLoading}
           />
           {user?.isLineUser && (
             <p className="text-xs text-gray-500 mt-2 max-w-24 text-center">

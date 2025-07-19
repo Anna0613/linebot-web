@@ -24,18 +24,26 @@ export const useUserProfile = () => {
   const loadUserProfile = useCallback(async () => {
     try {
       const response = await apiClient.getUserProfile();
-      if (response.success && response.data) {
+      if (response.status === 200 && response.data) {
         const userData = response.data;
-        setUser(userData);
+        
+        // 合併數據，確保 display_name 有值
+        const mergedUserData = {
+          ...userData,
+          display_name: userData.display_name || userData.username || "",
+          username: userData.username || "",
+        };
+        
+        setUser(mergedUserData);
 
         // 如果是 LINE 用戶，使用 LINE 頭像
-        if (userData.isLineUser && userData.picture_url) {
-          setUserImage(userData.picture_url);
+        if (mergedUserData.isLineUser && mergedUserData.picture_url) {
+          setUserImage(mergedUserData.picture_url);
         }
 
-        return userData;
+        return mergedUserData;
       } else {
-        throw new Error(response.message || "載入用戶資料失敗");
+        throw new Error(response.error || "載入用戶資料失敗");
       }
     } catch (error: unknown) {
       console.error("載入用戶資料錯誤:", error);
@@ -51,8 +59,8 @@ export const useUserProfile = () => {
   const loadUserAvatar = useCallback(async () => {
     try {
       const response = await apiClient.getUserAvatar();
-      if (response.success && response.data?.avatar_url) {
-        setUserImage(response.data.avatar_url);
+      if (response.status === 200 && response.data?.avatar) {
+        setUserImage(response.data.avatar);
       }
     } catch (error) {
       console.error("載入頭像錯誤:", error);
@@ -67,7 +75,7 @@ export const useUserProfile = () => {
           display_name: newDisplayName,
         });
 
-        if (response.success) {
+        if (response.status === 200) {
           setUser((prev) =>
             prev ? { ...prev, display_name: newDisplayName } : null
           );
@@ -77,7 +85,7 @@ export const useUserProfile = () => {
           });
           return true;
         } else {
-          throw new Error(response.message || "更新失敗");
+          throw new Error(response.error || "更新失敗");
         }
       } catch (error: unknown) {
         toast({
@@ -101,15 +109,29 @@ export const useUserProfile = () => {
 
         const response = await apiClient.uploadAvatar(formData);
 
-        if (response.success && response.data?.avatar_url) {
-          setUserImage(response.data.avatar_url);
+        if (response.status === 200) {
+          // 成功上傳，重新載入頭像
+          const avatarResponse = await apiClient.getUserAvatar();
+          let newAvatarUrl = null;
+          
+          if (avatarResponse.status === 200 && avatarResponse.data?.avatar) {
+            newAvatarUrl = avatarResponse.data.avatar;
+            setUserImage(newAvatarUrl);
+          }
+          
+          // 發送頭像更新事件給其他組件（如DashboardNavbar）
+          const avatarUpdateEvent = new CustomEvent('avatarUpdated', {
+            detail: { avatar: newAvatarUrl }
+          });
+          window.dispatchEvent(avatarUpdateEvent);
+          
           toast({
             title: "頭像更新成功",
             description: "您的頭像已成功更新",
           });
           return true;
         } else {
-          throw new Error(response.message || "頭像上傳失敗");
+          throw new Error(response.error || "頭像上傳失敗");
         }
       } catch (error: unknown) {
         toast({
@@ -130,15 +152,22 @@ export const useUserProfile = () => {
     try {
       const response = await apiClient.deleteAvatar();
 
-      if (response.success) {
+      if (response.status === 200) {
         setUserImage(null);
+        
+        // 發送頭像刪除事件給其他組件（如DashboardNavbar）
+        const avatarUpdateEvent = new CustomEvent('avatarUpdated', {
+          detail: { avatar: null }
+        });
+        window.dispatchEvent(avatarUpdateEvent);
+        
         toast({
           title: "頭像已刪除",
           description: "您的頭像已成功刪除",
         });
         return true;
       } else {
-        throw new Error(response.message || "刪除頭像失敗");
+        throw new Error(response.error || "刪除頭像失敗");
       }
     } catch (error: unknown) {
       toast({
@@ -160,42 +189,33 @@ export const useUserProfile = () => {
           newPassword
         );
 
-        if (response.success) {
-          toast({
-            title: "密碼更新成功",
-            description: "您的密碼已成功更新",
-          });
+        if (response.status === 200) {
           return true;
         } else {
-          throw new Error(response.message || "密碼更新失敗");
+          // 直接返回false，不在這裡顯示錯誤訊息
+          // 讓調用方處理錯誤顯示
+          throw new Error(response.error || "密碼更新失敗");
         }
       } catch (error: unknown) {
-        toast({
-          variant: "destructive",
-          title: "密碼更新失敗",
-          description:
-            error instanceof Error
-              ? error.message
-              : "請檢查您的現在密碼是否正確",
-        });
-        return false;
+        // 直接拋出錯誤，讓調用方處理
+        throw error;
       }
     },
-    [apiClient, toast]
+    [apiClient]
   );
 
   const deleteAccount = useCallback(async () => {
     try {
       const response = await apiClient.deleteAccount();
 
-      if (response.success) {
+      if (response.status === 200) {
         toast({
           title: "帳號已刪除",
           description: "您的帳號已成功刪除",
         });
         return true;
       } else {
-        throw new Error(response.message || "帳號刪除失敗");
+        throw new Error(response.error || "帳號刪除失敗");
       }
     } catch (error: unknown) {
       toast({

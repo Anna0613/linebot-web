@@ -69,8 +69,15 @@ const Setting: React.FC = () => {
   useEffect(() => {
     const initializeUserData = async () => {
       if (authUser && !authLoading) {
-        setUser(authUser);
-        setDisplayName(authUser.display_name);
+        // 確保用戶數據結構完整
+        const completeUser = {
+          ...authUser,
+          display_name: authUser.display_name || authUser.username || "",
+          username: authUser.username || "",
+        };
+        
+        setUser(completeUser);
+        setDisplayName(completeUser.display_name);
         setEmail(authUser.email || "");
         setEmailVerified(authUser.email_verified || false);
 
@@ -205,7 +212,7 @@ const Setting: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FFFDFA]">
-      <DashboardNavbar user={user} />
+      <DashboardNavbar user={user || authUser} />
 
       <div className="pt-16 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">

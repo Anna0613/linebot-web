@@ -105,11 +105,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
       try {
         const compressedDataUrl = await compressImage(file);
         onAvatarChange(compressedDataUrl);
-
-        toast({
-          title: "頭像更新成功",
-          description: "您的頭像已經更新",
-        });
+        // 移除這裡的成功通知，讓實際的上傳處理來顯示結果
       } catch (error) {
         console.error("Error processing image:", error);
         toast({

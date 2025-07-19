@@ -31,6 +31,7 @@ class UserService:
         return UserProfile(
             id=str(user.id),
             username=user.username,
+            display_name=user.username,  # 使用 username 作為 display_name
             email=user.email,
             email_verified=user.email_verified,
             avatar_updated_at=user.avatar_updated_at,
@@ -84,6 +85,7 @@ class UserService:
         return UserProfile(
             id=str(user.id),
             username=user.username,
+            display_name=user.username,  # 使用 username 作為 display_name
             email=user.email,
             email_verified=user.email_verified,
             avatar_updated_at=user.avatar_updated_at,
@@ -182,6 +184,22 @@ class UserService:
         db.commit()
         
         return {"message": "密碼變更成功"}
+    
+    @staticmethod
+    def delete_user_account(db: Session, user_id: UUID) -> Dict[str, str]:
+        """刪除用戶帳號"""
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用戶不存在"
+            )
+        
+        # 刪除用戶帳號
+        db.delete(user)
+        db.commit()
+        
+        return {"message": "帳號已成功刪除"}
     
     @staticmethod
     def validate_avatar_base64(avatar_data: str) -> tuple[bool, str]:

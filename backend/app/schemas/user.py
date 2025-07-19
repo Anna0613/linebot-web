@@ -42,6 +42,7 @@ class UserProfile(BaseModel):
     """用戶個人檔案 schema"""
     id: str
     username: str
+    display_name: Optional[str] = None
     email: Optional[str]
     email_verified: bool
     avatar_updated_at: Optional[datetime]

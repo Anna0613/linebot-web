@@ -14,7 +14,7 @@ export const useEmailManagement = () => {
   const loadEmailStatus = useCallback(async () => {
     try {
       const response = await apiClient.getUserProfile();
-      if (response.success && response.data) {
+      if (response.status === 200 && response.data) {
         setEmail(response.data.email || "");
         setEmailVerified(response.data.email_verified || false);
       }
@@ -28,7 +28,7 @@ export const useEmailManagement = () => {
       try {
         const response = await apiClient.updateUserProfile({ email: newEmail });
 
-        if (response.success) {
+        if (response.status === 200) {
           setEmail(newEmail);
           setEmailVerified(false); // 更新電子郵件後需要重新驗證
           setIsEditingEmail(false);
@@ -40,7 +40,7 @@ export const useEmailManagement = () => {
 
           return true;
         } else {
-          throw new Error(response.message || "更新電子郵件失敗");
+          throw new Error(response.error || "更新電子郵件失敗");
         }
       } catch (error: unknown) {
         toast({
@@ -66,16 +66,16 @@ export const useEmailManagement = () => {
 
     setIsResendingEmailVerification(true);
     try {
-      const response = await apiClient.resendVerificationEmail(email);
+      const response = await apiClient.resendEmailVerification();
 
-      if (response.success) {
+      if (response.status === 200) {
         toast({
           title: "驗證郵件已發送",
           description: "請檢查您的電子郵件並點擊驗證連結",
         });
         return true;
       } else {
-        throw new Error(response.message || "發送驗證郵件失敗");
+        throw new Error(response.error || "發送驗證郵件失敗");
       }
     } catch (error: unknown) {
       toast({
@@ -93,7 +93,7 @@ export const useEmailManagement = () => {
   const checkEmailVerification = useCallback(async () => {
     try {
       const response = await apiClient.checkEmailVerification();
-      if (response.success && response.data) {
+      if (response.status === 200 && response.data) {
         setEmailVerified(response.data.verified);
         return response.data.verified;
       }

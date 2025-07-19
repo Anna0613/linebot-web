@@ -225,8 +225,25 @@ export class ApiClient {
     );
   }
 
+  // 別名方法 - 為了與 hooks 兼容
+  async getUserProfile(): Promise<ApiResponse> {
+    return this.getProfile();
+  }
+
   // 更新用戶資料
   async updateProfile(profileData: {
+    username?: string;
+    email?: string;
+  }): Promise<ApiResponse> {
+    return this.put(
+      `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.UPDATE_PROFILE}`,
+      profileData
+    );
+  }
+
+  // 更新用戶資料（支持顯示名稱）
+  async updateUserProfile(profileData: {
+    display_name?: string;
     username?: string;
     email?: string;
   }): Promise<ApiResponse> {
@@ -243,6 +260,11 @@ export class ApiClient {
     );
   }
 
+  // 別名方法 - 為了與 hooks 兼容
+  async getUserAvatar(): Promise<ApiResponse> {
+    return this.getAvatar();
+  }
+
   // 更新用戶頭像
   async updateAvatar(avatar: string): Promise<ApiResponse> {
     return this.put(
@@ -253,6 +275,46 @@ export class ApiClient {
     );
   }
 
+  // 上傳用戶頭像 (FormData 格式)
+  async uploadAvatar(formData: FormData): Promise<ApiResponse> {
+    try {
+      // 從 FormData 中獲取文件並轉換為 base64
+      const file = formData.get('avatar') as File;
+      if (!file) {
+        return {
+          error: "未找到頭像文件",
+          status: 400,
+        };
+      }
+
+      // 將文件轉換為 base64 data URL
+      const base64 = await this.fileToBase64(file);
+      
+      // 使用 JSON 格式發送數據
+      return this.put(
+        `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.UPDATE_AVATAR}`,
+        {
+          avatar_base64: base64,
+        }
+      );
+    } catch (error) {
+      return {
+        error: "頭像處理失敗",
+        status: 0,
+      };
+    }
+  }
+
+  // 文件轉 base64 的輔助方法
+  private fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   // 刪除用戶頭像
   async deleteAvatar(): Promise<ApiResponse> {
     return this.delete(
@@ -260,7 +322,25 @@ export class ApiClient {
     );
   }
 
-  // 重新發送驗證email
+  // 修改密碼
+  async changePassword(oldPassword: string, newPassword: string): Promise<ApiResponse> {
+    return this.post(
+      `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.CHANGE_PASSWORD}`,
+      {
+        current_password: oldPassword,
+        new_password: newPassword,
+      }
+    );
+  }
+
+  // 刪除帳號
+  async deleteAccount(): Promise<ApiResponse> {
+    return this.delete(
+      `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.DELETE_ACCOUNT}`
+    );
+  }
+
+  // 重新發送驗證email (Auth API)
   async resendVerificationEmail(username: string): Promise<ApiResponse> {
     return this.post(`${API_CONFIG.AUTH.BASE_URL}/resend_verification`, {
       username,
@@ -271,6 +351,13 @@ export class ApiClient {
   async resendEmailVerification(): Promise<ApiResponse> {
     return this.post(
       `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.RESEND_EMAIL_VERIFICATION}`
+    );
+  }
+
+  // 檢查email驗證狀態
+  async checkEmailVerification(): Promise<ApiResponse> {
+    return this.get(
+      `${API_CONFIG.SETTING.BASE_URL}${API_CONFIG.SETTING.ENDPOINTS.CHECK_EMAIL_VERIFICATION}`
     );
   }
 

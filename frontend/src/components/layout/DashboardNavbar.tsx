@@ -263,10 +263,10 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                       </svg>
                     )}
                     <span className="font-medium text-sm lg:text-base">
-                      {user?.display_name || "未登入"}
+                      {user?.display_name || user?.username || "未登入"}
                     </span>
                     <small className="text-gray-500 text-xs lg:text-sm">
-                      {user?.line_id || user?.username || "未登入"}
+                      {user?.line_id || user?.username || ""}
                     </small>
                     <input
                       ref={fileInputRef}
