@@ -161,7 +161,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               <Menu size={28} className="hidden sm:block" />
             </button>
             <Link to="/index2" className="flex items-center space-x-2 sm:space-x-3 z-10 min-w-0">
-              <img src="/assets/images/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0" />
+              <img src="/images/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0" />
               <h6 className="text-lg sm:text-xl md:text-[28px] font-bold text-[#1a1a40] tracking-wide truncate">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
@@ -242,7 +242,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                       設定
                     </Link>
                     <Link to="/language" className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]">
-                      <img src="/assets/images/language setting.svg" alt="Logo" className="w-6 h-6 fill-[#454658]" />
+                      <img src="/images/language setting.svg" alt="Logo" className="w-6 h-6 fill-[#454658]" />
                       語言
                     </Link>
                     <Link to="/suggest" className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]">
@@ -291,7 +291,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
 
       <a href="https://line.me/ti/p/OQV3UIgmr7" target="_blank" className="fixed right-5 bottom-5 z-[1001]">
         <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center hover:scale-110 transition">
-          <img src="/assets/images/line-logo.svg" alt="Line icon" className="w-full h-full object-cover" />
+          <img src="/images/line-logo.svg" alt="Line icon" className="w-full h-full object-cover" />
         </div>
       </a>
     </>

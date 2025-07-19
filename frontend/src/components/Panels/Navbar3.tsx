@@ -155,7 +155,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               <Menu size={28} />
             </button>
             <Link to="/index2" className="flex items-center space-x-3 z-10 ml-2">
-              <img src="/assets/images/logo.svg" alt="Logo" className="h-12 w-auto" />
+              <img src="/images/logo.svg" alt="Logo" className="h-12 w-auto" />
               <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">LINE Bot 製作輔助系統</h6>
             </Link>
           </div>
@@ -229,7 +229,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                       設定
                     </Link>
                     <Link to="/language" className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]">
-                      <img src="/assets/images/language setting.svg" alt="Logo" className="w-6 h-6 fill-[#454658]" />
+                      <img src="/images/language setting.svg" alt="Logo" className="w-6 h-6 fill-[#454658]" />
                       語言
                     </Link>
                     <Link to="/suggest" className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]">
@@ -278,7 +278,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
 
       <a href="https://line.me/ti/p/OQV3UIgmr7" target="_blank" className="fixed right-5 bottom-5 z-[1001]">
         <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center hover:scale-110 transition">
-          <img src="/assets/images/line-logo.svg" alt="Line icon" className="w-full h-full object-cover" />
+          <img src="/images/line-logo.svg" alt="Line icon" className="w-full h-full object-cover" />
         </div>
       </a>
     </>
