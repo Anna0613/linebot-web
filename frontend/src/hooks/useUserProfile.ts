@@ -183,22 +183,16 @@ export const useUserProfile = () => {
 
   const changePassword = useCallback(
     async (oldPassword: string, newPassword: string) => {
-      try {
-        const response = await apiClient.changePassword(
-          oldPassword,
-          newPassword
-        );
+      const response = await apiClient.changePassword(
+        oldPassword,
+        newPassword
+      );
 
-        if (response.status === 200) {
-          return true;
-        } else {
-          // 直接返回false，不在這裡顯示錯誤訊息
-          // 讓調用方處理錯誤顯示
-          throw new Error(response.error || "密碼更新失敗");
-        }
-      } catch (error: unknown) {
-        // 直接拋出錯誤，讓調用方處理
-        throw error;
+      if (response.status === 200) {
+        return true;
+      } else {
+        // 直接拋出錯誤，讓調用方處理錯誤顯示
+        throw new Error(response.error || "密碼更新失敗");
       }
     },
     [apiClient]
