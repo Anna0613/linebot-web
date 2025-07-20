@@ -169,7 +169,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               <Menu size={28} className="hidden sm:block" />
             </button>
             <Link
-              to="/index2"
+              to="/dashboard"
               className="flex items-center space-x-2 sm:space-x-3 z-10 min-w-0"
             >
               <img
@@ -378,7 +378,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
           <ul className="mt-8 space-y-4 text-[#1a1a40] text-lg">
             <li>
               <Link
-                to="/index2"
+                to="/dashboard"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
               >

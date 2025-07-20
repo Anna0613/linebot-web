@@ -36,7 +36,7 @@ const DashboardFooter = () => {
             <ul className="space-y-2">
               <li>
                 <Link
-                  to="/index2"
+                  to="/dashboard"
                   className="text-muted-foreground hover:text-[#0B346E] transition-colors text-sm block py-1"
                 >
                   首頁

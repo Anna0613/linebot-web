@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "./use-toast";
 import { authManager } from "../services/UnifiedAuthManager";
-import { securityMonitor } from "../utils/securityMonitor";
 
 interface UseAuthFormOptions {
   onSuccess?: () => void;
@@ -37,8 +36,6 @@ export const useAuthForm = (options: UseAuthFormOptions = {}) => {
   ) => {
     const errorMessage = error instanceof Error ? error.message : defaultMessage;
     
-    // 記錄安全事件
-    securityMonitor.logAuthFailure(errorMessage);
     
     toast({
       variant: "destructive",

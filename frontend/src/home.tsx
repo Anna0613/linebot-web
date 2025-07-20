@@ -4,8 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
-import { performanceOptimizer } from "./utils/performanceOptimizer";
-import { SecurityMonitorDashboard } from "./components/admin/SecurityMonitorDashboard";
 
 // 使用 React.lazy 進行代碼分割和懶載入
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -51,28 +49,6 @@ const LoadingFallback = () => (
 );
 
 const App = () => {
-  useEffect(() => {
-    // 初始化性能優化器
-    performanceOptimizer.startMeasure('app-initialization');
-    
-    // 預載入關鍵資源
-    performanceOptimizer.preloadCriticalResources();
-    
-    // 啟用懶載入
-    performanceOptimizer.enableLazyLoading();
-    
-    // 自動優化
-    const autoOptimizeTimer = setInterval(() => {
-      performanceOptimizer.autoOptimize();
-    }, 60000); // 每分鐘執行一次自動優化
-    
-    performanceOptimizer.endMeasure('app-initialization');
-    
-    return () => {
-      clearInterval(autoOptimizeTimer);
-      performanceOptimizer.cleanup();
-    };
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -102,7 +78,7 @@ const App = () => {
               <Route path="/how-to-establish" element={<HowToEstablish />} />
 
               {/* 向後兼容的舊路由 */}
-              <Route path="/index2" element={<DashboardPage />} />
+              <Route path="/dashboard-legacy" element={<DashboardPage />} />
               <Route path="/add server" element={<AddBotPage />} />
               <Route path="/add-server" element={<AddBotPage />} />
               <Route path="/block" element={<BotEditorPage />} />
@@ -121,8 +97,6 @@ const App = () => {
           </Suspense>
         </BrowserRouter>
         
-        {/* 安全監控儀表板 - 僅在開發環境或管理員模式下顯示 */}
-        <SecurityMonitorDashboard />
       </TooltipProvider>
     </QueryClientProvider>
   );

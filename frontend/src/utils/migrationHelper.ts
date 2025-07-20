@@ -3,7 +3,6 @@
  * 提供數據遷移、回滾機制和相容性檢查
  */
 
-import { securityMonitor } from './securityMonitor';
 import { authManager } from '../services/UnifiedAuthManager';
 
 interface MigrationStatus {
@@ -48,7 +47,6 @@ export class MigrationHelper {
    */
   public async startMigration(): Promise<boolean> {
     try {
-      securityMonitor.logMigrationEvent('full_migration', 'start');
       this.updateStatus('in_progress', '開始遷移過程');
 
       // 1. 創建備份
@@ -78,13 +76,11 @@ export class MigrationHelper {
       this.completeStep('old_data_cleaned');
 
       this.updateStatus('completed', '遷移完成');
-      securityMonitor.logMigrationEvent('full_migration', 'success');
       
       return true;
     } catch (error) {
       this.addError(error instanceof Error ? error.message : '未知錯誤');
       this.updateStatus('failed', '遷移失敗');
-      securityMonitor.logMigrationEvent('full_migration', 'error', { error: error instanceof Error ? error.message : error });
       
       return false;
     }
@@ -95,7 +91,6 @@ export class MigrationHelper {
    */
   public async rollback(): Promise<boolean> {
     try {
-      securityMonitor.logMigrationEvent('rollback', 'start');
       this.updateStatus('in_progress', '開始回滾');
 
       if (!this.backup) {
@@ -118,12 +113,10 @@ export class MigrationHelper {
       this.completeStep('rollback_validated');
 
       this.updateStatus('rolled_back', '回滾完成');
-      securityMonitor.logMigrationEvent('rollback', 'success');
       
       return true;
     } catch (error) {
       this.addError(error instanceof Error ? error.message : '未知錯誤');
-      securityMonitor.logMigrationEvent('rollback', 'error', { error: error instanceof Error ? error.message : error });
       
       return false;
     }
@@ -163,7 +156,6 @@ export class MigrationHelper {
       return true;
     }
 
-    securityMonitor.logMigrationEvent('auto_migration', 'start');
     
     try {
       // 簡化的自動遷移邏輯
@@ -210,10 +202,8 @@ export class MigrationHelper {
         localStorage.removeItem(key);
       });
 
-      securityMonitor.logMigrationEvent('auto_migration', 'success');
       return true;
     } catch (error) {
-      securityMonitor.logMigrationEvent('auto_migration', 'error', { error: error instanceof Error ? error.message : error });
       return false;
     }
   }
@@ -227,9 +217,6 @@ export class MigrationHelper {
       cookies: document.cookie.split(';').map(c => c.trim()),
     };
     
-    securityMonitor.logMigrationEvent('backup', 'success', { 
-      itemCount: Object.keys(this.backup.localStorage).length 
-    });
   }
 
   private async checkCompatibility(): Promise<{ compatible: boolean; issues: string[] }> {

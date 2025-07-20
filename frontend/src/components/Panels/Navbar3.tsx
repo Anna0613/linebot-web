@@ -169,7 +169,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               <Menu size={28} />
             </button>
             <Link
-              to="/index2"
+              to="/dashboard"
               className="flex items-center space-x-3 z-10 ml-2"
             >
               <img src="/images/logo.svg" alt="Logo" className="h-12 w-auto" />
@@ -378,7 +378,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
           <ul className="mt-8 space-y-4 text-[#1a1a40] text-lg">
             <li>
               <Link
-                to="/index2"
+                to="/dashboard"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
               >

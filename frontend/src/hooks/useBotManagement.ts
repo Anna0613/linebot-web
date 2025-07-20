@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bot, BotCreate } from "../services/puzzleApi";
 import { authManager } from "../services/UnifiedAuthManager";
-import { securityMonitor } from "../utils/securityMonitor";
 import { apiClient } from "../services/UnifiedApiClient";
 
 interface UseBotManagementReturn {
@@ -26,10 +25,6 @@ export const useBotManagement = (): UseBotManagementReturn => {
   const checkAuth = useCallback(async () => {
     const isAuthenticated = await authManager.isAuthenticated();
     if (!isAuthenticated) {
-      securityMonitor.logSecurityViolation('未授權的Bot管理訪問', {
-        path: window.location.pathname,
-        action: 'bot_management_access'
-      });
       
       navigate("/login", {
         state: {
@@ -59,11 +54,6 @@ export const useBotManagement = (): UseBotManagementReturn => {
 
         const newBot = response.data as Bot;
         
-        // 記錄成功事件
-        securityMonitor.logEvent('auth_success', {
-          action: 'create_bot',
-          botName: botData.name
-        }, 'low', authManager.getUserInfo()?.id);
 
         // 更新本地 bot 列表
         setBots((prevBots) => [...prevBots, newBot]);
@@ -72,8 +62,6 @@ export const useBotManagement = (): UseBotManagementReturn => {
         const errorMessage = err instanceof Error ? err.message : "創建 Bot 失敗";
         setError(errorMessage);
 
-        // 記錄失敗事件
-        securityMonitor.logAuthFailure(errorMessage, authManager.getUserInfo()?.id);
 
         // 統一認證管理器會自動處理401錯誤
         authManager.handleAuthError(err);
@@ -107,7 +95,7 @@ export const useBotManagement = (): UseBotManagementReturn => {
 
       // 如果是認證錯誤，重導向到登入頁
       if (errorMessage.includes("401") || errorMessage.includes("認證")) {
-        AuthService.clearAuth();
+        authManager.clearAuth();
         navigate("/login", {
           state: {
             from: window.location.pathname,
@@ -143,7 +131,7 @@ export const useBotManagement = (): UseBotManagementReturn => {
 
         // 如果是認證錯誤，重導向到登入頁
         if (errorMessage.includes("401") || errorMessage.includes("認證")) {
-          AuthService.clearAuth();
+          authManager.clearAuth();
           navigate("/login", {
             state: {
               from: window.location.pathname,
