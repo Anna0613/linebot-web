@@ -47,11 +47,11 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
   }, [user, apiClient]);
 
   useEffect(() => {
-    if (user?.picture_url) {
-      // LINE 用戶或有 picture_url 的用戶
+    if (user?.isLineUser && user?.picture_url) {
+      // LINE 用戶使用 picture_url
       setUserImage(user.picture_url);
     } else if (user?.avatar) {
-      // 有 avatar 資料的用戶
+      // 有自訂 avatar 資料的用戶
       setUserImage(user.avatar);
     } else if (user && !user.isLineUser) {
       // 非 LINE 用戶，從後端載入頭像
@@ -212,9 +212,9 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                 onClick={toggleDropdown}
                 className="flex items-center justify-center h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-gray-200 overflow-hidden hover:ring-2 hover:ring-[#F4CD41] transition-all"
               >
-                {userImage || user?.picture_url ? (
+                {userImage ? (
                   <img
-                    src={userImage || user?.picture_url}
+                    src={userImage}
                     alt="User"
                     className="h-full w-full object-cover"
                   />
@@ -241,9 +241,9 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                     className="flex flex-col items-center cursor-pointer mb-4"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    {userImage || user?.picture_url ? (
+                    {userImage ? (
                       <img
-                        src={userImage || user?.picture_url}
+                        src={userImage}
                         alt="User Detail"
                         className="w-14 h-14 lg:w-16 lg:h-16 rounded-full mb-2 object-cover"
                       />

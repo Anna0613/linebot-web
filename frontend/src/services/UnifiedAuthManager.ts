@@ -22,6 +22,7 @@ export interface UnifiedUser {
   display_name: string;
   picture_url?: string;
   line_id?: string;
+  isLineUser?: boolean;
   login_type: 'traditional' | 'line' | 'oauth';
 }
 

@@ -13,7 +13,7 @@ export const useEmailManagement = () => {
 
   const loadEmailStatus = useCallback(async () => {
     try {
-      const response = await apiClient.getUserProfile();
+      const response = await apiClient.getProfile();
       if (response.status === 200 && response.data) {
         setEmail(response.data.email || "");
         setEmailVerified(response.data.email_verified || false);
@@ -26,7 +26,7 @@ export const useEmailManagement = () => {
   const updateEmail = useCallback(
     async (newEmail: string) => {
       try {
-        const response = await apiClient.updateUserProfile({ email: newEmail });
+        const response = await apiClient.updateProfile({ email: newEmail });
 
         if (response.status === 200) {
           setEmail(newEmail);

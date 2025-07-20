@@ -23,7 +23,7 @@ export const useUserProfile = () => {
 
   const loadUserProfile = useCallback(async () => {
     try {
-      const response = await apiClient.getUserProfile();
+      const response = await apiClient.getProfile();
       if (response.status === 200 && response.data) {
         const userData = response.data;
         
@@ -71,7 +71,7 @@ export const useUserProfile = () => {
   const updateDisplayName = useCallback(
     async (newDisplayName: string) => {
       try {
-        const response = await apiClient.updateUserProfile({
+        const response = await apiClient.updateProfile({
           display_name: newDisplayName,
         });
 

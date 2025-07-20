@@ -388,6 +388,27 @@ export class UnifiedApiClient {
     });
   }
 
+  // 刪除帳號
+  public async deleteAccount(): Promise<ApiResponse> {
+    return this.delete(
+      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.DELETE_ACCOUNT)
+    );
+  }
+
+  // 重新發送電子郵件驗證
+  public async resendEmailVerification(): Promise<ApiResponse> {
+    return this.post(
+      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.RESEND_EMAIL_VERIFICATION)
+    );
+  }
+
+  // 檢查電子郵件驗證狀態
+  public async checkEmailVerification(): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.CHECK_EMAIL_VERIFICATION)
+    );
+  }
+
   // LINE登入相關API
   public async getLineLoginUrl(): Promise<ApiResponse> {
     return this.post(

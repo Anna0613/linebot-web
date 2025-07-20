@@ -5,7 +5,7 @@ FastAPI 依賴注入模組
 from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models.user import User
 from app.core.security import verify_token, extract_token_from_header
@@ -63,7 +63,7 @@ async def get_current_user(
         logger.error(f"Token verification failed: {e}")
         raise credentials_exception
     
-    user = db.query(User).filter(User.username == username).first()
+    user = db.query(User).options(joinedload(User.line_account)).filter(User.username == username).first()
     if user is None:
         logger.warning(f"User not found: {username}")
         raise credentials_exception

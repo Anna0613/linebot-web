@@ -5,12 +5,12 @@
 from datetime import datetime
 from typing import Dict, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 import re
 import base64
 
-from app.models.user import User
+from app.models.user import User, LineUser
 from app.schemas.user import UserProfile, UserUpdate, AvatarUpload
 from app.schemas.auth import PasswordChange
 from app.core.security import verify_password, get_password_hash
@@ -21,22 +21,39 @@ class UserService:
     @staticmethod
     def get_user_profile(db: Session, user_id: UUID) -> UserProfile:
         """取得用戶個人檔案"""
-        user = db.query(User).filter(User.id == user_id).first()
+        # 查詢用戶並預載 line_account 關係
+        user = db.query(User).options(joinedload(User.line_account)).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="用戶不存在"
             )
         
-        return UserProfile(
-            id=str(user.id),
-            username=user.username,
-            display_name=user.username,  # 使用 username 作為 display_name
-            email=user.email,
-            email_verified=user.email_verified,
-            avatar_updated_at=user.avatar_updated_at,
-            created_at=user.created_at
-        )
+        # 檢查是否為 LINE 用戶
+        is_line_user = user.line_account is not None
+        
+        # 準備回應資料
+        profile_data = {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "email_verified": user.email_verified,
+            "avatar_updated_at": user.avatar_updated_at,
+            "created_at": user.created_at,
+            "isLineUser": is_line_user,
+        }
+        
+        # LINE 用戶的特殊處理
+        if is_line_user:
+            profile_data.update({
+                "display_name": user.line_account.display_name or user.username,
+                "line_id": user.line_account.line_id,
+                "picture_url": user.line_account.picture_url,
+            })
+        else:
+            profile_data["display_name"] = user.username
+        
+        return UserProfile(**profile_data)
     
     @staticmethod
     def update_user_profile(db: Session, user_id: UUID, user_data: UserUpdate) -> UserProfile:

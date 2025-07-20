@@ -48,6 +48,11 @@ class UserProfile(BaseModel):
     avatar_updated_at: Optional[datetime]
     created_at: datetime
     
+    # LINE 用戶相關欄位
+    line_id: Optional[str] = None
+    picture_url: Optional[str] = None
+    isLineUser: bool = False
+    
     class Config:
         from_attributes = True
 

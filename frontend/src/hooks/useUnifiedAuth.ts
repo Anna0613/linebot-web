@@ -26,6 +26,48 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
   const [error, setError] = useState<string | null>(null);
 
   /**
+   * 刷新用戶信息
+   */
+  const refreshUserInfo = useCallback(async () => {
+    try {
+      // 使用正確的用戶資料 API 端點
+      const response = await fetch(
+        getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.GET_PROFILE),
+        {
+          method: 'GET',
+          headers: authManager.getAuthHeaders(),
+          credentials: 'include',
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (result.data || result.id) {
+          const profileData = result.data || result;
+          const userData: UnifiedUser = {
+            id: profileData.id || profileData.username,
+            username: profileData.username,
+            email: profileData.email,
+            display_name: profileData.display_name || profileData.username,
+            login_type: authManager.getUserInfo()?.login_type || 'traditional',
+            // LINE 用戶相關資料
+            line_id: profileData.line_id,
+            picture_url: profileData.picture_url,
+            isLineUser: profileData.isLineUser || false,
+          };
+
+          authManager.setUserInfo(userData);
+          setUser(userData);
+          onAuthChange?.(true, userData);
+        }
+      }
+    } catch (err) {
+      console.error('刷新用戶信息失敗:', err);
+    }
+  }, [onAuthChange]);
+
+  /**
    * 檢查認證狀態
    */
   const checkAuthStatus = useCallback(async () => {
@@ -36,9 +78,13 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
       const isAuthenticated = await authManager.isAuthenticated();
       
       if (isAuthenticated) {
+        // 如果已認證，先從本地獲取用戶資料，然後刷新最新資料
         const userData = authManager.getUserInfo();
         setUser(userData);
         onAuthChange?.(true, userData);
+        
+        // 背景刷新用戶資料以獲取最新的 LINE 頭像等資訊
+        refreshUserInfo();
       } else {
         setUser(null);
         onAuthChange?.(false, null);
@@ -59,7 +105,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [requireAuth, redirectTo, navigate, onAuthChange]);
+  }, [requireAuth, redirectTo, navigate, onAuthChange, refreshUserInfo]);
 
   /**
    * 傳統登錄
@@ -248,42 +294,6 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
       });
     }
   }, [navigate, toast, onAuthChange]);
-
-  /**
-   * 刷新用戶信息
-   */
-  const refreshUserInfo = useCallback(async () => {
-    try {
-      const response = await fetch(
-        getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN),
-        {
-          method: 'GET',
-          headers: authManager.getAuthHeaders(),
-          credentials: 'include',
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.authenticated && data.user) {
-          const userData: UnifiedUser = {
-            id: data.user.id || data.user.username,
-            username: data.user.username,
-            email: data.user.email,
-            display_name: data.user.display_name || data.user.username,
-            login_type: authManager.getUserInfo()?.login_type || 'traditional',
-          };
-
-          authManager.setUserInfo(userData);
-          setUser(userData);
-          onAuthChange?.(true, userData);
-        }
-      }
-    } catch (err) {
-      console.error('刷新用戶信息失敗:', err);
-    }
-  }, [onAuthChange]);
 
   /**
    * 獲取認證headers
