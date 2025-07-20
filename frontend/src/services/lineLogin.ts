@@ -1,4 +1,4 @@
-import { ApiClient } from "./api";
+import { apiClient } from "./UnifiedApiClient";
 import { API_CONFIG } from "../config/apiConfig";
 
 export interface LineLoginResponse {
@@ -10,10 +10,9 @@ export interface LineLoginResponse {
 
 export class LineLoginService {
   private static instance: LineLoginService;
-  private apiClient: ApiClient;
 
   private constructor() {
-    this.apiClient = ApiClient.getInstance();
+    // 使用統一的 apiClient
   }
 
   public static getInstance(): LineLoginService {
@@ -72,7 +71,7 @@ export class LineLoginService {
 
     while (retries < maxRetries) {
       try {
-        const response = await this.apiClient.post<LineLoginResponse>(
+        const response = await apiClient.post<LineLoginResponse>(
           `${API_CONFIG.LINE_LOGIN.BASE_URL}${API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN}`,
           { token }
         );

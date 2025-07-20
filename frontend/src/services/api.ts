@@ -1,3 +1,11 @@
+/**
+ * @deprecated 此文件已廢棄，請使用 UnifiedApiClient 替代
+ * 遷移指南: /docs/UNIFIED_AUTH_DEVELOPER_GUIDE.md
+ * 移除時間: 2025-09-20
+ */
+
+console.warn('⚠️ api.ts 已廢棄，請遷移到 UnifiedApiClient');
+
 import { AuthService } from "./auth";
 import { API_CONFIG } from "../config/apiConfig";
 

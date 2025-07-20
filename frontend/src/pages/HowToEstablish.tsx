@@ -8,7 +8,7 @@ import DashboardFooter from "../components/layout/DashboardFooter";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 import { ChevronRight, CheckCircle, Circle } from "lucide-react";
-import { useAuthGuard } from "../hooks/useAuthGuard";
+import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 
 interface User {
   line_id?: string;
@@ -25,10 +25,9 @@ const HowToEstablish = () => {
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
 
-  // 使用身份驗證保護Hook
-  useAuthGuard({
+  // 使用統一身份驗證Hook
+  const { user: authUser, loading: authLoading, error: authError } = useUnifiedAuth({
     requireAuth: true,
-    preventBackToLogin: true,
     redirectTo: "/login",
   });
 

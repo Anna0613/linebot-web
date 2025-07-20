@@ -9,12 +9,12 @@ import SecuritySection from "@/components/settings/SecuritySection";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
-import { useAuthentication } from "../hooks/useAuthentication";
+import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { useEmailManagement } from "../hooks/useEmailManagement";
 import { useToast } from "@/hooks/use-toast";
 import { LineLoginService } from "../services/lineLogin";
-import { AuthService } from "../services/auth";
+import { authManager } from "../services/UnifiedAuthManager";
 
 const Setting: React.FC = () => {
   const navigate = useNavigate();
@@ -28,9 +28,8 @@ const Setting: React.FC = () => {
     user: authUser,
     loading: authLoading,
     error: authError,
-  } = useAuthentication({
+  } = useUnifiedAuth({
     requireAuth: true,
-    preventBackToLogin: false,
     redirectTo: "/login",
   });
 
@@ -174,7 +173,7 @@ const Setting: React.FC = () => {
   const confirmDeleteAccount = async () => {
     const success = await deleteAccount();
     if (success) {
-      AuthService.clearToken();
+      authManager.clearAuth();
       localStorage.clear();
       navigate("/");
     }

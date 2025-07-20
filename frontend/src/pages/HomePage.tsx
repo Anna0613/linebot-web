@@ -6,14 +6,14 @@ import HowItWorks from "../components/home/HowItWorks";
 import DemoPreview from "../components/home/DemoPreview";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
-import { AuthService } from "../services/auth";
+import { authManager } from "../services/UnifiedAuthManager";
 
 const HomePage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
     // 如果用戶已經登入，重定向到Dashboard頁面
-    if (AuthService.isAuthenticated()) {
+    if (authManager.isAuthenticated()) {
       navigate("/dashboard", { replace: true });
     }
   }, [navigate]);

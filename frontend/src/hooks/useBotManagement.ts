@@ -1,7 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { PuzzleApiService, Bot, BotCreate } from "../services/puzzleApi";
-import { AuthService } from "../services/auth";
+import { Bot, BotCreate } from "../services/puzzleApi";
+import { authManager } from "../services/UnifiedAuthManager";
+import { securityMonitor } from "../utils/securityMonitor";
+import { apiClient } from "../services/UnifiedApiClient";
 
 interface UseBotManagementReturn {
   bots: Bot[];
@@ -20,9 +22,15 @@ export const useBotManagement = (): UseBotManagementReturn => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // 檢查認證狀態
-  const checkAuth = useCallback(() => {
-    if (!AuthService.isAuthenticated()) {
+  // 檢查認證狀態 - 使用統一認證管理器
+  const checkAuth = useCallback(async () => {
+    const isAuthenticated = await authManager.isAuthenticated();
+    if (!isAuthenticated) {
+      securityMonitor.logSecurityViolation('未授權的Bot管理訪問', {
+        path: window.location.pathname,
+        action: 'bot_management_access'
+      });
+      
       navigate("/login", {
         state: {
           from: window.location.pathname,
@@ -34,44 +42,41 @@ export const useBotManagement = (): UseBotManagementReturn => {
     return true;
   }, [navigate]);
 
-  // 創建 Bot
+  // 創建 Bot - 使用統一API客戶端
   const createBot = useCallback(
     async (botData: BotCreate): Promise<Bot | null> => {
-      if (!checkAuth()) return null;
+      if (!(await checkAuth())) return null;
 
       setIsLoading(true);
       setError(null);
 
       try {
-        const newBot = await PuzzleApiService.createBot(botData);
+        const response = await apiClient.createBot(botData);
+        
+        if (response.error) {
+          throw new Error(response.error);
+        }
+
+        const newBot = response.data as Bot;
+        
+        // 記錄成功事件
+        securityMonitor.logEvent('auth_success', {
+          action: 'create_bot',
+          botName: botData.name
+        }, 'low', authManager.getUserInfo()?.id);
+
         // 更新本地 bot 列表
         setBots((prevBots) => [...prevBots, newBot]);
         return newBot;
       } catch (err) {
-        let errorMessage = "創建 Bot 失敗";
-
-        if (err instanceof Error) {
-          errorMessage = err.message;
-        } else if (typeof err === "string") {
-          errorMessage = err;
-        }
-
+        const errorMessage = err instanceof Error ? err.message : "創建 Bot 失敗";
         setError(errorMessage);
 
-        // 如果是認證錯誤，重導向到登入頁
-        if (
-          errorMessage.includes("登入已過期") ||
-          errorMessage.includes("401") ||
-          errorMessage.includes("認證")
-        ) {
-          AuthService.clearAuth();
-          navigate("/login", {
-            state: {
-              from: window.location.pathname,
-              message: "登入已過期，請重新登入",
-            },
-          });
-        }
+        // 記錄失敗事件
+        securityMonitor.logAuthFailure(errorMessage, authManager.getUserInfo()?.id);
+
+        // 統一認證管理器會自動處理401錯誤
+        authManager.handleAuthError(err);
 
         return null;
       } finally {
@@ -89,7 +94,11 @@ export const useBotManagement = (): UseBotManagementReturn => {
     setError(null);
 
     try {
-      const fetchedBots = await PuzzleApiService.getBots();
+      const response = await apiClient.getBots();
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      const fetchedBots = response.data;
       setBots(fetchedBots);
     } catch (err) {
       const errorMessage =
@@ -120,7 +129,10 @@ export const useBotManagement = (): UseBotManagementReturn => {
       setError(null);
 
       try {
-        await PuzzleApiService.deleteBot(botId);
+        const response = await apiClient.deleteBot(botId);
+        if (response.error) {
+          throw new Error(response.error);
+        }
         // 從本地列表中移除
         setBots((prevBots) => prevBots.filter((bot) => bot.id !== botId));
         return true;

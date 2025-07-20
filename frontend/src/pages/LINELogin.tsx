@@ -11,7 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from "../config/apiConfig";
-import { AuthService } from "../services/auth";
+import { authManager } from "../services/UnifiedAuthManager";
 import { LineLoginService } from "../services/lineLogin";
 
 interface User {
@@ -42,7 +42,10 @@ const LINELogin: React.FC = () => {
 
       try {
         setLoading(true);
-        AuthService.setToken(token);
+        authManager.setTokenInfo(
+          { access_token: token, token_type: 'Bearer' },
+          'line'
+        );
         const lineLoginService = LineLoginService.getInstance();
 
         // 如果是連接已有帳號的情況
@@ -70,7 +73,7 @@ const LINELogin: React.FC = () => {
       } catch (err) {
         console.error(err);
         setError(err instanceof Error ? err.message : "驗證失敗");
-        AuthService.removeToken();
+        authManager.clearAuth();
       } finally {
         setLoading(false);
       }

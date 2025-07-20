@@ -8,7 +8,7 @@ import {
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { AuthService } from "../services/auth";
+import { authManager } from "../services/UnifiedAuthManager";
 
 const LoginSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -34,12 +34,16 @@ const LoginSuccess: React.FC = () => {
       if (urlToken) {
         // 保存 token 和用戶資料
         console.log("從 URL 參數獲取 token，保存到 localStorage");
-        AuthService.setToken(urlToken);
+        authManager.setTokenInfo(
+          { access_token: urlToken, token_type: 'Bearer' },
+          'line'
+        );
 
         if (urlUsername) {
-          AuthService.setUser({
+          authManager.setUserInfo({
             username: urlUsername,
             email: urlEmail || "",
+            login_type: 'line'
           });
           console.log("用戶資料已保存");
         }
@@ -53,7 +57,7 @@ const LoginSuccess: React.FC = () => {
       }
 
       // 檢查認證狀態
-      const isAuthenticated = AuthService.isAuthenticated();
+      const isAuthenticated = authManager.isAuthenticated();
       console.log("認證狀態:", isAuthenticated);
 
       if (!isAuthenticated) {
@@ -65,7 +69,7 @@ const LoginSuccess: React.FC = () => {
       }
 
       // 驗證用戶資料
-      const currentUser = AuthService.getUser();
+      const currentUser = authManager.getUserInfo();
       console.log("當前用戶資料:", currentUser);
 
       console.log("認證成功，3秒後跳轉到主頁面");

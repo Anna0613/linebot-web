@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useToast } from "./use-toast";
-import { ApiClient } from "../services/api";
+import { apiClient } from "../services/UnifiedApiClient";
 
 export const useEmailManagement = () => {
   const [email, setEmail] = useState("");
@@ -9,7 +9,7 @@ export const useEmailManagement = () => {
   const [isResendingEmailVerification, setIsResendingEmailVerification] =
     useState(false);
   const { toast } = useToast();
-  const apiClient = ApiClient.getInstance();
+  // apiClient 已經從 UnifiedApiClient 匯入
 
   const loadEmailStatus = useCallback(async () => {
     try {

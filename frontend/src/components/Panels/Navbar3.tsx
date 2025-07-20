@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import LanguageToggle from "../LanguageToggle/LanguageToggle";
 import "animate.css";
 import { API_CONFIG, getApiUrl } from "../../config/apiConfig";
-import { ApiClient } from "../../services/api";
-import { AuthService } from "../../services/auth";
+import { apiClient } from "../../services/UnifiedApiClient";
+import { authManager } from "../../services/UnifiedAuthManager";
 
 // 定義 User 介面
 interface User {
@@ -29,7 +29,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
   const [userImage, setUserImage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const apiClient = ApiClient.getInstance();
+  // apiClient 已經從 UnifiedApiClient 匯入
   const navigate = useNavigate();
 
   // 載入用戶頭像
@@ -142,7 +142,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
         }
       );
       // 使用 AuthService 清除所有認證資料
-      AuthService.clearAuth();
+      authManager.clearAuth();
       // 清除其他可能的 LINE 登入相關資料
       localStorage.removeItem("line_token");
       setShowDropdown(false);
@@ -151,7 +151,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
     } catch (error) {
       console.error("登出失敗:", error);
       // 即使後端請求失敗，也要清除前端的認證資料
-      AuthService.clearAuth();
+      authManager.clearAuth();
       localStorage.removeItem("line_token");
       setShowDropdown(false);
       navigate("/login");

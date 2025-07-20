@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { AuthService } from "../services/auth";
+import { authManager } from "../services/UnifiedAuthManager";
 import { Button } from "@/components/ui/button";
 
 const NotFound = () => {
@@ -16,7 +16,7 @@ const NotFound = () => {
 
     // 檢查用戶登入狀態
     const checkAuthStatus = () => {
-      const authStatus = AuthService.isAuthenticated();
+      const authStatus = authManager.isAuthenticated();
       setIsAuthenticated(authStatus);
     };
 

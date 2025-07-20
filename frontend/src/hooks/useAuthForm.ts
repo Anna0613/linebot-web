@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "./use-toast";
-import { AuthService } from "../services/auth";
+import { authManager } from "../services/UnifiedAuthManager";
+import { securityMonitor } from "../utils/securityMonitor";
 
 interface UseAuthFormOptions {
   onSuccess?: () => void;
@@ -34,13 +35,19 @@ export const useAuthForm = (options: UseAuthFormOptions = {}) => {
     error: unknown,
     defaultMessage: string = "操作失敗，請重試"
   ) => {
-    console.error("錯誤:", error);
+    const errorMessage = error instanceof Error ? error.message : defaultMessage;
+    
+    // 記錄安全事件
+    securityMonitor.logAuthFailure(errorMessage);
+    
     toast({
       variant: "destructive",
       title: "錯誤",
-      description: error instanceof Error ? error.message : defaultMessage,
+      description: errorMessage,
     });
-    AuthService.clearAuth();
+    
+    // 使用統一認證管理器清除認證信息
+    authManager.clearAuth();
   };
 
   const withLoading = async (asyncOperation: () => Promise<void>) => {

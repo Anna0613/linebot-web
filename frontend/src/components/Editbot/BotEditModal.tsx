@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ApiClient } from "../../services/api";
+import { apiClient } from "../../services/UnifiedApiClient";
 import { Bot, BotUpdateData } from "../../types/bot";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,7 +34,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
   });
 
   const { toast } = useToast();
-  const apiClient = ApiClient.getInstance();
+  // apiClient 已經從 UnifiedApiClient 匯入
 
   // 檢查資料是否有變化
   const hasDataChanged = useMemo(() => {

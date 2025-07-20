@@ -331,6 +331,63 @@ export class UnifiedApiClient {
     );
   }
 
+  // 用戶頭像相關API
+  public async getAvatar(): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.GET_AVATAR)
+    );
+  }
+
+  public async getUserAvatar(): Promise<ApiResponse> {
+    return this.getAvatar();
+  }
+
+  public async updateAvatar(avatar: string): Promise<ApiResponse> {
+    return this.put(
+      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.UPDATE_AVATAR),
+      { avatar_base64: avatar }
+    );
+  }
+
+  public async uploadAvatar(formData: FormData): Promise<ApiResponse> {
+    try {
+      // 從 FormData 中獲取文件並轉換為 base64
+      const file = formData.get('avatar') as File;
+      if (!file) {
+        return {
+          error: "未找到頭像文件",
+          status: 400,
+        };
+      }
+
+      // 將文件轉換為 base64
+      const base64 = await this.fileToBase64(file);
+      
+      return this.updateAvatar(base64);
+    } catch (error) {
+      return {
+        error: "頭像處理失敗",
+        status: 0,
+      };
+    }
+  }
+
+  public async deleteAvatar(): Promise<ApiResponse> {
+    return this.delete(
+      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.DELETE_AVATAR)
+    );
+  }
+
+  // 文件轉 base64 的輔助方法
+  private fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   // LINE登入相關API
   public async getLineLoginUrl(): Promise<ApiResponse> {
     return this.post(

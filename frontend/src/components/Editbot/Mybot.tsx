@@ -5,7 +5,7 @@ import {
   useImperativeHandle,
   useCallback,
 } from "react";
-import { ApiClient } from "../../services/api";
+import { apiClient } from "../../services/UnifiedApiClient";
 import { Bot } from "../../types/bot";
 import { useToast } from "@/hooks/use-toast";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
@@ -44,7 +44,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
     botId: "",
   });
   const { toast } = useToast();
-  const apiClient = ApiClient.getInstance();
+  // apiClient 已經從 UnifiedApiClient 匯入
 
   const handleDeleteClick = (botId: string, botName: string) => {
     setDeleteDialog({

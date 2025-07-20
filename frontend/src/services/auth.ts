@@ -1,3 +1,11 @@
+/**
+ * @deprecated 此文件已廢棄，請使用 UnifiedAuthManager 替代
+ * 遷移指南: /docs/UNIFIED_AUTH_DEVELOPER_GUIDE.md
+ * 移除時間: 2025-09-20
+ */
+
+console.warn('⚠️ auth.ts 已廢棄，請遷移到 UnifiedAuthManager');
+
 import { parseJWTToken, isTokenExpired } from "../utils/tokenUtils";
 
 // JWT相關常量

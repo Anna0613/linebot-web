@@ -6,7 +6,7 @@ import { Bot, Plus, Settings, FileText, Edit, Trash2, Eye } from "lucide-react";
 import { useBotManagement } from "@/hooks/useBotManagement";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
-import { ApiClient } from "@/services/api";
+import { apiClient } from "@/services/UnifiedApiClient";
 import { Bot as BotType } from "@/types/bot";
 import DeleteConfirmDialog from "@/components/Editbot/DeleteConfirmDialog";
 import EditOptionModal from "@/components/Editbot/EditOptionModal";
@@ -29,7 +29,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
   const { bots, isLoading, error, fetchBots } = useBotManagement();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const apiClient = ApiClient.getInstance();
+  // apiClient 已經從 UnifiedApiClient 匯入
 
   // 刪除對話框狀態
   const [deleteDialog, setDeleteDialog] = useState<{

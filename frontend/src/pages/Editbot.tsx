@@ -1,14 +1,13 @@
 import React, { useRef, useState } from "react";
-import { useAuthentication } from "../hooks/useAuthentication";
+import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 import Navbar3 from "../components/Panels/Navbar3";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import Mybot, { MybotRef } from "@/components/Editbot/Mybot";
 import BotEditModal from "../components/Editbot/BotEditModal";
 
 const Editbot = () => {
-  const { user, loading, error } = useAuthentication({
+  const { user, loading, error } = useUnifiedAuth({
     requireAuth: true,
-    preventBackToLogin: false,
     redirectTo: "/login"
   });
 

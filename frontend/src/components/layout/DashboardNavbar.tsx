@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import LanguageToggle from "../LanguageToggle/LanguageToggle";
 import "animate.css";
 import { API_CONFIG, getApiUrl } from "../../config/apiConfig";
-import { ApiClient } from "../../services/api";
-import { AuthService } from "../../services/auth";
+import { useUnifiedAuth } from "../../hooks/useUnifiedAuth";
+import { apiClient } from "../../services/UnifiedApiClient";
 
 // 定義 User 介面
 interface User {
@@ -29,8 +29,8 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
   const [userImage, setUserImage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const apiClient = ApiClient.getInstance();
   const navigate = useNavigate();
+  const { logout } = useUnifiedAuth();
 
   // 載入用戶頭像
   const loadUserAvatar = useCallback(async () => {
@@ -141,20 +141,14 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
           credentials: "include",
         }
       );
-      // 使用 AuthService 清除所有認證資料
-      AuthService.clearAuth();
-      // 清除其他可能的 LINE 登入相關資料
-      localStorage.removeItem("line_token");
+      // 使用統一認證管理器登出
+      await logout();
       setShowDropdown(false);
-      // 使用 React Router 進行導航
-      navigate("/login");
     } catch (error) {
       console.error("登出失敗:", error);
       // 即使後端請求失敗，也要清除前端的認證資料
-      AuthService.clearAuth();
-      localStorage.removeItem("line_token");
+      await logout();
       setShowDropdown(false);
-      navigate("/login");
     }
   };
 

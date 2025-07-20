@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
-import { AuthService } from "../services/auth";
+import { authManager } from "../services/UnifiedAuthManager";
 import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 
 // 定義 User 介面
@@ -23,12 +23,12 @@ const About = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const authenticated = AuthService.isAuthenticated();
+        const authenticated = authManager.isAuthenticated();
         setIsAuthenticated(authenticated);
 
         if (authenticated) {
           // 獲取用戶資訊
-          const token = AuthService.getToken();
+          const token = authManager.getAccessToken();
           if (token) {
             try {
               const response = await fetch(

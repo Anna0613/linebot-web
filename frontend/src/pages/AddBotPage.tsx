@@ -2,12 +2,11 @@ import BotCreationForm from "../components/forms/BotCreationForm";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import React from "react";
-import { useAuthentication } from "../hooks/useAuthentication";
+import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 
 const AddBotPage = () => {
-  const { user, loading, error } = useAuthentication({
+  const { user, loading, error } = useUnifiedAuth({
     requireAuth: true,
-    preventBackToLogin: false,
     redirectTo: "/login"
   });
 

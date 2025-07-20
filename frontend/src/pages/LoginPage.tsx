@@ -9,10 +9,9 @@ import { Separator } from "@/components/ui/separator";
 import AuthFormLayout from "../components/forms/AuthFormLayout";
 import EmailVerificationPrompt from "../components/forms/EmailVerificationPrompt";
 import LINELoginButton from "../components/LINELogin/LINELoginButton";
-import { useAuthForm } from "../hooks/useAuthForm";
+import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 import { useLineLogin } from "../hooks/useLineLogin";
-import { ApiClient } from "../services/api";
-import { AuthService } from "../services/auth";
+import { authManager } from "../services/UnifiedAuthManager";
 import "@/components/ui/loader.css";
 
 const LoginPage = () => {
@@ -22,65 +21,43 @@ const LoginPage = () => {
   const [showEmailVerificationPrompt, setShowEmailVerificationPrompt] =
     useState(false);
 
-  const { loading, handleSuccess, handleError, withLoading, navigate } =
-    useAuthForm();
+  const { login, loading, error, clearError } = useUnifiedAuth({
+    redirectTo: "/login"
+  });
   const { handleLINELogin } = useLineLogin();
 
   useEffect(() => {
-    if (AuthService.isAuthenticated()) {
-      navigate("/dashboard", { replace: true });
+    if (authManager.isAuthenticatedSync()) {
+      window.location.href = "/dashboard";
     }
-  }, [navigate]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!username || !password) {
-      handleError(new Error("請輸入帳號和密碼"), "請填寫所有必填欄位");
       return;
     }
 
-    await withLoading(async () => {
-      try {
-        const response = await ApiClient.getInstance().login(username, password);
-
-        if (response.error) {
-          if (response.error.includes("電子郵件")) {
-            setShowEmailVerificationPrompt(true);
-            throw new Error(response.error);
-          }
-          throw new Error(response.error || "登入失敗");
-        }
-
-        // 確保 token 正確設置
-        let token = AuthService.getToken();
-        if (!token && response.data?.access_token) {
-          AuthService.setToken(response.data.access_token);
-          token = response.data.access_token;
-        }
-
-        if (!token) {
-          if (response.data?.user?.username) {
-            handleSuccess("登入成功！");
-            return;
-          }
-          throw new Error("登入失敗，無法獲取 token 或用戶信息");
-        }
-
-        handleSuccess("登入成功！");
-      } catch (error: unknown) {
-        handleError(error);
+    clearError(); // 清除之前的錯誤
+    
+    const success = await login(username, password);
+    
+    if (success) {
+      // 檢查是否需要郵件驗證
+      if (error && error.includes("電子郵件")) {
+        setShowEmailVerificationPrompt(true);
+        return;
       }
-    });
+      
+      // 登入成功，重定向到儀表板
+      window.location.href = "/dashboard";
+    }
   };
 
   const handleResendEmail = async () => {
-    try {
-      await ApiClient.getInstance().resendVerificationEmail(username);
-      handleSuccess("驗證郵件已重新發送");
-    } catch (error: unknown) {
-      handleError(error, "重新發送郵件失敗");
-    }
+    // TODO: 實現重新發送驗證郵件功能
+    console.log("重新發送驗證郵件功能待實現");
   };
 
   return (

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useToast } from "./use-toast";
-import { ApiClient } from "../services/api";
+import { apiClient } from "../services/UnifiedApiClient";
 
 interface User {
   line_id?: string;
@@ -19,7 +19,7 @@ export const useUserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const { toast } = useToast();
-  const apiClient = ApiClient.getInstance();
+  // apiClient 已經從 UnifiedApiClient 匯入
 
   const loadUserProfile = useCallback(async () => {
     try {
