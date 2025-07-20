@@ -25,6 +25,7 @@ const Editbot = lazy(() => import("./pages/Editbot"));
 const About = lazy(() => import("./pages/About"));
 const Language = lazy(() => import("./pages/Language"));
 const Suggest = lazy(() => import("./pages/Suggest"));
+const VisualBotEditorPage = lazy(() => import("./pages/VisualBotEditorPage"));
 
 // 優化的 QueryClient 配置
 const queryClient = new QueryClient({
@@ -75,6 +76,7 @@ const App = () => {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/bots/create" element={<AddBotPage />} />
               <Route path="/bots/editor" element={<BotEditorPage />} />
+              <Route path="/bots/visual-editor" element={<VisualBotEditorPage />} />
               <Route path="/how-to-establish" element={<HowToEstablish />} />
 
               {/* 向後兼容的舊路由 */}
