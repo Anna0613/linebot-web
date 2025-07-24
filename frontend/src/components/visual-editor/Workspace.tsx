@@ -147,6 +147,81 @@ const Workspace: React.FC<WorkspaceProps> = ({
     ));
   }, [onFlexBlocksChange]);
 
+  // 新增：移動積木功能
+  const moveLogicBlock = useCallback((dragIndex: number, hoverIndex: number) => {
+    onLogicBlocksChange(prev => {
+      const newBlocks = [...prev];
+      const draggedBlock = newBlocks[dragIndex];
+      newBlocks.splice(dragIndex, 1);
+      newBlocks.splice(hoverIndex, 0, draggedBlock);
+      return newBlocks;
+    });
+  }, [onLogicBlocksChange]);
+
+  const moveFlexBlock = useCallback((dragIndex: number, hoverIndex: number) => {
+    onFlexBlocksChange(prev => {
+      const newBlocks = [...prev];
+      const draggedBlock = newBlocks[dragIndex];
+      newBlocks.splice(dragIndex, 1);
+      newBlocks.splice(hoverIndex, 0, draggedBlock);
+      return newBlocks;
+    });
+  }, [onFlexBlocksChange]);
+
+  // 新增：插入積木功能
+  const insertLogicBlock = useCallback((index: number, item: UnifiedDropItem | LegacyDropItem) => {
+    let blockToAdd: UnifiedBlock | LegacyBlock;
+    
+    if ('category' in item) {
+      blockToAdd = {
+        ...(item as UnifiedDropItem),
+        id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        children: []
+      } as UnifiedBlock;
+    } else {
+      blockToAdd = item as LegacyBlock;
+    }
+    
+    onLogicBlocksChange(prev => {
+      const newBlocks = [...prev];
+      newBlocks.splice(index, 0, blockToAdd);
+      return newBlocks;
+    });
+  }, [onLogicBlocksChange]);
+
+  const insertFlexBlock = useCallback((index: number, item: UnifiedDropItem | LegacyDropItem) => {
+    console.log('🎨 Flex 設計器積木插入:', {
+      insertIndex: index,
+      item: item,
+      itemType: 'category' in item ? 'unified' : 'legacy',
+      currentTab: activeTab,
+      timestamp: new Date().toISOString()
+    });
+    
+    try {
+      let blockToAdd: UnifiedBlock | LegacyBlock;
+      
+      if ('category' in item) {
+        blockToAdd = {
+          ...(item as UnifiedDropItem),
+          id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          children: []
+        } as UnifiedBlock;
+      } else {
+        blockToAdd = item as LegacyBlock;
+      }
+      
+      onFlexBlocksChange(prev => {
+        const newBlocks = [...prev];
+        newBlocks.splice(index, 0, blockToAdd);
+        console.log('✅ 積木成功插入到 Flex 設計器位置', index, blockToAdd);
+        return newBlocks;
+      });
+    } catch (error) {
+      console.error('❌ Flex 設計器積木插入失敗:', error);
+    }
+  }, [onFlexBlocksChange, activeTab]);
+
   // 獲取當前工作區上下文
   const getCurrentContext = (): WorkspaceContext => {
     const context = activeTab === 'logic' ? WorkspaceContext.LOGIC : WorkspaceContext.FLEX;
@@ -242,6 +317,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
               blocks={logicBlocks}
               onRemove={removeLogicBlock}
               onUpdate={updateLogicBlock}
+              onMove={moveLogicBlock}
+              onInsert={insertLogicBlock}
             />
             </div>
           </TabsContent>
@@ -258,6 +335,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
                     blocks={flexBlocks}
                     onRemove={removeFlexBlock}
                     onUpdate={updateFlexBlock}
+                    onMove={moveFlexBlock}
+                    onInsert={insertFlexBlock}
                   />
                 </div>
                 

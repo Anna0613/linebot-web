@@ -27,6 +27,8 @@ interface DropZoneProps {
   blocks?: (UnifiedBlock | LegacyBlock)[];     // 支援新舊格式
   onRemove?: (index: number) => void;
   onUpdate?: (index: number, data: LegacyBlockData) => void;
+  onMove?: (dragIndex: number, hoverIndex: number) => void;  // 新增：移動積木
+  onInsert?: (index: number, item: any) => void;             // 新增：插入積木
   showCompatibilityInfo?: boolean;             // 是否顯示相容性資訊
 }
 
@@ -37,6 +39,8 @@ const DropZone: React.FC<DropZoneProps> = ({
   blocks = [], 
   onRemove, 
   onUpdate, 
+  onMove,
+  onInsert,
   showCompatibilityInfo = true 
 }) => {
   const [dragValidation, setDragValidation] = useState<BlockValidationResult | null>(null);
@@ -52,7 +56,7 @@ const DropZone: React.FC<DropZoneProps> = ({
   });
 
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
-    accept: 'block',
+    accept: ['block', 'dropped-block'],
     hover: (item: UnifiedDropItem | LegacyDropItem) => {
       setHoveredItem(item);
       
@@ -200,11 +204,13 @@ const DropZone: React.FC<DropZoneProps> = ({
         ) : (
           blocks.map((block, index) => (
             <DroppedBlock 
-              key={index} 
+              key={`${index}-${Date.now()}`} 
               block={block} 
               index={index}
               onRemove={onRemove}
               onUpdate={onUpdate}
+              onMove={onMove}
+              onInsert={onInsert}
             />
           ))
         )}

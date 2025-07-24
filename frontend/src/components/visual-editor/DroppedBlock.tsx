@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { useDrag, useDrop } from 'react-dnd';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { X, Settings } from 'lucide-react';
+import { X, Settings, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface BlockData {
   [key: string]: unknown;
@@ -36,11 +37,125 @@ interface DroppedBlockProps {
   index: number;
   onRemove?: (index: number) => void;
   onUpdate?: (index: number, data: BlockData) => void;
+  onMove?: (dragIndex: number, hoverIndex: number) => void;
+  onInsert?: (index: number, item: any) => void;
 }
 
-const DroppedBlock: React.FC<DroppedBlockProps> = ({ block, index, onRemove, onUpdate }) => {
+const DroppedBlock: React.FC<DroppedBlockProps> = ({ 
+  block, 
+  index, 
+  onRemove, 
+  onUpdate, 
+  onMove, 
+  onInsert 
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [blockData, setBlockData] = useState<BlockData>(block.blockData || {});
+  const [showInsertZone, setShowInsertZone] = useState<'above' | 'below' | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // 拖拽功能 - 支持重排
+  const [{ isDragging }, drag, preview] = useDrag({
+    type: 'dropped-block',
+    item: () => ({ 
+      index, 
+      block,
+      id: `dropped-${index}` 
+    }),
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  // 拖拽目標 - 支持插入和重排
+  const [{ isOver, dropPosition }, drop] = useDrop({
+    accept: ['block', 'dropped-block'],
+    hover: (item: any, monitor) => {
+      if (!ref.current) return;
+
+      // 處理重排 (dropped-block 到 dropped-block)
+      if (item.type === 'dropped-block' || (item.index !== undefined && typeof item.index === 'number')) {
+        const dragIndex = item.index;
+        const hoverIndex = index;
+
+        if (dragIndex === hoverIndex) return;
+
+        const hoverBoundingRect = ref.current.getBoundingClientRect();
+        const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+        const clientOffset = monitor.getClientOffset();
+        
+        if (!clientOffset) return;
+        
+        const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+        // 設置插入位置提示
+        if (hoverClientY < hoverMiddleY / 2) {
+          setShowInsertZone('above');
+        } else if (hoverClientY > hoverBoundingRect.height - hoverMiddleY / 2) {
+          setShowInsertZone('below');
+        } else {
+          setShowInsertZone(null);
+        }
+
+        // 執行重排
+        if (
+          (dragIndex < hoverIndex && hoverClientY > hoverMiddleY) ||
+          (dragIndex > hoverIndex && hoverClientY < hoverMiddleY)
+        ) {
+          if (onMove) {
+            onMove(dragIndex, hoverIndex);
+            item.index = hoverIndex;
+          }
+        }
+      } else {
+        // 處理新積木插入 (block 到 dropped-block)
+        const hoverBoundingRect = ref.current.getBoundingClientRect();
+        const clientOffset = monitor.getClientOffset();
+        
+        if (!clientOffset) return;
+        
+        const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+        const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+
+        if (hoverClientY < hoverMiddleY) {
+          setShowInsertZone('above');
+        } else {
+          setShowInsertZone('below');
+        }
+      }
+    },
+    drop: (item: any, monitor) => {
+      if (!ref.current) return;
+
+      // 處理新積木插入
+      if (item.blockType && onInsert) {
+        const hoverBoundingRect = ref.current.getBoundingClientRect();
+        const clientOffset = monitor.getClientOffset();
+        
+        if (!clientOffset) return;
+        
+        const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+        const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+
+        const insertIndex = hoverClientY < hoverMiddleY ? index : index + 1;
+        onInsert(insertIndex, item);
+      }
+
+      setShowInsertZone(null);
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+      dropPosition: showInsertZone,
+    }),
+  });
+
+  // 清除插入區域提示
+  const handleMouseLeave = () => {
+    setShowInsertZone(null);
+  };
+
+  // 組合 drag 和 drop refs
+  drag(drop(ref));
 
   const getBlockColor = (blockType: string): string => {
     const colorMap: Record<string, string> = {
@@ -218,45 +333,96 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({ block, index, onRemove, onU
   };
 
   return (
-    <div className={`${getBlockColor(block.blockType)} text-white p-3 rounded-lg shadow-sm`}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          {renderBlockContent()}
+    <div className="relative">
+      {/* 上方插入區域 */}
+      {showInsertZone === 'above' && (
+        <div className="absolute -top-2 left-0 right-0 h-1 bg-blue-400 rounded-full z-10 shadow-lg">
+          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-400 rounded-full"></div>
         </div>
-        <div className="flex items-center space-x-1 ml-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 w-6 p-0 text-white hover:bg-white/20"
-            onClick={() => setIsEditing(!isEditing)}
-          >
-            <Settings className="h-3 w-3" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 w-6 p-0 text-white hover:bg-white/20"
-            onClick={() => onRemove && onRemove(index)}
-          >
-            <X className="h-3 w-3" />
-          </Button>
+      )}
+
+      <div 
+        ref={ref}
+        onMouseLeave={handleMouseLeave}
+        className={`${getBlockColor(block.blockType)} text-white p-3 rounded-lg shadow-sm transition-all duration-200 ${
+          isDragging ? 'opacity-50 scale-95 rotate-2' : 'opacity-100 scale-100'
+        } ${isOver ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}`}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex items-start space-x-2 flex-1">
+            {/* 拖拽手柄 */}
+            <div className="pt-1 cursor-move hover:bg-white/20 p-1 rounded">
+              <GripVertical className="h-4 w-4 text-white/70" />
+            </div>
+            <div className="flex-1">
+              {renderBlockContent()}
+            </div>
+          </div>
+          <div className="flex items-center space-x-1 ml-2">
+            {/* 快速移動按鈕 */}
+            {index > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0 text-white hover:bg-white/20"
+                onClick={() => onMove && onMove(index, index - 1)}
+                title="向上移動"
+              >
+                <ArrowUp className="h-3 w-3" />
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 text-white hover:bg-white/20"
+              onClick={() => onMove && onMove(index, index + 1)}
+              title="向下移動"
+            >
+              <ArrowDown className="h-3 w-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 text-white hover:bg-white/20"
+              onClick={() => setIsEditing(!isEditing)}
+              title="編輯設定"
+            >
+              <Settings className="h-3 w-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 text-white hover:bg-white/20"
+              onClick={() => onRemove && onRemove(index)}
+              title="刪除積木"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
+        
+        {isEditing && (
+          <div className="mt-3 pt-3 border-t border-white/20">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                if (onUpdate) {
+                  onUpdate(index, blockData);
+                }
+                setIsEditing(false);
+              }}
+            >
+              儲存設定
+            </Button>
+          </div>
+        )}
       </div>
-      
-      {isEditing && (
-        <div className="mt-3 pt-3 border-t border-white/20">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              if (onUpdate) {
-                onUpdate(index, blockData);
-              }
-              setIsEditing(false);
-            }}
-          >
-            儲存設定
-          </Button>
+
+      {/* 下方插入區域 */}
+      {showInsertZone === 'below' && (
+        <div className="absolute -bottom-2 left-0 right-0 h-1 bg-blue-400 rounded-full z-10 shadow-lg">
+          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-400 rounded-full"></div>
         </div>
       )}
     </div>
