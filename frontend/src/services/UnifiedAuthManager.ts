@@ -290,12 +290,16 @@ export class UnifiedAuthManager {
   /**
    * 處理認證錯誤
    */
-  public handleAuthError(error: any): void {
+  public handleAuthError(error: unknown): void {
     console.error('認證錯誤:', error);
     
     // 如果是401錯誤，清除認證信息
-    if (error?.status === 401 || error?.message?.includes('401')) {
-      this.clearAuth();
+    if (error && typeof error === 'object' && error !== null) {
+      const errorObj = error as Record<string, unknown>;
+      if (errorObj.status === 401 || 
+          (typeof errorObj.message === 'string' && errorObj.message.includes('401'))) {
+        this.clearAuth();
+      }
     }
   }
 

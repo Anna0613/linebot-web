@@ -97,7 +97,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [botId, apiClient, toast, onClose]);
+  }, [botId, toast, onClose]);
 
   useEffect(() => {
     if (isOpen && botId) {

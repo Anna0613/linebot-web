@@ -21,7 +21,7 @@ export const useEmailManagement = () => {
     } catch (error) {
       console.error("載入電子郵件狀態錯誤:", error);
     }
-  }, [apiClient]);
+  }, []);
 
   const updateEmail = useCallback(
     async (newEmail: string) => {
@@ -52,7 +52,7 @@ export const useEmailManagement = () => {
         return false;
       }
     },
-    [apiClient, toast]
+    [toast]
   );
 
   const resendEmailVerification = useCallback(async () => {
@@ -88,7 +88,7 @@ export const useEmailManagement = () => {
     } finally {
       setIsResendingEmailVerification(false);
     }
-  }, [email, apiClient, toast]);
+  }, [email, toast]);
 
   const checkEmailVerification = useCallback(async () => {
     try {
@@ -102,7 +102,7 @@ export const useEmailManagement = () => {
       console.error("檢查電子郵件驗證狀態錯誤:", error);
       return false;
     }
-  }, [apiClient]);
+  }, []);
 
   return {
     email,

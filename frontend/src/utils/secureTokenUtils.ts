@@ -164,7 +164,7 @@ export const parseSecureUserFromApiResponse = (apiResponse: unknown): {
       return { error: '無效的API回應格式' };
     }
 
-    const response = apiResponse as any;
+    const response = apiResponse as Record<string, unknown>;
 
     // 處理新格式 API 回應
     if (response.authenticated === true && response.user) {
@@ -247,17 +247,17 @@ export const isTestToken = (token: string): boolean => {
 /**
  * 清理敏感的console輸出
  */
-export const secureLog = (message: string, data?: any): void => {
+export const secureLog = (message: string, data?: unknown): void => {
   if (process.env.NODE_ENV === 'development') {
-    if (data && typeof data === 'object') {
+    if (data && typeof data === 'object' && data !== null) {
       // 清理敏感信息
-      const cleanData = { ...data };
+      const cleanData = { ...data } as Record<string, unknown>;
       
       // 混淆token相關字段
       const sensitiveFields = ['token', 'access_token', 'refresh_token', 'authorization'];
       sensitiveFields.forEach(field => {
         if (cleanData[field] && typeof cleanData[field] === 'string') {
-          cleanData[field] = obfuscateToken(cleanData[field]);
+          cleanData[field] = obfuscateToken(cleanData[field] as string);
         }
       });
       

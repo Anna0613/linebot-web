@@ -44,7 +44,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
         console.error("載入頭像失敗:", error);
       }
     }
-  }, [user, apiClient]);
+  }, [user]);
 
   useEffect(() => {
     if (user?.picture_url) {

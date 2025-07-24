@@ -44,7 +44,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
         console.error("載入頭像失敗:", error);
       }
     }
-  }, [user, apiClient]);
+  }, [user]);
 
   useEffect(() => {
     if (user?.isLineUser && user?.picture_url) {

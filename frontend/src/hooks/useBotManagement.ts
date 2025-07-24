@@ -71,7 +71,7 @@ export const useBotManagement = (): UseBotManagementReturn => {
         setIsLoading(false);
       }
     },
-    [checkAuth, navigate]
+    [checkAuth]
   );
 
   // 獲取 Bot 列表

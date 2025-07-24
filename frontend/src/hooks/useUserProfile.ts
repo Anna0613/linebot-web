@@ -54,7 +54,7 @@ export const useUserProfile = () => {
       });
       return null;
     }
-  }, [apiClient, toast]);
+  }, [toast]);
 
   const loadUserAvatar = useCallback(async () => {
     try {
@@ -66,7 +66,7 @@ export const useUserProfile = () => {
       console.error("載入頭像錯誤:", error);
       // 頭像載入失敗不顯示錯誤提示，使用預設頭像
     }
-  }, [apiClient]);
+  }, []);
 
   const updateDisplayName = useCallback(
     async (newDisplayName: string) => {
@@ -97,7 +97,7 @@ export const useUserProfile = () => {
         return false;
       }
     },
-    [apiClient, toast]
+    [toast]
   );
 
   const uploadAvatar = useCallback(
@@ -144,7 +144,7 @@ export const useUserProfile = () => {
         setAvatarLoading(false);
       }
     },
-    [apiClient, toast]
+    [toast]
   );
 
   const deleteAvatar = useCallback(async () => {
@@ -179,7 +179,7 @@ export const useUserProfile = () => {
     } finally {
       setAvatarLoading(false);
     }
-  }, [apiClient, toast]);
+  }, [toast]);
 
   const changePassword = useCallback(
     async (oldPassword: string, newPassword: string) => {
@@ -195,7 +195,7 @@ export const useUserProfile = () => {
         throw new Error(response.error || "密碼更新失敗");
       }
     },
-    [apiClient]
+    []
   );
 
   const deleteAccount = useCallback(async () => {
@@ -219,7 +219,7 @@ export const useUserProfile = () => {
       });
       return false;
     }
-  }, [apiClient, toast]);
+  }, [toast]);
 
   return {
     user,

@@ -162,7 +162,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
     } finally {
       setLoading(false);
     }
-  }, [apiClient, toast]);
+  }, [toast]);
 
   useEffect(() => {
     fetchBots();

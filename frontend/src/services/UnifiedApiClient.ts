@@ -138,7 +138,7 @@ export class UnifiedApiClient {
 
     try {
       // 嘗試解析JSON
-      let data: any;
+      let data: unknown;
       if (contentType?.includes('application/json')) {
         data = await response.json();
       } else {
@@ -183,11 +183,14 @@ export class UnifiedApiClient {
   /**
    * 獲取錯誤信息
    */
-  private getErrorMessage(status: number, data?: any): string {
+  private getErrorMessage(status: number, data?: unknown): string {
     // 優先使用API返回的錯誤信息
-    if (data?.error) return data.error;
-    if (data?.detail) return data.detail;
-    if (data?.message) return data.message;
+    if (data && typeof data === 'object' && data !== null) {
+      const errorObj = data as Record<string, unknown>;
+      if (typeof errorObj.error === 'string') return errorObj.error;
+      if (typeof errorObj.detail === 'string') return errorObj.detail;
+      if (typeof errorObj.message === 'string') return errorObj.message;
+    }
 
     // 默認錯誤信息
     const errorMessages: Record<number, string> = {
