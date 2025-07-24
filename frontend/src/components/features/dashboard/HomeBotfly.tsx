@@ -241,7 +241,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
               設計和編輯您的 Bot 對話流程
             </p>
             <Button asChild variant="outline" className="w-full">
-              <Link to="/bots/editor">進入編輯器</Link>
+              <Link to="/bots/visual-editor">進入編輯器</Link>
             </Button>
           </CardContent>
         </Card>
