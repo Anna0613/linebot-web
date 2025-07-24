@@ -1,115 +1,238 @@
-import React, { useState } from 'react';
-import { useDraggable } from '@dnd-kit/core';
-import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
-import { blockCategories } from './blockDefinitions';
-import { BlockDefinition } from '../../stores/visualEditorStore';
+import React from 'react';
+import { Button } from '../ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import DraggableBlock from './DraggableBlock';
+import { 
+  MessageSquare, 
+  Zap, 
+  Settings, 
+  Image, 
+  Type, 
+  Square,
+  MousePointer,
+  ArrowRight
+} from 'lucide-react';
 
-interface DraggableBlockProps {
-  block: BlockDefinition;
+interface BlockCategoryProps {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
 }
 
-const DraggableBlock: React.FC<DraggableBlockProps> = ({ block }) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `palette-${block.id}`,
-    data: {
-      type: 'palette-block',
-      block: block
-    }
-  });
-
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={`
-        p-2 m-1 rounded-lg cursor-grab border-2 border-transparent
-        ${isDragging ? 'opacity-50' : 'hover:border-gray-300'}
-        transition-all duration-200
-      `}
-      style={{
-        backgroundColor: block.color + '20',
-        borderLeftColor: block.color,
-        borderLeftWidth: '4px',
-        ...style
-      }}
-    >
-      <div className="text-sm font-medium text-gray-800">
-        {block.label}
-      </div>
-      {block.fields.length > 0 && (
-        <div className="text-xs text-gray-600 mt-1">
-          {block.fields.map(field => field.label).join(', ')}
-        </div>
-      )}
+const BlockCategory: React.FC<BlockCategoryProps> = ({ title, icon: Icon, children }) => (
+  <div className="mb-4">
+    <div className="flex items-center mb-2 text-sm font-medium text-gray-700">
+      <Icon className="w-4 h-4 mr-2" />
+      {title}
     </div>
-  );
-};
-
-interface CategorySectionProps {
-  name: string;
-  color: string;
-  blocks: BlockDefinition[];
-}
-
-const CategorySection: React.FC<CategorySectionProps> = ({ name, color, blocks }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  return (
-    <div className="mb-4">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-2 text-left font-medium text-gray-700 hover:bg-gray-50 rounded-md"
-        style={{ backgroundColor: color + '10' }}
-      >
-        <span>{name}</span>
-        {isExpanded ? (
-          <ChevronDownIcon className="w-4 h-4" />
-        ) : (
-          <ChevronRightIcon className="w-4 h-4" />
-        )}
-      </button>
-      
-      {isExpanded && (
-        <div className="mt-2">
-          {blocks.map(block => (
-            <DraggableBlock key={block.id} block={block} />
-          ))}
-        </div>
-      )}
+    <div className="space-y-2">
+      {children}
     </div>
-  );
-};
+  </div>
+);
 
 export const BlockPalette: React.FC = () => {
   return (
-    <div className="h-full p-4">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">拼圖區塊</h2>
-      
-      <div className="space-y-2">
-        {Object.entries(blockCategories).map(([key, category]) => (
-          <CategorySection
-            key={key}
-            name={category.name}
-            color={category.color}
-            blocks={category.blocks}
-          />
-        ))}
-      </div>
-      
-      <div className="mt-8 p-3 bg-blue-50 rounded-lg">
-        <h3 className="text-sm font-medium text-blue-900 mb-2">使用說明</h3>
-        <ul className="text-xs text-blue-700 space-y-1">
-          <li>• 從左側拖拽區塊到中間工作區</li>
-          <li>• 點擊區塊可編輯參數</li>
-          <li>• 區塊會自動生成 Python 程式碼</li>
-          <li>• 右側即時預覽生成的程式碼</li>
-        </ul>
-      </div>
+    <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
+      <Tabs defaultValue="blocks" className="flex-1">
+        <TabsList className="grid w-full grid-cols-2 m-2">
+          <TabsTrigger value="blocks">邏輯積木</TabsTrigger>
+          <TabsTrigger value="flex">Flex 組件</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="blocks" className="p-4 space-y-4 overflow-y-auto">
+          <BlockCategory title="事件" icon={Zap}>
+            <DraggableBlock 
+              blockType="event" 
+              blockData={{ title: "當收到文字訊息時", eventType: "message.text" }}
+              color="bg-orange-500"
+            >
+              當收到文字訊息時
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="event" 
+              blockData={{ title: "當收到圖片訊息時", eventType: "message.image" }}
+              color="bg-orange-500"
+            >
+              當收到圖片訊息時
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="event" 
+              blockData={{ title: "當用戶加入好友時", eventType: "follow" }}
+              color="bg-orange-500"
+            >
+              當用戶加入好友時
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="event" 
+              blockData={{ title: "當按鈕被點擊時", eventType: "postback" }}
+              color="bg-orange-500"
+            >
+              當按鈕被點擊時
+            </DraggableBlock>
+          </BlockCategory>
+          
+          <BlockCategory title="回覆" icon={MessageSquare}>
+            <DraggableBlock 
+              blockType="reply" 
+              blockData={{ title: "回覆文字訊息", replyType: "text" }}
+              color="bg-green-500"
+            >
+              回覆文字訊息
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="reply" 
+              blockData={{ title: "回覆圖片訊息", replyType: "image" }}
+              color="bg-green-500"
+            >
+              回覆圖片訊息
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="reply" 
+              blockData={{ title: "回覆 Flex 訊息", replyType: "flex" }}
+              color="bg-green-500"
+            >
+              回覆 Flex 訊息
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="reply" 
+              blockData={{ title: "回覆貼圖", replyType: "sticker" }}
+              color="bg-green-500"
+            >
+              回覆貼圖
+            </DraggableBlock>
+          </BlockCategory>
+          
+          <BlockCategory title="控制" icon={ArrowRight}>
+            <DraggableBlock 
+              blockType="control" 
+              blockData={{ title: "如果...那麼", controlType: "if" }}
+              color="bg-purple-500"
+            >
+              如果...那麼
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="control" 
+              blockData={{ title: "重複執行", controlType: "loop" }}
+              color="bg-purple-500"
+            >
+              重複執行
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="control" 
+              blockData={{ title: "等待", controlType: "wait" }}
+              color="bg-purple-500"
+            >
+              等待
+            </DraggableBlock>
+          </BlockCategory>
+          
+          <BlockCategory title="設定" icon={Settings}>
+            <DraggableBlock 
+              blockType="setting" 
+              blockData={{ title: "設定變數", settingType: "setVariable" }}
+              color="bg-gray-500"
+            >
+              設定變數
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="setting" 
+              blockData={{ title: "取得變數", settingType: "getVariable" }}
+              color="bg-gray-500"
+            >
+              取得變數
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="setting" 
+              blockData={{ title: "儲存用戶資料", settingType: "saveUserData" }}
+              color="bg-gray-500"
+            >
+              儲存用戶資料
+            </DraggableBlock>
+          </BlockCategory>
+        </TabsContent>
+        
+        <TabsContent value="flex" className="p-4 space-y-4 overflow-y-auto">
+          <BlockCategory title="容器" icon={Square}>
+            <DraggableBlock 
+              blockType="flex-container" 
+              blockData={{ title: "Bubble 容器", containerType: "bubble" }}
+              color="bg-indigo-500"
+            >
+              Bubble 容器
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="flex-container" 
+              blockData={{ title: "Carousel 容器", containerType: "carousel" }}
+              color="bg-indigo-500"
+            >
+              Carousel 容器
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="flex-container" 
+              blockData={{ title: "Box 容器", containerType: "box" }}
+              color="bg-indigo-500"
+            >
+              Box 容器
+            </DraggableBlock>
+          </BlockCategory>
+          
+          <BlockCategory title="內容" icon={Type}>
+            <DraggableBlock 
+              blockType="flex-content" 
+              blockData={{ title: "文字", contentType: "text" }}
+              color="bg-blue-500"
+            >
+              文字
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="flex-content" 
+              blockData={{ title: "圖片", contentType: "image" }}
+              color="bg-blue-500"
+            >
+              圖片
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="flex-content" 
+              blockData={{ title: "按鈕", contentType: "button" }}
+              color="bg-blue-500"
+            >
+              按鈕
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="flex-content" 
+              blockData={{ title: "分隔線", contentType: "separator" }}
+              color="bg-blue-500"
+            >
+              分隔線
+            </DraggableBlock>
+          </BlockCategory>
+          
+          <BlockCategory title="佈局" icon={MousePointer}>
+            <DraggableBlock 
+              blockType="flex-layout" 
+              blockData={{ title: "間距", layoutType: "spacer" }}
+              color="bg-teal-500"
+            >
+              間距
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="flex-layout" 
+              blockData={{ title: "填充", layoutType: "filler" }}
+              color="bg-teal-500"
+            >
+              填充
+            </DraggableBlock>
+            <DraggableBlock 
+              blockType="flex-layout" 
+              blockData={{ title: "對齊", layoutType: "align" }}
+              color="bg-teal-500"
+            >
+              對齊
+            </DraggableBlock>
+          </BlockCategory>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

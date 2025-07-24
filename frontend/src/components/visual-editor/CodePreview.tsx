@@ -1,158 +1,78 @@
-import React, { useState } from 'react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { useVisualEditorStore } from '../../stores/visualEditorStore';
-import { CopyIcon, DownloadIcon, PlayIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { Copy, Download } from 'lucide-react';
+import LineBotCodeGenerator from '../../utils/codeGenerator';
 
-export const CodePreview: React.FC = () => {
-  const { generatedCode, workspaceBlocks } = useVisualEditorStore();
-  const [activeTab, setActiveTab] = useState<'python' | 'json'>('python');
-  
-  const handleCopyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedCode);
-      // 可以加入 toast 通知
-    } catch (err) {
-      console.error('複製失敗:', err);
+interface BlockData {
+  [key: string]: unknown;
+}
+
+interface Block {
+  blockType: string;
+  blockData: BlockData;
+}
+
+interface CodePreviewProps {
+  blocks: Block[];
+}
+
+const CodePreview: React.FC<CodePreviewProps> = ({ blocks }) => {
+  const [generatedCode, setGeneratedCode] = useState('');
+  const [codeGenerator] = useState(new LineBotCodeGenerator());
+
+  useEffect(() => {
+    if (blocks && blocks.length > 0) {
+      const code = codeGenerator.generateCode(blocks);
+      setGeneratedCode(code);
+    } else {
+      setGeneratedCode('# 請先在邏輯編輯器中加入積木來生成程式碼');
     }
+  }, [blocks, codeGenerator]);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(generatedCode);
+    // 可以加入成功提示
   };
 
-  const handleDownloadCode = () => {
-    const blob = new Blob([generatedCode], { type: 'text/python' });
+  const downloadCode = () => {
+    const blob = new Blob([generatedCode], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'linebot_code.py';
+    a.download = 'linebot.py';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  const handleTestCode = () => {
-    // 這裡可以實作測試功能
-    console.log('測試程式碼功能待實作');
-  };
-
-  const exportToJSON = () => {
-    return JSON.stringify({
-      metadata: {
-        version: '1.0',
-        createdAt: new Date().toISOString(),
-        blockCount: Object.keys(workspaceBlocks).length
-      },
-      blocks: workspaceBlocks
-    }, null, 2);
-  };
-
   return (
-    <div className="h-full flex flex-col">
-      {/* 標題列 */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">程式碼預覽</h2>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handleCopyCode}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-              title="複製程式碼"
-            >
-              <CopyIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleDownloadCode}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-              title="下載程式碼"
-            >
-              <DownloadIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleTestCode}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-              title="測試程式碼"
-            >
-              <PlayIcon className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        
-        {/* 分頁切換 */}
-        <div className="flex mt-3 border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab('python')}
-            className={`px-3 py-2 text-sm font-medium border-b-2 ${
-              activeTab === 'python'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Python 程式碼
-          </button>
-          <button
-            onClick={() => setActiveTab('json')}
-            className={`px-3 py-2 text-sm font-medium border-b-2 ${
-              activeTab === 'json'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            專案結構
-          </button>
+    <div className="bg-white rounded-lg border border-gray-200 p-6 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-medium text-gray-600">生成的程式碼</h3>
+        <div className="flex space-x-2">
+          <Button variant="outline" size="sm" onClick={copyToClipboard}>
+            <Copy className="w-4 h-4 mr-2" />
+            複製
+          </Button>
+          <Button variant="outline" size="sm" onClick={downloadCode}>
+            <Download className="w-4 h-4 mr-2" />
+            下載
+          </Button>
         </div>
       </div>
-
-      {/* 程式碼內容 */}
-      <div className="flex-1 overflow-auto">
-        {activeTab === 'python' ? (
-          <div className="h-full">
-            {generatedCode ? (
-              <SyntaxHighlighter
-                language="python"
-                style={oneDark}
-                className="h-full !m-0"
-                customStyle={{
-                  margin: 0,
-                  borderRadius: 0,
-                  height: '100%'
-                }}
-              >
-                {generatedCode}
-              </SyntaxHighlighter>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-500">
-                <div className="text-center">
-                  <div className="text-4xl mb-4">💻</div>
-                  <p>還沒有程式碼</p>
-                  <p className="text-sm">開始拖拽區塊來生成程式碼</p>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="h-full">
-            <SyntaxHighlighter
-              language="json"
-              style={oneDark}
-              className="h-full !m-0"
-              customStyle={{
-                margin: 0,
-                borderRadius: 0,
-                height: '100%'
-              }}
-            >
-              {exportToJSON()}
-            </SyntaxHighlighter>
-          </div>
-        )}
+      
+      <div className="flex-1 bg-gray-900 rounded-lg p-4 overflow-auto">
+        <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap">
+          {generatedCode}
+        </pre>
       </div>
-
-      {/* 狀態列 */}
-      <div className="p-3 border-t border-gray-200 bg-gray-50">
-        <div className="flex justify-between items-center text-sm text-gray-600">
-          <span>區塊數量: {Object.keys(workspaceBlocks).length}</span>
-          <span>程式碼行數: {generatedCode.split('\n').length}</span>
-        </div>
+      
+      <div className="mt-4 text-sm text-gray-500">
+        <p>💡 提示：請記得將 YOUR_CHANNEL_ACCESS_TOKEN 和 YOUR_CHANNEL_SECRET 替換為您的 LINE Bot 憑證</p>
       </div>
     </div>
   );
 };
+
+export default CodePreview;

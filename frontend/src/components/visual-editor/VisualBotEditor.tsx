@@ -1,121 +1,76 @@
-import React, { useRef } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, DragMoveEvent, closestCenter, pointerWithin, rectIntersection } from '@dnd-kit/core';
+import React, { useState, useEffect } from 'react';
+import DragDropProvider from './DragDropProvider';
 import { BlockPalette } from './BlockPalette';
-import { Workspace } from './Workspace';
-import { CodePreview } from './CodePreview';
-import { useVisualEditorStore } from '../../stores/visualEditorStore';
-import { BlockRenderer } from './BlockRenderer';
+import Workspace from './Workspace';
+import ProjectManager from './ProjectManager';
+
+interface BlockData {
+  [key: string]: unknown;
+}
+
+interface Block {
+  blockType: string;
+  blockData: BlockData;
+}
+
+interface ProjectData {
+  name: string;
+  logicBlocks: Block[];
+  flexBlocks: Block[];
+}
 
 export const VisualBotEditor: React.FC = () => {
-  const workspaceRef = useRef<HTMLDivElement>(null);
-  const { 
-    activeId, 
-    setActiveId, 
-    addBlockToWorkspace, 
-    moveBlock,
-    workspaceBlocks,
-    generateCode,
-    connectBlocks,
-    findNearbyConnectionPoints
-  } = useVisualEditorStore();
+  const [logicBlocks, setLogicBlocks] = useState<Block[]>([]);
+  const [flexBlocks, setFlexBlocks] = useState<Block[]>([]);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over, delta } = event;
-    
-    if (!over) {
-      setActiveId(null);
-      return;
-    }
-
-    // 如果拖拽到工作區 (新增拼圖)
-    if (over.id === 'workspace') {
-      const blockData = active.data.current;
-      if (blockData?.type === 'palette-block') {
-        // 計算相對於工作區的位置
-        const workspaceRect = workspaceRef.current?.getBoundingClientRect();
-        const relativeX = workspaceRect ? Math.max(0, event.activatorEvent.clientX - workspaceRect.left - 100) : 100;
-        const relativeY = workspaceRect ? Math.max(0, event.activatorEvent.clientY - workspaceRect.top - 50) : 100;
-        
-        addBlockToWorkspace({
-          ...blockData.block,
-          id: `block-${Date.now()}`,
-          x: relativeX,
-          y: relativeY
-        });
+  // 載入儲存的專案
+  useEffect(() => {
+    const savedProject = localStorage.getItem('linebot_project');
+    if (savedProject) {
+      try {
+        const projectData = JSON.parse(savedProject) as ProjectData;
+        setLogicBlocks(projectData.logicBlocks || []);
+        setFlexBlocks(projectData.flexBlocks || []);
+      } catch (error) {
+        console.error('載入專案失敗:', error);
       }
     }
-    
-    // 如果在工作區內移動現有拼圖
-    if (active.id && typeof active.id === 'string' && active.id.startsWith('workspace-block-')) {
-      const blockId = active.id.replace('workspace-block-', '');
-      const currentBlock = workspaceBlocks[blockId];
-      
-      if (currentBlock && delta) {
-        let newX = Math.max(0, currentBlock.x + delta.x);
-        let newY = Math.max(0, currentBlock.y + delta.y);
-        
-        // 檢查附近的連接點
-        const nearbyConnections = findNearbyConnectionPoints(blockId, newX, newY);
-        
-        if (nearbyConnections.length > 0) {
-          const closestConnection = nearbyConnections[0];
-          const targetBlock = workspaceBlocks[closestConnection.blockId];
-          
-          if (targetBlock) {
-            // 自動吸附到連接點
-            if (closestConnection.connectionType === 'next') {
-              newX = targetBlock.x;
-              newY = targetBlock.y - 60; // 垂直連接
-              connectBlocks(blockId, closestConnection.blockId, 'next');
-            } else if (closestConnection.connectionType === 'output') {
-              newX = targetBlock.x - 200; // 水平連接
-              newY = targetBlock.y;
-              connectBlocks(blockId, closestConnection.blockId, 'output');
-            }
-          }
-        }
-        
-        moveBlock(blockId, newX, newY);
-      }
-    }
+  }, []);
 
-    setActiveId(null);
+  const handleImportProject = (projectData: ProjectData) => {
+    setLogicBlocks(projectData.logicBlocks || []);
+    setFlexBlocks(projectData.flexBlocks || []);
   };
 
   return (
-    <DndContext
-      collisionDetection={pointerWithin}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="h-full flex">
-        {/* 左側拼圖工具區 */}
-        <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+    <DragDropProvider>
+      <div className="h-screen flex flex-col bg-gray-50">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold text-gray-800">
+              LINE Bot 視覺化編輯器
+            </h1>
+            
+            <ProjectManager 
+              logicBlocks={logicBlocks}
+              flexBlocks={flexBlocks}
+              onImport={handleImportProject}
+            />
+          </div>
+        </header>
+        
+        {/* Main Content */}
+        <div className="flex-1 flex overflow-hidden">
           <BlockPalette />
-        </div>
-
-        {/* 中間工作區 */}
-        <div ref={workspaceRef} className="flex-1 bg-gray-100">
-          <Workspace />
-        </div>
-
-        {/* 右側程式碼預覽區 */}
-        <div className="w-96 bg-white border-l border-gray-200">
-          <CodePreview />
+          <Workspace 
+            logicBlocks={logicBlocks}
+            flexBlocks={flexBlocks}
+            onLogicBlocksChange={setLogicBlocks}
+            onFlexBlocksChange={setFlexBlocks}
+          />
         </div>
       </div>
-
-      <DragOverlay>
-        {activeId ? (
-          <div className="opacity-80 transform rotate-3 scale-105">
-            <BlockRenderer blockId={activeId} isDragging={true} />
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+    </DragDropProvider>
   );
 };
