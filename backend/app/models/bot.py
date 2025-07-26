@@ -22,6 +22,7 @@ class Bot(Base):
     # 關聯關係
     user = relationship("User", back_populates="bots")
     bot_code = relationship("BotCode", back_populates="bot", uselist=False, cascade="all, delete-orphan")
+    logic_templates = relationship("LogicTemplate", back_populates="bot", cascade="all, delete-orphan")
     
     # 表級約束和索引
     __table_args__ = (
@@ -54,6 +55,35 @@ class FlexMessage(Base):
     
     def __repr__(self):
         return f"<FlexMessage(id={self.id}, name={self.name})>"
+
+class LogicTemplate(Base):
+    """邏輯模板模型"""
+    __tablename__ = "logic_templates"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    bot_id = Column(UUID(as_uuid=True), ForeignKey("bots.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(255), nullable=False, default="主要邏輯")
+    description = Column(Text, nullable=True)
+    logic_blocks = Column(JSONB, nullable=False, default=list)  # 邏輯積木數據
+    is_active = Column(String(10), nullable=False, default="false")  # 是否為活躍邏輯
+    generated_code = Column(Text, nullable=True)  # 生成的程式碼
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # 關聯關係
+    user = relationship("User", back_populates="logic_templates")
+    bot = relationship("Bot", back_populates="logic_templates")
+    
+    # 表級約束和索引
+    __table_args__ = (
+        UniqueConstraint('bot_id', 'name', name='unique_logic_template_name_per_bot'),
+        Index('idx_logic_template_user_created', 'user_id', 'created_at'),
+        Index('idx_logic_template_bot_active', 'bot_id', 'is_active'),
+    )
+    
+    def __repr__(self):
+        return f"<LogicTemplate(id={self.id}, name={self.name}, bot_id={self.bot_id})>"
 
 class BotCode(Base):
     """Bot 程式碼模型"""

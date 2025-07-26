@@ -26,6 +26,7 @@ class User(Base):
     bots = relationship("Bot", back_populates="user", cascade="all, delete-orphan")
     flex_messages = relationship("FlexMessage", back_populates="user", cascade="all, delete-orphan")
     bot_codes = relationship("BotCode", back_populates="user", cascade="all, delete-orphan")
+    logic_templates = relationship("LogicTemplate", back_populates="user", cascade="all, delete-orphan")
 
     # 複合索引
     __table_args__ = (

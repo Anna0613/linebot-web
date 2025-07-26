@@ -65,10 +65,19 @@ class BotResponse(BaseModel):
 
 class FlexMessageBase(BaseModel):
     """Flex 訊息基礎 schema"""
+    name: str
     content: Any  # JSON 格式的 Flex 訊息內容
 
 class FlexMessageCreate(FlexMessageBase):
     """Flex 訊息創建 schema"""
+    @validator('name')
+    def validate_name(cls, v):
+        if len(v.strip()) == 0:
+            raise ValueError('FLEX 訊息名稱不能為空')
+        if len(v) > 255:
+            raise ValueError('FLEX 訊息名稱不能超過 255 個字元')
+        return v
+        
     @validator('content')
     def validate_content(cls, v):
         try:
@@ -85,7 +94,17 @@ class FlexMessageCreate(FlexMessageBase):
 
 class FlexMessageUpdate(BaseModel):
     """Flex 訊息更新 schema"""
+    name: Optional[str] = None
     content: Optional[Any] = None
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if v is not None:
+            if len(v.strip()) == 0:
+                raise ValueError('FLEX 訊息名稱不能為空')
+            if len(v) > 255:
+                raise ValueError('FLEX 訊息名稱不能超過 255 個字元')
+        return v
     
     @validator('content')
     def validate_content(cls, v):
@@ -104,6 +123,7 @@ class FlexMessageUpdate(BaseModel):
 class FlexMessageResponse(BaseModel):
     """Flex 訊息回應 schema"""
     id: str
+    name: str
     content: Any
     user_id: str
     created_at: datetime
@@ -225,6 +245,113 @@ class VisualEditorResponse(BaseModel):
     generated_code: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class LogicTemplateBase(BaseModel):
+    """邏輯模板基礎 schema"""
+    name: str
+    description: Optional[str] = None
+    logic_blocks: Any  # JSON 格式的邏輯積木數據
+    is_active: Optional[str] = "false"
+
+class LogicTemplateCreate(LogicTemplateBase):
+    """邏輯模板創建 schema"""
+    bot_id: str
+    
+    @validator('bot_id')
+    def validate_bot_id(cls, v):
+        try:
+            UUID(v)
+        except ValueError:
+            raise ValueError('無效的 Bot ID 格式')
+        return v
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if len(v.strip()) == 0:
+            raise ValueError('邏輯模板名稱不能為空')
+        if len(v) > 255:
+            raise ValueError('邏輯模板名稱不能超過 255 個字元')
+        return v
+    
+    @validator('logic_blocks')
+    def validate_logic_blocks(cls, v):
+        try:
+            if isinstance(v, dict) or isinstance(v, list):
+                json.dumps(v)
+            elif isinstance(v, str):
+                json.loads(v)
+            else:
+                raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
+        except (json.JSONDecodeError, TypeError):
+            raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
+        return v
+
+class LogicTemplateUpdate(BaseModel):
+    """邏輯模板更新 schema"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    logic_blocks: Optional[Any] = None
+    is_active: Optional[str] = None
+    generated_code: Optional[str] = None
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if v is not None:
+            if len(v.strip()) == 0:
+                raise ValueError('邏輯模板名稱不能為空')
+            if len(v) > 255:
+                raise ValueError('邏輯模板名稱不能超過 255 個字元')
+        return v
+    
+    @validator('logic_blocks')
+    def validate_logic_blocks(cls, v):
+        if v is not None:
+            try:
+                if isinstance(v, dict) or isinstance(v, list):
+                    json.dumps(v)
+                elif isinstance(v, str):
+                    json.loads(v)
+                else:
+                    raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
+            except (json.JSONDecodeError, TypeError):
+                raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
+        return v
+
+class LogicTemplateResponse(BaseModel):
+    """邏輯模板回應 schema"""
+    id: str
+    name: str
+    description: Optional[str]
+    logic_blocks: Any
+    is_active: str
+    bot_id: str
+    user_id: str
+    generated_code: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class LogicTemplateSummary(BaseModel):
+    """邏輯模板摘要 schema - 用於下拉選單"""
+    id: str
+    name: str
+    description: Optional[str]
+    is_active: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class FlexMessageSummary(BaseModel):
+    """FLEX 訊息摘要 schema - 用於下拉選單"""
+    id: str
+    name: str
+    created_at: datetime
     
     class Config:
         from_attributes = True

@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { X, Settings, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import VisualEditorApi, { FlexMessageSummary } from '../../services/visualEditorApi';
 
 interface BlockData {
   [key: string]: unknown;
@@ -25,6 +26,8 @@ interface BlockData {
   containerType?: string;
   contentType?: string;
   layoutType?: string;
+  flexMessageId?: string;
+  flexMessageName?: string;
 }
 
 interface Block {
@@ -52,7 +55,41 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [blockData, setBlockData] = useState<BlockData>(block.blockData || {});
   const [showInsertZone, setShowInsertZone] = useState<'above' | 'below' | null>(null);
+  const [flexMessages, setFlexMessages] = useState<FlexMessageSummary[]>([]);
+  const [loadingFlexMessages, setLoadingFlexMessages] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // 載入FLEX訊息列表
+  useEffect(() => {
+    const loadFlexMessages = async () => {
+      if (block.blockType === 'reply' && block.blockData.replyType === 'flex') {
+        setLoadingFlexMessages(true);
+        try {
+          const messages = await VisualEditorApi.getUserFlexMessagesSummary();
+          setFlexMessages(messages);
+        } catch (error) {
+          console.error('載入FLEX訊息列表失敗:', error);
+          setFlexMessages([]);
+        } finally {
+          setLoadingFlexMessages(false);
+        }
+      }
+    };
+
+    loadFlexMessages();
+  }, [block.blockType, block.blockData.replyType]);
+
+  // 處理FLEX訊息選擇
+  const handleFlexMessageSelect = (value: string) => {
+    const selectedMessage = flexMessages.find(msg => msg.id === value);
+    if (selectedMessage) {
+      setBlockData({
+        ...blockData,
+        flexMessageId: value,
+        flexMessageName: selectedMessage.name
+      });
+    }
+  };
 
   // 拖拽功能 - 支持重排
   const [{ isDragging }, drag, preview] = useDrag({
@@ -194,13 +231,55 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({
             <div className="font-medium">{block.blockData.title}</div>
             {isEditing && (
               <div className="mt-2 space-y-2">
-                <Textarea 
-                  placeholder="回覆內容"
-                  value={blockData.content || ''}
-                  onChange={(e) => setBlockData({...blockData, content: e.target.value})}
-                  className="text-black"
-                  rows={3}
-                />
+                {/* 根據回覆類型顯示不同的編輯介面 */}
+                {block.blockData.replyType === 'flex' ? (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-white/80">選擇FLEX訊息模板:</div>
+                    <Select 
+                      value={blockData.flexMessageId || ''} 
+                      onValueChange={handleFlexMessageSelect}
+                      disabled={loadingFlexMessages}
+                    >
+                      <SelectTrigger className="text-black">
+                        <SelectValue 
+                          placeholder={loadingFlexMessages ? "載入中..." : "選擇FLEX訊息模板"} 
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {flexMessages.length === 0 && !loadingFlexMessages ? (
+                          <SelectItem value="" disabled>
+                            沒有可用的FLEX訊息模板
+                          </SelectItem>
+                        ) : (
+                          flexMessages.map((message) => (
+                            <SelectItem key={message.id} value={message.id}>
+                              {message.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {blockData.flexMessageName && (
+                      <div className="text-xs text-white/60">
+                        已選擇: {blockData.flexMessageName}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Textarea 
+                    placeholder="回覆內容"
+                    value={blockData.content || ''}
+                    onChange={(e) => setBlockData({...blockData, content: e.target.value})}
+                    className="text-black"
+                    rows={3}
+                  />
+                )}
+              </div>
+            )}
+            {/* 顯示當前選擇的FLEX訊息（非編輯模式） */}
+            {!isEditing && block.blockData.replyType === 'flex' && block.blockData.flexMessageName && (
+              <div className="text-xs text-white/70 mt-1">
+                FLEX模板: {block.blockData.flexMessageName}
               </div>
             )}
           </div>
