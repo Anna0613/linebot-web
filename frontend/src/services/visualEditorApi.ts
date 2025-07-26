@@ -387,15 +387,31 @@ export class VisualEditorApi {
   static async getUserFlexMessages(): Promise<FlexMessage[]> {
     try {
       const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/messages`;
-      const response = await this.apiClient.get<FlexMessage[]>(endpoint);
+      
+      // 確保使用認證的 API 呼叫
+      const response = await this.apiClient.get<FlexMessage[]>(endpoint, false); // skipAuth = false
 
       if (!response.success || response.status >= 400) {
-        throw new Error(response.error || `API 錯誤 (${response.status})`);
+        const errorMsg = response.error || `API 錯誤 (${response.status})`;
+        console.error('API 錯誤詳情:', { status: response.status, error: response.error, endpoint });
+        throw new Error(errorMsg);
       }
 
       return response.data || [];
     } catch (error) {
       console.error('取得FLEX訊息列表失敗:', error);
+      
+      // 提供更詳細的錯誤資訊
+      if (error instanceof Error) {
+        if (error.message.includes('400')) {
+          throw new Error('請求格式錯誤，請檢查認證狀態或重新登入');
+        } else if (error.message.includes('401')) {
+          throw new Error('認證失敗，請重新登入');
+        } else if (error.message.includes('403')) {
+          throw new Error('權限不足，無法存取此資源');
+        }
+      }
+      
       throw new Error('取得FLEX訊息列表失敗，請稍後再試');
     }
   }

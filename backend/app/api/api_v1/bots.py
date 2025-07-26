@@ -34,6 +34,51 @@ async def get_bots(
     """取得用戶的所有 Bot"""
     return BotService.get_user_bots(db, current_user.id)
 
+# FLEX 訊息相關路由 - 必須在 /{bot_id} 路由之前定義
+@router.get("/messages", response_model=List[FlexMessageResponse])
+async def get_flex_messages(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """取得用戶的所有 Flex 訊息"""
+    return BotService.get_user_flex_messages(db, current_user.id)
+
+@router.post("/messages", response_model=FlexMessageResponse)
+async def create_flex_message(
+    message_data: FlexMessageCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """建立 Flex 訊息"""
+    return BotService.create_flex_message(db, current_user.id, message_data)
+
+@router.get("/messages/summary", response_model=List[FlexMessageSummary])
+async def get_flex_messages_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """取得用戶FLEX訊息摘要列表 - 用於下拉選單"""
+    return BotService.get_user_flex_messages_summary(db, current_user.id)
+
+@router.put("/messages/{message_id}", response_model=FlexMessageResponse)
+async def update_flex_message(
+    message_id: str,
+    message_data: FlexMessageUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """更新 Flex 訊息"""
+    return BotService.update_flex_message(db, message_id, current_user.id, message_data)
+
+@router.delete("/messages/{message_id}")
+async def delete_flex_message(
+    message_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """刪除 Flex 訊息"""
+    return BotService.delete_flex_message(db, message_id, current_user.id)
+
 @router.get("/{bot_id}", response_model=BotResponse)
 async def get_bot(
     bot_id: str,
@@ -62,23 +107,6 @@ async def delete_bot(
     """刪除 Bot"""
     return BotService.delete_bot(db, bot_id, current_user.id)
 
-# Flex 訊息相關路由
-@router.post("/messages", response_model=FlexMessageResponse)
-async def create_flex_message(
-    message_data: FlexMessageCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """建立 Flex 訊息"""
-    return BotService.create_flex_message(db, current_user.id, message_data)
-
-@router.get("/messages", response_model=List[FlexMessageResponse])
-async def get_flex_messages(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """取得用戶的所有 Flex 訊息"""
-    return BotService.get_user_flex_messages(db, current_user.id)
 
 # Bot 程式碼相關路由
 @router.post("/codes", response_model=BotCodeResponse)
@@ -186,32 +214,5 @@ async def activate_logic_template(
     """激活邏輯模板（設為活躍狀態）"""
     return BotService.activate_logic_template(db, template_id, current_user.id)
 
-# FLEX 模板增強路由
-@router.put("/messages/{message_id}", response_model=FlexMessageResponse)
-async def update_flex_message(
-    message_id: str,
-    message_data: FlexMessageUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """更新 Flex 訊息"""
-    return BotService.update_flex_message(db, message_id, current_user.id, message_data)
-
-@router.delete("/messages/{message_id}")
-async def delete_flex_message(
-    message_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """刪除 Flex 訊息"""
-    return BotService.delete_flex_message(db, message_id, current_user.id)
-
-@router.get("/messages/summary", response_model=List[FlexMessageSummary])
-async def get_flex_messages_summary(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """取得用戶FLEX訊息摘要列表 - 用於下拉選單"""
-    return BotService.get_user_flex_messages_summary(db, current_user.id)
 
  
