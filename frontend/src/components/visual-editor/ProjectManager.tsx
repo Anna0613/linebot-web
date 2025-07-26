@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Download, Upload, Save, Play } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Download, Upload, Save, Play, Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '../ui/alert';
+import VisualEditorApi, { BotSummary } from '../../services/visualEditorApi';
+import { generateUnifiedCode } from '../../utils/unifiedCodeGenerator';
 
 interface BlockData {
   [key: string]: unknown;
@@ -29,10 +33,25 @@ interface ProjectManagerProps {
   logicBlocks: Block[];
   flexBlocks: Block[];
   onImport?: (projectData: ProjectData) => void;
+  selectedBotId?: string;
+  onBotSelect?: (botId: string) => void;
+  onSaveToBot?: (botId: string, data: { logicBlocks: Block[], flexBlocks: Block[], generatedCode: string }) => void;
 }
 
-const ProjectManager: React.FC<ProjectManagerProps> = ({ logicBlocks, flexBlocks, onImport }) => {
+const ProjectManager: React.FC<ProjectManagerProps> = ({ 
+  logicBlocks, 
+  flexBlocks, 
+  onImport,
+  selectedBotId,
+  onBotSelect,
+  onSaveToBot
+}) => {
   const [projectName, setProjectName] = useState('我的 LINE Bot 專案');
+  const [bots, setBots] = useState<BotSummary[]>([]);
+  const [isLoadingBots, setIsLoadingBots] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const exportProject = () => {
     const projectData: ProjectData = {
@@ -89,17 +108,61 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({ logicBlocks, flexBlocks
     input.click();
   };
 
-  const saveProject = () => {
-    // 模擬儲存到本地儲存
-    const projectData: ProjectData = {
-      name: projectName,
-      logicBlocks: logicBlocks,
-      flexBlocks: flexBlocks,
-      savedAt: new Date().toISOString()
-    };
-    
-    localStorage.setItem('linebot_project', JSON.stringify(projectData));
-    alert('專案已儲存到瀏覽器本地儲存');
+  // 載入用戶的 Bot 列表
+  const loadBots = async () => {
+    setIsLoadingBots(true);
+    setError(null);
+    try {
+      const botsList = await VisualEditorApi.getUserBotsSummary();
+      setBots(botsList);
+      
+      // 如果沒有 Bot，顯示提示訊息
+      if (botsList.length === 0) {
+        setError('目前沒有可用的 Bot，請先到 Bot 管理頁面建立 Bot');
+      }
+    } catch (err) {
+      // 只有在真正的錯誤時才顯示錯誤訊息
+      console.warn('載入 Bot 列表時發生問題:', err);
+      setError('載入 Bot 列表失敗，請確保後端服務正在運行');
+    } finally {
+      setIsLoadingBots(false);
+    }
+  };
+
+
+  // 統一的儲存功能 - 儲存到資料庫
+  const saveProject = async () => {
+    if (!selectedBotId) {
+      setError('請先選擇一個 Bot');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // 生成程式碼
+      const generatedCode = generateUnifiedCode(logicBlocks, flexBlocks);
+      
+      // 呼叫父組件的儲存函數
+      if (onSaveToBot) {
+        await onSaveToBot(selectedBotId, {
+          logicBlocks,
+          flexBlocks,
+          generatedCode
+        });
+      }
+
+      setSuccess('專案已成功儲存到資料庫');
+      
+      // 3秒後清除成功訊息
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '儲存失敗');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const testBot = () => {
@@ -110,14 +173,73 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({ logicBlocks, flexBlocks
     }
   };
 
+  // 組件載入時取得 Bot 列表
+  useEffect(() => {
+    loadBots();
+  }, []);
+
+  // 清除錯誤訊息
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
   return (
-    <div className="flex items-center space-x-4">
-      <Input
-        value={projectName}
-        onChange={(e) => setProjectName(e.target.value)}
-        className="w-48"
-        placeholder="專案名稱"
-      />
+    <div className="space-y-4">
+      {/* 錯誤和成功訊息 */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      {success && (
+        <Alert>
+          <AlertDescription className="text-green-600">{success}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex items-center space-x-4">
+        {/* Bot 選擇器 */}
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">選擇 Bot:</span>
+          <Select 
+            value={selectedBotId} 
+            onValueChange={(value) => {
+              if (value !== 'no-bots' && onBotSelect) {
+                onBotSelect(value);
+              }
+              clearMessages();
+            }}
+            disabled={isLoadingBots}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder={isLoadingBots ? "載入中..." : "選擇一個 Bot"} />
+            </SelectTrigger>
+            <SelectContent>
+              {bots.map(bot => (
+                <SelectItem key={bot.id} value={bot.id}>
+                  {bot.name}
+                </SelectItem>
+              ))}
+              {bots.length === 0 && !isLoadingBots && (
+                <SelectItem value="no-bots" disabled>
+                  尚無可用的 Bot
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          {isLoadingBots && <Loader2 className="h-4 w-4 animate-spin" />}
+        </div>
+
+        {/* 專案名稱（保留用於本地儲存） */}
+        <Input
+          value={projectName}
+          onChange={(e) => setProjectName(e.target.value)}
+          className="w-32"
+          placeholder="專案名稱"
+        />
       
       <Button variant="outline" size="sm" onClick={importProject}>
         <Upload className="w-4 h-4 mr-2" />
@@ -129,15 +251,26 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({ logicBlocks, flexBlocks
         匯出
       </Button>
       
-      <Button variant="outline" size="sm" onClick={saveProject}>
-        <Save className="w-4 h-4 mr-2" />
-        儲存
+      {/* 儲存按鈕 */}
+      <Button 
+        variant="default" 
+        size="sm" 
+        onClick={saveProject}
+        disabled={!selectedBotId || isSaving}
+      >
+        {isSaving ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <Save className="w-4 h-4 mr-2" />
+        )}
+        {isSaving ? '儲存中...' : '儲存'}
       </Button>
       
       <Button variant="default" size="sm" onClick={testBot}>
         <Play className="w-4 h-4 mr-2" />
         測試
       </Button>
+      </div>
     </div>
   );
 };

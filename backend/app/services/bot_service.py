@@ -15,7 +15,8 @@ from app.models.bot import Bot, FlexMessage, BotCode
 from app.schemas.bot import (
     BotCreate, BotUpdate, BotResponse,
     FlexMessageCreate, FlexMessageUpdate, FlexMessageResponse,
-    BotCodeCreate, BotCodeUpdate, BotCodeResponse
+    BotCodeCreate, BotCodeUpdate, BotCodeResponse,
+    VisualEditorData, VisualEditorResponse, BotSummary
 )
 
 class BotService:
@@ -324,4 +325,166 @@ class BotService:
             user_id=str(db_code.user_id),
             created_at=db_code.created_at,
             updated_at=db_code.updated_at
+        )
+    
+    @staticmethod
+    def get_user_bots_summary(db: Session, user_id: UUID) -> List[BotSummary]:
+        """取得用戶 Bot 摘要列表"""
+        bots = db.query(Bot).filter(Bot.user_id == user_id).order_by(Bot.created_at.desc()).all()
+        return [
+            BotSummary(
+                id=str(bot.id),
+                name=bot.name,
+                created_at=bot.created_at
+            )
+            for bot in bots
+        ]
+    
+    @staticmethod
+    def save_visual_editor_data(
+        db: Session, 
+        bot_id: str, 
+        user_id: UUID, 
+        editor_data: VisualEditorData
+    ) -> VisualEditorResponse:
+        """儲存視覺化編輯器數據"""
+        try:
+            # 將字符串 UUID 轉換為 UUID 對象
+            from uuid import UUID as PyUUID
+            bot_uuid = PyUUID(bot_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無效的 Bot ID 格式"
+            )
+        
+        # 驗證 Bot 是否屬於該用戶
+        bot = db.query(Bot).filter(
+            Bot.id == bot_uuid,
+            Bot.user_id == user_id
+        ).first()
+        
+        if not bot:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Bot 不存在"
+            )
+        
+        try:
+            # 序列化積木數據
+            logic_blocks_json = json.dumps(editor_data.logic_blocks) if isinstance(editor_data.logic_blocks, (dict, list)) else editor_data.logic_blocks
+            flex_blocks_json = json.dumps(editor_data.flex_blocks) if isinstance(editor_data.flex_blocks, (dict, list)) else editor_data.flex_blocks
+            
+            # 更新或創建 BotCode 記錄（儲存生成的程式碼）
+            existing_code = db.query(BotCode).filter(BotCode.bot_id == bot_uuid).first()
+            if existing_code:
+                if editor_data.generated_code:
+                    existing_code.code = editor_data.generated_code
+                    db.commit()
+                    db.refresh(existing_code)
+            else:
+                if editor_data.generated_code:
+                    new_code = BotCode(
+                        user_id=user_id,
+                        bot_id=bot_uuid,
+                        code=editor_data.generated_code
+                    )
+                    db.add(new_code)
+                    db.commit()
+                    db.refresh(new_code)
+            
+            # 儲存 Flex 訊息（如果有 flex_blocks）
+            if editor_data.flex_blocks:
+                # 創建新的 FlexMessage 記錄或更新現有的
+                flex_message_name = f"{bot.name}_visual_editor_flex"
+                existing_flex = db.query(FlexMessage).filter(
+                    FlexMessage.user_id == user_id,
+                    FlexMessage.name == flex_message_name
+                ).first()
+                
+                if existing_flex:
+                    existing_flex.content = flex_blocks_json
+                    db.commit()
+                    db.refresh(existing_flex)
+                else:
+                    new_flex = FlexMessage(
+                        user_id=user_id,
+                        name=flex_message_name,
+                        content=flex_blocks_json
+                    )
+                    db.add(new_flex)
+                    db.commit()
+                    db.refresh(new_flex)
+            
+            return VisualEditorResponse(
+                bot_id=str(bot_uuid),
+                logic_blocks=json.loads(logic_blocks_json) if isinstance(logic_blocks_json, str) else logic_blocks_json,
+                flex_blocks=json.loads(flex_blocks_json) if isinstance(flex_blocks_json, str) else flex_blocks_json,
+                generated_code=editor_data.generated_code,
+                created_at=bot.created_at,
+                updated_at=bot.updated_at
+            )
+            
+        except Exception as e:
+            logger.error(f"儲存視覺化編輯器數據時發生錯誤: {e}")
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"儲存數據時發生錯誤: {str(e)}"
+            )
+    
+    @staticmethod
+    def get_visual_editor_data(db: Session, bot_id: str, user_id: UUID) -> VisualEditorResponse:
+        """取得視覺化編輯器數據"""
+        try:
+            # 將字符串 UUID 轉換為 UUID 對象
+            from uuid import UUID as PyUUID
+            bot_uuid = PyUUID(bot_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無效的 Bot ID 格式"
+            )
+        
+        # 驗證 Bot 是否屬於該用戶
+        bot = db.query(Bot).filter(
+            Bot.id == bot_uuid,
+            Bot.user_id == user_id
+        ).first()
+        
+        if not bot:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Bot 不存在"
+            )
+        
+        # 取得 Bot 程式碼
+        bot_code = db.query(BotCode).filter(BotCode.bot_id == bot_uuid).first()
+        generated_code = bot_code.code if bot_code else None
+        
+        # 取得 Flex 訊息
+        flex_message_name = f"{bot.name}_visual_editor_flex"
+        flex_message = db.query(FlexMessage).filter(
+            FlexMessage.user_id == user_id,
+            FlexMessage.name == flex_message_name
+        ).first()
+        
+        # 默認空的積木數據
+        logic_blocks = []
+        flex_blocks = []
+        
+        if flex_message:
+            try:
+                flex_blocks = json.loads(flex_message.content) if isinstance(flex_message.content, str) else flex_message.content
+            except json.JSONDecodeError:
+                logger.warning(f"無法解析 Flex 訊息內容: {flex_message.id}")
+                flex_blocks = []
+        
+        return VisualEditorResponse(
+            bot_id=str(bot_uuid),
+            logic_blocks=logic_blocks,
+            flex_blocks=flex_blocks,
+            generated_code=generated_code,
+            created_at=bot.created_at,
+            updated_at=bot.updated_at
         ) 

@@ -8,7 +8,10 @@ from typing import List
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.bot import BotCreate, BotUpdate, BotResponse, FlexMessageCreate, FlexMessageResponse, BotCodeCreate, BotCodeResponse
+from app.schemas.bot import (
+    BotCreate, BotUpdate, BotResponse, FlexMessageCreate, FlexMessageResponse, 
+    BotCodeCreate, BotCodeResponse, VisualEditorData, VisualEditorResponse, BotSummary
+)
 from app.services.bot_service import BotService
 
 router = APIRouter()
@@ -84,4 +87,32 @@ async def create_bot_code(
     current_user: User = Depends(get_current_user)
 ):
     """建立 Bot 程式碼"""
-    return BotService.create_bot_code(db, current_user.id, code_data) 
+    return BotService.create_bot_code(db, current_user.id, code_data)
+
+# 視覺化編輯器相關路由
+@router.get("/visual-editor/summary", response_model=List[BotSummary])
+async def get_user_bots_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """取得用戶 Bot 摘要列表 - 用於下拉選單"""
+    return BotService.get_user_bots_summary(db, current_user.id)
+
+@router.post("/{bot_id}/visual-editor/save", response_model=VisualEditorResponse)
+async def save_visual_editor_data(
+    bot_id: str,
+    editor_data: VisualEditorData,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """儲存視覺化編輯器數據"""
+    return BotService.save_visual_editor_data(db, bot_id, current_user.id, editor_data)
+
+@router.get("/{bot_id}/visual-editor", response_model=VisualEditorResponse)
+async def get_visual_editor_data(
+    bot_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """取得視覺化編輯器數據"""
+    return BotService.get_visual_editor_data(db, bot_id, current_user.id) 

@@ -28,7 +28,7 @@ interface DropZoneProps {
   onRemove?: (index: number) => void;
   onUpdate?: (index: number, data: LegacyBlockData) => void;
   onMove?: (dragIndex: number, hoverIndex: number) => void;  // 新增：移動積木
-  onInsert?: (index: number, item: any) => void;             // 新增：插入積木
+  onInsert?: (index: number, item: UnifiedDropItem | LegacyDropItem) => void;             // 新增：插入積木
   showCompatibilityInfo?: boolean;             // 是否顯示相容性資訊
 }
 

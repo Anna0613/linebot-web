@@ -174,4 +174,66 @@ class SendFlexMessage(BaseModel):
             UUID(v)
         except ValueError:
             raise ValueError('無效的訊息 ID 格式')
-        return v 
+        return v
+
+class VisualEditorData(BaseModel):
+    """視覺化編輯器數據 schema"""
+    bot_id: str
+    logic_blocks: Any  # JSON 格式的邏輯積木數據
+    flex_blocks: Any   # JSON 格式的 Flex 積木數據
+    generated_code: Optional[str] = None  # 生成的程式碼
+    
+    @validator('bot_id')
+    def validate_bot_id(cls, v):
+        try:
+            UUID(v)
+        except ValueError:
+            raise ValueError('無效的 Bot ID 格式')
+        return v
+    
+    @validator('logic_blocks')
+    def validate_logic_blocks(cls, v):
+        try:
+            if isinstance(v, dict) or isinstance(v, list):
+                json.dumps(v)
+            elif isinstance(v, str):
+                json.loads(v)
+            else:
+                raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
+        except (json.JSONDecodeError, TypeError):
+            raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
+        return v
+    
+    @validator('flex_blocks')
+    def validate_flex_blocks(cls, v):
+        try:
+            if isinstance(v, dict) or isinstance(v, list):
+                json.dumps(v)
+            elif isinstance(v, str):
+                json.loads(v)
+            else:
+                raise ValueError('Flex積木數據必須是有效的 JSON 格式')
+        except (json.JSONDecodeError, TypeError):
+            raise ValueError('Flex積木數據必須是有效的 JSON 格式')
+        return v
+
+class VisualEditorResponse(BaseModel):
+    """視覺化編輯器回應 schema"""
+    bot_id: str
+    logic_blocks: Any
+    flex_blocks: Any
+    generated_code: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class BotSummary(BaseModel):
+    """Bot 摘要信息 schema - 用於下拉選單"""
+    id: str
+    name: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True 

@@ -38,7 +38,7 @@ interface DroppedBlockProps {
   onRemove?: (index: number) => void;
   onUpdate?: (index: number, data: BlockData) => void;
   onMove?: (dragIndex: number, hoverIndex: number) => void;
-  onInsert?: (index: number, item: any) => void;
+  onInsert?: (index: number, item: Block) => void;
 }
 
 const DroppedBlock: React.FC<DroppedBlockProps> = ({ 
@@ -70,7 +70,7 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({
   // 拖拽目標 - 支持插入和重排
   const [{ isOver, dropPosition }, drop] = useDrop({
     accept: ['block', 'dropped-block'],
-    hover: (item: any, monitor) => {
+    hover: (item: Block & { index?: number; type?: string }, monitor) => {
       if (!ref.current) return;
 
       // 處理重排 (dropped-block 到 dropped-block)
@@ -124,7 +124,7 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({
         }
       }
     },
-    drop: (item: any, monitor) => {
+    drop: (item: Block & { index?: number; blockType?: string }, monitor) => {
       if (!ref.current) return;
 
       // 處理新積木插入
