@@ -2,7 +2,7 @@
 認證服務模組
 處理用戶註冊、登入、LINE 登入等認證相關業務邏輯
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
@@ -286,7 +286,7 @@ class AuthService:
         
         # 檢查發送頻率限制
         if user.last_verification_sent:
-            time_diff = datetime.utcnow() - user.last_verification_sent
+            time_diff = datetime.now(timezone.utc) - user.last_verification_sent
             if time_diff < timedelta(minutes=1):
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -295,7 +295,7 @@ class AuthService:
         
         try:
             EmailService.send_verification_email(email)
-            user.last_verification_sent = datetime.utcnow()
+            user.last_verification_sent = datetime.now(timezone.utc)
             db.commit()
             return {"message": "驗證郵件已重新發送"}
         except Exception as e:
@@ -316,7 +316,7 @@ class AuthService:
         
         # 檢查發送頻率限制
         if user.last_verification_sent:
-            time_diff = datetime.utcnow() - user.last_verification_sent
+            time_diff = datetime.now(timezone.utc) - user.last_verification_sent
             if time_diff < timedelta(minutes=1):
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -325,7 +325,7 @@ class AuthService:
         
         try:
             EmailService.send_password_reset_email(email)
-            user.last_verification_sent = datetime.utcnow()
+            user.last_verification_sent = datetime.now(timezone.utc)
             db.commit()
             return {"message": "密碼重設連結已發送至您的郵箱"}
         except Exception as e:

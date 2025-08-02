@@ -247,6 +247,28 @@ class DatabaseManager:
             return 1
             
         return 0
+    
+    def clean_schemas(self):
+        """清理未使用的 schemas"""
+        print("🧹 清理未使用的 Schemas")
+        print("=" * 50)
+        
+        try:
+            from app.database import clean_unused_schemas, check_database_connection
+            
+            # 檢查資料庫連接
+            check_database_connection()
+            print("✅ 資料庫連接成功")
+            
+            # 執行清理
+            clean_unused_schemas()
+            print("✅ Schema 清理完成!")
+            
+        except Exception as e:
+            print(f"❌ Schema 清理失敗: {e}")
+            return 1
+            
+        return 0
 
 def main():
     """主函數"""
@@ -262,12 +284,13 @@ def main():
   python manage_db.py seed                      # 填充測試資料
   python manage_db.py schema                    # 生成架構報告
   python manage_db.py history                   # 顯示 migration 歷史
+  python manage_db.py clean-schemas             # 清理未使用的 schemas
         """
     )
     
     parser.add_argument(
         'command',
-        choices=['status', 'migrate', 'generate', 'reset', 'seed', 'schema', 'history'],
+        choices=['status', 'migrate', 'generate', 'reset', 'seed', 'schema', 'history', 'clean-schemas'],
         help='要執行的命令'
     )
     
@@ -297,6 +320,8 @@ def main():
         return db_manager.schema()
     elif args.command == 'history':
         return db_manager.history()
+    elif args.command == 'clean-schemas':
+        return db_manager.clean_schemas()
 
 if __name__ == "__main__":
     exit(main())

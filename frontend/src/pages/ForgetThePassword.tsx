@@ -65,23 +65,23 @@ const ForgetPassword = () => {
 
       if (!response.ok) {
         let errorMessage;
-        switch (data.error) {
-          case "EMAIL_NOT_FOUND":
-            errorMessage = "此電子郵件地址未註冊";
-            break;
-          case "INVALID_EMAIL":
-            errorMessage = "電子郵件格式不正確";
-            break;
-          case "RATE_LIMIT_EXCEEDED":
-            errorMessage = "請求過於頻繁，請稍後再試";
-            break;
-          case "EMAIL_SEND_FAILED":
-            errorMessage = "郵件發送失敗，請稍後再試";
-            break;
-          default:
-            errorMessage =
-              data.error || data.message || "發送重設連結失敗，請稍後再試";
+        // 處理後端返回的錯誤訊息
+        const backendError = data.detail || data.error || data.message;
+        
+        // 根據後端返回的具體錯誤訊息進行映射
+        if (backendError?.includes("郵箱地址不存在") || backendError?.includes("EMAIL_NOT_FOUND")) {
+          errorMessage = "此電子郵件地址未註冊";
+        } else if (backendError?.includes("電子郵件格式") || backendError?.includes("INVALID_EMAIL")) {
+          errorMessage = "電子郵件格式不正確";
+        } else if (backendError?.includes("請稍後再試") || backendError?.includes("RATE_LIMIT") || backendError?.includes("頻繁")) {
+          errorMessage = "請求過於頻繁，請稍後再試";
+        } else if (backendError?.includes("郵件發送失敗") || backendError?.includes("EMAIL_SEND_FAILED")) {
+          errorMessage = "郵件發送失敗，請稍後再試";
+        } else {
+          // 直接使用後端返回的錯誤訊息，如果沒有則使用預設訊息
+          errorMessage = backendError || "發送重設連結失敗，請稍後再試";
         }
+        
         throw new Error(errorMessage);
       }
 

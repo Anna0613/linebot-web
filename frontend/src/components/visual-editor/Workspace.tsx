@@ -35,13 +35,17 @@ interface WorkspaceProps {
   flexBlocks: (UnifiedBlock | LegacyBlock)[];
   onLogicBlocksChange: (blocks: (UnifiedBlock | LegacyBlock)[] | ((prev: (UnifiedBlock | LegacyBlock)[]) => (UnifiedBlock | LegacyBlock)[])) => void;
   onFlexBlocksChange: (blocks: (UnifiedBlock | LegacyBlock)[] | ((prev: (UnifiedBlock | LegacyBlock)[]) => (UnifiedBlock | LegacyBlock)[])) => void;
+  currentLogicTemplateName?: string;
+  currentFlexMessageName?: string;
 }
 
 const Workspace: React.FC<WorkspaceProps> = ({ 
   logicBlocks, 
   flexBlocks, 
   onLogicBlocksChange, 
-  onFlexBlocksChange 
+  onFlexBlocksChange,
+  currentLogicTemplateName,
+  currentFlexMessageName
 }) => {
   const [activeTab, setActiveTab] = useState('logic');
   const [showAllBlocks, setShowAllBlocks] = useState(true);
@@ -293,12 +297,22 @@ const Workspace: React.FC<WorkspaceProps> = ({
           <TabsList className="m-4 flex-shrink-0">
             <TabsTrigger value="logic">
               邏輯編輯器
+              {currentLogicTemplateName && (
+                <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                  {currentLogicTemplateName}
+                </span>
+              )}
               {!workspaceValidation.logic.isValid && (
                 <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
               )}
             </TabsTrigger>
             <TabsTrigger value="flex">
               Flex 設計器
+              {currentFlexMessageName && (
+                <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                  {currentFlexMessageName}
+                </span>
+              )}
               {!workspaceValidation.flex.isValid && (
                 <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
               )}
@@ -311,7 +325,10 @@ const Workspace: React.FC<WorkspaceProps> = ({
             <div className="h-full p-4 overflow-auto">
             {renderValidationAlert(WorkspaceContext.LOGIC)}
             <DropZone 
-              title="邏輯編輯器 - 支援邏輯積木、控制積木和相容的 Flex 積木"
+              title={currentLogicTemplateName ? 
+                `邏輯編輯器 - ${currentLogicTemplateName}` : 
+                "邏輯編輯器 - 請選擇邏輯模板"
+              }
               context={WorkspaceContext.LOGIC}
               onDrop={handleLogicDrop}
               blocks={logicBlocks}
@@ -329,7 +346,10 @@ const Workspace: React.FC<WorkspaceProps> = ({
               <div className="grid grid-cols-2 gap-4 h-full min-h-0">
                 <div className="flex flex-col min-h-0">
                   <DropZone 
-                    title="Flex 設計器 - 支援 Flex 積木、佈局積木和相容的邏輯積木"
+                    title={currentFlexMessageName ? 
+                      `Flex 設計器 - ${currentFlexMessageName}` : 
+                      "Flex 設計器 - 請選擇 FlexMessage"
+                    }
                     context={WorkspaceContext.FLEX}
                     onDrop={handleFlexDrop}
                     blocks={flexBlocks}

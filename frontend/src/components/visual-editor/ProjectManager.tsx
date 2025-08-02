@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Download, Upload, Save, Play, Loader2, AlertCircle } from 'lucide-react';
+import { Download, Upload, Save, Play, Loader2, AlertCircle, Plus, Edit, Trash } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
-import VisualEditorApi, { BotSummary } from '../../services/visualEditorApi';
+import VisualEditorApi, { BotSummary, LogicTemplateSummary, FlexMessageSummary } from '../../services/visualEditorApi';
 import { generateUnifiedCode } from '../../utils/unifiedCodeGenerator';
 
 interface BlockData {
@@ -36,6 +36,16 @@ interface ProjectManagerProps {
   selectedBotId?: string;
   onBotSelect?: (botId: string) => void;
   onSaveToBot?: (botId: string, data: { logicBlocks: Block[], flexBlocks: Block[], generatedCode: string }) => void;
+  // 新增邏輯模板相關 props
+  selectedLogicTemplateId?: string;
+  onLogicTemplateSelect?: (templateId: string) => void;
+  onLogicTemplateCreate?: (name: string) => void;
+  onLogicTemplateSave?: (templateId: string, data: { logicBlocks: Block[], generatedCode: string }) => void;
+  // 新增 FlexMessage 相關 props
+  selectedFlexMessageId?: string;
+  onFlexMessageSelect?: (messageId: string) => void;
+  onFlexMessageCreate?: (name: string) => void;
+  onFlexMessageSave?: (messageId: string, data: { flexBlocks: Block[] }) => void;
 }
 
 const ProjectManager: React.FC<ProjectManagerProps> = ({ 
@@ -44,14 +54,30 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   onImport,
   selectedBotId,
   onBotSelect,
-  onSaveToBot
+  onSaveToBot,
+  selectedLogicTemplateId,
+  onLogicTemplateSelect,
+  onLogicTemplateCreate,
+  onLogicTemplateSave,
+  selectedFlexMessageId,
+  onFlexMessageSelect,
+  onFlexMessageCreate,
+  onFlexMessageSave
 }) => {
   const [projectName, setProjectName] = useState('我的 LINE Bot 專案');
   const [bots, setBots] = useState<BotSummary[]>([]);
+  const [logicTemplates, setLogicTemplates] = useState<LogicTemplateSummary[]>([]);
+  const [flexMessages, setFlexMessages] = useState<FlexMessageSummary[]>([]);
   const [isLoadingBots, setIsLoadingBots] = useState(false);
+  const [isLoadingLogicTemplates, setIsLoadingLogicTemplates] = useState(false);
+  const [isLoadingFlexMessages, setIsLoadingFlexMessages] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [newLogicTemplateName, setNewLogicTemplateName] = useState('');
+  const [newFlexMessageName, setNewFlexMessageName] = useState('');
+  const [showCreateLogicTemplate, setShowCreateLogicTemplate] = useState(false);
+  const [showCreateFlexMessage, setShowCreateFlexMessage] = useState(false);
 
   const exportProject = () => {
     const projectData: ProjectData = {
@@ -129,6 +155,39 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     }
   };
 
+  // 載入邏輯模板列表
+  const loadLogicTemplates = async (botId: string) => {
+    if (!botId) {
+      setLogicTemplates([]);
+      return;
+    }
+    
+    setIsLoadingLogicTemplates(true);
+    try {
+      const templates = await VisualEditorApi.getBotLogicTemplatesSummary(botId);
+      setLogicTemplates(templates);
+    } catch (err) {
+      console.warn('載入邏輯模板列表失敗:', err);
+      setLogicTemplates([]);
+    } finally {
+      setIsLoadingLogicTemplates(false);
+    }
+  };
+
+  // 載入 FlexMessage 列表
+  const loadFlexMessages = async () => {
+    setIsLoadingFlexMessages(true);
+    try {
+      const messages = await VisualEditorApi.getUserFlexMessagesSummary();
+      setFlexMessages(messages);
+    } catch (err) {
+      console.warn('載入 FlexMessage 列表失敗:', err);
+      setFlexMessages([]);
+    } finally {
+      setIsLoadingFlexMessages(false);
+    }
+  };
+
 
   // 統一的儲存功能 - 儲存到資料庫
   const saveProject = async () => {
@@ -173,15 +232,109 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     }
   };
 
-  // 組件載入時取得 Bot 列表
+  // 組件載入時取得 Bot 列表和 FlexMessage 列表
   useEffect(() => {
     loadBots();
+    loadFlexMessages();
   }, []);
+
+  // 當選擇的 Bot 改變時，載入對應的邏輯模板
+  useEffect(() => {
+    if (selectedBotId) {
+      loadLogicTemplates(selectedBotId);
+    } else {
+      setLogicTemplates([]);
+    }
+  }, [selectedBotId]);
 
   // 清除錯誤訊息
   const clearMessages = () => {
     setError(null);
     setSuccess(null);
+  };
+
+  // 創建新邏輯模板
+  const handleCreateLogicTemplate = async () => {
+    if (!selectedBotId || !newLogicTemplateName.trim()) {
+      setError('請輸入邏輯模板名稱');
+      return;
+    }
+
+    try {
+      if (onLogicTemplateCreate) {
+        await onLogicTemplateCreate(newLogicTemplateName.trim());
+      }
+      setNewLogicTemplateName('');
+      setShowCreateLogicTemplate(false);
+      await loadLogicTemplates(selectedBotId);
+      setSuccess('邏輯模板創建成功');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '創建邏輯模板失敗');
+    }
+  };
+
+  // 創建新 FlexMessage
+  const handleCreateFlexMessage = async () => {
+    if (!newFlexMessageName.trim()) {
+      setError('請輸入 FlexMessage 名稱');
+      return;
+    }
+
+    try {
+      if (onFlexMessageCreate) {
+        await onFlexMessageCreate(newFlexMessageName.trim());
+      }
+      setNewFlexMessageName('');
+      setShowCreateFlexMessage(false);
+      await loadFlexMessages();
+      setSuccess('FlexMessage 創建成功');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '創建 FlexMessage 失敗');
+    }
+  };
+
+  // 儲存邏輯模板
+  const saveLogicTemplate = async () => {
+    if (!selectedLogicTemplateId) {
+      setError('請先選擇一個邏輯模板');
+      return;
+    }
+
+    try {
+      const generatedCode = generateUnifiedCode(logicBlocks, []);
+      if (onLogicTemplateSave) {
+        await onLogicTemplateSave(selectedLogicTemplateId, {
+          logicBlocks,
+          generatedCode
+        });
+      }
+      setSuccess('邏輯模板儲存成功');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '儲存邏輯模板失敗');
+    }
+  };
+
+  // 儲存 FlexMessage
+  const saveFlexMessage = async () => {
+    if (!selectedFlexMessageId) {
+      setError('請先選擇一個 FlexMessage');
+      return;
+    }
+
+    try {
+      if (onFlexMessageSave) {
+        await onFlexMessageSave(selectedFlexMessageId, {
+          flexBlocks
+        });
+      }
+      setSuccess('FlexMessage 儲存成功');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '儲存 FlexMessage 失敗');
+    }
   };
 
   return (
@@ -200,6 +353,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
         </Alert>
       )}
 
+      {/* 第一行：Bot 選擇器 */}
       <div className="flex items-center space-x-4">
         {/* Bot 選擇器 */}
         <div className="flex items-center space-x-2">
@@ -232,14 +386,192 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
           </Select>
           {isLoadingBots && <Loader2 className="h-4 w-4 animate-spin" />}
         </div>
+      </div>
+
+      {/* 第二行：邏輯模板與 FlexMessage 管理 */}
+      {selectedBotId && (
+        <div className="flex flex-col space-y-3">
+          {/* 邏輯模板管理 */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">邏輯模板:</span>
+            <Select 
+              value={selectedLogicTemplateId} 
+              onValueChange={(value) => {
+                if (value !== 'no-templates' && onLogicTemplateSelect) {
+                  onLogicTemplateSelect(value);
+                }
+                clearMessages();
+              }}
+              disabled={isLoadingLogicTemplates}
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder={isLoadingLogicTemplates ? "載入中..." : "選擇邏輯模板"} />
+              </SelectTrigger>
+              <SelectContent>
+                {logicTemplates.map(template => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name} {template.is_active === 'true' && '(啟用中)'}
+                  </SelectItem>
+                ))}
+                {logicTemplates.length === 0 && !isLoadingLogicTemplates && (
+                  <SelectItem value="no-templates" disabled>
+                    尚無邏輯模板
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            {isLoadingLogicTemplates && <Loader2 className="h-4 w-4 animate-spin" />}
+            
+            {/* 創建新邏輯模板按鈕 */}
+            {!showCreateLogicTemplate ? (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowCreateLogicTemplate(true)}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                新增
+              </Button>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={newLogicTemplateName}
+                  onChange={(e) => setNewLogicTemplateName(e.target.value)}
+                  className="w-32"
+                  placeholder="模板名稱"
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateLogicTemplate()}
+                />
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={handleCreateLogicTemplate}
+                  disabled={!newLogicTemplateName.trim()}
+                >
+                  確認
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setShowCreateLogicTemplate(false);
+                    setNewLogicTemplateName('');
+                  }}
+                >
+                  取消
+                </Button>
+              </div>
+            )}
+            
+            {/* 儲存邏輯模板按鈕 */}
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={saveLogicTemplate}
+              disabled={!selectedLogicTemplateId}
+            >
+              <Save className="w-4 h-4 mr-1" />
+              儲存邏輯
+            </Button>
+          </div>
+
+          {/* FlexMessage 管理 */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">FlexMessage:</span>
+            <Select 
+              value={selectedFlexMessageId} 
+              onValueChange={(value) => {
+                if (value !== 'no-messages' && onFlexMessageSelect) {
+                  onFlexMessageSelect(value);
+                }
+                clearMessages();
+              }}
+              disabled={isLoadingFlexMessages}
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder={isLoadingFlexMessages ? "載入中..." : "選擇 FlexMessage"} />
+              </SelectTrigger>
+              <SelectContent>
+                {flexMessages.map(message => (
+                  <SelectItem key={message.id} value={message.id}>
+                    {message.name}
+                  </SelectItem>
+                ))}
+                {flexMessages.length === 0 && !isLoadingFlexMessages && (
+                  <SelectItem value="no-messages" disabled>
+                    尚無 FlexMessage
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            {isLoadingFlexMessages && <Loader2 className="h-4 w-4 animate-spin" />}
+            
+            {/* 創建新 FlexMessage 按鈕 */}
+            {!showCreateFlexMessage ? (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowCreateFlexMessage(true)}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                新增
+              </Button>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={newFlexMessageName}
+                  onChange={(e) => setNewFlexMessageName(e.target.value)}
+                  className="w-32"
+                  placeholder="訊息名稱"
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateFlexMessage()}
+                />
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={handleCreateFlexMessage}
+                  disabled={!newFlexMessageName.trim()}
+                >
+                  確認
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setShowCreateFlexMessage(false);
+                    setNewFlexMessageName('');
+                  }}
+                >
+                  取消
+                </Button>
+              </div>
+            )}
+            
+            {/* 儲存 FlexMessage 按鈕 */}
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={saveFlexMessage}
+              disabled={!selectedFlexMessageId}
+            >
+              <Save className="w-4 h-4 mr-1" />
+              儲存訊息
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 第三行：專案管理功能 */}
+      <div className="flex items-center space-x-4">
 
         {/* 專案名稱（保留用於本地儲存） */}
-        <Input
-          value={projectName}
-          onChange={(e) => setProjectName(e.target.value)}
-          className="w-32"
-          placeholder="專案名稱"
-        />
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">專案名稱:</span>
+          <Input
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            className="w-32"
+            placeholder="專案名稱"
+          />
+        </div>
       
       <Button variant="outline" size="sm" onClick={importProject}>
         <Upload className="w-4 h-4 mr-2" />

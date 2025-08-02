@@ -39,12 +39,83 @@ def check_database_connection():
         connection.execute(text("SELECT 1"))
     return True
 
+def clean_unused_schemas():
+    """清理未使用的 schemas"""
+    try:
+        from app.schema_config import SchemaConfig
+        
+        with engine.connect() as connection:
+            # 獲取所有 schemas
+            result = connection.execute(text("""
+                SELECT schema_name 
+                FROM information_schema.schemata 
+                ORDER BY schema_name
+            """))
+            all_schemas = [row[0] for row in result]
+            
+            # 獲取受保護的 schemas
+            protected_schemas = SchemaConfig.get_protected_schemas()
+            
+            # 找出要檢查的 schemas
+            schemas_to_check = [s for s in all_schemas if SchemaConfig.should_drop_schema(s)]
+            
+            if schemas_to_check:
+                logger.info(f"檢查 {len(schemas_to_check)} 個 schemas: {schemas_to_check}")
+                logger.info(f"受保護的 schemas: {protected_schemas}")
+                
+                dropped_count = 0
+                for schema in schemas_to_check:
+                    try:
+                        # 檢查 schema 是否為空
+                        table_check = connection.execute(text("""
+                            SELECT COUNT(*) 
+                            FROM information_schema.tables 
+                            WHERE table_schema = :schema_name
+                        """), {"schema_name": schema})
+                        table_count = table_check.scalar()
+                        
+                        # 檢查是否有函數或其他物件
+                        function_check = connection.execute(text("""
+                            SELECT COUNT(*) 
+                            FROM information_schema.routines 
+                            WHERE routine_schema = :schema_name
+                        """), {"schema_name": schema})
+                        function_count = function_check.scalar()
+                        
+                        total_objects = table_count + function_count
+                        
+                        if total_objects == 0:
+                            # 如果 schema 為空，則刪除
+                            connection.execute(text(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE'))
+                            connection.commit()
+                            logger.info(f"✅ 已刪除空的 schema: {schema}")
+                            dropped_count += 1
+                        else:
+                            logger.info(f"⏭️  Schema '{schema}' 包含 {table_count} 個表格和 {function_count} 個函數，保留")
+                            
+                    except Exception as e:
+                        logger.warning(f"⚠️  清理 schema '{schema}' 時發生錯誤: {e}")
+                        continue
+                
+                if dropped_count > 0:
+                    logger.info(f"🧹 Schema 清理完成，共刪除 {dropped_count} 個空的 schemas")
+                else:
+                    logger.info("✨ 沒有發現需要清理的空 schemas")
+            else:
+                logger.info("📝 所有 schemas 都在受保護列表中，無需清理")
+                
+    except Exception as e:
+        logger.warning(f"❌ 清理 schemas 時發生錯誤: {e}")
+
 def init_database():
     """初始化資料庫"""
     try:
         # 檢查資料庫連線
         check_database_connection()
         logger.info("資料庫連線成功")
+        
+        # 清理未使用的 schemas
+        clean_unused_schemas()
         
         # 啟用 uuid-ossp 擴展
         with engine.connect() as connection:

@@ -16,7 +16,7 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
 from app.config import settings
-from app.database import get_engine
+from app.database import engine
 
 
 def get_database_schema() -> Dict[str, Any]:
@@ -26,7 +26,7 @@ def get_database_schema() -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: 包含所有表格架構信息的字典
     """
-    engine = get_engine()
+    # 使用從 database 模組導入的 engine
     metadata = MetaData()
     
     try:

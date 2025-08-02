@@ -29,7 +29,11 @@ export const VisualBotEditor: React.FC = () => {
   const [flexBlocks, setFlexBlocks] = useState<(UnifiedBlock | LegacyBlock)[]>([]);
   const [projectVersion, setProjectVersion] = useState<string>('2.0'); // 新版本使用統一積木系統
   const [selectedBotId, setSelectedBotId] = useState<string>('');
+  const [selectedLogicTemplateId, setSelectedLogicTemplateId] = useState<string>('');
+  const [selectedFlexMessageId, setSelectedFlexMessageId] = useState<string>('');
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [currentLogicTemplateName, setCurrentLogicTemplateName] = useState<string>('');
+  const [currentFlexMessageName, setCurrentFlexMessageName] = useState<string>('');
 
 
   // 初始化組件時，積木數據從 Bot 選擇時載入，不需要本地儲存
@@ -42,30 +46,163 @@ export const VisualBotEditor: React.FC = () => {
   // 處理 Bot 選擇變更
   const handleBotSelect = async (botId: string) => {
     setSelectedBotId(botId);
+    // 清空邏輯模板和 FlexMessage 選擇
+    setSelectedLogicTemplateId('');
+    setSelectedFlexMessageId('');
+    setCurrentLogicTemplateName('');
+    setCurrentFlexMessageName('');
     
     if (botId && VisualEditorApi.isValidBotId(botId)) {
-      setIsLoadingData(true);
-      try {
-        // 載入選定 Bot 的視覺化編輯器數據
-        const data = await VisualEditorApi.loadVisualEditorData(botId);
-        
-        // 更新積木數據
-        setLogicBlocks(data.logic_blocks || []);
-        setFlexBlocks(data.flex_blocks || []);
-        
-        console.log(`已載入 Bot ${botId} 的數據`);
-      } catch (error) {
-        console.error('載入 Bot 數據失敗:', error);
-        // 如果載入失敗，初始化為空的積木
-        setLogicBlocks([]);
-        setFlexBlocks([]);
-      } finally {
-        setIsLoadingData(false);
-      }
+      // 清空當前積木，等待用戶選擇邏輯模板和 FlexMessage
+      setLogicBlocks([]);
+      setFlexBlocks([]);
     } else {
       // 清空積木
       setLogicBlocks([]);
       setFlexBlocks([]);
+    }
+  };
+
+  // 處理邏輯模板選擇變更
+  const handleLogicTemplateSelect = async (templateId: string) => {
+    setSelectedLogicTemplateId(templateId);
+    
+    if (templateId) {
+      setIsLoadingData(true);
+      try {
+        const template = await VisualEditorApi.getLogicTemplate(templateId);
+        setLogicBlocks(template.logic_blocks || []);
+        setCurrentLogicTemplateName(template.name);
+        console.log(`已載入邏輯模板 ${template.name} 的數據`);
+      } catch (error) {
+        console.error('載入邏輯模板失敗:', error);
+        setLogicBlocks([]);
+        setCurrentLogicTemplateName('');
+      } finally {
+        setIsLoadingData(false);
+      }
+    } else {
+      setLogicBlocks([]);
+      setCurrentLogicTemplateName('');
+    }
+  };
+
+  // 處理 FlexMessage 選擇變更
+  const handleFlexMessageSelect = async (messageId: string) => {
+    setSelectedFlexMessageId(messageId);
+    
+    if (messageId) {
+      setIsLoadingData(true);
+      try {
+        const messages = await VisualEditorApi.getUserFlexMessages();
+        const message = messages.find(m => m.id === messageId);
+        if (message && message.content && message.content.blocks) {
+          setFlexBlocks(message.content.blocks || []);
+          setCurrentFlexMessageName(message.name);
+          console.log(`已載入 FlexMessage ${message.name} 的數據`);
+        } else {
+          setFlexBlocks([]);
+          setCurrentFlexMessageName(message?.name || '');
+        }
+      } catch (error) {
+        console.error('載入 FlexMessage 失敗:', error);
+        setFlexBlocks([]);
+        setCurrentFlexMessageName('');
+      } finally {
+        setIsLoadingData(false);
+      }
+    } else {
+      setFlexBlocks([]);
+      setCurrentFlexMessageName('');
+    }
+  };
+
+  // 創建新邏輯模板
+  const handleLogicTemplateCreate = async (name: string) => {
+    if (!selectedBotId) {
+      throw new Error('請先選擇一個 Bot');
+    }
+
+    try {
+      const template = await VisualEditorApi.createLogicTemplate(selectedBotId, {
+        name,
+        description: `由視覺化編輯器創建的邏輯模板`,
+        logic_blocks: [],
+        is_active: 'false'
+      });
+      
+      // 自動選擇新創建的邏輯模板
+      await handleLogicTemplateSelect(template.id);
+      console.log('邏輯模板創建成功:', template);
+    } catch (error) {
+      console.error('創建邏輯模板失敗:', error);
+      throw error;
+    }
+  };
+
+  // 創建新 FlexMessage
+  const handleFlexMessageCreate = async (name: string) => {
+    try {
+      const message = await VisualEditorApi.createFlexMessage({
+        name,
+        content: { blocks: [] }
+      });
+      
+      // 自動選擇新創建的 FlexMessage
+      await handleFlexMessageSelect(message.id);
+      console.log('FlexMessage 創建成功:', message);
+    } catch (error) {
+      console.error('創建 FlexMessage 失敗:', error);
+      throw error;
+    }
+  };
+
+  // 儲存邏輯模板
+  const handleLogicTemplateSave = async (templateId: string, data: { logicBlocks: (UnifiedBlock | LegacyBlock)[], generatedCode: string }) => {
+    try {
+      // 確保所有積木都是統一格式
+      const normalizedLogicBlocks = data.logicBlocks.map(block => {
+        if ('category' in block) {
+          return block as UnifiedBlock;
+        } else {
+          const legacyBlock = block as LegacyBlock;
+          return migrateBlocks([legacyBlock])[0] as UnifiedBlock;
+        }
+      });
+
+      await VisualEditorApi.updateLogicTemplate(templateId, {
+        logic_blocks: normalizedLogicBlocks,
+        generated_code: data.generatedCode
+      });
+      
+      console.log(`邏輯模板 ${templateId} 儲存成功`);
+    } catch (error) {
+      console.error('儲存邏輯模板失敗:', error);
+      throw error;
+    }
+  };
+
+  // 儲存 FlexMessage
+  const handleFlexMessageSave = async (messageId: string, data: { flexBlocks: (UnifiedBlock | LegacyBlock)[] }) => {
+    try {
+      // 確保所有積木都是統一格式
+      const normalizedFlexBlocks = data.flexBlocks.map(block => {
+        if ('category' in block) {
+          return block as UnifiedBlock;
+        } else {
+          const legacyBlock = block as LegacyBlock;
+          return migrateBlocks([legacyBlock])[0] as UnifiedBlock;
+        }
+      });
+
+      await VisualEditorApi.updateFlexMessage(messageId, {
+        content: { blocks: normalizedFlexBlocks }
+      });
+      
+      console.log(`FlexMessage ${messageId} 儲存成功`);
+    } catch (error) {
+      console.error('儲存 FlexMessage 失敗:', error);
+      throw error;
     }
   };
 
@@ -145,6 +282,14 @@ export const VisualBotEditor: React.FC = () => {
               selectedBotId={selectedBotId}
               onBotSelect={handleBotSelect}
               onSaveToBot={handleSaveToBot}
+              selectedLogicTemplateId={selectedLogicTemplateId}
+              onLogicTemplateSelect={handleLogicTemplateSelect}
+              onLogicTemplateCreate={handleLogicTemplateCreate}
+              onLogicTemplateSave={handleLogicTemplateSave}
+              selectedFlexMessageId={selectedFlexMessageId}
+              onFlexMessageSelect={handleFlexMessageSelect}
+              onFlexMessageCreate={handleFlexMessageCreate}
+              onFlexMessageSave={handleFlexMessageSave}
             />
           </div>
         </header>
@@ -165,6 +310,8 @@ export const VisualBotEditor: React.FC = () => {
             flexBlocks={flexBlocks}
             onLogicBlocksChange={setLogicBlocks}
             onFlexBlocksChange={setFlexBlocks}
+            currentLogicTemplateName={currentLogicTemplateName}
+            currentFlexMessageName={currentFlexMessageName}
           />
         </div>
       </div>

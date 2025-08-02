@@ -190,6 +190,7 @@ class EmailService:
             email_service._send_email_sync(email, "【LineBot-Web】信箱驗證", email_template)
         except Exception as e:
             print(f"郵件發送失敗: {str(e)}")
+            raise e  # 重新拋出異常，讓上層能正確處理
     
     @staticmethod
     def send_password_reset_email(email: str) -> None:
@@ -309,4 +310,5 @@ class EmailService:
             email_service = EmailService._get_email_service()
             email_service._send_email_sync(email, "【LineBot-Web】密碼重設", email_template)
         except Exception as e:
-            print(f"郵件發送失敗: {str(e)}") 
+            print(f"郵件發送失敗: {str(e)}")
+            raise e  # 重新拋出異常，讓上層能正確處理 
