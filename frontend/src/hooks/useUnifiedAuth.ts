@@ -110,7 +110,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
   /**
    * 傳統登錄
    */
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string, rememberMe = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -141,7 +141,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
           expires_in: data.expires_in,
         };
 
-        authManager.setTokenInfo(tokenInfo, 'traditional');
+        authManager.setTokenInfo(tokenInfo, 'traditional', rememberMe);
 
         // 設置用戶信息
         if (data.user) {
@@ -153,7 +153,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
             login_type: 'traditional',
           };
 
-          authManager.setUserInfo(userData);
+          authManager.setUserInfo(userData, rememberMe);
           setUser(userData);
           onAuthChange?.(true, userData);
         }
@@ -184,7 +184,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
   /**
    * LINE登錄處理
    */
-  const handleLineLogin = useCallback(async (token: string) => {
+  const handleLineLogin = useCallback(async (token: string, rememberMe = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -217,7 +217,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
         token_type: 'LINE',
       };
 
-      authManager.setTokenInfo(tokenInfo, 'line');
+      authManager.setTokenInfo(tokenInfo, 'line', rememberMe);
 
       // 設置用戶信息
       const userData: UnifiedUser = {
@@ -230,7 +230,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
         login_type: 'line',
       };
 
-      authManager.setUserInfo(userData);
+      authManager.setUserInfo(userData, rememberMe);
       setUser(userData);
       onAuthChange?.(true, userData);
 

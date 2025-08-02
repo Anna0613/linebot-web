@@ -10,7 +10,6 @@ import AuthFormLayout from "../components/forms/AuthFormLayout";
 import EmailVerificationPrompt from "../components/forms/EmailVerificationPrompt";
 import LINELoginButton from "../components/LINELogin/LINELoginButton";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
-import { useLineLogin } from "../hooks/useLineLogin";
 import { authManager } from "../services/UnifiedAuthManager";
 import "@/components/ui/loader.css";
 
@@ -21,10 +20,9 @@ const LoginPage = () => {
   const [showEmailVerificationPrompt, setShowEmailVerificationPrompt] =
     useState(false);
 
-  const { login, loading, error, clearError } = useUnifiedAuth({
+  const { login, loading, error, clearError, handleLineLogin } = useUnifiedAuth({
     redirectTo: "/login"
   });
-  const { handleLINELogin } = useLineLogin();
 
   useEffect(() => {
     if (authManager.isAuthenticatedSync()) {
@@ -41,7 +39,7 @@ const LoginPage = () => {
 
     clearError(); // 清除之前的錯誤
     
-    const success = await login(username, password);
+    const success = await login(username, password, rememberMe);
     
     if (success) {
       // 檢查是否需要郵件驗證
@@ -58,6 +56,19 @@ const LoginPage = () => {
   const handleResendEmail = async () => {
     // TODO: 實現重新發送驗證郵件功能
     console.log("重新發送驗證郵件功能待實現");
+  };
+
+  const handleLINELoginWithRememberMe = async () => {
+    // 由於 LINE 登錄是重定向流程，我們需要將 rememberMe 狀態存在某個地方
+    // 這裡先將狀態存在 sessionStorage，在登錄成功後讀取
+    if (rememberMe) {
+      sessionStorage.setItem('line_login_remember_me', 'true');
+    } else {
+      sessionStorage.removeItem('line_login_remember_me');
+    }
+    
+    // 觸發 LINE 登錄
+    await handleLineLogin();
   };
 
   return (
@@ -131,7 +142,7 @@ const LoginPage = () => {
         <Separator className="flex-1" />
       </div>
 
-      <LINELoginButton onClick={handleLINELogin} disabled={loading} />
+      <LINELoginButton onClick={handleLINELoginWithRememberMe} disabled={loading} />
 
       <p className="text-center text-sm text-muted-foreground mt-4">
         還沒有帳號？{" "}

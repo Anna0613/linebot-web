@@ -42,9 +42,14 @@ const LINELogin: React.FC = () => {
 
       try {
         setLoading(true);
+        
+        // 檢查是否有記住我設定（從登錄頁面設定的 sessionStorage）
+        const rememberMe = sessionStorage.getItem('line_login_remember_me') === 'true';
+        
         authManager.setTokenInfo(
           { access_token: token, token_type: 'Bearer' },
-          'line'
+          'line',
+          rememberMe
         );
         const lineLoginService = LineLoginService.getInstance();
 
@@ -67,6 +72,22 @@ const LINELogin: React.FC = () => {
           if (response.error) {
             throw new Error(response.error);
           }
+          
+          // 設定用戶信息（包含 rememberMe 設定）
+          const userData = {
+            id: response.line_id || response.display_name,
+            username: response.display_name,
+            email: response.email,
+            display_name: response.display_name,
+            picture_url: response.picture_url,
+            line_id: response.line_id,
+            login_type: 'line' as const,
+          };
+          authManager.setUserInfo(userData, rememberMe);
+          
+          // 清除 sessionStorage 中的記住我設定
+          sessionStorage.removeItem('line_login_remember_me');
+          
           setUser(response as User);
           navigate("/dashboard");
         }
