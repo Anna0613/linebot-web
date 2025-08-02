@@ -41,6 +41,73 @@ const HowToEstablish = () => {
     []
   );
 
+  const nativeFetch = window.fetch.bind(window); // 保存原生 fetch
+
+  const checkLoginStatus = useCallback(async () => {
+    try {
+      const response = await nativeFetch(
+        getApiUrl(
+          API_CONFIG.AUTH.BASE_URL,
+          API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN
+        ),
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            ...(localStorage.getItem("auth_token") && {
+              Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+            }),
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // 檢查新的 API 回應格式 (authenticated + user)
+        if (data.authenticated && data.user) {
+          setUser({
+            display_name: data.user.username,
+            username: data.user.username,
+          });
+        } else if (data.authenticated === false) {
+          // 明確處理未登入情況
+          console.log("用戶未登入，重定向到登入頁面");
+          setError("請先登入以查看此頁面");
+          navigate("/login");
+          return;
+        }
+        // 相容舊格式：檢查 data.message 是否存在且格式正確
+        else if (data.message && typeof data.message === "string") {
+          const messagePattern = /User (.+?) is logged in/;
+          const match = data.message.match(messagePattern);
+
+          if (match && match[1]) {
+            const username = match[1];
+            setUser({ display_name: username, username });
+          } else {
+            throw new Error("無法從回應中解析用戶名稱");
+          }
+        } else {
+          throw new Error("無效的 API 回應格式");
+        }
+      } else {
+        const errorData = await response.json();
+        console.error("check_login error:", errorData);
+        setError("請先登入");
+        navigate("/login");
+      }
+      setLoading(false);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
+      setError("請先登入");
+      navigate("/login");
+      setLoading(false);
+    }
+  }, [navigate]);
+
   useEffect(() => {
     const token = searchParams.get("token");
     const displayName = searchParams.get("display_name");
@@ -130,73 +197,6 @@ const HowToEstablish = () => {
       return null;
     }
   };
-
-  const nativeFetch = window.fetch.bind(window); // 保存原生 fetch
-
-  const checkLoginStatus = useCallback(async () => {
-    try {
-      const response = await nativeFetch(
-        getApiUrl(
-          API_CONFIG.AUTH.BASE_URL,
-          API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN
-        ),
-        {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            ...(localStorage.getItem("auth_token") && {
-              Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-            }),
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // 檢查新的 API 回應格式 (authenticated + user)
-        if (data.authenticated && data.user) {
-          setUser({
-            display_name: data.user.username,
-            username: data.user.username,
-          });
-        } else if (data.authenticated === false) {
-          // 明確處理未登入情況
-          console.log("用戶未登入，重定向到登入頁面");
-          setError("請先登入以查看此頁面");
-          navigate("/login");
-          return;
-        }
-        // 相容舊格式：檢查 data.message 是否存在且格式正確
-        else if (data.message && typeof data.message === "string") {
-          const messagePattern = /User (.+?) is logged in/;
-          const match = data.message.match(messagePattern);
-
-          if (match && match[1]) {
-            const username = match[1];
-            setUser({ display_name: username, username });
-          } else {
-            throw new Error("無法從回應中解析用戶名稱");
-          }
-        } else {
-          throw new Error("無效的 API 回應格式");
-        }
-      } else {
-        const errorData = await response.json();
-        console.error("check_login error:", errorData);
-        setError("請先登入");
-        navigate("/login");
-      }
-      setLoading(false);
-    } catch (_error) {
-      console.error("Error occurred:", _error);
-      setError("請先登入");
-      navigate("/login");
-      setLoading(false);
-    }
-  }, [navigate, setUser, setError, setLoading, nativeFetch]);
 
   const _scrollToStep = (stepId: number) => {
     const element = document.getElementById(`step-${stepId}`);
