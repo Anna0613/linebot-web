@@ -28,7 +28,7 @@ interface HomeBotflyProps {
 const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
   const { bots, isLoading, error, fetchBots } = useBotManagement();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
   // apiClient 已經從 UnifiedApiClient 匯入
 
   // 刪除對話框狀態
@@ -115,7 +115,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         }
       }
     } catch (error) {
-      console.error("刪除Bot發生錯誤:", error);
+      console.error("Error occurred:", error);
       toast({
         variant: "destructive",
         title: "刪除失敗",

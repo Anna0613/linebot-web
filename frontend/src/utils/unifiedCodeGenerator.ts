@@ -98,7 +98,7 @@ function generateEventHandlers(blocks: UnifiedBlock[]): string {
   
   // 為每個事件積木生成處理器
   eventBlocks.forEach((eventBlock, index) => {
-    const eventType = eventBlock.blockData.eventType as string;
+    const _eventType = eventBlock.blockData.eventType as string;
     
     code += `@handler.add(MessageEvent, message=TextMessage)
 def handle_message_${index}(event):

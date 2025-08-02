@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader } from "@/components/ui/loader";
+// import { Loader } from "@/components/ui/loader";
 import AvatarUpload from "@/components/AvatarUpload/AvatarUpload";
 import { useToast } from "@/hooks/use-toast";
 
@@ -95,8 +95,8 @@ const UserProfileSection = ({
                   const blob = await response.blob();
                   const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
                   await onAvatarUpload(file);
-                } catch (error) {
-                  console.error("Error processing avatar:", error);
+                } catch (_error) {
+                  console.error("Error occurred:", _error);
                 }
               } else {
                 await onAvatarDelete();

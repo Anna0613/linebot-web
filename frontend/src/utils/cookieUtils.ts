@@ -56,8 +56,8 @@ export const setAuthToken = (token: string, rememberMe = false, tokenType = 'Bea
     }
 
     console.log(`Token 已設定為 ${rememberMe ? '記住我' : '會話'} cookie`);
-  } catch (error) {
-    console.error('設定認證 token 失敗:', error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
     throw new Error('無法設定認證 cookie');
   }
 };
@@ -77,8 +77,8 @@ export const getAuthToken = (): string | null => {
     }
 
     return token || null;
-  } catch (error) {
-    console.error('獲取認證 token 失敗:', error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
     return null;
   }
 };
@@ -89,8 +89,8 @@ export const getAuthToken = (): string | null => {
 export const getTokenType = (): string => {
   try {
     return Cookies.get(COOKIE_NAMES.TOKEN_TYPE) || 'Bearer';
-  } catch (error) {
-    console.error('獲取 token 類型失敗:', error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
     return 'Bearer';
   }
 };
@@ -111,8 +111,8 @@ export const setRefreshToken = (refreshToken: string): void => {
 
     Cookies.set(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, options);
     console.log('Refresh token 已設定');
-  } catch (error) {
-    console.error('設定 refresh token 失敗:', error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
   }
 };
 
@@ -122,8 +122,8 @@ export const setRefreshToken = (refreshToken: string): void => {
 export const getRefreshToken = (): string | null => {
   try {
     return Cookies.get(COOKIE_NAMES.REFRESH_TOKEN) || null;
-  } catch (error) {
-    console.error('獲取 refresh token 失敗:', error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
     return null;
   }
 };
@@ -142,8 +142,8 @@ export const setUserData = (userData: object, rememberMe = false): void => {
     };
 
     Cookies.set(COOKIE_NAMES.USER_DATA, JSON.stringify(dataWithTimestamp), options);
-  } catch (error) {
-    console.error('設定用戶資料失敗:', error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
     throw new Error('無法設定用戶資料 cookie');
   }
 };
@@ -155,8 +155,8 @@ export const getUserData = (): object | null => {
   try {
     const userData = Cookies.get(COOKIE_NAMES.USER_DATA);
     return userData ? JSON.parse(userData) : null;
-  } catch (error) {
-    console.error('獲取用戶資料失敗:', error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
     return null;
   }
 };
@@ -193,8 +193,8 @@ export const clearAllAuthCookies = (): void => {
     });
 
     console.log('所有認證 cookies 已清除');
-  } catch (error) {
-    console.error('清除認證 cookies 失敗:', error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
   }
 };
 
@@ -240,7 +240,7 @@ export const extendAuthCookies = (): void => {
         setUserData(userData, true);
       }
     }
-  } catch (error) {
-    console.error('延長 cookie 過期時間失敗:', error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
   }
 };

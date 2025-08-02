@@ -80,7 +80,7 @@ export class UnifiedApiClient {
         clearTimeout(timeoutId);
 
         return await this.handleResponse<T>(response);
-      } catch (error) {
+      } catch (_error) {
         lastError = error instanceof Error ? error : new Error('請求失敗');
         
         // 如果是 token 刷新成功，立即重試一次（不計入重試次數）
@@ -195,7 +195,7 @@ export class UnifiedApiClient {
         status,
         success: true,
       };
-    } catch (error) {
+    } catch (_error) {
       // JSON解析失敗或其他錯誤
       const errorMessage = this.getErrorMessage(status);
       return {
@@ -398,7 +398,7 @@ export class UnifiedApiClient {
       const base64 = await this.fileToBase64(file);
       
       return this.updateAvatar(base64);
-    } catch (error) {
+    } catch (_error) {
       return {
         error: "頭像處理失敗",
         status: 0,

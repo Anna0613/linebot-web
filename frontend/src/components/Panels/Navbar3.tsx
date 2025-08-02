@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import LanguageToggle from "../LanguageToggle/LanguageToggle";
 import "animate.css";
 import { API_CONFIG, getApiUrl } from "../../config/apiConfig";
@@ -23,7 +22,7 @@ interface Navbar3Props {
 }
 
 const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [_isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [userImage, setUserImage] = useState<string | null>(null);
@@ -40,8 +39,8 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
         if (response.status === 200 && response.data?.avatar) {
           setUserImage(response.data.avatar);
         }
-      } catch (error) {
-        console.error("載入頭像失敗:", error);
+      } catch (_error) {
+        console.error("Error occurred:", _error);
       }
     }
   }, [user]);
@@ -148,8 +147,8 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
       setShowDropdown(false);
       // 使用 React Router 進行導航
       navigate("/login");
-    } catch (error) {
-      console.error("登出失敗:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       // 即使後端請求失敗，也要清除前端的認證資料
       authManager.clearAuth();
       localStorage.removeItem("line_token");

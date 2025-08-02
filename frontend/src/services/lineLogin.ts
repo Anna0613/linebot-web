@@ -54,7 +54,7 @@ export class LineLoginService {
 
       return data;
     } catch (error) {
-      console.error('LINE 登入 URL 請求失敗:', error);
+      console.error("Error occurred:", _error);
       return {
         error: error instanceof Error ? error.message : "獲取登入連結失敗",
       };

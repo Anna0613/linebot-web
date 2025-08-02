@@ -84,7 +84,7 @@ export class UnifiedAuthManager {
           const userData = JSON.parse(oldUserData);
           setUserData(userData, false);
           console.log('已將舊用戶資料遷移到 cookie');
-        } catch (err) {
+        } catch (_err) {
           console.warn('舊用戶資料格式錯誤，跳過遷移');
         }
       }
@@ -102,7 +102,7 @@ export class UnifiedAuthManager {
       
       console.log('舊 localStorage 資料遷移完成');
     } catch (error) {
-      console.error('Token遷移失敗:', error);
+      console.error("Error occurred:", error);
     }
   }
 
@@ -126,7 +126,7 @@ export class UnifiedAuthManager {
       
       console.log(`Token 已設定 - 類型: ${tokenInfo.token_type}, 記住我: ${rememberMe}`);
     } catch (error) {
-      console.error('設定token失敗:', error);
+      console.error("Error occurred:", error);
       throw error;
     }
   }
@@ -143,7 +143,7 @@ export class UnifiedAuthManager {
       setUserData(userData, rememberMe);
       console.log(`用戶資料已設定 - 記住我: ${rememberMe}`);
     } catch (error) {
-      console.error('設定用戶信息失敗:', error);
+      console.error("Error occurred:", error);
     }
   }
 
@@ -162,7 +162,7 @@ export class UnifiedAuthManager {
       const userData = getUserData();
       return userData as UnifiedUser | null;
     } catch (error) {
-      console.error('獲取用戶信息失敗:', error);
+      console.error("Error occurred:", error);
       return null;
     }
   }
@@ -279,7 +279,7 @@ export class UnifiedAuthManager {
 
       return false;
     } catch (error) {
-      console.error('Token刷新失敗:', error);
+      console.error("Error occurred:", error);
       return false;
     }
   }
@@ -325,7 +325,7 @@ export class UnifiedAuthManager {
       
       console.log('所有認證資料已清除');
     } catch (error) {
-      console.error('清除認證信息失敗:', error);
+      console.error("Error occurred:", error);
     }
   }
 
@@ -333,7 +333,7 @@ export class UnifiedAuthManager {
    * 處理認證錯誤
    */
   public handleAuthError(error: unknown): void {
-    console.error('認證錯誤:', error);
+    console.error("Error occurred:", error);
     
     // 如果是401錯誤，根據記住我狀態決定處理方式
     if (error && typeof error === 'object' && error !== null) {
@@ -384,12 +384,12 @@ export class UnifiedAuthManager {
   /**
    * 派發認證相關事件
    */
-  private dispatchAuthEvent(eventType: string, detail: any): void {
+  private dispatchAuthEvent(eventType: string, detail: Record<string, unknown>): void {
     try {
       const event = new CustomEvent(eventType, { detail });
       window.dispatchEvent(event);
     } catch (error) {
-      console.error('派發認證事件失敗:', error);
+      console.error("Error occurred:", error);
     }
   }
 

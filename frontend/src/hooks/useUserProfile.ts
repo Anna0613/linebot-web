@@ -45,8 +45,8 @@ export const useUserProfile = () => {
       } else {
         throw new Error(response.error || "載入用戶資料失敗");
       }
-    } catch (error: unknown) {
-      console.error("載入用戶資料錯誤:", error);
+    } catch (_error: unknown) {
+      console.error("Error occurred:", _error);
       toast({
         variant: "destructive",
         title: "載入失敗",
@@ -62,8 +62,8 @@ export const useUserProfile = () => {
       if (response.status === 200 && response.data?.avatar) {
         setUserImage(response.data.avatar);
       }
-    } catch (error) {
-      console.error("載入頭像錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       // 頭像載入失敗不顯示錯誤提示，使用預設頭像
     }
   }, []);
@@ -87,12 +87,12 @@ export const useUserProfile = () => {
         } else {
           throw new Error(response.error || "更新失敗");
         }
-      } catch (error: unknown) {
+      } catch (_error: unknown) {
         toast({
           variant: "destructive",
           title: "更新失敗",
           description:
-            error instanceof Error ? error.message : "無法更新顯示名稱",
+            _error instanceof Error ? _error.message : "無法更新顯示名稱",
         });
         return false;
       }
@@ -133,11 +133,11 @@ export const useUserProfile = () => {
         } else {
           throw new Error(response.error || "頭像上傳失敗");
         }
-      } catch (error: unknown) {
+      } catch (_error: unknown) {
         toast({
           variant: "destructive",
           title: "頭像上傳失敗",
-          description: error instanceof Error ? error.message : "無法上傳頭像",
+          description: _error instanceof Error ? _error.message : "無法上傳頭像",
         });
         return false;
       } finally {
@@ -169,11 +169,11 @@ export const useUserProfile = () => {
       } else {
         throw new Error(response.error || "刪除頭像失敗");
       }
-    } catch (error: unknown) {
+    } catch (_error: unknown) {
       toast({
         variant: "destructive",
         title: "刪除失敗",
-        description: error instanceof Error ? error.message : "無法刪除頭像",
+        description: _error instanceof Error ? _error.message : "無法刪除頭像",
       });
       return false;
     } finally {
@@ -211,11 +211,11 @@ export const useUserProfile = () => {
       } else {
         throw new Error(response.error || "帳號刪除失敗");
       }
-    } catch (error: unknown) {
+    } catch (_error: unknown) {
       toast({
         variant: "destructive",
         title: "刪除失敗",
-        description: error instanceof Error ? error.message : "無法刪除帳號",
+        description: _error instanceof Error ? _error.message : "無法刪除帳號",
       });
       return false;
     }

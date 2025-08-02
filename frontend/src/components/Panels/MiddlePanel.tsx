@@ -1,6 +1,4 @@
-import { useState, useRef, useEffect } from "react";
-
-const parentType = "container";
+const _parentType = "container";
 
 const MiddlePanel = () => {
   return (

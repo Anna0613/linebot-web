@@ -1,14 +1,14 @@
-import React, { useEffect, useState, useCallback, memo } from "react";
+import React, { useEffect, memo } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import HomeBotfly from "../components/features/dashboard/HomeBotfly";
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
-import { API_CONFIG, getApiUrl } from "../config/apiConfig";
+// import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 
-interface User {
+interface _User {
   line_id?: string;
   display_name: string;
   picture_url?: string;
@@ -19,7 +19,7 @@ interface User {
 const DashboardPage = memo(() => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
+  const _location = useLocation();
 
   // 使用統一認證Hook，具備自動保護功能
   const { user, loading, error, handleLineLogin } = useUnifiedAuth({

@@ -81,8 +81,8 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
           setExpandedBot(null);
         }
       }
-    } catch (error) {
-      console.error("刪除Bot發生錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       toast({
         variant: "destructive",
         title: "刪除失敗",
@@ -131,7 +131,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
       const response = await apiClient.getBots();
 
       if (response.error) {
-        console.error("獲取Bot列表失敗:", response.error);
+        console.error("Error occurred:", _error);
 
         // 檢查是否為身份驗證錯誤
         if (response.status === 401 || response.status === 403) {
@@ -151,8 +151,8 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
       } else {
         setBotList(response.data || []);
       }
-    } catch (error) {
-      console.error("獲取Bot列表發生錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       toast({
         variant: "destructive",
         title: "錯誤",

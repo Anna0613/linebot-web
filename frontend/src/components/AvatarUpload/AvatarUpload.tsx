@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Card, CardContent } from "../ui/card";
-import { Upload, X, User, Camera, Trash2 } from "lucide-react";
+import { Upload, User, Camera, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AvatarUploadProps {
@@ -106,8 +106,8 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
         const compressedDataUrl = await compressImage(file);
         onAvatarChange(compressedDataUrl);
         // 移除這裡的成功通知，讓實際的上傳處理來顯示結果
-      } catch (error) {
-        console.error("Error processing image:", error);
+      } catch (_error) {
+        console.error("Error occurred:", _error);
         toast({
           variant: "destructive",
           title: "處理圖片失敗",

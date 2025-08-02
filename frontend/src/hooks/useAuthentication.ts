@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "./use-toast";
-import { LineLoginService } from "../services/lineLogin";
+// import { LineLoginService } from "../services/lineLogin";
 import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 import { AuthService } from "../services/auth";
 
@@ -89,8 +89,8 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
           navigate(redirectTo);
         }
       }
-    } catch (error) {
-      console.error("檢查登入狀態錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (requireAuth) {
         setError("請先登入");
         navigate(redirectTo);
@@ -151,8 +151,8 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
         } else {
           await checkLoginStatus();
         }
-      } catch (error) {
-        console.error("認證初始化錯誤:", error);
+      } catch (_error) {
+        console.error("Error occurred:", _error);
         if (requireAuth) {
           setError("認證失敗，請重新登入");
           navigate(redirectTo);
@@ -191,8 +191,8 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
 
       const result = await response.json();
       return result;
-    } catch (error) {
-      console.error("驗證 LINE token 錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       return null;
     }
   };

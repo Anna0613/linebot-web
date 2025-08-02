@@ -31,8 +31,8 @@ export const parseJWTToken = (token: string): TokenPayload | null => {
 
     const payload = JSON.parse(atob(tokenParts[1]));
     return payload;
-  } catch (error) {
-    console.error("解析 JWT token 失敗:", error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
     return null;
   }
 };
@@ -80,8 +80,8 @@ export const parseUserFromApiResponse = (
     }
 
     throw new Error("無效的 API 回應格式");
-  } catch (error) {
-    console.error("解析用戶資訊失敗:", error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
     return null;
   }
 };
@@ -111,8 +111,8 @@ export const parseUserMessage = (
     return {
       username: match[1],
     };
-  } catch (error) {
-    console.error("解析用戶訊息失敗:", error);
+  } catch (_error) {
+    console.error("Error occurred:", _error);
     return null;
   }
 };

@@ -6,7 +6,7 @@ import {
   MessageSquare, 
   Zap, 
   Settings, 
-  Image, 
+  _Image, 
   Type, 
   Square,
   MousePointer,

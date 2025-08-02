@@ -23,13 +23,13 @@ interface DashboardNavbarProps {
 }
 
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [_isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [userImage, setUserImage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
   const { logout } = useUnifiedAuth();
 
   // 載入用戶頭像
@@ -41,7 +41,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
           setUserImage(response.data.avatar);
         }
       } catch (error) {
-        console.error("載入頭像失敗:", error);
+        console.error("Error occurred:", error);
       }
     }
   }, [user]);
@@ -145,7 +145,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
       await logout();
       setShowDropdown(false);
     } catch (error) {
-      console.error("登出失敗:", error);
+      console.error("Error occurred:", error);
       // 即使後端請求失敗，也要清除前端的認證資料
       await logout();
       setShowDropdown(false);

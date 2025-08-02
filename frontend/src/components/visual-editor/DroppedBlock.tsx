@@ -68,7 +68,7 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({
           const messages = await VisualEditorApi.getUserFlexMessagesSummary();
           setFlexMessages(messages);
         } catch (error) {
-          console.error('載入FLEX訊息列表失敗:', error);
+          console.error("Error occurred:", error);
           setFlexMessages([]);
         } finally {
           setLoadingFlexMessages(false);
@@ -92,7 +92,7 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({
   };
 
   // 拖拽功能 - 支持重排
-  const [{ isDragging }, drag, preview] = useDrag({
+  const [{ isDragging }, drag, _preview] = useDrag({
     type: 'dropped-block',
     item: () => ({ 
       index, 
@@ -105,7 +105,7 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({
   });
 
   // 拖拽目標 - 支持插入和重排
-  const [{ isOver, dropPosition }, drop] = useDrop({
+  const [{ isOver, dropPosition: _dropPosition }, drop] = useDrop({
     accept: ['block', 'dropped-block'],
     hover: (item: Block & { index?: number; type?: string }, monitor) => {
       if (!ref.current) return;
@@ -194,7 +194,7 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({
   // 組合 drag 和 drop refs
   drag(drop(ref));
 
-  const getBlockColor = (blockType: string): string => {
+  const getBlockColor = (_blockType: string): string => {
     const colorMap: Record<string, string> = {
       'event': 'bg-orange-500',
       'reply': 'bg-green-500',

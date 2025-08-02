@@ -44,7 +44,7 @@ export class ApiClient {
       return status >= 200 && status < 300
         ? { data, status }
         : { error: data.detail || data.error || "請求失敗", status };
-    } catch (e) {
+    } catch (_e) {
       // 如果無法解析 JSON，返回 HTTP 狀態碼對應的錯誤信息
       const errorMessages: { [key: number]: string } = {
         400: "請求參數錯誤",
@@ -83,7 +83,7 @@ export class ApiClient {
         credentials: "include",
       });
       return this.handleResponse<T>(response);
-    } catch (error) {
+    } catch (_error) {
       return {
         error: "網絡請求失敗",
         status: 0,
@@ -103,7 +103,7 @@ export class ApiClient {
         credentials: "include",
       });
       return this.handleResponse<T>(response);
-    } catch (error) {
+    } catch (_error) {
       return {
         error: "網絡請求失敗",
         status: 0,
@@ -123,7 +123,7 @@ export class ApiClient {
         credentials: "include",
       });
       return this.handleResponse<T>(response);
-    } catch (error) {
+    } catch (_error) {
       return {
         error: "網絡請求失敗",
         status: 0,
@@ -139,7 +139,7 @@ export class ApiClient {
         credentials: "include",
       });
       return this.handleResponse<T>(response);
-    } catch (error) {
+    } catch (_error) {
       return {
         error: "網絡請求失敗",
         status: 0,
@@ -193,8 +193,8 @@ export class ApiClient {
         data,
         status: response.status,
       };
-    } catch (error) {
-      console.error("登入請求發生錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       return {
         error: "網絡請求失敗",
         status: 0,
@@ -305,7 +305,7 @@ export class ApiClient {
           avatar_base64: base64,
         }
       );
-    } catch (error) {
+    } catch (_error) {
       return {
         error: "頭像處理失敗",
         status: 0,

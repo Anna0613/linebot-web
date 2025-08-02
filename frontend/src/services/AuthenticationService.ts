@@ -64,8 +64,8 @@ export class AuthenticationService {
       }
 
       return result as User;
-    } catch (error) {
-      console.error("驗證 LINE token 錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       return null;
     }
   }
@@ -128,8 +128,8 @@ export class AuthenticationService {
       }
 
       throw new Error("無效的 API 回應格式");
-    } catch (error) {
-      console.error("檢查登入狀態錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       return null;
     }
   }

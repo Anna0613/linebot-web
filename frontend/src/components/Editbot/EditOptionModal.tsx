@@ -11,7 +11,7 @@ interface EditOptionModalProps {
 const EditOptionModal: React.FC<EditOptionModalProps> = ({
   isOpen,
   onClose,
-  botId,
+  botId: _botId,
   onEditBasicInfo,
 }) => {
   const navigate = useNavigate();

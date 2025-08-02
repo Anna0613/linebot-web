@@ -7,7 +7,7 @@ interface LINELoginButtonProps {
   onLogin?: () => void;
 }
 
-const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin }) => {
+const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin: _onLogin }) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -37,7 +37,7 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin }) => {
       console.log("LINE login URL:", data.login_url); // 調試用
       window.location.href = data.login_url;
     } catch (error: unknown) {
-      console.error("Error initiating LINE login:", error);
+      console.error("Error occurred:", _error);
       toast({
         variant: "destructive",
         title: "Error",

@@ -11,7 +11,7 @@ const RightPanel = () => {
 
   useEffect(() => {
     // 驗證是否為有效 Flex Message
-    const isValidFlexMessage = (json) => {
+    const _isValidFlexMessage = (json) => {
       return (
         json &&
         json.type === "flex" &&

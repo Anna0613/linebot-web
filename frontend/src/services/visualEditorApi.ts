@@ -72,7 +72,7 @@ export interface LogicTemplateUpdate {
 export interface FlexMessage {
   id: string;
   name: string;
-  content: any;
+  content: Record<string, unknown>;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -86,12 +86,12 @@ export interface FlexMessageSummary {
 
 export interface FlexMessageCreate {
   name: string;
-  content: any;
+  content: Record<string, unknown>;
 }
 
 export interface FlexMessageUpdate {
   name?: string;
-  content?: any;
+  content?: Record<string, unknown>;
 }
 
 export class VisualEditorApi {
@@ -116,8 +116,8 @@ export class VisualEditorApi {
       }
 
       return response.data || [];
-    } catch (error) {
-      console.error('取得 Bot 摘要列表失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       // 如果是網路錯誤或 404，返回空陣列而不是拋出錯誤
       if (error instanceof Error && (error.message.includes('404') || error.message.includes('網路'))) {
         return [];
@@ -154,8 +154,8 @@ export class VisualEditorApi {
       }
 
       return response.data;
-    } catch (error) {
-      console.error('儲存視覺化編輯器數據失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error) {
         throw error;
       }
@@ -182,8 +182,8 @@ export class VisualEditorApi {
       }
 
       return response.data;
-    } catch (error) {
-      console.error('載入視覺化編輯器數據失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error) {
         throw error;
       }
@@ -198,7 +198,7 @@ export class VisualEditorApi {
     try {
       const data = await this.loadVisualEditorData(botId);
       return !!(data.logic_blocks?.length || data.flex_blocks?.length);
-    } catch (error) {
+    } catch (_error) {
       // 如果載入失敗，假設沒有數據
       return false;
     }
@@ -228,8 +228,8 @@ export class VisualEditorApi {
       }
 
       return response.data || [];
-    } catch (error) {
-      console.error('取得邏輯模板列表失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       throw new Error('取得邏輯模板列表失敗，請稍後再試');
     }
   }
@@ -247,8 +247,8 @@ export class VisualEditorApi {
       }
 
       return response.data || [];
-    } catch (error) {
-      console.error('取得邏輯模板摘要列表失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error && error.message.includes('404')) {
         return [];
       }
@@ -278,8 +278,8 @@ export class VisualEditorApi {
       }
 
       return response.data;
-    } catch (error) {
-      console.error('創建邏輯模板失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error) {
         throw error;
       }
@@ -304,8 +304,8 @@ export class VisualEditorApi {
       }
 
       return response.data;
-    } catch (error) {
-      console.error('取得邏輯模板失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error) {
         throw error;
       }
@@ -330,8 +330,8 @@ export class VisualEditorApi {
       }
 
       return response.data;
-    } catch (error) {
-      console.error('更新邏輯模板失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error) {
         throw error;
       }
@@ -350,8 +350,8 @@ export class VisualEditorApi {
       if (!response.success) {
         throw new Error(response.error || '刪除邏輯模板失敗');
       }
-    } catch (error) {
-      console.error('刪除邏輯模板失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error) {
         throw error;
       }
@@ -370,8 +370,8 @@ export class VisualEditorApi {
       if (!response.success) {
         throw new Error(response.error || '激活邏輯模板失敗');
       }
-    } catch (error) {
-      console.error('激活邏輯模板失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error) {
         throw error;
       }
@@ -398,8 +398,8 @@ export class VisualEditorApi {
       }
 
       return response.data || [];
-    } catch (error) {
-      console.error('取得FLEX訊息列表失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       
       // 提供更詳細的錯誤資訊
       if (error instanceof Error) {
@@ -429,8 +429,8 @@ export class VisualEditorApi {
       }
 
       return response.data || [];
-    } catch (error) {
-      console.error('取得FLEX訊息摘要列表失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error && error.message.includes('404')) {
         return [];
       }
@@ -455,8 +455,8 @@ export class VisualEditorApi {
       }
 
       return response.data;
-    } catch (error) {
-      console.error('創建FLEX訊息失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error) {
         throw error;
       }
@@ -481,8 +481,8 @@ export class VisualEditorApi {
       }
 
       return response.data;
-    } catch (error) {
-      console.error('更新FLEX訊息失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error) {
         throw error;
       }
@@ -501,8 +501,8 @@ export class VisualEditorApi {
       if (!response.success) {
         throw new Error(response.error || '刪除FLEX訊息失敗');
       }
-    } catch (error) {
-      console.error('刪除FLEX訊息失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       if (error instanceof Error) {
         throw error;
       }

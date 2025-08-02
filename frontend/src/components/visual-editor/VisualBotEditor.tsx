@@ -74,8 +74,8 @@ export const VisualBotEditor: React.FC = () => {
         setLogicBlocks(template.logic_blocks || []);
         setCurrentLogicTemplateName(template.name);
         console.log(`已載入邏輯模板 ${template.name} 的數據`);
-      } catch (error) {
-        console.error('載入邏輯模板失敗:', error);
+      } catch (_error) {
+        console.error("Error occurred:", _error);
         setLogicBlocks([]);
         setCurrentLogicTemplateName('');
       } finally {
@@ -104,8 +104,8 @@ export const VisualBotEditor: React.FC = () => {
           setFlexBlocks([]);
           setCurrentFlexMessageName(message?.name || '');
         }
-      } catch (error) {
-        console.error('載入 FlexMessage 失敗:', error);
+      } catch (_error) {
+        console.error("Error occurred:", _error);
         setFlexBlocks([]);
         setCurrentFlexMessageName('');
       } finally {
@@ -134,8 +134,8 @@ export const VisualBotEditor: React.FC = () => {
       // 自動選擇新創建的邏輯模板
       await handleLogicTemplateSelect(template.id);
       console.log('邏輯模板創建成功:', template);
-    } catch (error) {
-      console.error('創建邏輯模板失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       throw error;
     }
   };
@@ -151,8 +151,8 @@ export const VisualBotEditor: React.FC = () => {
       // 自動選擇新創建的 FlexMessage
       await handleFlexMessageSelect(message.id);
       console.log('FlexMessage 創建成功:', message);
-    } catch (error) {
-      console.error('創建 FlexMessage 失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       throw error;
     }
   };
@@ -176,8 +176,8 @@ export const VisualBotEditor: React.FC = () => {
       });
       
       console.log(`邏輯模板 ${templateId} 儲存成功`);
-    } catch (error) {
-      console.error('儲存邏輯模板失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       throw error;
     }
   };
@@ -200,8 +200,8 @@ export const VisualBotEditor: React.FC = () => {
       });
       
       console.log(`FlexMessage ${messageId} 儲存成功`);
-    } catch (error) {
-      console.error('儲存 FlexMessage 失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       throw error;
     }
   };
@@ -236,8 +236,8 @@ export const VisualBotEditor: React.FC = () => {
       });
       
       console.log(`已儲存數據到 Bot ${botId}`);
-    } catch (error) {
-      console.error('儲存到 Bot 失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       throw error; // 重新拋出錯誤，讓 ProjectManager 處理
     }
   };

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Download, Upload, Save, Play, Loader2, AlertCircle, Plus, Edit, Trash } from 'lucide-react';
+import { Download, Upload, Save, Play, Loader2, AlertCircle, Plus, /* Edit, Trash */ } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import VisualEditorApi, { BotSummary, LogicTemplateSummary, FlexMessageSummary } from '../../services/visualEditorApi';
 import { generateUnifiedCode } from '../../utils/unifiedCodeGenerator';

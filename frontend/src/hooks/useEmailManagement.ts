@@ -18,8 +18,8 @@ export const useEmailManagement = () => {
         setEmail(response.data.email || "");
         setEmailVerified(response.data.email_verified || false);
       }
-    } catch (error) {
-      console.error("載入電子郵件狀態錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
     }
   }, []);
 
@@ -98,8 +98,8 @@ export const useEmailManagement = () => {
         return response.data.verified;
       }
       return false;
-    } catch (error) {
-      console.error("檢查電子郵件驗證狀態錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       return false;
     }
   }, []);

@@ -44,7 +44,7 @@ const EmailVerification = () => {
           setStatus("error");
           setMessage(data.message || "驗證失敗，請重試");
         }
-      } catch (error) {
+      } catch (_error) {
         setStatus("error");
         setMessage("驗證過程發生錯誤，請稍後重試");
       }

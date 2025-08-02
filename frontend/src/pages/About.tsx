@@ -57,13 +57,13 @@ const About = () => {
                   });
                 }
               }
-            } catch (error) {
-              console.error("獲取用戶資訊失敗:", error);
+            } catch (_error) {
+              console.error("Error occurred:", _error);
             }
           }
         }
-      } catch (error) {
-        console.error("檢查認證狀態失敗:", error);
+      } catch (_error) {
+        console.error("Error occurred:", _error);
       } finally {
         setLoading(false);
       }

@@ -30,7 +30,7 @@ interface SecuritySectionProps {
 const SecuritySection = ({
   onChangePassword,
   onDeleteAccount,
-  showDeleteConfirmation = false,
+  _showDeleteConfirmation = false,
 }: SecuritySectionProps) => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({

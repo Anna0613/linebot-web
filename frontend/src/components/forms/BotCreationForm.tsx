@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
+// import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useBotManagement } from "../../hooks/useBotManagement";
-import ToastNotification from "../ui/ToastNotification";
+// import ToastNotification from "../ui/ToastNotification";
 
 interface BotData {
   name: string;
@@ -19,9 +19,9 @@ const AddServerPage = () => {
   });
   const [success, setSuccess] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastType, setToastType] = useState<
+  const [_showToast, _setShowToast] = useState(false);
+  const [_toastMessage, _setToastMessage] = useState("");
+  const [_toastType, _setToastType] = useState<
     "success" | "error" | "warning" | "info"
   >("info");
 
@@ -78,7 +78,7 @@ const AddServerPage = () => {
     }
   };
 
-  const handleFieldBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  const _handleFieldBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const error = validateField(name, value);
     if (error) {
@@ -113,9 +113,6 @@ const AddServerPage = () => {
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
-      setToastMessage(validationError);
-      setToastType("error");
-      setShowToast(true);
       return;
     }
 
@@ -134,23 +131,15 @@ const AddServerPage = () => {
 
       // 顯示成功訊息
       setSuccess(true);
-      setToastMessage(`LINE Bot "${createdBot.name}" 創建成功！`);
-      setToastType("success");
-      setShowToast(true);
 
       // 2秒後跳轉到區塊設定頁面
       setTimeout(() => {
         window.location.href = `/bots/editor?botId=${createdBot.id}&botName=${encodeURIComponent(createdBot.name)}`;
       }, 2000);
-    } else if (error) {
-      // 顯示錯誤 Toast (如果有錯誤且沒有創建成功)
-      setToastMessage(error);
-      setToastType("error");
-      setShowToast(true);
     }
   };
 
-  const handleCancel = () => {
+  const _handleCancel = () => {
     window.history.back(); // 返回上一頁
   };
 

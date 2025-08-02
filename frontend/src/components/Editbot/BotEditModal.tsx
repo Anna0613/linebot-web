@@ -86,8 +86,8 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
 
       setFormData(initialData);
       setOriginalData(initialData); // 保存原始資料
-    } catch (error) {
-      console.error("獲取Bot資料失敗:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       toast({
         variant: "destructive",
         title: "錯誤",
@@ -197,8 +197,8 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
 
       onBotUpdated();
       onClose();
-    } catch (error) {
-      console.error("更新Bot失敗:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       toast({
         variant: "destructive",
         title: "錯誤",

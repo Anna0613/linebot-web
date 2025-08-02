@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -108,7 +108,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   };
 
   // 載入用戶的 Bot 列表
-  const loadBots = async () => {
+  const loadBots = useCallback(async () => {
     setIsLoadingBots(true);
     try {
       const botsList = await VisualEditorApi.getUserBotsSummary();
@@ -132,7 +132,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     } finally {
       setIsLoadingBots(false);
     }
-  };
+  }, [toast]);
 
   // 統一的儲存功能 - 儲存到資料庫
   const saveProject = async () => {
@@ -186,7 +186,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   // 組件載入時取得 Bot 列表
   useEffect(() => {
     loadBots();
-  }, []);
+  }, [loadBots]);
 
 
   return (

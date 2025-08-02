@@ -78,7 +78,7 @@ export class MigrationHelper {
       this.updateStatus('completed', '遷移完成');
       
       return true;
-    } catch (error) {
+    } catch (_error) {
       this.addError(error instanceof Error ? error.message : '未知錯誤');
       this.updateStatus('failed', '遷移失敗');
       
@@ -115,7 +115,7 @@ export class MigrationHelper {
       this.updateStatus('rolled_back', '回滾完成');
       
       return true;
-    } catch (error) {
+    } catch (_error) {
       this.addError(error instanceof Error ? error.message : '未知錯誤');
       
       return false;
@@ -203,7 +203,7 @@ export class MigrationHelper {
       });
 
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -234,7 +234,7 @@ export class MigrationHelper {
     // 檢查必要的API端點
     try {
       // 這裡可以添加API端點可用性檢查
-    } catch (error) {
+    } catch (_error) {
       issues.push('API端點檢查失敗');
     }
 

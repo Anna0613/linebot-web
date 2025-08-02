@@ -55,9 +55,9 @@ const DropZone: React.FC<DropZoneProps> = ({
     }
   });
 
-  const [{ isOver, canDrop }, drop] = useDrop(() => ({
+  const [{ isOver, canDrop: _canDrop }, drop] = useDrop(() => ({
     accept: ['block', 'dropped-block'],
-    hover: (item: UnifiedDropItem | LegacyDropItem | { index?: number; block?: any; id?: string }) => {
+    hover: (item: UnifiedDropItem | LegacyDropItem | { index?: number; block?: UnifiedBlock; id?: string }) => {
       setHoveredItem(item);
       
       try {
@@ -121,7 +121,7 @@ const DropZone: React.FC<DropZoneProps> = ({
         });
       }
     },
-    drop: (item: UnifiedDropItem | LegacyDropItem | { index?: number; block?: any; id?: string }) => {
+    drop: (item: UnifiedDropItem | LegacyDropItem | { index?: number; block?: UnifiedBlock; id?: string }) => {
       try {
         // 檢查是否為重新排序操作
         const isReorderOperation = 'index' in item && typeof item.index === 'number';

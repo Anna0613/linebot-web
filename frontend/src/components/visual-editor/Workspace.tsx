@@ -13,7 +13,7 @@ import {
   WorkspaceContext, 
   BlockCategory 
 } from '../../types/block';
-import { migrateBlock, migrateBlocks, validateWorkspace } from '../../utils/blockCompatibility';
+import { validateWorkspace } from '../../utils/blockCompatibility';
 import { useToast } from '../../hooks/use-toast';
 import { AlertTriangle } from 'lucide-react';
 
@@ -100,7 +100,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
     });
   }, []);
 
-  // 驗證工作區
+  // 使用 ref 來存儲上一次的驗證結果，避免依賴狀態導致循環
+  const prevValidationRef = React.useRef({
+    logic: { errors: [], warnings: [] },
+    flex: { errors: [], warnings: [] }
+  });
+
+  // 驗證工作區 - 優化版本，避免無限循環
   const validateCurrentWorkspace = useCallback(() => {
     const normalizedLogicBlocks = normalizeBlocks(logicBlocks);
     const normalizedFlexBlocks = normalizeBlocks(flexBlocks);
@@ -108,13 +114,15 @@ const Workspace: React.FC<WorkspaceProps> = ({
     const logicValidation = validateWorkspace(normalizedLogicBlocks, WorkspaceContext.LOGIC);
     const flexValidation = validateWorkspace(normalizedFlexBlocks, WorkspaceContext.FLEX);
 
-    // 只有在錯誤或警告發生變化時才顯示 toast
-    const prevLogicValidation = workspaceValidation.logic;
-    const prevFlexValidation = workspaceValidation.flex;
+    // 使用 ref 來比較上一次的驗證結果
+    const prevLogicErrors = prevValidationRef.current.logic.errors;
+    const prevLogicWarnings = prevValidationRef.current.logic.warnings;
+    const prevFlexErrors = prevValidationRef.current.flex.errors;
+    const prevFlexWarnings = prevValidationRef.current.flex.warnings;
 
     // 檢查邏輯編輯器驗證結果
     if (logicValidation.errors.length > 0 && 
-        JSON.stringify(logicValidation.errors) !== JSON.stringify(prevLogicValidation.errors)) {
+        JSON.stringify(logicValidation.errors) !== JSON.stringify(prevLogicErrors)) {
       toast({
         variant: 'destructive',
         title: '邏輯編輯器錯誤',
@@ -123,7 +131,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
     }
 
     if (logicValidation.warnings.length > 0 && 
-        JSON.stringify(logicValidation.warnings) !== JSON.stringify(prevLogicValidation.warnings)) {
+        JSON.stringify(logicValidation.warnings) !== JSON.stringify(prevLogicWarnings)) {
       toast({
         title: '邏輯編輯器建議',
         description: logicValidation.warnings.join('; ')
@@ -132,7 +140,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
     // 檢查 Flex 設計器驗證結果
     if (flexValidation.errors.length > 0 && 
-        JSON.stringify(flexValidation.errors) !== JSON.stringify(prevFlexValidation.errors)) {
+        JSON.stringify(flexValidation.errors) !== JSON.stringify(prevFlexErrors)) {
       toast({
         variant: 'destructive',
         title: 'Flex 設計器錯誤',
@@ -141,23 +149,34 @@ const Workspace: React.FC<WorkspaceProps> = ({
     }
 
     if (flexValidation.warnings.length > 0 && 
-        JSON.stringify(flexValidation.warnings) !== JSON.stringify(prevFlexValidation.warnings)) {
+        JSON.stringify(flexValidation.warnings) !== JSON.stringify(prevFlexWarnings)) {
       toast({
         title: 'Flex 設計器建議',
         description: flexValidation.warnings.join('; ')
       });
     }
 
+    // 更新 ref 中的驗證結果
+    prevValidationRef.current = {
+      logic: logicValidation,
+      flex: flexValidation
+    };
+
+    // 更新驗證結果狀態
     setWorkspaceValidation({
       logic: logicValidation,
       flex: flexValidation
     });
-  }, [logicBlocks, flexBlocks, normalizeBlocks, workspaceValidation, toast]);
+  }, [logicBlocks, flexBlocks, normalizeBlocks, toast]);
 
-  // 在積木變更時驗證工作區
+  // 在積木變更時驗證工作區 - 使用防抖機制避免頻繁驗證
   React.useEffect(() => {
-    validateCurrentWorkspace();
-  }, [validateCurrentWorkspace]);
+    const timeoutId = setTimeout(() => {
+      validateCurrentWorkspace();
+    }, 300); // 300ms 延遲，減少頻繁驗證
+
+    return () => clearTimeout(timeoutId);
+  }, [logicBlocks, flexBlocks, validateCurrentWorkspace]); // 包含必要的依賴項
 
   const handleLogicDrop = useCallback((item: UnifiedDropItem | LegacyDropItem) => {
     let blockToAdd: UnifiedBlock | LegacyBlock;
@@ -198,8 +217,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
       
       console.log('✅ 積木成功添加到 Flex 設計器:', blockToAdd);
       onFlexBlocksChange(prev => [...prev, blockToAdd]);
-    } catch (error) {
-      console.error('❌ Flex 設計器積木放置失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
     }
   }, [onFlexBlocksChange, activeTab]);
 
@@ -293,8 +312,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
         console.log('✅ 積木成功插入到 Flex 設計器位置', index, blockToAdd);
         return newBlocks;
       });
-    } catch (error) {
-      console.error('❌ Flex 設計器積木插入失敗:', error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
     }
   }, [onFlexBlocksChange, activeTab]);
 
@@ -303,17 +322,29 @@ const Workspace: React.FC<WorkspaceProps> = ({
     let context: WorkspaceContext;
     
     // 根據活動標籤決定上下文
-    if (activeTab === 'logic') {
-      context = WorkspaceContext.LOGIC;
-    } else if (activeTab === 'flex') {
-      context = WorkspaceContext.FLEX;
-    } else {
-      // 對於其他標籤（如 preview, code），使用預設值
-      console.warn('⚠️ 未識別的活動標籤:', activeTab, '使用預設上下文');
-      context = WorkspaceContext.LOGIC;
+    switch (activeTab) {
+      case 'logic':
+        context = WorkspaceContext.LOGIC;
+        break;
+      case 'flex':
+        context = WorkspaceContext.FLEX;
+        break;
+      case 'preview':
+        // 預覽標籤基於邏輯編輯器內容，使用邏輯上下文
+        context = WorkspaceContext.LOGIC;
+        break;
+      case 'code':
+        // 程式碼標籤基於邏輯編輯器內容，使用邏輯上下文
+        context = WorkspaceContext.LOGIC;
+        break;
+      default:
+        // 對於未知標籤，使用邏輯上下文作為預設值
+        console.debug('🔧 未知標籤:', activeTab, '使用邏輯上下文作為預設值');
+        context = WorkspaceContext.LOGIC;
+        break;
     }
     
-    console.log('📍 當前工作區上下文:', {
+    console.debug('📍 當前工作區上下文:', {
       context: context,
       activeTab: activeTab,
       contextType: typeof context,
@@ -321,7 +352,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
       timestamp: new Date().toISOString()
     });
     
-    // 驗證上下文的有效性
+    // 驗證上下文的有效性（保留驗證機制以防萬一）
     if (!Object.values(WorkspaceContext).includes(context)) {
       console.error('❌ 生成的上下文無效:', context);
       context = WorkspaceContext.LOGIC; // 回退到安全的預設值

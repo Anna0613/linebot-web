@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+// import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,8 +109,8 @@ const ResetPassword = () => {
       setTimeout(() => {
         navigate("/login");
       }, 2000);
-    } catch (error: unknown) {
-      console.error("重設密碼錯誤:", error);
+    } catch (_error: unknown) {
+      console.error("Error occurred:", _error);
       toast({
         variant: "destructive",
         title: "重設失敗",

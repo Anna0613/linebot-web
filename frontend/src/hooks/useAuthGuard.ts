@@ -29,7 +29,7 @@ export const useAuthGuard = (options: UseAuthGuardOptions = {}) => {
     // 防止返回到登入頁面的基本保護
     if (preventBackToLogin && isAuthenticated) {
       // 監聽瀏覽器的後退按鈕
-      const handlePopState = (event: PopStateEvent) => {
+      const handlePopState = (_event: PopStateEvent) => {
         // 如果用戶試圖返回且沒有認證，重定向到首頁
         if (!AuthService.isAuthenticated()) {
           navigate("/", { replace: true });

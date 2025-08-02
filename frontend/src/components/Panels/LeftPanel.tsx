@@ -1,7 +1,7 @@
 import { useRef } from "react";
 
 const LeftPanel = () => {
-  const categoryMap = {
+  const _categoryMap = {
     container: {
       label: "容器",
       color: "#F4A261",
@@ -26,7 +26,7 @@ const LeftPanel = () => {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleScrollTo = (ref: React.RefObject<HTMLDivElement>) => {
+  const _handleScrollTo = (ref: React.RefObject<HTMLDivElement>) => {
     if (ref.current && scrollContainerRef.current) {
       const containerTop =
         scrollContainerRef.current.getBoundingClientRect().top;

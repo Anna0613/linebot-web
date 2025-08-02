@@ -19,11 +19,17 @@ interface Block {
   blockData: BlockData;
 }
 
+interface FlexMessage {
+  type: string;
+  altText?: string;
+  contents?: Record<string, unknown>;
+}
+
 interface Message {
   type: 'user' | 'bot';
   content: string;
   messageType?: 'text' | 'flex';
-  flexMessage?: any; // FLEX訊息內容
+  flexMessage?: FlexMessage; // FLEX訊息內容
 }
 
 interface LineBotSimulatorProps {
@@ -32,7 +38,7 @@ interface LineBotSimulatorProps {
 
 // 簡化的FLEX訊息渲染引擎
 class FlexMessageRenderer {
-  static renderFlexMessage(flexMessage: any): string {
+  static renderFlexMessage(flexMessage: FlexMessage): string {
     if (!flexMessage || !flexMessage.content) {
       return '<div class="text-gray-500 text-center py-2">無法載入FLEX訊息</div>';
     }
@@ -45,7 +51,7 @@ class FlexMessageRenderer {
     // 處理 body 區塊
     if (content.body && content.body.contents) {
       html += '<div class="p-3">';
-      content.body.contents.forEach((item: any) => {
+      content.body.contents.forEach((item: Record<string, unknown>) => {
         html += this.renderFlexItem(item);
       });
       html += '</div>';
@@ -54,7 +60,7 @@ class FlexMessageRenderer {
     // 處理 footer 區塊
     if (content.footer && content.footer.contents) {
       html += '<div class="p-3 bg-gray-50 border-t">';
-      content.footer.contents.forEach((item: any) => {
+      content.footer.contents.forEach((item: Record<string, unknown>) => {
         html += this.renderFlexItem(item);
       });
       html += '</div>';
@@ -69,26 +75,29 @@ class FlexMessageRenderer {
     return html;
   }
 
-  private static renderFlexItem(item: any): string {
+  private static renderFlexItem(item: Record<string, unknown>): string {
     switch (item.type) {
-      case 'text':
+      case 'text': {
         const textAlign = item.align ? `text-align: ${item.align};` : '';
         const margin = item.margin ? `margin-top: ${this.getMarginInPx(item.margin)};` : '';
         return `<div class="mb-1" style="color: ${item.color || '#000'}; font-size: ${this.getSizeInPx(item.size)}; font-weight: ${item.weight || 'normal'}; ${textAlign} ${margin}">${this.formatText(item.text || '')}</div>`;
+      }
       
       case 'image':
         return `<img src="${item.url}" class="w-full rounded mb-2" style="max-height: 150px; object-fit: cover;" alt="FLEX Image" />`;
       
-      case 'button':
+      case 'button': {
         const buttonColor = item.color || '#0066cc';
         const buttonLabel = item.action?.label || '按鈕';
         return `<button class="w-full text-white py-2 px-3 rounded text-sm mb-1 hover:opacity-80 transition-opacity" style="background-color: ${buttonColor};">${buttonLabel}</button>`;
+      }
       
-      case 'separator':
+      case 'separator': {
         const separatorMargin = item.margin ? `margin: ${this.getMarginInPx(item.margin)} 0;` : 'margin: 8px 0;';
         return `<hr class="border-gray-300" style="${separatorMargin}" />`;
+      }
       
-      case 'box':
+      case 'box': {
         // 處理巢狀的 box 容器
         if (item.contents && Array.isArray(item.contents)) {
           let boxHtml = '<div class="';
@@ -99,7 +108,7 @@ class FlexMessageRenderer {
           }
           boxHtml += '">';
           
-          item.contents.forEach((subItem: any) => {
+          item.contents.forEach((subItem: Record<string, unknown>) => {
             boxHtml += this.renderFlexItem(subItem);
           });
           
@@ -107,6 +116,7 @@ class FlexMessageRenderer {
           return boxHtml;
         }
         return '';
+      }
       
       default:
         return `<div class="text-gray-400 text-xs">不支援的元素類型: ${item.type}</div>`;
@@ -164,7 +174,7 @@ const LineBotSimulator: React.FC<LineBotSimulatorProps> = ({ blocks }) => {
         setFlexMessages(messages);
         console.log('成功載入FLEX訊息:', messages.length, '個');
       } catch (error) {
-        console.error('載入FLEX訊息列表失敗，錯誤詳情:', error);
+        console.error("Error occurred:", _error);
         
         // 檢查錯誤類型並提供詳細信息
         if (error instanceof Error) {

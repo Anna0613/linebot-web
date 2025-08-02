@@ -10,7 +10,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
-import { API_CONFIG, getApiUrl } from "../config/apiConfig";
+// import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 import { authManager } from "../services/UnifiedAuthManager";
 import { LineLoginService } from "../services/lineLogin";
 

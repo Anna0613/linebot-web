@@ -7,7 +7,7 @@ import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { API_CONFIG, getApiUrl } from "../config/apiConfig";
-import { ChevronRight, CheckCircle, Circle } from "lucide-react";
+import { /* ChevronRight, CheckCircle, Circle */ } from "lucide-react";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 
 interface User {
@@ -21,12 +21,12 @@ const HowToEstablish = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
 
   // 使用統一身份驗證Hook
-  const { user: authUser, loading: authLoading, error: authError } = useUnifiedAuth({
+  const { user: _authUser, loading: _authLoading, error: _authError } = useUnifiedAuth({
     requireAuth: true,
     redirectTo: "/login",
   });
@@ -125,8 +125,8 @@ const HowToEstablish = () => {
       );
       if (!response.ok) throw new Error("Token 驗證失敗");
       return await response.json();
-    } catch (error) {
-      console.error("驗證 LINE token 錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       return null;
     }
   };
@@ -190,15 +190,15 @@ const HowToEstablish = () => {
         navigate("/login");
       }
       setLoading(false);
-    } catch (error) {
-      console.error("檢查登入狀態錯誤:", error);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
       setError("請先登入");
       navigate("/login");
       setLoading(false);
     }
   }, [navigate, setUser, setError, setLoading, nativeFetch]);
 
-  const scrollToStep = (stepId: number) => {
+  const _scrollToStep = (stepId: number) => {
     const element = document.getElementById(`step-${stepId}`);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });

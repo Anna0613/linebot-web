@@ -6,7 +6,7 @@
 
 console.warn('⚠️ auth.ts 已廢棄，請遷移到 UnifiedAuthManager');
 
-import { parseJWTToken, isTokenExpired } from "../utils/tokenUtils";
+import { isTokenExpired } from "../utils/tokenUtils";
 
 // JWT相關常量
 const TOKEN_KEY = "auth_token";

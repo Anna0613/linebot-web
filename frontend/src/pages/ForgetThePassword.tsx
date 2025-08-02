@@ -94,7 +94,7 @@ const ForgetPassword = () => {
         navigate("/login");
       }, 3000);
     } catch (error: unknown) {
-      console.error("忘記密碼錯誤:", error);
+      console.error("Error occurred:", _error);
       toast({
         variant: "destructive",
         title: "發送失敗",
