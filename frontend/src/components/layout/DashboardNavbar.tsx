@@ -41,7 +41,8 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
           setUserImage(response.data.avatar);
         }
       } catch (error) {
-        console.error("Error occurred:", error);
+        console.warn("無法載入用戶頭像:", error);
+        // 頭像載入失敗是非關鍵錯誤，不影響主要功能
       }
     }
   }, [user]);
@@ -200,7 +201,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                 </svg>
               </div>
             </Link>
-            <Link to="/block">
+            <Link to="/bots/create">
               <Button className="bg-[#F4CD41] text-[#1a1a40] font-bold rounded-[5px] text-sm lg:text-[16px] hover:bg-[#e6bc00] px-3 lg:px-4 h-8 lg:h-10">
                 建立設計
               </Button>
@@ -405,7 +406,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
             </li>
             <li>
               <Link
-                to="/block"
+                to="/bots/create"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
               >

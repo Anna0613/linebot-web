@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import DragDropProvider from './DragDropProvider';
 import Workspace from './Workspace';
 import ProjectManager from './ProjectManager';
+import { Button } from '../ui/button';
 import { UnifiedBlock } from '../../types/block';
 import { migrateBlocks } from '../../utils/blockCompatibility';
 import VisualEditorApi from '../../services/visualEditorApi';
@@ -25,6 +28,7 @@ interface ProjectData {
 }
 
 export const VisualBotEditor: React.FC = () => {
+  const navigate = useNavigate();
   const [logicBlocks, setLogicBlocks] = useState<(UnifiedBlock | LegacyBlock)[]>([]);
   const [flexBlocks, setFlexBlocks] = useState<(UnifiedBlock | LegacyBlock)[]>([]);
   const [projectVersion, setProjectVersion] = useState<string>('2.0'); // 新版本使用統一積木系統
@@ -35,6 +39,11 @@ export const VisualBotEditor: React.FC = () => {
   const [currentLogicTemplateName, setCurrentLogicTemplateName] = useState<string>('');
   const [currentFlexMessageName, setCurrentFlexMessageName] = useState<string>('');
 
+
+  // 處理返回上一頁
+  const handleGoBack = () => {
+    navigate(-1);
+  };
 
   // 初始化組件時，積木數據從 Bot 選擇時載入，不需要本地儲存
   useEffect(() => {
@@ -267,6 +276,17 @@ export const VisualBotEditor: React.FC = () => {
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              {/* 返回按鈕 */}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={handleGoBack}
+                className="text-gray-600 hover:text-gray-800"
+                title="返回上一頁"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              
               <h1 className="text-xl font-semibold text-gray-800">
                 LINE Bot 視覺化編輯器
               </h1>

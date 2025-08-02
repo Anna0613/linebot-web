@@ -81,10 +81,10 @@ export class UnifiedApiClient {
 
         return await this.handleResponse<T>(response);
       } catch (_error) {
-        lastError = error instanceof Error ? error : new Error('請求失敗');
+        lastError = _error instanceof Error ? _error : new Error('請求失敗');
         
         // 如果是 token 刷新成功，立即重試一次（不計入重試次數）
-        if (error instanceof Error && error.message === 'TOKEN_REFRESHED') {
+        if (_error instanceof Error && _error.message === 'TOKEN_REFRESHED') {
           secureLog('Token 已刷新，立即重試請求');
           continue;
         }
@@ -92,7 +92,7 @@ export class UnifiedApiClient {
         // 如果是最後一次嘗試或者是認證錯誤，不再重試
         if (
           attempt === retries ||
-          error instanceof Error && error.message.includes('401')
+          _error instanceof Error && _error.message.includes('401')
         ) {
           break;
         }
