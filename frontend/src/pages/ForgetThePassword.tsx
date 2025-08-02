@@ -111,7 +111,7 @@ const ForgetPassword = () => {
       <Navbar />
       {loading && <Loader fullPage />}
 
-      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 mt-10">
+      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-10 fade-in-element">
             <h2 className="text-3xl font-bold">忘記密碼</h2>

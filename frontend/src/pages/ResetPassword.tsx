@@ -126,7 +126,7 @@ const ResetPassword = () => {
       <Navbar />
       {loading && <Loader fullPage />}
 
-      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
         <div className="max-w-md w-full">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold">重設密碼</h2>

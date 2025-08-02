@@ -24,7 +24,7 @@ const AuthFormLayout = ({
     <div className="min-h-screen bg-[#FFFDFA] flex flex-col">
       <Navbar />
 
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
+      <div className="flex-1 flex items-center justify-center px-4 py-8 pt-20 sm:pt-24 md:pt-28 pb-12">
         <div className="w-full max-w-md">
           <Card className="shadow-lg border-0 bg-white">
             <CardHeader className="text-center pb-6">

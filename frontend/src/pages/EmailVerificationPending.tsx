@@ -27,7 +27,7 @@ const EmailVerificationPending = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
         <div className="max-w-md w-full">
           <div className="bg-white p-8 rounded-lg shadow-lg">
             <div className="flex flex-col items-center">
