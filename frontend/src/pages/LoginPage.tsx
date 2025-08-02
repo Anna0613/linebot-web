@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,15 +20,16 @@ const LoginPage = () => {
   const [showEmailVerificationPrompt, setShowEmailVerificationPrompt] =
     useState(false);
 
+  const navigate = useNavigate();
   const { login, loading, error, clearError, handleLineLogin } = useUnifiedAuth({
     redirectTo: "/login"
   });
 
   useEffect(() => {
     if (authManager.isAuthenticatedSync()) {
-      window.location.href = "/dashboard";
+      navigate("/dashboard", { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +50,7 @@ const LoginPage = () => {
       }
       
       // 登入成功，重定向到儀表板
-      window.location.href = "/dashboard";
+      navigate("/dashboard", { replace: true });
     }
   };
 

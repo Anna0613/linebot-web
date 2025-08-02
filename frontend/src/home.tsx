@@ -14,6 +14,7 @@ const LINELogin = lazy(() => import("./pages/LINELogin"));
 const LoginSuccess = lazy(() => import("./pages/LoginSuccess"));
 const LoginError = lazy(() => import("./pages/LoginError"));
 const EmailVerification = lazy(() => import("./pages/EmailVerification"));
+const EmailVerificationPending = lazy(() => import("./pages/EmailVerificationPending"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const AddBotPage = lazy(() => import("./pages/AddBotPage"));
@@ -89,6 +90,7 @@ const App = () => {
               <Route path="/setting" element={<Setting />} />
               <Route path="/verify-email" element={<EmailVerification />} />
               <Route path="/email-verification" element={<EmailVerification />} />
+              <Route path="/email-verification-pending" element={<EmailVerificationPending />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/editbot" element={<Editbot />} />
               <Route path="/about" element={<About />} />

@@ -1,4 +1,4 @@
-// import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useBotManagement } from "../../hooks/useBotManagement";
 // import ToastNotification from "../ui/ToastNotification";
@@ -10,6 +10,7 @@ interface BotData {
 }
 
 const AddServerPage = () => {
+  const navigate = useNavigate();
   const { createBot, isLoading, error, setError, clearError } =
     useBotManagement();
   const [formData, setFormData] = useState<BotData>({
@@ -134,7 +135,7 @@ const AddServerPage = () => {
 
       // 2秒後跳轉到區塊設定頁面
       setTimeout(() => {
-        window.location.href = `/bots/editor?botId=${createdBot.id}&botName=${encodeURIComponent(createdBot.name)}`;
+        navigate(`/bots/editor?botId=${createdBot.id}&botName=${encodeURIComponent(createdBot.name)}`);
       }, 2000);
     }
   };
@@ -291,7 +292,7 @@ const AddServerPage = () => {
         <div className="text-center space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => (window.location.href = "/bots/editor")}
+              onClick={() => navigate("/bots/editor")}
               className="px-8 py-4 bg-[#A0D6B4] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
             >
               開始設計對話

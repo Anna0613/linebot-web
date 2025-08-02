@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
@@ -16,6 +17,7 @@ interface User {
 }
 
 const About = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -324,13 +326,13 @@ const About = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <button
-                onClick={() => (window.location.href = "/how-to-establish")}
+                onClick={() => navigate("/how-to-establish")}
                 className="px-8 py-4 bg-[#A0D6B4] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
               >
                 查看建立教學
               </button>
               <button
-                onClick={() => (window.location.href = "/add%20server")}
+                onClick={() => navigate("/add-server")}
                 className="px-8 py-4 bg-[#FFD59E] text-[#5A2C1D] font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
               >
                 開始建立 Bot

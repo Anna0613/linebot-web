@@ -13,7 +13,7 @@ const HomePage = () => {
 
   useEffect(() => {
     // 如果用戶已經登入，重定向到Dashboard頁面
-    if (authManager.isAuthenticated()) {
+    if (authManager.isAuthenticatedSync()) {
       navigate("/dashboard", { replace: true });
     }
   }, [navigate]);

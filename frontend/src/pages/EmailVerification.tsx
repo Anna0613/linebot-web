@@ -91,12 +91,23 @@ const EmailVerification = () => {
               <XCircle className="w-12 h-12 text-red-500" />
             </div>
             <h2 className="text-2xl font-bold text-red-600 mb-4">驗證失敗</h2>
-            <p className="text-gray-600 text-center mb-8">
+            <p className="text-gray-600 text-center mb-4">
               {message}
-              <br />
-              如果您需要幫助，請聯繫客服。
             </p>
-            <div className="space-y-4">
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
+              <div className="text-sm text-amber-800">
+                <p className="font-medium mb-2">💡 可能的解決方法：</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>檢查您是否點擊了正確的驗證連結</li>
+                  <li>驗證連結可能已經過期（24小時後失效）</li>
+                  <li>如果連結已過期，您可以重新註冊</li>
+                  <li>確認您的網路連線正常</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="space-y-4 w-full">
               <Button
                 onClick={() => window.location.reload()}
                 className="rounded-full bg-gray-200 text-gray-800 font-bold hover:bg-gray-300 px-8 w-full"
@@ -104,11 +115,23 @@ const EmailVerification = () => {
                 重試
               </Button>
               <Button
+                onClick={() => navigate("/register")}
+                className="rounded-full bg-blue-500 text-white font-bold hover:bg-blue-600 px-8 w-full"
+              >
+                重新註冊
+              </Button>
+              <Button
                 onClick={() => navigate("/login")}
                 className="rounded-full bg-[#F4CD41] text-[#1a1a40] font-bold hover:bg-[#e6bc00] px-8 w-full"
               >
                 返回登入頁面
               </Button>
+            </div>
+            
+            <div className="mt-6 text-center">
+              <p className="text-xs text-gray-500">
+                如果問題持續存在，請聯繫我們的客服團隊尋求協助
+              </p>
             </div>
           </div>
         );

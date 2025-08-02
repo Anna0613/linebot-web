@@ -21,7 +21,7 @@ const Register = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   const { loading, handleSuccess, handleError, withLoading } = useAuthForm({
-    successRedirect: "/email-verification",
+    successRedirect: "/email-verification-pending",
   });
   const { handleLINELogin } = useLineLogin();
 

@@ -75,22 +75,42 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
       setLoading(true);
       setError(null);
 
-      const isAuthenticated = await authManager.isAuthenticated();
+      // 首先進行同步檢查，避免不必要的異步操作
+      const isSyncAuthenticated = authManager.isAuthenticatedSync();
       
-      if (isAuthenticated) {
-        // 如果已認證，先從本地獲取用戶資料，然後刷新最新資料
+      if (isSyncAuthenticated) {
+        // 如果同步檢查已認證，先從本地獲取用戶資料
         const userData = authManager.getUserInfo();
         setUser(userData);
         onAuthChange?.(true, userData);
         
         // 背景刷新用戶資料以獲取最新的 LINE 頭像等資訊
         refreshUserInfo();
+        
+        setLoading(false);
+        return;
+      }
+
+      // 如果同步檢查未認證，再進行異步檢查（包含token刷新）
+      const isAuthenticated = await authManager.isAuthenticated();
+      
+      if (isAuthenticated) {
+        // 重新檢查後發現已認證，更新狀態
+        const userData = authManager.getUserInfo();
+        setUser(userData);
+        onAuthChange?.(true, userData);
+        
+        // 背景刷新用戶資料
+        refreshUserInfo();
       } else {
         setUser(null);
         onAuthChange?.(false, null);
         
         if (requireAuth) {
-          navigate(redirectTo, { replace: true });
+          // 添加防抖機制，避免快速重複導航
+          setTimeout(() => {
+            navigate(redirectTo, { replace: true });
+          }, 100);
         }
       }
     } catch (err) {
@@ -100,7 +120,10 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
       onAuthChange?.(false, null);
       
       if (requireAuth) {
-        navigate(redirectTo, { replace: true });
+        // 添加防抖機制，避免快速重複導航
+        setTimeout(() => {
+          navigate(redirectTo, { replace: true });
+        }, 100);
       }
     } finally {
       setLoading(false);
@@ -163,6 +186,9 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
           description: `歡迎回來，${data.user?.username || '用戶'}！`,
         });
 
+        // 登錄成功後短暫延遲，確保狀態完全更新
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         return true;
       }
 
