@@ -298,10 +298,36 @@ const Workspace: React.FC<WorkspaceProps> = ({
     }
   }, [onFlexBlocksChange, activeTab]);
 
-  // 獲取當前工作區上下文
+  // 獲取當前工作區上下文（增強版）
   const getCurrentContext = (): WorkspaceContext => {
-    const context = activeTab === 'logic' ? WorkspaceContext.LOGIC : WorkspaceContext.FLEX;
-    console.log('當前工作區上下文:', context, '活動標籤:', activeTab);
+    let context: WorkspaceContext;
+    
+    // 根據活動標籤決定上下文
+    if (activeTab === 'logic') {
+      context = WorkspaceContext.LOGIC;
+    } else if (activeTab === 'flex') {
+      context = WorkspaceContext.FLEX;
+    } else {
+      // 對於其他標籤（如 preview, code），使用預設值
+      console.warn('⚠️ 未識別的活動標籤:', activeTab, '使用預設上下文');
+      context = WorkspaceContext.LOGIC;
+    }
+    
+    console.log('📍 當前工作區上下文:', {
+      context: context,
+      activeTab: activeTab,
+      contextType: typeof context,
+      isValidContext: Object.values(WorkspaceContext).includes(context),
+      timestamp: new Date().toISOString()
+    });
+    
+    // 驗證上下文的有效性
+    if (!Object.values(WorkspaceContext).includes(context)) {
+      console.error('❌ 生成的上下文無效:', context);
+      context = WorkspaceContext.LOGIC; // 回退到安全的預設值
+      console.log('🔧 使用回退上下文:', context);
+    }
+    
     return context;
   };
 

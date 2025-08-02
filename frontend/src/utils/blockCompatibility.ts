@@ -25,68 +25,111 @@ export function isBlockCompatible(
   // 增強的上下文驗證和調試
   console.log('🔍 積木相容性檢查:', {
     block: block,
+    blockType: 'blockType' in block ? block.blockType : 'unknown',
     context: context,
     contextType: typeof context,
     isValidContext: Object.values(WorkspaceContext).includes(context),
-    existingBlocksCount: existingBlocks.length
+    existingBlocksCount: existingBlocks.length,
+    timestamp: new Date().toISOString()
   });
 
-  // 確保上下文有效
-  if (!context) {
-    console.warn('⚠️ 上下文為空或未定義:', context);
+  // 增強的上下文驗證邏輯
+  if (!context || context === null || context === undefined) {
+    console.warn('⚠️ 上下文為空、null 或未定義:', context);
     return {
       isValid: false,
-      reason: '無效的工作區上下文',
+      reason: '工作區上下文未正確初始化',
       suggestions: [
-        '請確認當前工作區模式設置正確',
-        '檢查 activeTab 狀態是否正常初始化',
-        '確認 getCurrentContext() 函數返回值'
+        '請重新整理頁面',
+        '確認是否正確選擇了邏輯編輯器或 Flex 設計器標籤',
+        '檢查瀏覽器控制台是否有其他錯誤'
       ]
     };
   }
 
-  // 檢查上下文是否為有效的枚舉值
-  if (!Object.values(WorkspaceContext).includes(context)) {
-    console.error('❌ 無效的上下文值:', context, '有效值:', Object.values(WorkspaceContext));
-    // 嘗試修復無效的上下文
-    const fallbackContext = WorkspaceContext.LOGIC;
-    console.log('🔧 使用後備上下文:', fallbackContext);
+  // 檢查上下文是否為有效的枚舉值，使用更嚴格的驗證
+  const validContexts = Object.values(WorkspaceContext);
+  if (!validContexts.includes(context)) {
+    console.error('❌ 無效的上下文值:', context, '有效值:', validContexts);
+    
+    // 智能上下文修復：根據當前頁面狀態選擇適當的上下文
+    let fallbackContext: WorkspaceContext;
+    
+    // 檢查當前 URL 或其他線索來決定上下文
+    if (typeof window !== 'undefined') {
+      const currentHash = window.location.hash;
+      const currentURL = window.location.href;
+      
+      if (currentHash.includes('flex') || currentURL.includes('flex')) {
+        fallbackContext = WorkspaceContext.FLEX;
+      } else {
+        fallbackContext = WorkspaceContext.LOGIC;
+      }
+    } else {
+      fallbackContext = WorkspaceContext.LOGIC; // 服務器端預設
+    }
+    
+    console.log('🔧 使用智能修復的上下文:', fallbackContext);
     return isBlockCompatible(block, fallbackContext, existingBlocks);
   }
 
   const category = 'category' in block ? block.category : getCategoryFromBlockType(block.blockType);
+  const blockType = 'blockType' in block ? block.blockType : 'unknown';
+  
   console.log('📦 積木類別檢查:', {
-    blockType: 'blockType' in block ? block.blockType : 'N/A',
+    blockType: blockType,
     category: category,
-    hasCategory: 'category' in block
+    hasCategory: 'category' in block,
+    isValidCategory: Object.values(BlockCategory).includes(category)
   });
   
   const rule = BLOCK_COMPATIBILITY_RULES.find(r => r.category === category);
   
   if (!rule) {
-    // 對於未定義的積木類別，給予更寬鬆的處理
-    console.warn(`⚠️ 未找到積木類別 ${category} 的相容性規則，使用預設規則`);
+    // 對於未定義的積木類別，給予更寬鬆且智能的處理
+    console.warn(`⚠️ 未找到積木類別 ${category} 的相容性規則，使用智能預設規則`);
     console.log('📋 可用的積木類別規則:', BLOCK_COMPATIBILITY_RULES.map(r => r.category));
     
     // 檢查是否為有效的 BlockCategory 枚舉值
     if (Object.values(BlockCategory).includes(category)) {
-      console.log('✅ 積木類別有效，但缺少相容性規則，允許在當前上下文使用');
+      console.log('✅ 積木類別有效，但缺少相容性規則，使用寬鬆政策允許放置');
+      
+      // 根據積木類型提供智能建議
+      const smartSuggestions = [];
+      if (category.includes('flex')) {
+        smartSuggestions.push('Flex 相關積木通常可以在兩種模式下使用');
+      }
+      if (context === WorkspaceContext.FLEX) {
+        smartSuggestions.push('Flex 設計器支援大多數積木類型');
+      }
+      smartSuggestions.push('如果積木無法正常工作，請檢查積木的具體配置');
+      
       return {
         isValid: true,
-        reason: `積木類別 ${category} 使用預設相容性規則（在 ${context} 上下文中允許）`,
-        suggestions: [
-          '此積木可能需要更新相容性定義',
-          '建議在 BLOCK_COMPATIBILITY_RULES 中添加此類別的規則'
-        ]
+        reason: `積木類別 ${category} 使用寬鬆相容性規則（在 ${context} 上下文中允許）`,
+        suggestions: smartSuggestions
       };
     } else {
       console.error('❌ 無效的積木類別:', category, '有效類別:', Object.values(BlockCategory));
+      
+      // 嘗試從積木類型推斷正確的類別
+      const inferredCategory = inferCategoryFromBlockType(blockType);
+      if (inferredCategory && inferredCategory !== category) {
+        console.log('🔧 嘗試使用推斷的積木類別:', inferredCategory);
+        const modifiedBlock = { ...block };
+        if ('category' in modifiedBlock) {
+          modifiedBlock.category = inferredCategory;
+        }
+        return isBlockCompatible(modifiedBlock, context, existingBlocks);
+      }
+      
       return {
         isValid: false,
-        reason: `無效的積木類別: ${category}`,
+        reason: `無法識別的積木類別: ${category}`,
         suggestions: [
           '檢查積木定義是否正確',
-          '確認 getCategoryFromBlockType 函數是否正常工作'
+          '確認 getCategoryFromBlockType 函數是否正常工作',
+          '嘗試重新整理頁面或清除緩存'
         ]
       };
     }
@@ -97,17 +140,57 @@ export function isBlockCompatible(
     category: category,
     allowedIn: rule.allowedIn,
     currentContext: context,
-    isAllowed: rule.allowedIn.includes(context)
+    isAllowed: rule.allowedIn.includes(context),
+    blockType: blockType
   });
   
   if (!rule.allowedIn.includes(context)) {
-    console.log('❌ 積木不相容於當前上下文');
+    console.log('❌ 積木不相容於當前上下文 - 嘗試寬鬆政策');
+    
+    // 對於 Flex 設計器，採用更寬鬆的政策
+    if (context === WorkspaceContext.FLEX) {
+      // 在 Flex 設計器中，允許大多數積木類型
+      if (category === BlockCategory.FLEX_CONTAINER || 
+          category === BlockCategory.FLEX_CONTENT || 
+          category === BlockCategory.FLEX_LAYOUT ||
+          category === BlockCategory.CONTROL) {
+        console.log('✅ Flex 設計器寬鬆政策：允許此積木');
+        return {
+          isValid: true,
+          reason: `Flex 設計器支援 ${category} 積木（寬鬆政策）`,
+          suggestions: [
+            'Flex 設計器支援多種積木類型來創建豐富的介面',
+            '如果積木表現異常，請檢查具體的配置參數'
+          ]
+        };
+      }
+    }
+    
+    // 對於邏輯編輯器，也採用適度寬鬆的政策
+    if (context === WorkspaceContext.LOGIC) {
+      // 在邏輯編輯器中，允許 Flex 容器積木，因為它們經常用於回覆中
+      if (category === BlockCategory.FLEX_CONTAINER) {
+        console.log('✅ 邏輯編輯器寬鬆政策：允許 Flex 容器積木');
+        return {
+          isValid: true,
+          reason: `邏輯編輯器支援 Flex 容器積木用於豐富回覆（寬鬆政策）`,
+          suggestions: [
+            'Flex 容器積木可以用來創建豐富的回覆訊息',
+            '請確保在回覆積木中使用 Flex 容器'
+          ]
+        };
+      }
+    }
+    
+    // 如果寬鬆政策也不適用，則返回原始錯誤
+    console.log('❌ 即使使用寬鬆政策也不相容');
     return {
       isValid: false,
-      reason: `${category} 積木不能在 ${context} 上下文中使用`,
+      reason: `${category} 積木不適合在 ${context} 上下文中使用`,
       suggestions: [
-        `此積木只能在 ${rule.allowedIn.join(', ')} 上下文中使用`,
-        context === WorkspaceContext.LOGIC ? '切換到 Flex 設計器模式' : '切換到邏輯編輯器模式'
+        `此積木主要設計用於 ${rule.allowedIn.join(', ')} 上下文`,
+        context === WorkspaceContext.LOGIC ? '嘗試切換到 Flex 設計器標籤' : '嘗試切換到邏輯編輯器標籤',
+        '查看積木說明了解正確的使用方式'
       ]
     };
   }
@@ -124,17 +207,37 @@ export function isBlockCompatible(
     }
   }
   
-  // 檢查父積木依賴
-  if (rule.restrictions?.requiresParent && context === WorkspaceContext.LOGIC) {
+  // 檢查父積木依賴（優化後的寬鬆檢查）
+  if (rule.restrictions?.requiresParent) {
     const hasValidParent = existingBlocks.some(existingBlock => 
       rule.restrictions!.requiresParent!.includes(existingBlock.category)
     );
     
     if (!hasValidParent) {
+      // 在 Flex 設計器中，放寬父積木依賴要求
+      if (context === WorkspaceContext.FLEX) {
+        console.log('🎨 Flex 設計器：放寬父積木依賴要求');
+        return {
+          isValid: true,
+          reason: `${category} 積木在 Flex 設計器中可獨立使用`,
+          suggestions: [
+            'Flex 設計器允許更靈活的積木組合',
+            '建議按照 Flex Message 的結構來組織積木',
+            `完整結構中建議包含 ${rule.restrictions.requiresParent.join(' 或 ')} 積木`
+          ]
+        };
+      }
+      
+      // 在邏輯編輯器中，提供友善的建議而不是直接阻止
+      console.log('📋 邏輯編輯器：父積木依賴檢查 - 提供建議');
       return {
-        isValid: false,
-        reason: `${category} 積木需要特定的父積木`,
-        suggestions: [`請先添加 ${rule.restrictions.requiresParent.join(' 或 ')} 積木`]
+        isValid: true, // 改為允許，但提供建議
+        reason: `${category} 積木已放置，建議添加相關的父積木以確保完整功能`,
+        suggestions: [
+          `建議添加 ${rule.restrictions.requiresParent.join(' 或 ')} 積木來提供完整的功能`,
+          '您可以稍後重新組織積木順序',
+          '積木功能可能需要適當的父積木才能正常運作'
+        ]
       };
     }
   }
@@ -167,6 +270,55 @@ export function isBlockCompatible(
 export function getCategoryFromBlockType(blockType: string): BlockCategory {
   const migrationRule = BLOCK_MIGRATION_RULES.find(rule => rule.oldBlockType === blockType);
   return migrationRule?.newCategory || BlockCategory.SETTING; // 默認為設定類別
+}
+
+/**
+ * 智能推斷積木類別（當標準遷移規則失效時使用）
+ */
+export function inferCategoryFromBlockType(blockType: string): BlockCategory | null {
+  if (!blockType || typeof blockType !== 'string') {
+    return null;
+  }
+  
+  const lowerType = blockType.toLowerCase();
+  
+  // 根據積木類型名稱的模式進行推斷
+  if (lowerType.includes('event') || lowerType.includes('trigger')) {
+    return BlockCategory.EVENT;
+  }
+  
+  if (lowerType.includes('reply') || lowerType.includes('message') || lowerType.includes('send')) {
+    return BlockCategory.REPLY;
+  }
+  
+  if (lowerType.includes('control') || lowerType.includes('if') || lowerType.includes('loop') || lowerType.includes('condition')) {
+    return BlockCategory.CONTROL;
+  }
+  
+  if (lowerType.includes('flex-container') || lowerType.includes('bubble') || lowerType.includes('carousel')) {
+    return BlockCategory.FLEX_CONTAINER;
+  }
+  
+  if (lowerType.includes('flex-content') || lowerType.includes('text') || lowerType.includes('image') || lowerType.includes('button')) {
+    return BlockCategory.FLEX_CONTENT;
+  }
+  
+  if (lowerType.includes('flex-layout') || lowerType.includes('box') || lowerType.includes('separator') || lowerType.includes('spacer')) {
+    return BlockCategory.FLEX_LAYOUT;
+  }
+  
+  if (lowerType.includes('flex')) {
+    // 一般性的 Flex 積木，預設為容器類型
+    return BlockCategory.FLEX_CONTAINER;
+  }
+  
+  if (lowerType.includes('setting') || lowerType.includes('config')) {
+    return BlockCategory.SETTING;
+  }
+  
+  // 無法推斷，返回 null
+  console.log('🤔 無法推斷積木類別，blockType:', blockType);
+  return null;
 }
 
 /**

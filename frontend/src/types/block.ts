@@ -131,10 +131,30 @@ export const BLOCK_MIGRATION_RULES: BlockMigrationRule[] = [
     oldBlockType: 'event',
     newCategory: BlockCategory.EVENT
   },
+  {
+    oldBlockType: 'message_event',
+    newCategory: BlockCategory.EVENT
+  },
+  {
+    oldBlockType: 'postback_event',
+    newCategory: BlockCategory.EVENT
+  },
   
   // 回覆積木遷移
   {
     oldBlockType: 'reply',
+    newCategory: BlockCategory.REPLY
+  },
+  {
+    oldBlockType: 'text_reply',
+    newCategory: BlockCategory.REPLY
+  },
+  {
+    oldBlockType: 'flex_reply',
+    newCategory: BlockCategory.REPLY
+  },
+  {
+    oldBlockType: 'image_reply',
     newCategory: BlockCategory.REPLY
   },
   
@@ -143,10 +163,30 @@ export const BLOCK_MIGRATION_RULES: BlockMigrationRule[] = [
     oldBlockType: 'control',
     newCategory: BlockCategory.CONTROL
   },
+  {
+    oldBlockType: 'condition',
+    newCategory: BlockCategory.CONTROL
+  },
+  {
+    oldBlockType: 'loop',
+    newCategory: BlockCategory.CONTROL
+  },
+  {
+    oldBlockType: 'if',
+    newCategory: BlockCategory.CONTROL
+  },
   
   // 設定積木遷移
   {
     oldBlockType: 'setting',
+    newCategory: BlockCategory.SETTING
+  },
+  {
+    oldBlockType: 'config',
+    newCategory: BlockCategory.SETTING
+  },
+  {
+    oldBlockType: 'webhook_setting',
     newCategory: BlockCategory.SETTING
   },
   
@@ -155,16 +195,96 @@ export const BLOCK_MIGRATION_RULES: BlockMigrationRule[] = [
     oldBlockType: 'flex-container',
     newCategory: BlockCategory.FLEX_CONTAINER
   },
+  {
+    oldBlockType: 'bubble',
+    newCategory: BlockCategory.FLEX_CONTAINER
+  },
+  {
+    oldBlockType: 'carousel',
+    newCategory: BlockCategory.FLEX_CONTAINER
+  },
+  {
+    oldBlockType: 'flex_bubble',
+    newCategory: BlockCategory.FLEX_CONTAINER
+  },
+  {
+    oldBlockType: 'flex_carousel',
+    newCategory: BlockCategory.FLEX_CONTAINER
+  },
   
   // Flex 內容積木遷移
   {
     oldBlockType: 'flex-content',
     newCategory: BlockCategory.FLEX_CONTENT
   },
+  {
+    oldBlockType: 'text',
+    newCategory: BlockCategory.FLEX_CONTENT
+  },
+  {
+    oldBlockType: 'image',
+    newCategory: BlockCategory.FLEX_CONTENT
+  },
+  {
+    oldBlockType: 'button',
+    newCategory: BlockCategory.FLEX_CONTENT
+  },
+  {
+    oldBlockType: 'icon',
+    newCategory: BlockCategory.FLEX_CONTENT
+  },
+  {
+    oldBlockType: 'flex_text',
+    newCategory: BlockCategory.FLEX_CONTENT
+  },
+  {
+    oldBlockType: 'flex_image',
+    newCategory: BlockCategory.FLEX_CONTENT
+  },
+  {
+    oldBlockType: 'flex_button',
+    newCategory: BlockCategory.FLEX_CONTENT
+  },
+  {
+    oldBlockType: 'flex_icon',
+    newCategory: BlockCategory.FLEX_CONTENT
+  },
   
   // Flex 佈局積木遷移
   {
     oldBlockType: 'flex-layout',
+    newCategory: BlockCategory.FLEX_LAYOUT
+  },
+  {
+    oldBlockType: 'box',
+    newCategory: BlockCategory.FLEX_LAYOUT
+  },
+  {
+    oldBlockType: 'separator',
+    newCategory: BlockCategory.FLEX_LAYOUT
+  },
+  {
+    oldBlockType: 'spacer',
+    newCategory: BlockCategory.FLEX_LAYOUT
+  },
+  {
+    oldBlockType: 'filler',
+    newCategory: BlockCategory.FLEX_LAYOUT
+  },
+  {
+    oldBlockType: 'flex_box',
+    newCategory: BlockCategory.FLEX_LAYOUT
+  },
+  {
+    oldBlockType: 'flex_separator',
+    newCategory: BlockCategory.FLEX_LAYOUT
+  },
+  {
+    oldBlockType: 'flex_spacer',
+    newCategory: BlockCategory.FLEX_LAYOUT
+  },
+  {
+    oldBlockType: 'flex_filler',
     newCategory: BlockCategory.FLEX_LAYOUT
   }
 ];
