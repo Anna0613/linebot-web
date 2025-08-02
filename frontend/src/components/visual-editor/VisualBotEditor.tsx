@@ -282,14 +282,6 @@ export const VisualBotEditor: React.FC = () => {
               selectedBotId={selectedBotId}
               onBotSelect={handleBotSelect}
               onSaveToBot={handleSaveToBot}
-              selectedLogicTemplateId={selectedLogicTemplateId}
-              onLogicTemplateSelect={handleLogicTemplateSelect}
-              onLogicTemplateCreate={handleLogicTemplateCreate}
-              onLogicTemplateSave={handleLogicTemplateSave}
-              selectedFlexMessageId={selectedFlexMessageId}
-              onFlexMessageSelect={handleFlexMessageSelect}
-              onFlexMessageCreate={handleFlexMessageCreate}
-              onFlexMessageSave={handleFlexMessageSave}
             />
           </div>
         </header>
@@ -312,6 +304,15 @@ export const VisualBotEditor: React.FC = () => {
             onFlexBlocksChange={setFlexBlocks}
             currentLogicTemplateName={currentLogicTemplateName}
             currentFlexMessageName={currentFlexMessageName}
+            selectedBotId={selectedBotId}
+            selectedLogicTemplateId={selectedLogicTemplateId}
+            onLogicTemplateSelect={handleLogicTemplateSelect}
+            onLogicTemplateCreate={handleLogicTemplateCreate}
+            onLogicTemplateSave={handleLogicTemplateSave}
+            selectedFlexMessageId={selectedFlexMessageId}
+            onFlexMessageSelect={handleFlexMessageSelect}
+            onFlexMessageCreate={handleFlexMessageCreate}
+            onFlexMessageSave={handleFlexMessageSave}
           />
         </div>
       </div>

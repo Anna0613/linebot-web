@@ -5,6 +5,8 @@ import CodePreview from './CodePreview';
 import LineBotSimulator from './LineBotSimulator';
 import FlexMessagePreview from './FlexMessagePreview';
 import { BlockPalette } from './BlockPalette';
+import LogicTemplateSelector from './LogicTemplateSelector';
+import FlexMessageSelector from './FlexMessageSelector';
 import { 
   UnifiedBlock, 
   UnifiedDropItem, 
@@ -30,6 +32,15 @@ interface LegacyDropItem {
   blockData: LegacyBlockData;
 }
 
+interface BlockData {
+  [key: string]: unknown;
+}
+
+interface Block {
+  blockType: string;
+  blockData: BlockData;
+}
+
 interface WorkspaceProps {
   logicBlocks: (UnifiedBlock | LegacyBlock)[];
   flexBlocks: (UnifiedBlock | LegacyBlock)[];
@@ -37,6 +48,17 @@ interface WorkspaceProps {
   onFlexBlocksChange: (blocks: (UnifiedBlock | LegacyBlock)[] | ((prev: (UnifiedBlock | LegacyBlock)[]) => (UnifiedBlock | LegacyBlock)[])) => void;
   currentLogicTemplateName?: string;
   currentFlexMessageName?: string;
+  // 新增邏輯模板相關 props
+  selectedBotId?: string;
+  selectedLogicTemplateId?: string;
+  onLogicTemplateSelect?: (templateId: string) => void;
+  onLogicTemplateCreate?: (name: string) => void;
+  onLogicTemplateSave?: (templateId: string, data: { logicBlocks: Block[], generatedCode: string }) => void;
+  // 新增 FlexMessage 相關 props
+  selectedFlexMessageId?: string;
+  onFlexMessageSelect?: (messageId: string) => void;
+  onFlexMessageCreate?: (name: string) => void;
+  onFlexMessageSave?: (messageId: string, data: { flexBlocks: Block[] }) => void;
 }
 
 const Workspace: React.FC<WorkspaceProps> = ({ 
@@ -45,7 +67,16 @@ const Workspace: React.FC<WorkspaceProps> = ({
   onLogicBlocksChange, 
   onFlexBlocksChange,
   currentLogicTemplateName,
-  currentFlexMessageName
+  currentFlexMessageName,
+  selectedBotId,
+  selectedLogicTemplateId,
+  onLogicTemplateSelect,
+  onLogicTemplateCreate,
+  onLogicTemplateSave,
+  selectedFlexMessageId,
+  onFlexMessageSelect,
+  onFlexMessageCreate,
+  onFlexMessageSave
 }) => {
   const [activeTab, setActiveTab] = useState('logic');
   const [showAllBlocks, setShowAllBlocks] = useState(true);
@@ -322,46 +353,71 @@ const Workspace: React.FC<WorkspaceProps> = ({
           </TabsList>
           
           <TabsContent value="logic" className="flex-1 overflow-hidden">
-            <div className="h-full p-4 overflow-auto">
-            {renderValidationAlert(WorkspaceContext.LOGIC)}
-            <DropZone 
-              title={currentLogicTemplateName ? 
-                `邏輯編輯器 - ${currentLogicTemplateName}` : 
-                "邏輯編輯器 - 請選擇邏輯模板"
-              }
-              context={WorkspaceContext.LOGIC}
-              onDrop={handleLogicDrop}
-              blocks={logicBlocks}
-              onRemove={removeLogicBlock}
-              onUpdate={updateLogicBlock}
-              onMove={moveLogicBlock}
-              onInsert={insertLogicBlock}
-            />
+            <div className="h-full flex flex-col">
+              {/* 邏輯模板選擇器 */}
+              {selectedBotId && (
+                <LogicTemplateSelector
+                  selectedBotId={selectedBotId}
+                  selectedLogicTemplateId={selectedLogicTemplateId}
+                  onLogicTemplateSelect={onLogicTemplateSelect}
+                  onLogicTemplateCreate={onLogicTemplateCreate}
+                  onLogicTemplateSave={onLogicTemplateSave}
+                  logicBlocks={logicBlocks as Block[]}
+                />
+              )}
+              
+              <div className="flex-1 p-4 overflow-auto">
+                {renderValidationAlert(WorkspaceContext.LOGIC)}
+                <DropZone 
+                  title={currentLogicTemplateName ? 
+                    `邏輯編輯器 - ${currentLogicTemplateName}` : 
+                    "邏輯編輯器 - 請選擇邏輯模板"
+                  }
+                  context={WorkspaceContext.LOGIC}
+                  onDrop={handleLogicDrop}
+                  blocks={logicBlocks}
+                  onRemove={removeLogicBlock}
+                  onUpdate={updateLogicBlock}
+                  onMove={moveLogicBlock}
+                  onInsert={insertLogicBlock}
+                />
+              </div>
             </div>
           </TabsContent>
           
           <TabsContent value="flex" className="flex-1 overflow-hidden">
-            <div className="h-full p-4 overflow-auto">
-              {renderValidationAlert(WorkspaceContext.FLEX)}
-              <div className="grid grid-cols-2 gap-4 h-full min-h-0">
-                <div className="flex flex-col min-h-0">
-                  <DropZone 
-                    title={currentFlexMessageName ? 
-                      `Flex 設計器 - ${currentFlexMessageName}` : 
-                      "Flex 設計器 - 請選擇 FlexMessage"
-                    }
-                    context={WorkspaceContext.FLEX}
-                    onDrop={handleFlexDrop}
-                    blocks={flexBlocks}
-                    onRemove={removeFlexBlock}
-                    onUpdate={updateFlexBlock}
-                    onMove={moveFlexBlock}
-                    onInsert={insertFlexBlock}
-                  />
-                </div>
-                
-                <div className="flex flex-col min-h-0">
-                  <FlexMessagePreview blocks={flexBlocks} />
+            <div className="h-full flex flex-col">
+              {/* FlexMessage 選擇器 */}
+              <FlexMessageSelector
+                selectedFlexMessageId={selectedFlexMessageId}
+                onFlexMessageSelect={onFlexMessageSelect}
+                onFlexMessageCreate={onFlexMessageCreate}
+                onFlexMessageSave={onFlexMessageSave}
+                flexBlocks={flexBlocks as Block[]}
+              />
+              
+              <div className="flex-1 p-4 overflow-auto">
+                {renderValidationAlert(WorkspaceContext.FLEX)}
+                <div className="grid grid-cols-2 gap-4 h-full min-h-0">
+                  <div className="flex flex-col min-h-0">
+                    <DropZone 
+                      title={currentFlexMessageName ? 
+                        `Flex 設計器 - ${currentFlexMessageName}` : 
+                        "Flex 設計器 - 請選擇 FlexMessage"
+                      }
+                      context={WorkspaceContext.FLEX}
+                      onDrop={handleFlexDrop}
+                      blocks={flexBlocks}
+                      onRemove={removeFlexBlock}
+                      onUpdate={updateFlexBlock}
+                      onMove={moveFlexBlock}
+                      onInsert={insertFlexBlock}
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col min-h-0">
+                    <FlexMessagePreview blocks={flexBlocks} />
+                  </div>
                 </div>
               </div>
             </div>
