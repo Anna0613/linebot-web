@@ -173,7 +173,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   React.useEffect(() => {
     const timeoutId = setTimeout(() => {
       validateCurrentWorkspace();
-    }, 300); // 300ms 延遲，減少頻繁驗證
+    }, 500); // 增加到 500ms 延遲，進一步減少頻繁驗證
 
     return () => clearTimeout(timeoutId);
   }, [logicBlocks, flexBlocks, validateCurrentWorkspace]); // 包含必要的依賴項
