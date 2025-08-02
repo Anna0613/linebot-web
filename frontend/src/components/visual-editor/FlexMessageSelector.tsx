@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Loader2, Plus, Save } from 'lucide-react';
-import { Alert, AlertDescription } from '../ui/alert';
+import { useToast } from '../../hooks/use-toast';
 import VisualEditorApi, { FlexMessageSummary } from '../../services/visualEditorApi';
 
 interface BlockData {
@@ -36,9 +36,8 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
   const [isLoadingFlexMessages, setIsLoadingFlexMessages] = useState(false);
   const [newFlexMessageName, setNewFlexMessageName] = useState('');
   const [showCreateFlexMessage, setShowCreateFlexMessage] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
   // 載入 FlexMessage 列表
   const loadFlexMessages = async () => {
@@ -59,16 +58,14 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
     loadFlexMessages();
   }, []);
 
-  // 清除錯誤訊息
-  const clearMessages = () => {
-    setError(null);
-    setSuccess(null);
-  };
-
   // 創建新 FlexMessage
   const handleCreateFlexMessage = async () => {
     if (!newFlexMessageName.trim()) {
-      setError('請輸入 FlexMessage 名稱');
+      toast({
+        variant: 'destructive',
+        title: '創建失敗',
+        description: '請輸入 FlexMessage 名稱'
+      });
       return;
     }
 
@@ -79,17 +76,27 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
       setNewFlexMessageName('');
       setShowCreateFlexMessage(false);
       await loadFlexMessages();
-      setSuccess('FlexMessage 創建成功');
-      setTimeout(() => setSuccess(null), 3000);
+      toast({
+        title: '創建成功',
+        description: 'FlexMessage 創建成功'
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '創建 FlexMessage 失敗');
+      toast({
+        variant: 'destructive',
+        title: '創建失敗',
+        description: err instanceof Error ? err.message : '創建 FlexMessage 失敗'
+      });
     }
   };
 
   // 儲存 FlexMessage
   const saveFlexMessage = async () => {
     if (!selectedFlexMessageId) {
-      setError('請先選擇一個 FlexMessage');
+      toast({
+        variant: 'destructive',
+        title: '儲存失敗',
+        description: '請先選擇一個 FlexMessage'
+      });
       return;
     }
 
@@ -100,10 +107,16 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
           flexBlocks
         });
       }
-      setSuccess('FlexMessage 儲存成功');
-      setTimeout(() => setSuccess(null), 3000);
+      toast({
+        title: '儲存成功',
+        description: 'FlexMessage 儲存成功'
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '儲存 FlexMessage 失敗');
+      toast({
+        variant: 'destructive',
+        title: '儲存失敗',
+        description: err instanceof Error ? err.message : '儲存 FlexMessage 失敗'
+      });
     } finally {
       setIsSaving(false);
     }
@@ -111,19 +124,6 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
 
   return (
     <div className="p-4 bg-white border-b space-y-3">
-      {/* 錯誤和成功訊息 */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      {success && (
-        <Alert>
-          <AlertDescription className="text-green-600">{success}</AlertDescription>
-        </Alert>
-      )}
-
       {/* FlexMessage 管理 */}
       <div className="flex items-center space-x-2">
         <span className="text-sm font-medium text-gray-700 whitespace-nowrap">FlexMessage:</span>
@@ -133,7 +133,6 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
             if (value !== 'no-messages' && onFlexMessageSelect) {
               onFlexMessageSelect(value);
             }
-            clearMessages();
           }}
           disabled={isLoadingFlexMessages || disabled}
         >

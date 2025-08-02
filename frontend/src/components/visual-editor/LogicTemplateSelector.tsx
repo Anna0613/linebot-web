@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Loader2, Plus, Save } from 'lucide-react';
-import { Alert, AlertDescription } from '../ui/alert';
+import { useToast } from '../../hooks/use-toast';
 import VisualEditorApi, { LogicTemplateSummary } from '../../services/visualEditorApi';
 import { generateUnifiedCode } from '../../utils/unifiedCodeGenerator';
 
@@ -39,9 +39,8 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
   const [isLoadingLogicTemplates, setIsLoadingLogicTemplates] = useState(false);
   const [newLogicTemplateName, setNewLogicTemplateName] = useState('');
   const [showCreateLogicTemplate, setShowCreateLogicTemplate] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
   // 載入邏輯模板列表
   const loadLogicTemplates = async (botId: string) => {
@@ -71,16 +70,15 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
     }
   }, [selectedBotId]);
 
-  // 清除錯誤訊息
-  const clearMessages = () => {
-    setError(null);
-    setSuccess(null);
-  };
 
   // 創建新邏輯模板
   const handleCreateLogicTemplate = async () => {
     if (!selectedBotId || !newLogicTemplateName.trim()) {
-      setError('請輸入邏輯模板名稱');
+      toast({
+        variant: 'destructive',
+        title: '創建失敗',
+        description: '請輸入邏輯模板名稱'
+      });
       return;
     }
 
@@ -91,17 +89,27 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
       setNewLogicTemplateName('');
       setShowCreateLogicTemplate(false);
       await loadLogicTemplates(selectedBotId);
-      setSuccess('邏輯模板創建成功');
-      setTimeout(() => setSuccess(null), 3000);
+      toast({
+        title: '創建成功',
+        description: '邏輯模板創建成功'
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '創建邏輯模板失敗');
+      toast({
+        variant: 'destructive',
+        title: '創建失敗',
+        description: err instanceof Error ? err.message : '創建邏輯模板失敗'
+      });
     }
   };
 
   // 儲存邏輯模板
   const saveLogicTemplate = async () => {
     if (!selectedLogicTemplateId) {
-      setError('請先選擇一個邏輯模板');
+      toast({
+        variant: 'destructive',
+        title: '儲存失敗',
+        description: '請先選擇一個邏輯模板'
+      });
       return;
     }
 
@@ -114,10 +122,16 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
           generatedCode
         });
       }
-      setSuccess('邏輯模板儲存成功');
-      setTimeout(() => setSuccess(null), 3000);
+      toast({
+        title: '儲存成功',
+        description: '邏輯模板儲存成功'
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '儲存邏輯模板失敗');
+      toast({
+        variant: 'destructive',
+        title: '儲存失敗',
+        description: err instanceof Error ? err.message : '儲存邏輯模板失敗'
+      });
     } finally {
       setIsSaving(false);
     }
@@ -133,19 +147,6 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
 
   return (
     <div className="p-4 bg-white border-b space-y-3">
-      {/* 錯誤和成功訊息 */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      {success && (
-        <Alert>
-          <AlertDescription className="text-green-600">{success}</AlertDescription>
-        </Alert>
-      )}
-
       {/* 邏輯模板管理 */}
       <div className="flex items-center space-x-2">
         <span className="text-sm font-medium text-gray-700 whitespace-nowrap">邏輯模板:</span>
@@ -155,7 +156,6 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
             if (value !== 'no-templates' && onLogicTemplateSelect) {
               onLogicTemplateSelect(value);
             }
-            clearMessages();
           }}
           disabled={isLoadingLogicTemplates || disabled}
         >

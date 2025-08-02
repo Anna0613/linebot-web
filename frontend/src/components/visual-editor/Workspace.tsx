@@ -14,8 +14,8 @@ import {
   BlockCategory 
 } from '../../types/block';
 import { migrateBlock, migrateBlocks, validateWorkspace } from '../../utils/blockCompatibility';
-import { Alert, AlertDescription } from '../ui/alert';
-import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { useToast } from '../../hooks/use-toast';
+import { AlertTriangle } from 'lucide-react';
 
 // 向後相容的舊格式介面
 interface LegacyBlockData {
@@ -87,6 +87,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
     logic: { isValid: true, errors: [], warnings: [] },
     flex: { isValid: true, errors: [], warnings: [] }
   });
+  const { toast } = useToast();
 
   // 轉換積木到統一格式進行驗證
   const normalizeBlocks = useCallback((blocks: (UnifiedBlock | LegacyBlock)[]): UnifiedBlock[] => {
@@ -107,11 +108,51 @@ const Workspace: React.FC<WorkspaceProps> = ({
     const logicValidation = validateWorkspace(normalizedLogicBlocks, WorkspaceContext.LOGIC);
     const flexValidation = validateWorkspace(normalizedFlexBlocks, WorkspaceContext.FLEX);
 
+    // 只有在錯誤或警告發生變化時才顯示 toast
+    const prevLogicValidation = workspaceValidation.logic;
+    const prevFlexValidation = workspaceValidation.flex;
+
+    // 檢查邏輯編輯器驗證結果
+    if (logicValidation.errors.length > 0 && 
+        JSON.stringify(logicValidation.errors) !== JSON.stringify(prevLogicValidation.errors)) {
+      toast({
+        variant: 'destructive',
+        title: '邏輯編輯器錯誤',
+        description: logicValidation.errors.join('; ')
+      });
+    }
+
+    if (logicValidation.warnings.length > 0 && 
+        JSON.stringify(logicValidation.warnings) !== JSON.stringify(prevLogicValidation.warnings)) {
+      toast({
+        title: '邏輯編輯器建議',
+        description: logicValidation.warnings.join('; ')
+      });
+    }
+
+    // 檢查 Flex 設計器驗證結果
+    if (flexValidation.errors.length > 0 && 
+        JSON.stringify(flexValidation.errors) !== JSON.stringify(prevFlexValidation.errors)) {
+      toast({
+        variant: 'destructive',
+        title: 'Flex 設計器錯誤',
+        description: flexValidation.errors.join('; ')
+      });
+    }
+
+    if (flexValidation.warnings.length > 0 && 
+        JSON.stringify(flexValidation.warnings) !== JSON.stringify(prevFlexValidation.warnings)) {
+      toast({
+        title: 'Flex 設計器建議',
+        description: flexValidation.warnings.join('; ')
+      });
+    }
+
     setWorkspaceValidation({
       logic: logicValidation,
       flex: flexValidation
     });
-  }, [logicBlocks, flexBlocks, normalizeBlocks]);
+  }, [logicBlocks, flexBlocks, normalizeBlocks, workspaceValidation, toast]);
 
   // 在積木變更時驗證工作區
   React.useEffect(() => {
@@ -264,47 +305,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
     return context;
   };
 
-  // 渲染驗證提示
-  const renderValidationAlert = (context: WorkspaceContext) => {
-    const validation = context === WorkspaceContext.LOGIC ? 
-      workspaceValidation.logic : workspaceValidation.flex;
-
-    if (validation.errors.length === 0 && validation.warnings.length === 0) {
-      return null;
-    }
-
-    return (
-      <div className="mb-4 space-y-2">
-        {validation.errors.length > 0 && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="font-medium mb-1">發現錯誤：</div>
-              <ul className="text-sm space-y-1">
-                {validation.errors.map((error, index) => (
-                  <li key={index}>• {error}</li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        {validation.warnings.length > 0 && (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="font-medium mb-1">建議：</div>
-              <ul className="text-sm space-y-1">
-                {validation.warnings.map((warning, index) => (
-                  <li key={index}>• {warning}</li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="flex h-full">
@@ -367,7 +367,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
               )}
               
               <div className="flex-1 p-4 overflow-auto">
-                {renderValidationAlert(WorkspaceContext.LOGIC)}
                 <DropZone 
                   title={currentLogicTemplateName ? 
                     `邏輯編輯器 - ${currentLogicTemplateName}` : 
@@ -397,7 +396,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
               />
               
               <div className="flex-1 p-4 overflow-auto">
-                {renderValidationAlert(WorkspaceContext.FLEX)}
                 <div className="grid grid-cols-2 gap-4 h-full min-h-0">
                   <div className="flex flex-col min-h-0">
                     <DropZone 

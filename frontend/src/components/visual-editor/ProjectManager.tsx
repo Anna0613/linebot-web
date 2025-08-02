@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Download, Upload, Save, Play, Loader2, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '../ui/alert';
+import { Download, Upload, Save, Play, Loader2 } from 'lucide-react';
+import { useToast } from '../../hooks/use-toast';
 import VisualEditorApi, { BotSummary } from '../../services/visualEditorApi';
 import { generateUnifiedCode } from '../../utils/unifiedCodeGenerator';
 
@@ -50,8 +50,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   const [bots, setBots] = useState<BotSummary[]>([]);
   const [isLoadingBots, setIsLoadingBots] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const exportProject = () => {
     const projectData: ProjectData = {
@@ -111,19 +110,25 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   // 載入用戶的 Bot 列表
   const loadBots = async () => {
     setIsLoadingBots(true);
-    setError(null);
     try {
       const botsList = await VisualEditorApi.getUserBotsSummary();
       setBots(botsList);
       
       // 如果沒有 Bot，顯示提示訊息
       if (botsList.length === 0) {
-        setError('目前沒有可用的 Bot，請先到 Bot 管理頁面建立 Bot');
+        toast({
+          title: '温馨提示',
+          description: '目前沒有可用的 Bot，請先到 Bot 管理頁面建立 Bot'
+        });
       }
     } catch (err) {
       // 只有在真正的錯誤時才顯示錯誤訊息
       console.warn('載入 Bot 列表時發生問題:', err);
-      setError('載入 Bot 列表失敗，請確保後端服務正在運行');
+      toast({
+        variant: 'destructive',
+        title: '載入失敗',
+        description: '載入 Bot 列表失敗，請確保後端服務正在運行'
+      });
     } finally {
       setIsLoadingBots(false);
     }
@@ -132,13 +137,15 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   // 統一的儲存功能 - 儲存到資料庫
   const saveProject = async () => {
     if (!selectedBotId) {
-      setError('請先選擇一個 Bot');
+      toast({
+        variant: 'destructive',
+        title: '儲存失敗',
+        description: '請先選擇一個 Bot'
+      });
       return;
     }
 
     setIsSaving(true);
-    setError(null);
-    setSuccess(null);
 
     try {
       // 生成程式碼
@@ -153,12 +160,16 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
         });
       }
 
-      setSuccess('專案已成功儲存到資料庫');
-      
-      // 3秒後清除成功訊息
-      setTimeout(() => setSuccess(null), 3000);
+      toast({
+        title: '儲存成功',
+        description: '專案已成功儲存到資料庫'
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '儲存失敗');
+      toast({
+        variant: 'destructive',
+        title: '儲存失敗',
+        description: err instanceof Error ? err.message : '儲存失敗'
+      });
     } finally {
       setIsSaving(false);
     }
@@ -177,28 +188,9 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     loadBots();
   }, []);
 
-  // 清除錯誤訊息
-  const clearMessages = () => {
-    setError(null);
-    setSuccess(null);
-  };
 
   return (
     <div className="space-y-4">
-      {/* 錯誤和成功訊息 */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      {success && (
-        <Alert>
-          <AlertDescription className="text-green-600">{success}</AlertDescription>
-        </Alert>
-      )}
-
       <div className="flex items-center space-x-4">
         {/* Bot 選擇器 */}
         <div className="flex items-center space-x-2">
@@ -209,7 +201,6 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
               if (value !== 'no-bots' && onBotSelect) {
                 onBotSelect(value);
               }
-              clearMessages();
             }}
             disabled={isLoadingBots}
           >
