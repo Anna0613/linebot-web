@@ -10,8 +10,8 @@ from typing import Dict
 
 from app.database import get_db
 from app.services.auth_service import AuthService
-from app.schemas.auth import UserRegister, UserLogin, Token, EmailVerification, ForgotPassword
-from app.core.security import get_cookie_settings
+from app.schemas.auth import UserRegister, UserLogin, Token, EmailVerification, ForgotPassword, RefreshToken
+from app.core.security import get_cookie_settings, get_refresh_cookie_settings
 from app.models.user import User
 
 router = APIRouter()
@@ -31,17 +31,74 @@ async def login(
     db: Session = Depends(get_db)
 ):
     """用戶登入"""
-    token = AuthService.authenticate_user(db, login_data.username, login_data.password)
+    import logging
+    logger = logging.getLogger(__name__)
     
-    # 設定 Cookie
-    cookie_settings = get_cookie_settings()
-    response.set_cookie(
-        key="token",
-        value=token.access_token,
-        **cookie_settings
-    )
-    
-    return token
+    try:
+        logger.info(f"用戶登入請求: username={login_data.username}, remember_me={login_data.remember_me}")
+        
+        token = AuthService.authenticate_user(
+            db, 
+            login_data.username, 
+            login_data.password, 
+            login_data.remember_me
+        )
+        
+        logger.info(f"認證成功，用戶: {login_data.username}")
+        
+        # 設定 Access Token Cookie
+        try:
+            logger.info("開始設定 cookies")
+            cookie_settings = get_cookie_settings(login_data.remember_me)
+            logger.info(f"Cookie 設定: {cookie_settings}")
+            
+            response.set_cookie(
+                key="token",
+                value=token.access_token,
+                **cookie_settings
+            )
+            logger.info("Access token cookie 設定成功")
+            
+            # 如果有 refresh token，設定 refresh token cookie
+            if token.refresh_token:
+                refresh_cookie_settings = get_refresh_cookie_settings()
+                logger.info(f"Refresh cookie 設定: {refresh_cookie_settings}")
+                
+                response.set_cookie(
+                    key="refresh_token",
+                    value=token.refresh_token,
+                    **refresh_cookie_settings
+                )
+                logger.info("Refresh token cookie 設定成功")
+            
+            logger.info("所有 cookies 設定完成")
+            
+        except Exception as cookie_error:
+            logger.error(f"Cookie 設定失敗: {str(cookie_error)}", exc_info=True)
+            # 即使 cookie 設定失敗，也不應該讓登入失敗
+            # 因為前端可以從回應中獲取 token
+        
+        # 確保資料庫事務提交
+        try:
+            db.commit()
+            logger.info("資料庫事務提交成功")
+        except Exception as commit_error:
+            logger.error(f"資料庫提交失敗: {str(commit_error)}", exc_info=True)
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="登入處理失敗，請稍後再試"
+            )
+        
+        return token
+        
+    except Exception as e:
+        logger.error(f"登入失敗: {str(e)}", exc_info=True)
+        db.rollback()  # 確保資料庫事務回滾
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"登入失敗: {str(e)}"
+        )
 
 @router.post("/line-login", response_model=Dict[str, str])
 async def line_login():
@@ -139,10 +196,49 @@ async def reset_password(
     
     return AuthService.reset_password(db, token, new_password)
 
+@router.post("/refresh", response_model=Token)
+async def refresh_token(
+    response: Response,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """刷新 access token"""
+    # 從 cookie 中獲取 refresh token
+    refresh_token = request.cookies.get("refresh_token")
+    
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token 不存在"
+        )
+    
+    # 刷新 token
+    new_token = AuthService.refresh_access_token(db, refresh_token)
+    
+    # 設定新的 access token cookie
+    cookie_settings = get_cookie_settings(True)  # refresh 的都是記住我模式
+    response.set_cookie(
+        key="token",
+        value=new_token.access_token,
+        **cookie_settings
+    )
+    
+    # 設定新的 refresh token cookie
+    if new_token.refresh_token:
+        refresh_cookie_settings = get_refresh_cookie_settings()
+        response.set_cookie(
+            key="refresh_token",
+            value=new_token.refresh_token,
+            **refresh_cookie_settings
+        )
+    
+    return new_token
+
 @router.post("/logout")
 async def logout(response: Response):
     """用戶登出"""
     response.delete_cookie(key="token")
+    response.delete_cookie(key="refresh_token")
     return {"message": "登出成功"}
 
 @router.get("/check-login")

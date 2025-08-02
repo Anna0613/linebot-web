@@ -13,7 +13,7 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 
 from app.models.user import User, LineUser
 from app.schemas.auth import UserRegister, UserLogin, Token
-from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.security import verify_password, get_password_hash, create_access_token, create_refresh_token, verify_token
 from app.config import settings
 from app.services.email_service import EmailService
 
@@ -61,14 +61,38 @@ class AuthService:
         return {"message": "用戶註冊成功"}
     
     @staticmethod
-    def authenticate_user(db: Session, username: str, password: str) -> Token:
+    def authenticate_user(db: Session, username: str, password: str, remember_me: bool = False) -> Token:
         """用戶認證登入"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"開始認證用戶: {username}, remember_me: {remember_me}")
+        
         # 支援用戶名稱或郵箱登入
         user = db.query(User).filter(
             (User.username == username) | (User.email == username)
         ).first()
         
-        if not user or not verify_password(password, user.password):
+        if not user:
+            logger.warning(f"用戶不存在: {username}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="用戶名稱或密碼錯誤"
+            )
+        
+        logger.info(f"找到用戶: {user.username} (ID: {user.id})")
+        
+        # 驗證密碼
+        try:
+            if not verify_password(password, user.password):
+                logger.warning(f"用戶密碼錯誤: {username}")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="用戶名稱或密碼錯誤"
+                )
+            logger.info("密碼驗證成功")
+        except Exception as e:
+            logger.error(f"密碼驗證過程出錯: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="用戶名稱或密碼錯誤"
@@ -76,26 +100,50 @@ class AuthService:
         
         # 檢查郵箱驗證狀態（如果有郵箱的話）
         if user.email and not user.email_verified:
+            logger.warning(f"用戶 {username} 郵箱未驗證")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="郵箱尚未驗證，請檢查您的郵箱"
             )
         
-        # 生成 JWT token
-        access_token = create_access_token(
-            data={"sub": user.username, "login_type": "general"}
-        )
+        logger.info("開始生成 JWT token")
         
-        return Token(
-            access_token=access_token,
-            token_type="bearer",
-            user={
-                "id": str(user.id),
-                "username": user.username,
-                "email": user.email,
-                "login_type": "general"
-            }
-        )
+        try:
+            # 生成 JWT token（根據記住我選項決定過期時間）
+            access_token = create_access_token(
+                data={"sub": user.username, "login_type": "general"},
+                remember_me=remember_me
+            )
+            logger.info(f"Access token 生成成功，remember_me: {remember_me}")
+            
+            # 如果選擇記住我，則生成 refresh token
+            refresh_token = None
+            if remember_me:
+                refresh_token = create_refresh_token(
+                    data={"sub": user.username, "login_type": "general"}
+                )
+                logger.info("Refresh token 生成成功")
+            
+            logger.info("認證完成，返回 token")
+            
+            return Token(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                token_type="bearer",
+                remember_me=remember_me,
+                user={
+                    "id": str(user.id),
+                    "username": user.username,
+                    "email": user.email,
+                    "login_type": "general"
+                }
+            )
+        except Exception as e:
+            logger.error(f"Token 生成失敗: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"登入處理失敗: {str(e)}"
+            )
     
     @staticmethod
     def get_line_login_url() -> Dict[str, str]:
@@ -210,7 +258,8 @@ class AuthService:
             
             # 生成 JWT token
             jwt_token = create_access_token(
-                data={"sub": user.username, "login_type": "line"}
+                data={"sub": user.username, "login_type": "line"},
+                remember_me=False  # LINE 登入預設不記住我
             )
             
             return {
@@ -363,4 +412,67 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="無效的重設連結"
+            )
+    
+    @staticmethod
+    def refresh_access_token(db: Session, refresh_token: str) -> Token:
+        """使用 refresh token 刷新 access token"""
+        try:
+            # 驗證 refresh token
+            payload = verify_token(refresh_token)
+            username = payload.get("sub")
+            login_type = payload.get("login_type", "general")
+            token_type = payload.get("type")
+            
+            # 確認這是一個 refresh token
+            if token_type != "refresh":
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="無效的 refresh token"
+                )
+            
+            if not username:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="無效的 token 資料"
+                )
+            
+            # 檢查用戶是否存在
+            user = db.query(User).filter(User.username == username).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="用戶不存在"
+                )
+            
+            # 生成新的 access token（記住我模式）
+            new_access_token = create_access_token(
+                data={"sub": user.username, "login_type": login_type},
+                remember_me=True
+            )
+            
+            # 生成新的 refresh token
+            new_refresh_token = create_refresh_token(
+                data={"sub": user.username, "login_type": login_type}
+            )
+            
+            return Token(
+                access_token=new_access_token,
+                refresh_token=new_refresh_token,
+                token_type="bearer",
+                remember_me=True,
+                user={
+                    "id": str(user.id),
+                    "username": user.username,
+                    "email": user.email,
+                    "login_type": login_type
+                }
+            )
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Token 刷新失敗: {str(e)}"
             ) 

@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     JWT_SECRET: str = os.getenv("JWT_SECRET", "your-secret-key-here")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "30"))
+    # 記住我功能的長期 token 過期時間（7天）
+    JWT_REMEMBER_EXPIRE_MINUTES: int = int(os.getenv("JWT_REMEMBER_EXPIRE_MINUTES", "10080"))  # 7 * 24 * 60 = 10080 分鐘
     
     # LINE 登入設定
     LINE_CHANNEL_ID: str = os.getenv("LINE_CHANNEL_ID", "")
@@ -98,7 +100,7 @@ class Settings(BaseSettings):
     
     # 安全設定
     SECRET_KEY: str = os.getenv("SECRET_KEY", FLASK_SECRET_KEY)
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = JWT_EXPIRE_MINUTES
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "30"))
     
     class Config:
         case_sensitive = True

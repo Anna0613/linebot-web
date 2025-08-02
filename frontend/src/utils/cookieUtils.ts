@@ -9,6 +9,7 @@ import Cookies from 'js-cookie';
 export const COOKIE_NAMES = {
   AUTH_TOKEN: 'auth_token',
   AUTH_TOKEN_REMEMBER: 'auth_token_remember',
+  REFRESH_TOKEN: 'refresh_token',
   USER_DATA: 'user_data',
   TOKEN_TYPE: 'token_type'
 } as const;
@@ -95,6 +96,39 @@ export const getTokenType = (): string => {
 };
 
 /**
+ * 設定 refresh token cookie
+ * @param refreshToken - refresh token
+ */
+export const setRefreshToken = (refreshToken: string): void => {
+  try {
+    // refresh token 固定為 30 天過期
+    const options = {
+      path: '/',
+      expires: 30, // 30 天
+      sameSite: 'strict' as const,
+      secure: window.location.protocol === 'https:',
+    };
+
+    Cookies.set(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, options);
+    console.log('Refresh token 已設定');
+  } catch (error) {
+    console.error('設定 refresh token 失敗:', error);
+  }
+};
+
+/**
+ * 獲取 refresh token
+ */
+export const getRefreshToken = (): string | null => {
+  try {
+    return Cookies.get(COOKIE_NAMES.REFRESH_TOKEN) || null;
+  } catch (error) {
+    console.error('獲取 refresh token 失敗:', error);
+    return null;
+  }
+};
+
+/**
  * 設定用戶資料 cookie
  * @param userData - 用戶資料
  * @param rememberMe - 是否記住我
@@ -149,7 +183,7 @@ export const clearAllAuthCookies = (): void => {
 
     // 清除可能存在的舊 cookies
     const oldCookieNames = [
-      'auth_token', 'line_token', 'token', 'user_data', 
+      'auth_token', 'line_token', 'token', 'refresh_token', 'user_data', 
       'username', 'email', 'display_name'
     ];
     

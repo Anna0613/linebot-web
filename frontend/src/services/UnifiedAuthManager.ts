@@ -8,6 +8,8 @@ import {
   setAuthToken,
   getAuthToken,
   getTokenType,
+  setRefreshToken,
+  getRefreshToken,
   setUserData,
   getUserData,
   clearAllAuthCookies,
@@ -117,6 +119,11 @@ export class UnifiedAuthManager {
       // 使用 cookie 工具設定 token
       setAuthToken(tokenInfo.access_token, rememberMe, tokenInfo.token_type);
       
+      // 如果有 refresh token，也要設定
+      if (tokenInfo.refresh_token) {
+        setRefreshToken(tokenInfo.refresh_token);
+      }
+      
       console.log(`Token 已設定 - 類型: ${tokenInfo.token_type}, 記住我: ${rememberMe}`);
     } catch (error) {
       console.error('設定token失敗:', error);
@@ -209,7 +216,7 @@ export class UnifiedAuthManager {
   /**
    * 刷新token
    */
-  private async refreshToken(): Promise<boolean> {
+  public async refreshToken(): Promise<boolean> {
     // 防止多次同時刷新
     if (this.refreshPromise) {
       return this.refreshPromise;
@@ -224,15 +231,52 @@ export class UnifiedAuthManager {
 
   private async performTokenRefresh(): Promise<boolean> {
     try {
-      // TODO: 實現與後端的token刷新API調用
-      // 由於使用 cookies，refresh token 也應該從 cookie 獲取
-      // const response = await fetch('/api/v1/auth/refresh', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   credentials: 'include', // 自動攜帶 cookies
-      // });
+      const refreshToken = getRefreshToken();
       
-      // 暫時返回false，等待後端API實現
+      if (!refreshToken) {
+        console.log('沒有 refresh token，無法刷新');
+        return false;
+      }
+
+      // 調用後端的 refresh API
+      const response = await fetch('/api/v1/auth/refresh', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include', // 自動攜帶 cookies
+      });
+
+      if (!response.ok) {
+        console.error('Token 刷新失敗:', response.status, response.statusText);
+        
+        // 如果是 401，表示 refresh token 也過期了，調用 refresh 失效處理
+        if (response.status === 401) {
+          this.handleRefreshFailure();
+        }
+        return false;
+      }
+
+      const tokenData = await response.json();
+      
+      // 更新 token 信息
+      if (tokenData.access_token) {
+        setAuthToken(tokenData.access_token, true, tokenData.token_type || 'Bearer'); // refresh 的都是記住我模式
+        
+        if (tokenData.refresh_token) {
+          setRefreshToken(tokenData.refresh_token);
+        }
+        
+        // 如果有用戶信息，也更新
+        if (tokenData.user) {
+          setUserData(tokenData.user, true);
+        }
+        
+        console.log('Token 刷新成功');
+        return true;
+      }
+
       return false;
     } catch (error) {
       console.error('Token刷新失敗:', error);
@@ -291,13 +335,61 @@ export class UnifiedAuthManager {
   public handleAuthError(error: unknown): void {
     console.error('認證錯誤:', error);
     
-    // 如果是401錯誤，清除認證信息
+    // 如果是401錯誤，根據記住我狀態決定處理方式
     if (error && typeof error === 'object' && error !== null) {
       const errorObj = error as Record<string, unknown>;
-      if (errorObj.status === 401 || 
-          (typeof errorObj.message === 'string' && errorObj.message.includes('401'))) {
-        this.clearAuth();
+      const is401Error = errorObj.status === 401 || 
+          (typeof errorObj.message === 'string' && errorObj.message.includes('401'));
+      
+      if (is401Error) {
+        const isRememberMe = this.isRememberMeActive();
+        
+        if (isRememberMe) {
+          // 記住我模式下，不立即清除認證信息
+          // 可能只是 access token 過期，refresh token 可能還有效
+          console.log('記住我模式下的認證錯誤，保留用戶狀態，嘗試自動恢復');
+          
+          // 可以在這裡觸發一個事件，讓 UI 顯示「正在恢復會話」的提示
+          this.dispatchAuthEvent('auth_recovery_needed', {
+            message: '會話過期，正在嘗試自動恢復...',
+            isRememberMe: true
+          });
+        } else {
+          // 非記住我模式，直接清除認證信息
+          console.log('非記住我模式的認證錯誤，清除認證信息');
+          this.clearAuth();
+          
+          this.dispatchAuthEvent('auth_expired', {
+            message: '會話已過期，請重新登入',
+            isRememberMe: false
+          });
+        }
       }
+    }
+  }
+  
+  /**
+   * 當 refresh token 也失效時的處理
+   */
+  public handleRefreshFailure(): void {
+    console.log('Refresh token 失效，清除所有認證信息');
+    this.clearAuth();
+    
+    this.dispatchAuthEvent('auth_refresh_failed', {
+      message: '認證已過期，請重新登入',
+      isRememberMe: true
+    });
+  }
+  
+  /**
+   * 派發認證相關事件
+   */
+  private dispatchAuthEvent(eventType: string, detail: any): void {
+    try {
+      const event = new CustomEvent(eventType, { detail });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('派發認證事件失敗:', error);
     }
   }
 

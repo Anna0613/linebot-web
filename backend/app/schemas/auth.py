@@ -28,12 +28,15 @@ class UserLogin(BaseModel):
     """用戶登入 schema"""
     username: str
     password: str
+    remember_me: Optional[bool] = False
 
 class Token(BaseModel):
     """JWT token schema"""
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
     user: Optional[dict] = None
+    remember_me: Optional[bool] = False
 
 class TokenData(BaseModel):
     """Token 解析資料 schema"""
@@ -68,4 +71,8 @@ class EmailVerification(BaseModel):
 
 class ForgotPassword(BaseModel):
     """忘記密碼 schema"""
-    email: EmailStr 
+    email: EmailStr
+
+class RefreshToken(BaseModel):
+    """刷新 token schema"""
+    refresh_token: str 

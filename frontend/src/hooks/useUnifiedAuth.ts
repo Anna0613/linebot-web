@@ -120,7 +120,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username, password, remember_me: rememberMe }),
           credentials: 'include',
         }
       );

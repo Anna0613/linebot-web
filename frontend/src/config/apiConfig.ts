@@ -56,6 +56,7 @@ export const API_CONFIG = {
     FULL_URL: PUZZLE_API_URL,
     ENDPOINTS: {
       GET_BOTS: "/",
+      GET_BOT: (botId: string) => `/${botId}`,
       CREATE_BOT: "/",
       UPDATE_BOT: (botId: string) => `/${botId}`,
       DELETE_BOT: (botId: string) => `/${botId}`,

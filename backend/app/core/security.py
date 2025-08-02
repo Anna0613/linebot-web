@@ -20,15 +20,19 @@ def get_password_hash(password: str) -> str:
     """加密密碼"""
     return pwd_context.hash(password)
 
-def create_access_token(data: Dict[Any, Any], expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(data: Dict[Any, Any], expires_delta: Optional[timedelta] = None, remember_me: bool = False) -> str:
     """創建 JWT access token"""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        # 根據記住我選項決定過期時間
+        if remember_me:
+            expire = datetime.utcnow() + timedelta(minutes=settings.JWT_REMEMBER_EXPIRE_MINUTES)
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "remember_me": remember_me})
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 
@@ -66,13 +70,37 @@ def extract_token_from_header(auth_header: str) -> str:
             detail="無效的 Authorization header 格式"
         )
 
-def get_cookie_settings() -> Dict[str, Any]:
+def create_refresh_token(data: Dict[Any, Any]) -> str:
+    """創建 JWT refresh token (30天有效期)"""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(days=30)
+    to_encode.update({"exp": expire, "type": "refresh"})
+    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    return encoded_jwt
+
+def get_cookie_settings(remember_me: bool = False) -> Dict[str, Any]:
     """取得 Cookie 設定"""
+    if remember_me:
+        max_age = settings.JWT_REMEMBER_EXPIRE_MINUTES * 60
+    else:
+        max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    
     return {
         "httponly": True,
         "secure": settings.ENVIRONMENT == "production",
         "samesite": "lax",
-        "max_age": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "max_age": max_age,
         "domain": None,  # 不設定 domain，讓瀏覽器自動處理
+        "path": "/"
+    }
+
+def get_refresh_cookie_settings() -> Dict[str, Any]:
+    """取得 Refresh Token Cookie 設定 (30天)"""
+    return {
+        "httponly": True,
+        "secure": settings.ENVIRONMENT == "production",
+        "samesite": "lax",
+        "max_age": 30 * 24 * 60 * 60,  # 30天
+        "domain": None,
         "path": "/"
     } 

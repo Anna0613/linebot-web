@@ -83,6 +83,12 @@ export class UnifiedApiClient {
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('請求失敗');
         
+        // 如果是 token 刷新成功，立即重試一次（不計入重試次數）
+        if (error instanceof Error && error.message === 'TOKEN_REFRESHED') {
+          secureLog('Token 已刷新，立即重試請求');
+          continue;
+        }
+        
         // 如果是最後一次嘗試或者是認證錯誤，不再重試
         if (
           attempt === retries ||
@@ -147,7 +153,26 @@ export class UnifiedApiClient {
 
       // 處理認證失敗
       if (status === 401) {
-        secureLog('認證失敗，清除認證信息');
+        secureLog('收到 401 錯誤，嘗試刷新 token');
+        
+        // 嘗試刷新 token（只對記住我的用戶）
+        if (authManager.isRememberMeActive()) {
+          try {
+            const refreshed = await authManager.refreshToken();
+            if (refreshed) {
+              secureLog('Token 刷新成功，重新嘗試原始請求');
+              // 這裡不返回錯誤，讓外層重試邏輯來處理
+              throw new Error('TOKEN_REFRESHED');
+            }
+          } catch (refreshError) {
+            if (refreshError.message === 'TOKEN_REFRESHED') {
+              throw refreshError; // 重新拋出以觸發重試
+            }
+            secureLog('Token 刷新失敗:', refreshError);
+          }
+        }
+        
+        // 如果不是記住我模式或刷新失敗，清除認證信息
         authManager.handleAuthError({ status, message: data.error || '認證已過期' });
         return {
           error: data.error || '認證已過期，請重新登入',
@@ -304,6 +329,12 @@ export class UnifiedApiClient {
   public async getBots(): Promise<ApiResponse> {
     return this.get(
       getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.GET_BOTS)
+    );
+  }
+
+  public async getBot(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.GET_BOT(botId))
     );
   }
 
