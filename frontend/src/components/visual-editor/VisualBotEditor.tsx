@@ -45,10 +45,6 @@ export const VisualBotEditor: React.FC = () => {
   const [lastSavedTime, setLastSavedTime] = useState<Date | undefined>();
   const [saveError, setSaveError] = useState<string>('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  
-  // 自動儲存計時器
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const AUTOSAVE_DELAY = 5000; // 5秒延遲自動儲存
 
 
   // 標記為有未儲存變更
@@ -59,19 +55,6 @@ export const VisualBotEditor: React.FC = () => {
       setSaveError('');
     }
   }, [saveStatus]);
-
-  // 清除自動儲存計時器
-  const clearAutoSaveTimer = useCallback(() => {
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-      autoSaveTimerRef.current = null;
-    }
-  }, []);
-
-  // 設置自動儲存計時器（先定義空函數，稍後定義實際內容）
-  const scheduleAutoSave = useCallback(() => {
-    clearAutoSaveTimer();
-  }, [clearAutoSaveTimer]);
 
   // 處理返回上一頁
   const handleGoBack = () => {
@@ -85,10 +68,10 @@ export const VisualBotEditor: React.FC = () => {
     }
   };
 
-  // 監聽積木變更，觸發自動儲存計時器
+  // 監聽積木變更，標記為未儲存
   const isInitialLoadRef = useRef(true);
 
-  // 頁面離開前的確認和清理
+  // 頁面離開前的確認
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -98,23 +81,12 @@ export const VisualBotEditor: React.FC = () => {
       }
     };
 
-    const handleUnload = () => {
-      // 頁面卸載時嘗試同步儲存（可能不會完成）
-      if (hasUnsavedChanges && navigator.sendBeacon) {
-        // 使用 sendBeacon 嘗試發送最後的儲存請求
-        console.log('🔄 頁面卸載，嘗試使用 sendBeacon 儲存...');
-      }
-    };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('unload', handleUnload);
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('unload', handleUnload);
-      clearAutoSaveTimer();
     };
-  }, [hasUnsavedChanges, clearAutoSaveTimer]);
+  }, [hasUnsavedChanges]);
 
 
 
@@ -154,7 +126,6 @@ export const VisualBotEditor: React.FC = () => {
         setHasUnsavedChanges(false);
         setSaveError('');
         setLastSavedTime(new Date(template.updated_at));
-        clearAutoSaveTimer();
         
         console.log(`已載入邏輯模板 ${template.name} 的數據`);
       } catch (error) {
@@ -193,7 +164,6 @@ export const VisualBotEditor: React.FC = () => {
           setHasUnsavedChanges(false);
           setSaveError('');
           setLastSavedTime(new Date(message.updated_at));
-          clearAutoSaveTimer();
           
           console.log(`已載入 FlexMessage ${message.name} 的數據`);
         } else {
@@ -284,7 +254,6 @@ export const VisualBotEditor: React.FC = () => {
       setSaveStatus(SaveStatus.SAVED);
       setLastSavedTime(new Date());
       setHasUnsavedChanges(false);
-      clearAutoSaveTimer();
       console.log(`邏輯模板 ${templateId} 儲存成功`);
     } catch (error) {
       console.error("Error occurred:", error);
@@ -317,7 +286,6 @@ export const VisualBotEditor: React.FC = () => {
       setSaveStatus(SaveStatus.SAVED);
       setLastSavedTime(new Date());
       setHasUnsavedChanges(false);
-      clearAutoSaveTimer();
       console.log(`FlexMessage ${messageId} 儲存成功`);
     } catch (error) {
       console.error("Error occurred:", error);
@@ -362,7 +330,6 @@ export const VisualBotEditor: React.FC = () => {
       setSaveStatus(SaveStatus.SAVED);
       setLastSavedTime(new Date());
       setHasUnsavedChanges(false);
-      clearAutoSaveTimer();
       console.log(`已儲存數據到 Bot ${botId}`);
     } catch (error) {
       console.error("Error occurred:", error);
@@ -396,60 +363,7 @@ export const VisualBotEditor: React.FC = () => {
     setLastSavedTime(undefined);
   };
 
-  // 執行自動儲存（在儲存函數定義之後）
-  const performAutoSave = useCallback(async () => {
-    if (!hasUnsavedChanges) return;
-
-    console.log('🔄 執行自動儲存...');
-    setSaveStatus(SaveStatus.SAVING);
-    
-    try {
-      let saved = false;
-      
-      // 優先儲存邏輯模板
-      if (selectedLogicTemplateId) {
-        // 動態 import 生成程式碼函數
-        const { generateUnifiedCode } = await import('../../utils/unifiedCodeGenerator');
-        const generatedCode = generateUnifiedCode(logicBlocks, []);
-        
-        await handleLogicTemplateSave(selectedLogicTemplateId, {
-          logicBlocks,
-          generatedCode
-        });
-        saved = true;
-      }
-      
-      // 然後儲存 FlexMessage  
-      if (selectedFlexMessageId) {
-        await handleFlexMessageSave(selectedFlexMessageId, {
-          flexBlocks
-        });
-        saved = true;
-      }
-      
-      if (saved) {
-        console.log('✅ 自動儲存完成');
-      }
-    } catch (error) {
-      console.error('❌ 自動儲存失敗:', error);
-      setSaveStatus(SaveStatus.ERROR);
-      setSaveError(error instanceof Error ? error.message : '自動儲存失敗');
-    }
-  }, [hasUnsavedChanges, selectedLogicTemplateId, selectedFlexMessageId, logicBlocks, flexBlocks, handleLogicTemplateSave, handleFlexMessageSave]);
-
-  // 重新定義完整的自動儲存計時器
-  const scheduleAutoSaveTimer = useCallback(() => {
-    clearAutoSaveTimer();
-    
-    // 只有在有選擇的模板/訊息時才自動儲存
-    if ((selectedLogicTemplateId || selectedFlexMessageId) && hasUnsavedChanges) {
-      autoSaveTimerRef.current = setTimeout(() => {
-        performAutoSave();
-      }, AUTOSAVE_DELAY);
-    }
-  }, [selectedLogicTemplateId, selectedFlexMessageId, hasUnsavedChanges, clearAutoSaveTimer, performAutoSave]);
-
-  // 監聽積木變更的 useEffect
+  // 監聽積木變更的 useEffect（僅標記為未儲存）
   useEffect(() => {
     // 初次載入時不觸發變更檢測
     if (isInitialLoadRef.current) {
@@ -460,9 +374,8 @@ export const VisualBotEditor: React.FC = () => {
     // 如果不是正在載入數據且有積木，才標記為變更
     if (!isLoadingData && (logicBlocks.length > 0 || flexBlocks.length > 0)) {
       markAsChanged();
-      scheduleAutoSaveTimer();
     }
-  }, [logicBlocks, flexBlocks, isLoadingData, markAsChanged, scheduleAutoSaveTimer]);
+  }, [logicBlocks, flexBlocks, isLoadingData, markAsChanged]);
 
   // 初始化組件
   useEffect(() => {
