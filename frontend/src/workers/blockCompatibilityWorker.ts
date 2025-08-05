@@ -12,13 +12,13 @@ const BlockCategory = {
   FLEX_CONTAINER: 'flex-container',
   FLEX_CONTENT: 'flex-content',
   FLEX_LAYOUT: 'flex-layout'
-};
+} as const;
 
 // 工作區上下文枚舉
 const WorkspaceContext = {
   LOGIC: 'logic',
   FLEX: 'flex'
-};
+} as const;
 
 // 積木相容性規則（簡化版本）
 const BLOCK_COMPATIBILITY_RULES = [
@@ -93,7 +93,7 @@ const BLOCK_MIGRATION_RULES = [
 /**
  * 根據舊的 blockType 獲取對應的類別
  */
-function getCategoryFromBlockType(blockType) {
+function getCategoryFromBlockType(blockType: string): string {
   const migrationRule = BLOCK_MIGRATION_RULES.find(rule => rule.oldBlockType === blockType);
   return migrationRule?.newCategory || BlockCategory.SETTING;
 }
@@ -101,7 +101,7 @@ function getCategoryFromBlockType(blockType) {
 /**
  * 智能推斷積木類別
  */
-function inferCategoryFromBlockType(blockType) {
+function inferCategoryFromBlockType(blockType: string): string | null {
   if (!blockType || typeof blockType !== 'string') {
     return null;
   }
@@ -142,9 +142,9 @@ function inferCategoryFromBlockType(blockType) {
 /**
  * 檢查積木相容性（Worker 版本）
  */
-function checkBlockCompatibility(block, context, existingBlocks = []) {
+function checkBlockCompatibility(block: any, context: string, existingBlocks: any[] = []): any {
   // 驗證上下文
-  if (!context || !Object.values(WorkspaceContext).includes(context)) {
+  if (!context || !Object.values(WorkspaceContext).includes(context as any)) {
     return {
       isValid: false,
       reason: '工作區上下文無效',
@@ -162,7 +162,7 @@ function checkBlockCompatibility(block, context, existingBlocks = []) {
   if (!rule) {
     // 嘗試智能推斷
     const inferredCategory = inferCategoryFromBlockType(blockType);
-    if (inferredCategory && Object.values(BlockCategory).includes(inferredCategory)) {
+    if (inferredCategory && Object.values(BlockCategory).includes(inferredCategory as any)) {
       return {
         isValid: true,
         reason: `積木類別 ${inferredCategory} 使用智能推斷規則`,
@@ -178,11 +178,11 @@ function checkBlockCompatibility(block, context, existingBlocks = []) {
   }
   
   // 檢查基本相容性
-  if (!rule.allowedIn.includes(context)) {
+  if (!rule.allowedIn.includes(context as any)) {
     // Flex 設計器寬鬆政策
     if (context === WorkspaceContext.FLEX) {
       if ([BlockCategory.FLEX_CONTAINER, BlockCategory.FLEX_CONTENT, 
-           BlockCategory.FLEX_LAYOUT, BlockCategory.CONTROL].includes(category)) {
+           BlockCategory.FLEX_LAYOUT, BlockCategory.CONTROL].includes(category as any)) {
         return {
           isValid: true,
           reason: `Flex 設計器支援 ${category} 積木（寬鬆政策）`,
@@ -231,7 +231,7 @@ function checkBlockCompatibility(block, context, existingBlocks = []) {
     const hasValidParent = existingBlocks.some(existingBlock => {
       const blockCategory = 'category' in existingBlock ? 
         existingBlock.category : getCategoryFromBlockType(existingBlock.blockType);
-      return rule.restrictions.requiresParent.includes(blockCategory);
+      return rule.restrictions!.requiresParent!.includes(blockCategory);
     });
     
     if (!hasValidParent) {
@@ -284,7 +284,7 @@ self.onmessage = function(e) {
         
       case 'BATCH_CHECK':
         const { blocks, context: batchContext, existingBlocks: batchExisting } = data;
-        const results = blocks.map(block => 
+        const results = blocks.map((block: any) => 
           checkBlockCompatibility(block, batchContext, batchExisting)
         );
         
@@ -306,7 +306,7 @@ self.onmessage = function(e) {
     self.postMessage({
       id,
       type: 'ERROR',
-      data: { error: error.message }
+      data: { error: (error as Error).message }
     });
   }
 };

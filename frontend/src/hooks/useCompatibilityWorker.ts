@@ -31,7 +31,11 @@ export const useCompatibilityWorker = () => {
     }
 
     try {
-      workerRef.current = new Worker('/workers/blockCompatibilityWorker.js');
+      // 使用 Vite 的 Worker 載入方式
+      workerRef.current = new Worker(
+        new URL('../workers/blockCompatibilityWorker.ts', import.meta.url),
+        { type: 'module' }
+      );
       
       workerRef.current.onmessage = (e: MessageEvent<WorkerMessage>) => {
         const { id, type, data } = e.data;
