@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useDrop } from 'react-dnd';
 import DroppedBlock from './DroppedBlock';
+import LazyDroppedBlock from './LazyDroppedBlock';
 import { UnifiedBlock, UnifiedDropItem, WorkspaceContext, BlockValidationResult } from '../../types/block';
 import { isBlockCompatible, migrateBlock } from '../../utils/blockCompatibility';
+import { useCompatibilityWorker } from '../../hooks/useCompatibilityWorker';
 import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
 // 向後相容的舊格式介面
@@ -30,6 +32,7 @@ interface DropZoneProps {
   onMove?: (dragIndex: number, hoverIndex: number) => void;  // 新增：移動積木
   onInsert?: (index: number, item: UnifiedDropItem | LegacyDropItem) => void;             // 新增：插入積木
   showCompatibilityInfo?: boolean;             // 是否顯示相容性資訊
+  useLazyLoading?: boolean;                    // 是否使用延遲載入
 }
 
 const DropZone: React.FC<DropZoneProps> = ({ 
@@ -41,10 +44,14 @@ const DropZone: React.FC<DropZoneProps> = ({
   onUpdate, 
   onMove,
   onInsert,
-  showCompatibilityInfo = true 
+  showCompatibilityInfo = true,
+  useLazyLoading = true 
 }) => {
   const [dragValidation, setDragValidation] = useState<BlockValidationResult | null>(null);
   const [hoveredItem, setHoveredItem] = useState<UnifiedDropItem | LegacyDropItem | null>(null);
+  
+  // 使用 Web Worker 進行非阻塞相容性檢查
+  const { checkCompatibility, isWorkerAvailable } = useCompatibilityWorker();
 
   // 轉換舊格式積木到統一格式進行相容性檢查
   const normalizedBlocks: UnifiedBlock[] = blocks.map(block => {
@@ -86,20 +93,47 @@ const DropZone: React.FC<DropZoneProps> = ({
           return;
         }
         
-        // 只對新積木執行相容性檢查
-        let validation: BlockValidationResult;
-        if ('category' in item) {
-          validation = isBlockCompatible(item as UnifiedDropItem, context, normalizedBlocks);
-        } else {
-          // 轉換舊格式積木進行檢查
-          console.log('🔄 轉換舊格式積木:', item);
-          const migratedBlock = migrateBlock(item as LegacyDropItem);
-          console.log('✅ 積木遷移完成:', migratedBlock);
-          validation = isBlockCompatible(migratedBlock, context, normalizedBlocks);
-        }
+        // 對新積木執行異步相容性檢查
+        const performCompatibilityCheck = async () => {
+          try {
+            let validation: BlockValidationResult;
+            
+            if (isWorkerAvailable) {
+              // 使用 Web Worker 進行非阻塞檢查
+              if ('category' in item) {
+                validation = await checkCompatibility(item as UnifiedDropItem, context, normalizedBlocks);
+              } else {
+                // 轉換舊格式積木進行檢查
+                console.log('🔄 轉換舊格式積木:', item);
+                const migratedBlock = migrateBlock(item as LegacyDropItem);
+                console.log('✅ 積木遷移完成:', migratedBlock);
+                validation = await checkCompatibility(migratedBlock, context, normalizedBlocks);
+              }
+            } else {
+              // 後備到同步檢查
+              if ('category' in item) {
+                validation = isBlockCompatible(item as UnifiedDropItem, context, normalizedBlocks);
+              } else {
+                const migratedBlock = migrateBlock(item as LegacyDropItem);
+                validation = isBlockCompatible(migratedBlock, context, normalizedBlocks);
+              }
+            }
+            
+            console.log('🔍 新積木相容性檢查結果:', validation);
+            setDragValidation(validation);
+          } catch (error) {
+            console.error('❌ 異步相容性檢查失敗:', error);
+            // 提供後備驗證
+            setDragValidation({
+              isValid: true,
+              reason: '使用後備相容性檢查（寬鬆政策）',
+              suggestions: ['如果遇到問題，請重新整理頁面']
+            });
+          }
+        };
         
-        console.log('🔍 新積木相容性檢查結果:', validation);
-        setDragValidation(validation);
+        // 執行異步檢查
+        performCompatibilityCheck();
       } catch (error) {
         console.error('❌ 積木相容性檢查失敗:', error, {
           item: item,
@@ -311,17 +345,22 @@ const DropZone: React.FC<DropZoneProps> = ({
             </div>
           </div>
         ) : (
-          blocks.map((block, index) => (
-            <DroppedBlock 
-              key={`${index}-${Date.now()}`} 
-              block={block} 
-              index={index}
-              onRemove={onRemove}
-              onUpdate={onUpdate}
-              onMove={onMove}
-              onInsert={onInsert}
-            />
-          ))
+          blocks.map((block, index) => {
+            // 選擇使用延遲載入或傳統載入
+            const BlockComponent = useLazyLoading ? LazyDroppedBlock : DroppedBlock;
+            
+            return (
+              <BlockComponent 
+                key={`${index}-${Date.now()}`} 
+                block={block} 
+                index={index}
+                onRemove={onRemove}
+                onUpdate={onUpdate}
+                onMove={onMove}
+                onInsert={onInsert}
+              />
+            );
+          })
         )}
       </div>
       

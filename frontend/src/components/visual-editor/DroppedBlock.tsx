@@ -1,11 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { X, Settings, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
-import VisualEditorApi, { FlexMessageSummary } from '../../services/visualEditorApi';
+import { FlexMessageSummary } from '../../services/visualEditorApi';
+import { useFlexMessageCache } from '../../hooks/useFlexMessageCache';
 
 interface BlockData {
   [key: string]: unknown;
@@ -44,7 +45,7 @@ interface DroppedBlockProps {
   onInsert?: (index: number, item: Block) => void;
 }
 
-const DroppedBlock: React.FC<DroppedBlockProps> = ({ 
+const DroppedBlock: React.FC<DroppedBlockProps> = memo(({ 
   block, 
   index, 
   onRemove, 
@@ -56,28 +57,27 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({
   const [blockData, setBlockData] = useState<BlockData>(block.blockData || {});
   const [showInsertZone, setShowInsertZone] = useState<'above' | 'below' | null>(null);
   const [flexMessages, setFlexMessages] = useState<FlexMessageSummary[]>([]);
-  const [loadingFlexMessages, setLoadingFlexMessages] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // 載入FLEX訊息列表
+  // 使用緩存 Hook
+  const { getFlexMessages, isLoading: loadingFlexMessages } = useFlexMessageCache();
+
+  // 載入FLEX訊息列表 - 使用緩存優化
   useEffect(() => {
     const loadFlexMessages = async () => {
       if (block.blockType === 'reply' && block.blockData.replyType === 'flex') {
-        setLoadingFlexMessages(true);
         try {
-          const messages = await VisualEditorApi.getUserFlexMessagesSummary();
+          const messages = await getFlexMessages();
           setFlexMessages(messages);
         } catch (error) {
           console.error("Error occurred:", error);
           setFlexMessages([]);
-        } finally {
-          setLoadingFlexMessages(false);
         }
       }
     };
 
     loadFlexMessages();
-  }, [block.blockType, block.blockData.replyType]);
+  }, [block.blockType, block.blockData.replyType, getFlexMessages]);
 
   // 處理FLEX訊息選擇
   const handleFlexMessageSelect = (value: string) => {
@@ -506,6 +506,18 @@ const DroppedBlock: React.FC<DroppedBlockProps> = ({
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 記憶化比較函數 - 只在關鍵屬性變更時重新渲染
+  return (
+    prevProps.block === nextProps.block &&
+    prevProps.index === nextProps.index &&
+    prevProps.onRemove === nextProps.onRemove &&
+    prevProps.onUpdate === nextProps.onUpdate &&
+    prevProps.onMove === nextProps.onMove &&
+    prevProps.onInsert === nextProps.onInsert
+  );
+});
+
+DroppedBlock.displayName = 'DroppedBlock';
 
 export default DroppedBlock;

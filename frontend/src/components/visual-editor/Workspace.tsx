@@ -1,10 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import DropZone from './DropZone';
 import CodePreview from './CodePreview';
 import LineBotSimulator from './LineBotSimulator';
 import FlexMessagePreview from './FlexMessagePreview';
 import { BlockPalette } from './BlockPalette';
+import VirtualizedBlockPalette from './VirtualizedBlockPalette';
 import LogicTemplateSelector from './LogicTemplateSelector';
 import FlexMessageSelector from './FlexMessageSelector';
 import { 
@@ -80,6 +81,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('logic');
   const [showAllBlocks, setShowAllBlocks] = useState(true);
+  const [useVirtualizedPalette, setUseVirtualizedPalette] = useState(true); // 啟用虛擬化面板
   const [workspaceValidation, setWorkspaceValidation] = useState<{ 
     logic: { isValid: boolean; errors: string[]; warnings: string[] };
     flex: { isValid: boolean; errors: string[]; warnings: string[] };
@@ -169,14 +171,24 @@ const Workspace: React.FC<WorkspaceProps> = ({
     });
   }, [logicBlocks, flexBlocks, normalizeBlocks, toast]);
 
-  // 在積木變更時驗證工作區 - 使用防抖機制避免頻繁驗證
-  React.useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      validateCurrentWorkspace();
-    }, 500); // 增加到 500ms 延遲，進一步減少頻繁驗證
+  // 智能防抖驗證函數 - 優化版本
+  const debouncedValidation = useMemo(
+    () => {
+      let timeoutId: NodeJS.Timeout;
+      return () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          validateCurrentWorkspace();
+        }, 1000); // 增加到 1000ms 延遲，減少頻繁驗證
+      };
+    },
+    [validateCurrentWorkspace]
+  );
 
-    return () => clearTimeout(timeoutId);
-  }, [logicBlocks, flexBlocks, validateCurrentWorkspace]); // 包含必要的依賴項
+  // 在積木變更時驗證工作區 - 使用智能防抖機制
+  React.useEffect(() => {
+    debouncedValidation();
+  }, [logicBlocks, flexBlocks, debouncedValidation]);
 
   const handleLogicDrop = useCallback((item: UnifiedDropItem | LegacyDropItem) => {
     let blockToAdd: UnifiedBlock | LegacyBlock;
@@ -365,12 +377,20 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   return (
     <div className="flex h-full">
-      {/* 積木選擇面板 */}
-      <BlockPalette 
-        currentContext={getCurrentContext()}
-        showAllBlocks={showAllBlocks}
-        onShowAllBlocksChange={setShowAllBlocks}
-      />
+      {/* 積木選擇面板 - 使用虛擬化或傳統面板 */}
+      {useVirtualizedPalette ? (
+        <VirtualizedBlockPalette 
+          currentContext={getCurrentContext()}
+          showAllBlocks={showAllBlocks}
+          onShowAllBlocksChange={setShowAllBlocks}
+        />
+      ) : (
+        <BlockPalette 
+          currentContext={getCurrentContext()}
+          showAllBlocks={showAllBlocks}
+          onShowAllBlocksChange={setShowAllBlocks}
+        />
+      )}
       
       {/* 主工作區 */}
       <div className="flex-1 bg-gray-100 flex flex-col">

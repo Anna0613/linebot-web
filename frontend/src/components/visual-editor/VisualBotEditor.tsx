@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import DragDropProvider from './DragDropProvider';
@@ -9,6 +9,8 @@ import { Button } from '../ui/button';
 import { UnifiedBlock } from '../../types/block';
 import { migrateBlocks } from '../../utils/blockCompatibility';
 import VisualEditorApi from '../../services/visualEditorApi';
+import PerformanceDashboard from './PerformanceDashboard';
+import { usePerformanceMonitor } from '../../utils/performanceMonitor';
 
 // 向後相容的舊格式介面
 interface LegacyBlockData {
@@ -45,9 +47,12 @@ export const VisualBotEditor: React.FC = () => {
   const [lastSavedTime, setLastSavedTime] = useState<Date | undefined>();
   const [saveError, setSaveError] = useState<string>('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showPerformanceDashboard, setShowPerformanceDashboard] = useState(false);
 
+  // 性能監控 Hook
+  const { measureInteraction, measureBlockOperation } = usePerformanceMonitor();
 
-  // 標記為有未儲存變更
+  // 標記為有未儲存變更 - 使用防抖優化
   const markAsChanged = useCallback(() => {
     if (saveStatus !== SaveStatus.PENDING) {
       setSaveStatus(SaveStatus.PENDING);
@@ -55,6 +60,20 @@ export const VisualBotEditor: React.FC = () => {
       setSaveError('');
     }
   }, [saveStatus]);
+
+  // 防抖版本的標記變更函數
+  const debouncedMarkAsChanged = useMemo(
+    () => {
+      let timeoutId: NodeJS.Timeout;
+      return () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          markAsChanged();
+        }, 300); // 300ms 防抖延遲
+      };
+    },
+    [markAsChanged]
+  );
 
   // 處理返回上一頁
   const handleGoBack = () => {
@@ -90,24 +109,26 @@ export const VisualBotEditor: React.FC = () => {
 
 
 
-  // 處理 Bot 選擇變更
+  // 處理 Bot 選擇變更 - 添加性能監控
   const handleBotSelect = async (botId: string) => {
-    setSelectedBotId(botId);
-    // 清空邏輯模板和 FlexMessage 選擇
-    setSelectedLogicTemplateId('');
-    setSelectedFlexMessageId('');
-    setCurrentLogicTemplateName('');
-    setCurrentFlexMessageName('');
-    
-    if (botId && VisualEditorApi.isValidBotId(botId)) {
-      // 清空當前積木，等待用戶選擇邏輯模板和 FlexMessage
-      setLogicBlocks([]);
-      setFlexBlocks([]);
-    } else {
-      // 清空積木
-      setLogicBlocks([]);
-      setFlexBlocks([]);
-    }
+    measureInteraction('bot-selection', () => {
+      setSelectedBotId(botId);
+      // 清空邏輯模板和 FlexMessage 選擇
+      setSelectedLogicTemplateId('');
+      setSelectedFlexMessageId('');
+      setCurrentLogicTemplateName('');
+      setCurrentFlexMessageName('');
+      
+      if (botId && VisualEditorApi.isValidBotId(botId)) {
+        // 清空當前積木，等待用戶選擇邏輯模板和 FlexMessage
+        setLogicBlocks([]);
+        setFlexBlocks([]);
+      } else {
+        // 清空積木
+        setLogicBlocks([]);
+        setFlexBlocks([]);
+      }
+    });
   };
 
   // 處理邏輯模板選擇變更
@@ -363,7 +384,11 @@ export const VisualBotEditor: React.FC = () => {
     setLastSavedTime(undefined);
   };
 
-  // 監聽積木變更的 useEffect（僅標記為未儲存）
+  // 記憶化積木數據以減少不必要的重新渲染
+  const memoizedLogicBlocks = useMemo(() => logicBlocks, [logicBlocks]);
+  const memoizedFlexBlocks = useMemo(() => flexBlocks, [flexBlocks]);
+
+  // 監聽積木變更的 useEffect（優化版本，使用防抖）
   useEffect(() => {
     // 初次載入時不觸發變更檢測
     if (isInitialLoadRef.current) {
@@ -372,10 +397,10 @@ export const VisualBotEditor: React.FC = () => {
     }
     
     // 如果不是正在載入數據且有積木，才標記為變更
-    if (!isLoadingData && (logicBlocks.length > 0 || flexBlocks.length > 0)) {
-      markAsChanged();
+    if (!isLoadingData && (memoizedLogicBlocks.length > 0 || memoizedFlexBlocks.length > 0)) {
+      debouncedMarkAsChanged();
     }
-  }, [logicBlocks, flexBlocks, isLoadingData, markAsChanged]);
+  }, [memoizedLogicBlocks, memoizedFlexBlocks, isLoadingData, debouncedMarkAsChanged]);
 
   // 初始化組件
   useEffect(() => {
@@ -457,6 +482,12 @@ export const VisualBotEditor: React.FC = () => {
           />
         </div>
       </div>
+      
+      {/* 性能監控儀表板 */}
+      <PerformanceDashboard 
+        isVisible={showPerformanceDashboard}
+        onToggle={() => setShowPerformanceDashboard(!showPerformanceDashboard)}
+      />
     </DragDropProvider>
   );
 };
