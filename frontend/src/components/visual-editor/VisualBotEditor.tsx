@@ -8,33 +8,22 @@ import SaveStatusIndicator from './SaveStatusIndicator';
 import { SaveStatus } from '../../types/saveStatus';
 import { Button } from '../ui/button';
 import { UnifiedBlock } from '../../types/block';
-import { migrateBlocks } from '../../utils/blockCompatibility';
 import VisualEditorApi from '../../services/visualEditorApi';
 import PerformanceDashboard from './PerformanceDashboard';
 import { usePerformanceMonitor } from '../../utils/performanceMonitor';
 
-// 向後相容的舊格式介面
-interface LegacyBlockData {
-  [key: string]: unknown;
-}
-
-interface LegacyBlock {
-  blockType: string;
-  blockData: LegacyBlockData;
-}
-
-// 專案資料介面（支援新舊格式）
+// 專案資料介面
 interface ProjectData {
   name: string;
-  logicBlocks: (UnifiedBlock | LegacyBlock)[];
-  flexBlocks: (UnifiedBlock | LegacyBlock)[];
-  version?: string; // 用於追蹤專案格式版本
+  logicBlocks: UnifiedBlock[];
+  flexBlocks: UnifiedBlock[];
+  version?: string;
 }
 
 export const VisualBotEditor: React.FC = () => {
   const navigate = useNavigate();
-  const [logicBlocks, setLogicBlocks] = useState<(UnifiedBlock | LegacyBlock)[]>([]);
-  const [flexBlocks, setFlexBlocks] = useState<(UnifiedBlock | LegacyBlock)[]>([]);
+  const [logicBlocks, setLogicBlocks] = useState<UnifiedBlock[]>([]);
+  const [flexBlocks, setFlexBlocks] = useState<UnifiedBlock[]>([]);
   const [projectVersion, setProjectVersion] = useState<string>('2.0'); // 新版本使用統一積木系統
   const [selectedBotId, setSelectedBotId] = useState<string>('');
   const [selectedLogicTemplateId, setSelectedLogicTemplateId] = useState<string>('');
@@ -253,23 +242,13 @@ export const VisualBotEditor: React.FC = () => {
   };
 
   // 儲存邏輯模板
-  const handleLogicTemplateSave = async (templateId: string, data: { logicBlocks: (UnifiedBlock | LegacyBlock)[], generatedCode: string }) => {
+  const handleLogicTemplateSave = async (templateId: string, data: { logicBlocks: UnifiedBlock[], generatedCode: string }) => {
     try {
       setSaveStatus(SaveStatus.SAVING);
       setSaveError('');
-      
-      // 確保所有積木都是統一格式
-      const normalizedLogicBlocks = data.logicBlocks.map(block => {
-        if ('category' in block) {
-          return block as UnifiedBlock;
-        } else {
-          const legacyBlock = block as LegacyBlock;
-          return migrateBlocks([legacyBlock])[0] as UnifiedBlock;
-        }
-      });
 
       await VisualEditorApi.updateLogicTemplate(templateId, {
-        logic_blocks: normalizedLogicBlocks,
+        logic_blocks: data.logicBlocks,
         generated_code: data.generatedCode
       });
       
@@ -286,23 +265,13 @@ export const VisualBotEditor: React.FC = () => {
   };
 
   // 儲存 FlexMessage
-  const handleFlexMessageSave = async (messageId: string, data: { flexBlocks: (UnifiedBlock | LegacyBlock)[] }) => {
+  const handleFlexMessageSave = async (messageId: string, data: { flexBlocks: UnifiedBlock[] }) => {
     try {
       setSaveStatus(SaveStatus.SAVING);
       setSaveError('');
-      
-      // 確保所有積木都是統一格式
-      const normalizedFlexBlocks = data.flexBlocks.map(block => {
-        if ('category' in block) {
-          return block as UnifiedBlock;
-        } else {
-          const legacyBlock = block as LegacyBlock;
-          return migrateBlocks([legacyBlock])[0] as UnifiedBlock;
-        }
-      });
 
       await VisualEditorApi.updateFlexMessage(messageId, {
-        content: { blocks: normalizedFlexBlocks }
+        content: { blocks: data.flexBlocks }
       });
       
       setSaveStatus(SaveStatus.SAVED);
@@ -318,34 +287,14 @@ export const VisualBotEditor: React.FC = () => {
   };
 
   // 處理儲存到 Bot
-  const handleSaveToBot = async (botId: string, data: { logicBlocks: (UnifiedBlock | LegacyBlock)[], flexBlocks: (UnifiedBlock | LegacyBlock)[], generatedCode: string }) => {
+  const handleSaveToBot = async (botId: string, data: { logicBlocks: UnifiedBlock[], flexBlocks: UnifiedBlock[], generatedCode: string }) => {
     try {
       setSaveStatus(SaveStatus.SAVING);
       setSaveError('');
-      
-      // 確保所有積木都是統一格式
-      const normalizedLogicBlocks = data.logicBlocks.map(block => {
-        if ('category' in block) {
-          return block as UnifiedBlock;
-        } else {
-          // 這應該不會發生，因為我們已經做了遷移，但為了安全起見
-          const legacyBlock = block as LegacyBlock;
-          return migrateBlocks([legacyBlock])[0] as UnifiedBlock;
-        }
-      });
-
-      const normalizedFlexBlocks = data.flexBlocks.map(block => {
-        if ('category' in block) {
-          return block as UnifiedBlock;
-        } else {
-          const legacyBlock = block as LegacyBlock;
-          return migrateBlocks([legacyBlock])[0] as UnifiedBlock;
-        }
-      });
 
       await VisualEditorApi.saveVisualEditorData(botId, {
-        logic_blocks: normalizedLogicBlocks,
-        flex_blocks: normalizedFlexBlocks,
+        logic_blocks: data.logicBlocks,
+        flex_blocks: data.flexBlocks,
         generated_code: data.generatedCode
       });
       
@@ -357,26 +306,14 @@ export const VisualBotEditor: React.FC = () => {
       console.error("Error occurred:", error);
       setSaveStatus(SaveStatus.ERROR);
       setSaveError(error instanceof Error ? error.message : '儲存失敗');
-      throw error; // 重新拋出錯誤，讓 ProjectManager 處理
+      throw error;
     }
   };
 
   const handleImportProject = (projectData: ProjectData) => {
-    // 檢查匯入的專案版本
-    if (!projectData.version || projectData.version < '2.0') {
-      console.log('匯入舊版本專案，正在升級...');
-      
-      const migratedLogicBlocks = migrateBlocks(projectData.logicBlocks as LegacyBlock[]);
-      const migratedFlexBlocks = migrateBlocks(projectData.flexBlocks as LegacyBlock[]);
-      
-      setLogicBlocks(migratedLogicBlocks);
-      setFlexBlocks(migratedFlexBlocks);
-      setProjectVersion('2.0');
-    } else {
-      setLogicBlocks(projectData.logicBlocks || []);
-      setFlexBlocks(projectData.flexBlocks || []);
-      setProjectVersion(projectData.version || '2.0');
-    }
+    setLogicBlocks(projectData.logicBlocks || []);
+    setFlexBlocks(projectData.flexBlocks || []);
+    setProjectVersion(projectData.version || '2.0');
     
     // 重置儲存狀態
     setSaveStatus(SaveStatus.PENDING);

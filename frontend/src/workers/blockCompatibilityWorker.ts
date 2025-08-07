@@ -63,39 +63,11 @@ const BLOCK_COMPATIBILITY_RULES = [
   }
 ];
 
-// 積木遷移規則（簡化版本）
-const BLOCK_MIGRATION_RULES = [
-  { oldBlockType: 'message', newCategory: BlockCategory.EVENT },
-  { oldBlockType: 'postback', newCategory: BlockCategory.EVENT },
-  { oldBlockType: 'follow', newCategory: BlockCategory.EVENT },
-  { oldBlockType: 'image_event', newCategory: BlockCategory.EVENT },
-  { oldBlockType: 'text', newCategory: BlockCategory.REPLY },
-  { oldBlockType: 'image', newCategory: BlockCategory.REPLY },
-  { oldBlockType: 'sticker', newCategory: BlockCategory.REPLY },
-  { oldBlockType: 'flex', newCategory: BlockCategory.REPLY },
-  { oldBlockType: 'if_then', newCategory: BlockCategory.CONTROL },
-  { oldBlockType: 'loop', newCategory: BlockCategory.CONTROL },
-  { oldBlockType: 'wait', newCategory: BlockCategory.CONTROL },
-  { oldBlockType: 'set_variable', newCategory: BlockCategory.SETTING },
-  { oldBlockType: 'get_variable', newCategory: BlockCategory.SETTING },
-  { oldBlockType: 'save_user_data', newCategory: BlockCategory.SETTING },
-  { oldBlockType: 'bubble', newCategory: BlockCategory.FLEX_CONTAINER },
-  { oldBlockType: 'carousel', newCategory: BlockCategory.FLEX_CONTAINER },
-  { oldBlockType: 'box', newCategory: BlockCategory.FLEX_CONTAINER },
-  { oldBlockType: 'text_content', newCategory: BlockCategory.FLEX_CONTENT },
-  { oldBlockType: 'image_content', newCategory: BlockCategory.FLEX_CONTENT },
-  { oldBlockType: 'button_content', newCategory: BlockCategory.FLEX_CONTENT },
-  { oldBlockType: 'separator', newCategory: BlockCategory.FLEX_LAYOUT },
-  { oldBlockType: 'spacer', newCategory: BlockCategory.FLEX_LAYOUT },
-  { oldBlockType: 'filler', newCategory: BlockCategory.FLEX_LAYOUT }
-];
-
 /**
- * 根據舊的 blockType 獲取對應的類別
+ * 根據 blockType 獲取對應的類別（簡化版）
  */
-function getCategoryFromBlockType(blockType: string): string {
-  const migrationRule = BLOCK_MIGRATION_RULES.find(rule => rule.oldBlockType === blockType);
-  return migrationRule?.newCategory || BlockCategory.SETTING;
+function getCategoryFromBlockType(_blockType: string): string {
+  return BlockCategory.SETTING; // 預設類別
 }
 
 /**

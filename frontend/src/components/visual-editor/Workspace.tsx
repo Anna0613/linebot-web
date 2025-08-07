@@ -16,21 +16,6 @@ import { validateWorkspace } from '../../utils/blockCompatibility';
 import { useToast } from '../../hooks/use-toast';
 import { AlertTriangle } from 'lucide-react';
 
-// 向後相容的舊格式介面
-interface LegacyBlockData {
-  [key: string]: unknown;
-}
-
-interface LegacyBlock {
-  blockType: string;
-  blockData: LegacyBlockData;
-}
-
-interface LegacyDropItem {
-  blockType: string;
-  blockData: LegacyBlockData;
-}
-
 interface BlockData {
   [key: string]: unknown;
 }
@@ -41,10 +26,10 @@ interface Block {
 }
 
 interface WorkspaceProps {
-  logicBlocks: (UnifiedBlock | LegacyBlock)[];
-  flexBlocks: (UnifiedBlock | LegacyBlock)[];
-  onLogicBlocksChange: (blocks: (UnifiedBlock | LegacyBlock)[] | ((prev: (UnifiedBlock | LegacyBlock)[]) => (UnifiedBlock | LegacyBlock)[])) => void;
-  onFlexBlocksChange: (blocks: (UnifiedBlock | LegacyBlock)[] | ((prev: (UnifiedBlock | LegacyBlock)[]) => (UnifiedBlock | LegacyBlock)[])) => void;
+  logicBlocks: UnifiedBlock[];
+  flexBlocks: UnifiedBlock[];
+  onLogicBlocksChange: (blocks: UnifiedBlock[] | ((prev: UnifiedBlock[]) => UnifiedBlock[])) => void;
+  onFlexBlocksChange: (blocks: UnifiedBlock[] | ((prev: UnifiedBlock[]) => UnifiedBlock[])) => void;
   currentLogicTemplateName?: string;
   currentFlexMessageName?: string;
   // 新增邏輯模板相關 props
@@ -88,15 +73,9 @@ const Workspace: React.FC<WorkspaceProps> = ({
   });
   const { toast } = useToast();
 
-  // 轉換積木到統一格式進行驗證
-  const normalizeBlocks = useCallback((blocks: (UnifiedBlock | LegacyBlock)[]): UnifiedBlock[] => {
-    return blocks.map(block => {
-      if ('category' in block) {
-        return block as UnifiedBlock;
-      } else {
-        return migrateBlock(block as LegacyBlock);
-      }
-    });
+  // 積木已是統一格式，無需轉換
+  const normalizeBlocks = useCallback((blocks: UnifiedBlock[]): UnifiedBlock[] => {
+    return blocks;
   }, []);
 
   // 使用 ref 來存儲上一次的驗證結果，避免依賴狀態導致循環
@@ -187,8 +166,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
     debouncedValidation();
   }, [logicBlocks, flexBlocks, debouncedValidation]);
 
-  const handleLogicDrop = useCallback((item: UnifiedDropItem | LegacyDropItem) => {
-    let blockToAdd: UnifiedBlock | LegacyBlock;
+  const handleLogicDrop = useCallback((item: UnifiedDropItem) => {
+    let blockToAdd: UnifiedBlock;
     
     if ('category' in item) {
       blockToAdd = {
@@ -197,13 +176,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
         children: []
       } as UnifiedBlock;
     } else {
-      blockToAdd = item as LegacyBlock;
+      blockToAdd = item as UnifiedDropItem;
     }
     
     onLogicBlocksChange(prev => [...prev, blockToAdd]);
   }, [onLogicBlocksChange]);
 
-  const handleFlexDrop = useCallback((item: UnifiedDropItem | LegacyDropItem) => {
+  const handleFlexDrop = useCallback((item: UnifiedDropItem) => {
     console.log('🎨 Flex 設計器積木放置:', {
       item: item,
       itemType: 'category' in item ? 'unified' : 'legacy',
@@ -212,7 +191,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
     });
     
     try {
-      let blockToAdd: UnifiedBlock | LegacyBlock;
+      let blockToAdd: UnifiedBlock;
       
       if ('category' in item) {
         blockToAdd = {
@@ -221,7 +200,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           children: []
         } as UnifiedBlock;
       } else {
-        blockToAdd = item as LegacyBlock;
+        blockToAdd = item as UnifiedDropItem;
       }
       
       console.log('✅ 積木成功添加到 Flex 設計器:', blockToAdd);
@@ -239,13 +218,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
     onFlexBlocksChange(prev => prev.filter((_, i) => i !== index));
   }, [onFlexBlocksChange]);
 
-  const updateLogicBlock = useCallback((index: number, newData: LegacyBlockData) => {
+  const updateLogicBlock = useCallback((index: number, newData: BlockData) => {
     onLogicBlocksChange(prev => prev.map((block, i) => 
       i === index ? { ...block, blockData: { ...block.blockData, ...newData } } : block
     ));
   }, [onLogicBlocksChange]);
 
-  const updateFlexBlock = useCallback((index: number, newData: LegacyBlockData) => {
+  const updateFlexBlock = useCallback((index: number, newData: BlockData) => {
     onFlexBlocksChange(prev => prev.map((block, i) => 
       i === index ? { ...block, blockData: { ...block.blockData, ...newData } } : block
     ));
@@ -273,8 +252,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
   }, [onFlexBlocksChange]);
 
   // 新增：插入積木功能
-  const insertLogicBlock = useCallback((index: number, item: UnifiedDropItem | LegacyDropItem) => {
-    let blockToAdd: UnifiedBlock | LegacyBlock;
+  const insertLogicBlock = useCallback((index: number, item: UnifiedDropItem) => {
+    let blockToAdd: UnifiedBlock;
     
     if ('category' in item) {
       blockToAdd = {
@@ -283,7 +262,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
         children: []
       } as UnifiedBlock;
     } else {
-      blockToAdd = item as LegacyBlock;
+      blockToAdd = item as UnifiedDropItem;
     }
     
     onLogicBlocksChange(prev => {
@@ -293,27 +272,20 @@ const Workspace: React.FC<WorkspaceProps> = ({
     });
   }, [onLogicBlocksChange]);
 
-  const insertFlexBlock = useCallback((index: number, item: UnifiedDropItem | LegacyDropItem) => {
+  const insertFlexBlock = useCallback((index: number, item: UnifiedDropItem) => {
     console.log('🎨 Flex 設計器積木插入:', {
       insertIndex: index,
       item: item,
-      itemType: 'category' in item ? 'unified' : 'legacy',
       currentTab: activeTab,
       timestamp: new Date().toISOString()
     });
     
     try {
-      let blockToAdd: UnifiedBlock | LegacyBlock;
-      
-      if ('category' in item) {
-        blockToAdd = {
-          ...(item as UnifiedDropItem),
-          id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          children: []
-        } as UnifiedBlock;
-      } else {
-        blockToAdd = item as LegacyBlock;
-      }
+      const blockToAdd: UnifiedBlock = {
+        ...item,
+        id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        children: []
+      };
       
       onFlexBlocksChange(prev => {
         const newBlocks = [...prev];

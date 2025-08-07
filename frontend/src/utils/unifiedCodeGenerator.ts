@@ -4,20 +4,13 @@
  */
 
 import { UnifiedBlock, BlockCategory } from '../types/block';
-import { migrateBlock } from './blockCompatibility';
-
-// 向後相容的舊格式介面
-interface LegacyBlock {
-  blockType: string;
-  blockData: { [key: string]: unknown };
-}
 
 /**
  * 生成 LINE Bot 的完整程式碼
  */
 export function generateUnifiedCode(
-  logicBlocks: (UnifiedBlock | LegacyBlock)[],
-  flexBlocks: (UnifiedBlock | LegacyBlock)[] = []
+  logicBlocks: UnifiedBlock[],
+  flexBlocks: UnifiedBlock[] = []
 ): string {
   // 轉換所有積木到統一格式
   const normalizedLogicBlocks = normalizeBlocks(logicBlocks);
@@ -41,16 +34,10 @@ export function generateUnifiedCode(
 }
 
 /**
- * 轉換積木到統一格式
+ * 正規化積木（簡化版）
  */
-function normalizeBlocks(blocks: (UnifiedBlock | LegacyBlock)[]): UnifiedBlock[] {
-  return blocks.map(block => {
-    if ('category' in block) {
-      return block as UnifiedBlock;
-    } else {
-      return migrateBlock(block as LegacyBlock);
-    }
-  });
+function normalizeBlocks(blocks: UnifiedBlock[]): UnifiedBlock[] {
+  return blocks;
 }
 
 /**
@@ -284,7 +271,7 @@ if __name__ == "__main__":
 /**
  * 生成 Flex 訊息預覽 JSON
  */
-export function generateFlexPreview(flexBlocks: (UnifiedBlock | LegacyBlock)[]): object {
+export function generateFlexPreview(flexBlocks: UnifiedBlock[]): object {
   const normalizedBlocks = normalizeBlocks(flexBlocks);
   
   const containerBlocks = normalizedBlocks.filter(block => block.category === BlockCategory.FLEX_CONTAINER);

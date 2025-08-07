@@ -9,8 +9,6 @@ import {
   WorkspaceContext,
   BlockValidationResult,
   BLOCK_COMPATIBILITY_RULES,
-  BLOCK_MIGRATION_RULES,
-  BlockData,
   UnifiedDropItem
 } from '../types/block';
 
@@ -265,11 +263,11 @@ export function isBlockCompatible(
 }
 
 /**
- * 根據舊的 blockType 獲取對應的類別
+ * 根據 blockType 獲取對應的類別（簡化版）
  */
-export function getCategoryFromBlockType(blockType: string): BlockCategory {
-  const migrationRule = BLOCK_MIGRATION_RULES.find(rule => rule.oldBlockType === blockType);
-  return migrationRule?.newCategory || BlockCategory.SETTING; // 默認為設定類別
+export function getCategoryFromBlockType(_blockType: string): BlockCategory {
+  // 簡化版本，直接預設為設定類別
+  return BlockCategory.SETTING;
 }
 
 /**
@@ -329,37 +327,6 @@ export function getBlockCompatibility(category: BlockCategory): WorkspaceContext
   return rule?.allowedIn || [];
 }
 
-/**
- * 轉換舊格式的積木到統一格式
- */
-export function migrateBlock(oldBlock: {
-  blockType: string;
-  blockData: BlockData;
-}): UnifiedBlock {
-  const category = getCategoryFromBlockType(oldBlock.blockType);
-  const compatibility = getBlockCompatibility(category);
-  const migrationRule = BLOCK_MIGRATION_RULES.find(rule => rule.oldBlockType === oldBlock.blockType);
-  
-  const transformedData = migrationRule?.dataTransform 
-    ? migrationRule.dataTransform(oldBlock.blockData)
-    : oldBlock.blockData;
-  
-  return {
-    id: generateBlockId(),
-    blockType: oldBlock.blockType,
-    category,
-    blockData: transformedData,
-    compatibility,
-    children: []
-  };
-}
-
-/**
- * 轉換多個舊格式積木到統一格式
- */
-export function migrateBlocks(oldBlocks: { blockType: string; blockData: BlockData; }[]): UnifiedBlock[] {
-  return oldBlocks.map(migrateBlock);
-}
 
 /**
  * 生成唯一的積木 ID

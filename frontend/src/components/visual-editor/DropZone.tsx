@@ -3,36 +3,22 @@ import { useDrop } from 'react-dnd';
 import DroppedBlock from './DroppedBlock';
 import LazyDroppedBlock from './LazyDroppedBlock';
 import { UnifiedBlock, UnifiedDropItem, WorkspaceContext, BlockValidationResult } from '../../types/block';
-import { isBlockCompatible, migrateBlock } from '../../utils/blockCompatibility';
+import { isBlockCompatible } from '../../utils/blockCompatibility';
 import { useCompatibilityWorker } from '../../hooks/useCompatibilityWorker';
 import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
-// 向後相容的舊格式介面
-interface LegacyBlockData {
-  [key: string]: unknown;
-}
-
-interface LegacyBlock {
-  blockType: string;
-  blockData: LegacyBlockData;
-}
-
-interface LegacyDropItem {
-  blockType: string;
-  blockData: LegacyBlockData;
-}
 
 interface DropZoneProps {
   title: string;
-  context: WorkspaceContext;                    // 工作區上下文
-  onDrop?: (item: UnifiedDropItem | LegacyDropItem) => void;
-  blocks?: (UnifiedBlock | LegacyBlock)[];     // 支援新舊格式
+  context: WorkspaceContext;
+  onDrop?: (item: UnifiedDropItem) => void;
+  blocks?: UnifiedBlock[];
   onRemove?: (index: number) => void;
-  onUpdate?: (index: number, data: LegacyBlockData) => void;
-  onMove?: (dragIndex: number, hoverIndex: number) => void;  // 新增：移動積木
-  onInsert?: (index: number, item: UnifiedDropItem | LegacyDropItem) => void;             // 新增：插入積木
-  showCompatibilityInfo?: boolean;             // 是否顯示相容性資訊
-  useLazyLoading?: boolean;                    // 是否使用延遲載入
+  onUpdate?: (index: number, data: Record<string, unknown>) => void;
+  onMove?: (dragIndex: number, hoverIndex: number) => void;
+  onInsert?: (index: number, item: UnifiedDropItem) => void;
+  showCompatibilityInfo?: boolean;
+  useLazyLoading?: boolean;
 }
 
 const DropZone: React.FC<DropZoneProps> = ({ 
@@ -48,23 +34,17 @@ const DropZone: React.FC<DropZoneProps> = ({
   useLazyLoading = true 
 }) => {
   const [dragValidation, setDragValidation] = useState<BlockValidationResult | null>(null);
-  const [hoveredItem, setHoveredItem] = useState<UnifiedDropItem | LegacyDropItem | null>(null);
+  const [hoveredItem, setHoveredItem] = useState<UnifiedDropItem | null>(null);
   
   // 使用 Web Worker 進行非阻塞相容性檢查
   const { checkCompatibility, isWorkerAvailable } = useCompatibilityWorker();
 
-  // 轉換舊格式積木到統一格式進行相容性檢查
-  const normalizedBlocks: UnifiedBlock[] = blocks.map(block => {
-    if ('category' in block) {
-      return block as UnifiedBlock;
-    } else {
-      return migrateBlock(block as LegacyBlock);
-    }
-  });
+  // 積木已經是統一格式
+  const normalizedBlocks: UnifiedBlock[] = blocks;
 
   const [{ isOver, canDrop: _canDrop }, drop] = useDrop(() => ({
     accept: ['block', 'dropped-block'],
-    hover: (item: UnifiedDropItem | LegacyDropItem | { index?: number; block?: UnifiedBlock; id?: string }) => {
+    hover: (item: UnifiedDropItem | { index?: number; block?: UnifiedBlock; id?: string }) => {
       setHoveredItem(item);
       
       try {
@@ -102,20 +82,11 @@ const DropZone: React.FC<DropZoneProps> = ({
               // 使用 Web Worker 進行非阻塞檢查
               if ('category' in item) {
                 validation = await checkCompatibility(item as UnifiedDropItem, context, normalizedBlocks);
-              } else {
-                // 轉換舊格式積木進行檢查
-                console.log('🔄 轉換舊格式積木:', item);
-                const migratedBlock = migrateBlock(item as LegacyDropItem);
-                console.log('✅ 積木遷移完成:', migratedBlock);
-                validation = await checkCompatibility(migratedBlock, context, normalizedBlocks);
               }
             } else {
               // 後備到同步檢查
               if ('category' in item) {
                 validation = isBlockCompatible(item as UnifiedDropItem, context, normalizedBlocks);
-              } else {
-                const migratedBlock = migrateBlock(item as LegacyDropItem);
-                validation = isBlockCompatible(migratedBlock, context, normalizedBlocks);
               }
             }
             
@@ -155,7 +126,7 @@ const DropZone: React.FC<DropZoneProps> = ({
         });
       }
     },
-    drop: (item: UnifiedDropItem | LegacyDropItem | { index?: number; block?: UnifiedBlock; id?: string }) => {
+    drop: (item: UnifiedDropItem | { index?: number; block?: UnifiedBlock; id?: string }) => {
       try {
         // 檢查是否為重新排序操作
         const isReorderOperation = 'index' in item && typeof item.index === 'number';
@@ -178,28 +149,24 @@ const DropZone: React.FC<DropZoneProps> = ({
         }
         
         // 只對新積木進行最終驗證
-        let finalValidation: BlockValidationResult;
-        if ('category' in item) {
-          finalValidation = isBlockCompatible(item as UnifiedDropItem, context, normalizedBlocks);
-        } else {
-          console.log('🔄 Drop 事件：轉換舊格式積木:', item);
-          const migratedBlock = migrateBlock(item as LegacyDropItem);
-          console.log('✅ Drop 事件：積木遷移完成:', migratedBlock);
-          finalValidation = isBlockCompatible(migratedBlock, context, normalizedBlocks);
+        if (!('category' in item)) {
+          return; // 不支援非統一格式積木
         }
+        
+        const finalValidation = isBlockCompatible(item as UnifiedDropItem, context, normalizedBlocks);
         
         console.log('🔍 Drop 事件：最終相容性檢查結果:', finalValidation);
         
         if (finalValidation.isValid && onDrop) {
           console.log('✅ 新積木放置成功，調用 onDrop');
-          onDrop(item as UnifiedDropItem | LegacyDropItem);
+          onDrop(item as UnifiedDropItem);
         } else if (!finalValidation.isValid) {
           console.warn('⚠️ 新積木無法放置:', finalValidation.reason, finalValidation.suggestions);
           // 在某些情況下，即使顯示警告也允許放置（寬鬆政策）
           if (finalValidation.reason?.includes('寬鬆政策') || finalValidation.reason?.includes('建議')) {
             console.log('🔄 應用寬鬆政策，允許放置');
             if (onDrop) {
-              onDrop(item as UnifiedDropItem | LegacyDropItem);
+              onDrop(item as UnifiedDropItem);
             }
           }
         } else {
@@ -220,7 +187,7 @@ const DropZone: React.FC<DropZoneProps> = ({
           console.log('🔄 嘗試容錯放置');
           if (onDrop) {
             try {
-              onDrop(item as UnifiedDropItem | LegacyDropItem);
+              onDrop(item as UnifiedDropItem);
               console.log('✅ 容錯放置成功');
             } catch (fallbackError) {
               console.error('❌ 容錯放置也失敗:', fallbackError);
