@@ -3,6 +3,15 @@
  * 提供性能指標收集、分析和優化建議
  */
 
+// 擴展 Performance 接口以支持 memory 屬性
+interface PerformanceWithMemory extends Performance {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
 // 性能指標界面
 interface PerformanceMetrics {
   componentRenderTime: number;
@@ -32,7 +41,7 @@ interface PerformanceEvent {
   startTime: number;
   endTime: number;
   duration: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // 性能分析結果
@@ -102,7 +111,7 @@ class PerformanceMonitor {
             duration: entry.duration,
             metadata: { 
               entryType: entry.entryType,
-              transferSize: (entry as any).transferSize
+              transferSize: (entry as PerformanceNavigationTiming).transferSize
             }
           });
         }
@@ -120,12 +129,12 @@ class PerformanceMonitor {
    * 開始記憶體監控
    */
   private startMemoryMonitoring(): void {
-    if (typeof window === 'undefined' || !(window.performance as any).memory) {
+    if (typeof window === 'undefined' || !(window.performance as PerformanceWithMemory).memory) {
       return;
     }
 
     this.memoryCheckInterval = setInterval(() => {
-      const memory = (window.performance as any).memory;
+      const memory = (window.performance as PerformanceWithMemory).memory;
       this.recordEvent({
         type: 'memory-usage',
         name: 'heap-check',
@@ -449,8 +458,8 @@ class PerformanceMonitor {
     const interactionEvents = recentEvents.filter(e => e.type === 'user-interaction');
     const blockEvents = recentEvents.filter(e => e.type === 'block-operation');
     
-    const memoryUsage = typeof window !== 'undefined' && (window.performance as any).memory
-      ? (window.performance as any).memory.usedJSHeapSize / 1024 / 1024 // MB
+    const memoryUsage = typeof window !== 'undefined' && (window.performance as PerformanceWithMemory).memory
+      ? (window.performance as PerformanceWithMemory).memory.usedJSHeapSize / 1024 / 1024 // MB
       : 0;
 
     return {
@@ -565,7 +574,7 @@ class PerformanceMonitor {
       };
       
       return ops;
-    }, {} as any);
+    }, {} as Record<string, { totalCount: number; cacheHits: number; averageTime: number; cacheAverage: number; apiAverage: number; }>);
 
     return {
       cacheHitRate: (cacheHits.length / cacheEvents.length) * 100,

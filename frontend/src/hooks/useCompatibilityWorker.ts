@@ -4,11 +4,11 @@ import { UnifiedBlock, UnifiedDropItem, WorkspaceContext, BlockValidationResult 
 interface WorkerMessage {
   id: string;
   type: string;
-  data: any;
+  data: unknown;
 }
 
 interface PendingRequest {
-  resolve: (value: any) => void;
+  resolve: (value: unknown) => void;
   reject: (error: Error) => void;
   timeout: NodeJS.Timeout;
 }
@@ -30,6 +30,8 @@ export const useCompatibilityWorker = () => {
       return;
     }
 
+    const pendingRequests = pendingRequestsRef.current;
+    
     try {
       // 使用 Vite 的 Worker 載入方式
       workerRef.current = new Worker(
@@ -79,10 +81,10 @@ export const useCompatibilityWorker = () => {
       }
       
       // 清除所有待處理的請求
-      pendingRequestsRef.current.forEach(({ timeout }) => {
+      pendingRequests.forEach(({ timeout }) => {
         clearTimeout(timeout);
       });
-      pendingRequestsRef.current.clear();
+      pendingRequests.clear();
     };
   }, []);
 
@@ -92,7 +94,7 @@ export const useCompatibilityWorker = () => {
   }, []);
 
   // 發送 Worker 消息並返回 Promise
-  const sendWorkerMessage = useCallback((type: string, data: any, timeoutMs = 5000): Promise<any> => {
+  const sendWorkerMessage = useCallback((type: string, data: unknown, timeoutMs = 5000): Promise<unknown> => {
     return new Promise((resolve, reject) => {
       if (!workerRef.current) {
         reject(new Error('Worker not available'));
@@ -186,7 +188,7 @@ export const useCompatibilityWorker = () => {
 function checkCompatibilitySync(
   block: UnifiedBlock | UnifiedDropItem,
   context: WorkspaceContext,
-  existingBlocks: UnifiedBlock[] = []
+  _existingBlocks: UnifiedBlock[] = []
 ): BlockValidationResult {
   // 簡化的同步相容性檢查
   // 這個函數作為 Worker 不可用時的後備方案

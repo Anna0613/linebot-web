@@ -142,9 +142,9 @@ function inferCategoryFromBlockType(blockType: string): string | null {
 /**
  * 檢查積木相容性（Worker 版本）
  */
-function checkBlockCompatibility(block: any, context: string, existingBlocks: any[] = []): any {
+function checkBlockCompatibility(block: Record<string, unknown>, context: string, existingBlocks: Record<string, unknown>[] = []): Record<string, unknown> {
   // 驗證上下文
-  if (!context || !Object.values(WorkspaceContext).includes(context as any)) {
+  if (!context || !Object.values(WorkspaceContext).includes(context as keyof typeof WorkspaceContext)) {
     return {
       isValid: false,
       reason: '工作區上下文無效',
@@ -162,7 +162,7 @@ function checkBlockCompatibility(block: any, context: string, existingBlocks: an
   if (!rule) {
     // 嘗試智能推斷
     const inferredCategory = inferCategoryFromBlockType(blockType);
-    if (inferredCategory && Object.values(BlockCategory).includes(inferredCategory as any)) {
+    if (inferredCategory && Object.values(BlockCategory).includes(inferredCategory as keyof typeof BlockCategory)) {
       return {
         isValid: true,
         reason: `積木類別 ${inferredCategory} 使用智能推斷規則`,
@@ -178,11 +178,11 @@ function checkBlockCompatibility(block: any, context: string, existingBlocks: an
   }
   
   // 檢查基本相容性
-  if (!rule.allowedIn.includes(context as any)) {
+  if (!rule.allowedIn.includes(context as keyof typeof WorkspaceContext)) {
     // Flex 設計器寬鬆政策
     if (context === WorkspaceContext.FLEX) {
       if ([BlockCategory.FLEX_CONTAINER, BlockCategory.FLEX_CONTENT, 
-           BlockCategory.FLEX_LAYOUT, BlockCategory.CONTROL].includes(category as any)) {
+           BlockCategory.FLEX_LAYOUT, BlockCategory.CONTROL].includes(category as keyof typeof BlockCategory)) {
         return {
           isValid: true,
           reason: `Flex 設計器支援 ${category} 積木（寬鬆政策）`,
@@ -271,7 +271,7 @@ self.onmessage = function(e) {
   
   try {
     switch (type) {
-      case 'CHECK_COMPATIBILITY':
+      case 'CHECK_COMPATIBILITY': {
         const { block, context, existingBlocks } = data;
         const result = checkBlockCompatibility(block, context, existingBlocks);
         
@@ -281,10 +281,11 @@ self.onmessage = function(e) {
           data: result
         });
         break;
+      }
         
-      case 'BATCH_CHECK':
+      case 'BATCH_CHECK': {
         const { blocks, context: batchContext, existingBlocks: batchExisting } = data;
-        const results = blocks.map((block: any) => 
+        const results = blocks.map((block: Record<string, unknown>) => 
           checkBlockCompatibility(block, batchContext, batchExisting)
         );
         
@@ -294,6 +295,7 @@ self.onmessage = function(e) {
           data: results
         });
         break;
+      }
         
       default:
         self.postMessage({

@@ -1,12 +1,6 @@
 import React from 'react';
 import { Save, Clock, CheckCircle, AlertCircle } from 'lucide-react';
-
-export enum SaveStatus {
-  SAVED = 'saved',
-  PENDING = 'pending', 
-  SAVING = 'saving',
-  ERROR = 'error'
-}
+import { SaveStatus } from '../../types/saveStatus';
 
 interface SaveStatusIndicatorProps {
   status: SaveStatus;

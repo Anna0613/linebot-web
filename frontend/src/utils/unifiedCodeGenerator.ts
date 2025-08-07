@@ -3,7 +3,7 @@
  * 支援邏輯積木和 Flex 積木的混合代碼生成
  */
 
-import { UnifiedBlock, BlockCategory, WorkspaceContext } from '../types/block';
+import { UnifiedBlock, BlockCategory } from '../types/block';
 import { migrateBlock } from './blockCompatibility';
 
 // 向後相容的舊格式介面

@@ -140,7 +140,7 @@ export class PerformanceTest {
   /**
    * 模擬 API 呼叫延遲
    */
-  private simulateApiCall(delayMs: number): Promise<any> {
+  private simulateApiCall(delayMs: number): Promise<Record<string, unknown>> {
     return new Promise(resolve => {
       setTimeout(() => {
         resolve({ success: true, data: 'mock data', timestamp: Date.now() });
@@ -206,7 +206,7 @@ export class PerformanceTest {
   /**
    * 生成優化建議
    */
-  private generateOptimizationRecommendations(report: any): void {
+  private generateOptimizationRecommendations(report: Record<string, unknown>): void {
     const recommendations: string[] = [];
 
     if (report.cacheHitRate < 50) {

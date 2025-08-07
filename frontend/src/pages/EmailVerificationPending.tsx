@@ -6,13 +6,9 @@ import { Mail, CheckCircle, RefreshCw } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import "@/components/ui/loader.css";
-import { API_CONFIG, getApiUrl } from "../config/apiConfig";
-
 const EmailVerificationPending = () => {
   const navigate = useNavigate();
-  const [isResending, setIsResending] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
-  const [resendSuccess, setResendSuccess] = useState(false);
 
   const handleResendEmail = async () => {
     // 這裡需要用戶提供郵箱地址，或者從註冊流程中傳遞

@@ -6,16 +6,13 @@ import { BlockGroupConfig } from '../common/BlockConfig';
 import { BlockCategory } from '../../../../types/block';
 
 // 匯出所有事件積木組件
-export { default as MessageEventBlock, messageEventBlockConfig } from './MessageEventBlock';
-export { default as ImageEventBlock, imageEventBlockConfig } from './ImageEventBlock';
-export { default as FollowEventBlock, followEventBlockConfig } from './FollowEventBlock';
-export { default as PostbackEventBlock, postbackEventBlockConfig } from './PostbackEventBlock';
+export { default as MessageEventBlock } from './MessageEventBlock';
+export { default as ImageEventBlock } from './ImageEventBlock';
+export { default as FollowEventBlock } from './FollowEventBlock';
+export { default as PostbackEventBlock } from './PostbackEventBlock';
 
-// 匯入所有配置
-import { messageEventBlockConfig } from './MessageEventBlock';
-import { imageEventBlockConfig } from './ImageEventBlock';
-import { followEventBlockConfig } from './FollowEventBlock';
-import { postbackEventBlockConfig } from './PostbackEventBlock';
+// 匯入所有配置 (從統一常數檔案)
+import { messageEventBlockConfig, imageEventBlockConfig, followEventBlockConfig, postbackEventBlockConfig } from '../../../../constants/blockConstants';
 
 /**
  * 事件積木分組配置

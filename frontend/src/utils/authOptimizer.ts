@@ -3,7 +3,7 @@
  */
 
 import { authManager } from '../services/UnifiedAuthManager';
-import { cacheService, CACHE_KEYS, CACHE_TTL } from '../services/CacheService';
+import { cacheService } from '../services/CacheService';
 
 export interface AuthCheckResult {
   isAuthenticated: boolean;

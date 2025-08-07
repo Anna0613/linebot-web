@@ -6,14 +6,12 @@ import { BlockGroupConfig } from '../common/BlockConfig';
 import { BlockCategory } from '../../../../types/block';
 
 // 匯出所有 Flex 容器積木組件
-export { default as BubbleContainerBlock, bubbleContainerBlockConfig } from './BubbleContainerBlock';
-export { default as CarouselContainerBlock, carouselContainerBlockConfig } from './CarouselContainerBlock';
-export { default as BoxContainerBlock, boxContainerBlockConfig } from './BoxContainerBlock';
+export { default as BubbleContainerBlock } from './BubbleContainerBlock';
+export { default as CarouselContainerBlock } from './CarouselContainerBlock';
+export { default as BoxContainerBlock } from './BoxContainerBlock';
 
-// 匯入所有配置
-import { bubbleContainerBlockConfig } from './BubbleContainerBlock';
-import { carouselContainerBlockConfig } from './CarouselContainerBlock';
-import { boxContainerBlockConfig } from './BoxContainerBlock';
+// 匯入所有配置 (從統一常數檔案)
+import { bubbleContainerBlockConfig, carouselContainerBlockConfig, boxContainerBlockConfig } from '../../../../constants/blockConstants';
 
 /**
  * Flex 容器積木分組配置

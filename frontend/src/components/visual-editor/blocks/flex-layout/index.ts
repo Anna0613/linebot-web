@@ -6,14 +6,12 @@ import { BlockGroupConfig } from '../common/BlockConfig';
 import { BlockCategory } from '../../../../types/block';
 
 // 匯出所有 Flex 佈局積木組件
-export { default as SpacerBlock, spacerBlockConfig } from './SpacerBlock';
-export { default as FillerBlock, fillerBlockConfig } from './FillerBlock';
-export { default as AlignBlock, alignBlockConfig } from './AlignBlock';
+export { default as SpacerBlock } from './SpacerBlock';
+export { default as FillerBlock } from './FillerBlock';
+export { default as AlignBlock } from './AlignBlock';
 
-// 匯入所有配置
-import { spacerBlockConfig } from './SpacerBlock';
-import { fillerBlockConfig } from './FillerBlock';
-import { alignBlockConfig } from './AlignBlock';
+// 匯入所有配置 (從統一常數檔案)
+import { spacerBlockConfig, fillerBlockConfig, alignBlockConfig } from '../../../../constants/blockConstants';
 
 /**
  * Flex 佈局積木分組配置

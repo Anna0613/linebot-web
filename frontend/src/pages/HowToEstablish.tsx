@@ -106,7 +106,7 @@ const HowToEstablish = () => {
       navigate("/login");
       setLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, nativeFetch]);
 
   useEffect(() => {
     const token = searchParams.get("token");

@@ -3,13 +3,12 @@
  * 使用新的積木模組系統，從 568 行縮減到約 100 行
  */
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import DraggableBlock from './DraggableBlock';
 import { Filter, Zap, MessageSquare, ArrowRight, Settings, Square, Type, MousePointer } from 'lucide-react';
-import { BlockCategory, WorkspaceContext } from '../../types/block';
-import { getBlockCompatibility } from '../../utils/blockCompatibility';
+import { WorkspaceContext } from '../../types/block';
 
 // 簡化的積木定義 - 直接在組件中定義以避免複雜的模組依賴
 const blockDefinitions = {
@@ -103,7 +102,7 @@ export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
   showAllBlocks = true,
   onShowAllBlocksChange
 }) => {
-  const renderBlocks = (blocks: any[], color: string) => 
+  const renderBlocks = (blocks: Array<{blockType: string; name: string; data: Record<string, unknown>}>, color: string) => 
     blocks.map((block, index) => (
       <DraggableBlock
         key={`${block.blockType}-${index}`}

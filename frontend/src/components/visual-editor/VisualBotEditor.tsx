@@ -4,7 +4,8 @@ import { ArrowLeft } from 'lucide-react';
 import DragDropProvider from './DragDropProvider';
 import Workspace from './Workspace';
 import ProjectManager from './ProjectManager';
-import SaveStatusIndicator, { SaveStatus } from './SaveStatusIndicator';
+import SaveStatusIndicator from './SaveStatusIndicator';
+import { SaveStatus } from '../../types/saveStatus';
 import { Button } from '../ui/button';
 import { UnifiedBlock } from '../../types/block';
 import { migrateBlocks } from '../../utils/blockCompatibility';
@@ -50,7 +51,7 @@ export const VisualBotEditor: React.FC = () => {
   const [showPerformanceDashboard, setShowPerformanceDashboard] = useState(false);
 
   // 性能監控 Hook
-  const { measureInteraction, measureBlockOperation } = usePerformanceMonitor();
+  const { measureInteraction } = usePerformanceMonitor();
 
   // 標記為有未儲存變更 - 使用防抖優化
   const markAsChanged = useCallback(() => {

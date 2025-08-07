@@ -6,16 +6,13 @@ import { BlockGroupConfig } from '../common/BlockConfig';
 import { BlockCategory } from '../../../../types/block';
 
 // 匯出所有 Flex 內容積木組件
-export { default as TextContentBlock, textContentBlockConfig } from './TextContentBlock';
-export { default as ImageContentBlock, imageContentBlockConfig } from './ImageContentBlock';
-export { default as ButtonContentBlock, buttonContentBlockConfig } from './ButtonContentBlock';
-export { default as SeparatorBlock, separatorBlockConfig } from './SeparatorBlock';
+export { default as TextContentBlock } from './TextContentBlock';
+export { default as ImageContentBlock } from './ImageContentBlock';
+export { default as ButtonContentBlock } from './ButtonContentBlock';
+export { default as SeparatorBlock } from './SeparatorBlock';
 
-// 匯入所有配置
-import { textContentBlockConfig } from './TextContentBlock';
-import { imageContentBlockConfig } from './ImageContentBlock';
-import { buttonContentBlockConfig } from './ButtonContentBlock';
-import { separatorBlockConfig } from './SeparatorBlock';
+// 匯入所有配置 (從統一常數檔案)
+import { textContentBlockConfig, imageContentBlockConfig, buttonContentBlockConfig, separatorBlockConfig } from '../../../../constants/blockConstants';
 
 /**
  * Flex 內容積木分組配置

@@ -6,14 +6,12 @@ import { BlockGroupConfig } from '../common/BlockConfig';
 import { BlockCategory } from '../../../../types/block';
 
 // 匯出所有控制積木組件
-export { default as IfThenBlock, ifThenBlockConfig } from './IfThenBlock';
-export { default as LoopBlock, loopBlockConfig } from './LoopBlock';
-export { default as WaitBlock, waitBlockConfig } from './WaitBlock';
+export { default as IfThenBlock } from './IfThenBlock';
+export { default as LoopBlock } from './LoopBlock';
+export { default as WaitBlock } from './WaitBlock';
 
-// 匯入所有配置
-import { ifThenBlockConfig } from './IfThenBlock';
-import { loopBlockConfig } from './LoopBlock';
-import { waitBlockConfig } from './WaitBlock';
+// 匯入所有配置 (從統一常數檔案)
+import { ifThenBlockConfig, loopBlockConfig, waitBlockConfig } from '../../../../constants/blockConstants';
 
 /**
  * 控制積木分組配置

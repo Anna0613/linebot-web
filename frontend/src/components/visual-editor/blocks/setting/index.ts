@@ -6,14 +6,12 @@ import { BlockGroupConfig } from '../common/BlockConfig';
 import { BlockCategory } from '../../../../types/block';
 
 // 匯出所有設定積木組件
-export { default as SetVariableBlock, setVariableBlockConfig } from './SetVariableBlock';
-export { default as GetVariableBlock, getVariableBlockConfig } from './GetVariableBlock';
-export { default as SaveUserDataBlock, saveUserDataBlockConfig } from './SaveUserDataBlock';
+export { default as SetVariableBlock } from './SetVariableBlock';
+export { default as GetVariableBlock } from './GetVariableBlock';
+export { default as SaveUserDataBlock } from './SaveUserDataBlock';
 
-// 匯入所有配置
-import { setVariableBlockConfig } from './SetVariableBlock';
-import { getVariableBlockConfig } from './GetVariableBlock';
-import { saveUserDataBlockConfig } from './SaveUserDataBlock';
+// 匯入所有配置 (從統一常數檔案)
+import { setVariableBlockConfig, getVariableBlockConfig, saveUserDataBlockConfig } from '../../../../constants/blockConstants';
 
 /**
  * 設定積木分組配置

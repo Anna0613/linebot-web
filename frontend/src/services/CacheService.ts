@@ -18,7 +18,7 @@ interface CacheConfig {
 
 export class CacheService {
   private static instance: CacheService;
-  private cache: Map<string, CacheItem<any>> = new Map();
+  private cache: Map<string, CacheItem<unknown>> = new Map();
   private config: CacheConfig;
   private cleanupTimer: NodeJS.Timeout | null = null;
 
@@ -153,7 +153,7 @@ export class CacheService {
   /**
    * 檢查項目是否過期
    */
-  private isExpired(item: CacheItem<any>): boolean {
+  private isExpired(item: CacheItem<unknown>): boolean {
     return Date.now() - item.timestamp > item.ttl;
   }
 

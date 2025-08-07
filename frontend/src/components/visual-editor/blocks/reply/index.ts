@@ -6,16 +6,13 @@ import { BlockGroupConfig } from '../common/BlockConfig';
 import { BlockCategory } from '../../../../types/block';
 
 // 匯出所有回覆積木組件
-export { default as TextReplyBlock, textReplyBlockConfig } from './TextReplyBlock';
-export { default as ImageReplyBlock, imageReplyBlockConfig } from './ImageReplyBlock';
-export { default as FlexReplyBlock, flexReplyBlockConfig } from './FlexReplyBlock';
-export { default as StickerReplyBlock, stickerReplyBlockConfig } from './StickerReplyBlock';
+export { default as TextReplyBlock } from './TextReplyBlock';
+export { default as ImageReplyBlock } from './ImageReplyBlock';
+export { default as FlexReplyBlock } from './FlexReplyBlock';
+export { default as StickerReplyBlock } from './StickerReplyBlock';
 
-// 匯入所有配置
-import { textReplyBlockConfig } from './TextReplyBlock';
-import { imageReplyBlockConfig } from './ImageReplyBlock';
-import { flexReplyBlockConfig } from './FlexReplyBlock';
-import { stickerReplyBlockConfig } from './StickerReplyBlock';
+// 匯入所有配置 (從統一常數檔案)
+import { textReplyBlockConfig, imageReplyBlockConfig, flexReplyBlockConfig, stickerReplyBlockConfig } from '../../../../constants/blockConstants';
 
 /**
  * 回覆積木分組配置

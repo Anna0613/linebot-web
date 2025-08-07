@@ -155,7 +155,7 @@ export class CacheEventHandler {
   /**
    * 派發快取事件
    */
-  private dispatchCacheEvent(eventType: string, detail: Record<string, any>): void {
+  private dispatchCacheEvent(eventType: string, detail: Record<string, unknown>): void {
     try {
       const event = new CustomEvent(eventType, { detail });
       window.dispatchEvent(event);

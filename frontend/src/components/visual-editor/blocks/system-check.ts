@@ -18,7 +18,7 @@ export interface SystemCheckResult {
     name: string;
     passed: boolean;
     message: string;
-    details?: any;
+    details?: Record<string, unknown>;
   }[];
   summary: {
     totalChecks: number;
@@ -139,8 +139,8 @@ export const runSystemCheck = (): SystemCheckResult => {
 
   // 檢查 6: 相容性系統
   try {
-    const logicBlocks = globalBlockFactory.getBlocksByCompatibility('logic' as any);
-    const flexBlocks = globalBlockFactory.getBlocksByCompatibility('flex' as any);
+    const logicBlocks = globalBlockFactory.getBlocksByCompatibility('logic');
+    const flexBlocks = globalBlockFactory.getBlocksByCompatibility('flex');
     
     checks.push({
       name: '相容性系統',

@@ -5,14 +5,12 @@ import CodePreview from './CodePreview';
 import LineBotSimulator from './LineBotSimulator';
 import FlexMessagePreview from './FlexMessagePreview';
 import { BlockPalette } from './BlockPalette';
-import VirtualizedBlockPalette from './VirtualizedBlockPalette';
 import LogicTemplateSelector from './LogicTemplateSelector';
 import FlexMessageSelector from './FlexMessageSelector';
 import { 
   UnifiedBlock, 
   UnifiedDropItem, 
-  WorkspaceContext, 
-  BlockCategory 
+  WorkspaceContext 
 } from '../../types/block';
 import { validateWorkspace } from '../../utils/blockCompatibility';
 import { useToast } from '../../hooks/use-toast';
@@ -81,7 +79,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('logic');
   const [showAllBlocks, setShowAllBlocks] = useState(true);
-  const [useVirtualizedPalette, setUseVirtualizedPalette] = useState(true); // 啟用虛擬化面板
   const [workspaceValidation, setWorkspaceValidation] = useState<{ 
     logic: { isValid: boolean; errors: string[]; warnings: string[] };
     flex: { isValid: boolean; errors: string[]; warnings: string[] };
@@ -377,20 +374,12 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   return (
     <div className="flex h-full">
-      {/* 積木選擇面板 - 使用虛擬化或傳統面板 */}
-      {useVirtualizedPalette ? (
-        <VirtualizedBlockPalette 
-          currentContext={getCurrentContext()}
-          showAllBlocks={showAllBlocks}
-          onShowAllBlocksChange={setShowAllBlocks}
-        />
-      ) : (
-        <BlockPalette 
-          currentContext={getCurrentContext()}
-          showAllBlocks={showAllBlocks}
-          onShowAllBlocksChange={setShowAllBlocks}
-        />
-      )}
+      {/* 積木選擇面板 */}
+      <BlockPalette 
+        currentContext={getCurrentContext()}
+        showAllBlocks={showAllBlocks}
+        onShowAllBlocksChange={setShowAllBlocks}
+      />
       
       {/* 主工作區 */}
       <div className="flex-1 bg-gray-100 flex flex-col">

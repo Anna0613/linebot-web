@@ -31,7 +31,7 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({ isVisible, 
         setUpdateInterval(null);
       }
     }
-  }, [isVisible, getMetrics, getAnalysis]);
+  }, [isVisible, getMetrics, getAnalysis, updateInterval]);
 
   // 格式化時間
   const formatTime = (ms: number): string => {

@@ -201,7 +201,7 @@ export class BlockFactory {
   /**
    * 創建積木實例（返回積木數據）
    */
-  createBlock(blockType: string, customData?: any): any | null {
+  createBlock(blockType: string, customData?: Record<string, unknown>): Record<string, unknown> | null {
     const config = this.getBlock(blockType);
     if (!config) {
       this.log(`積木類型 ${blockType} 未找到`, { blockType }, 'error');
@@ -280,7 +280,7 @@ export class BlockFactory {
   /**
    * 調試日誌
    */
-  private log(message: string, data?: any, level: 'info' | 'warn' | 'error' = 'info'): void {
+  private log(message: string, data?: unknown, level: 'info' | 'warn' | 'error' = 'info'): void {
     if (!this.debugMode) return;
 
     const logMethod = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
@@ -332,7 +332,7 @@ export const getBlockConfig = (blockType: string): BlockConfig | undefined => {
 /**
  * 便利函數：創建積木實例
  */
-export const createBlockInstance = (blockType: string, customData?: any): any | null => {
+export const createBlockInstance = (blockType: string, customData?: Record<string, unknown>): Record<string, unknown> | null => {
   return globalBlockFactory.createBlock(blockType, customData);
 };
 

@@ -2,7 +2,7 @@
  * 開發工具效能面板 - 僅在開發環境顯示
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { performanceTest } from '@/utils/performanceTest';
 import { performanceMonitor } from '@/utils/performanceMonitor';
 
@@ -14,7 +14,12 @@ export const PerformancePanel: React.FC<PerformancePanelProps> = ({
   isVisible = process.env.NODE_ENV === 'development' 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [testResults, setTestResults] = useState<any>(null);
+  const [testResults, setTestResults] = useState<{
+    cacheStatus: string;
+    hitRate: number;
+    averageImprovement: number;
+    recommendation: string;
+  } | null>(null);
   const [isRunningTest, setIsRunningTest] = useState(false);
 
   // 如果不是開發環境或不可見，不渲染
