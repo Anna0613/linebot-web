@@ -20,7 +20,10 @@ type PerformanceEventType =
   | 'user-interaction'
   | 'block-operation'
   | 'memory-usage'
-  | 'page-load';
+  | 'page-load'
+  | 'cache-operation'
+  | 'auth-check'
+  | 'data-fetch';
 
 // 性能事件詳情
 interface PerformanceEvent {
@@ -229,6 +232,64 @@ class PerformanceMonitor {
   }
 
   /**
+   * 測量快取操作時間
+   */
+  measureCacheOperation<T>(operationName: string, operation: () => T, fromCache: boolean = false): T {
+    const startTime = performance.now();
+    const result = operation();
+    const endTime = performance.now();
+    
+    this.recordEvent({
+      type: 'cache-operation',
+      name: operationName,
+      startTime,
+      endTime,
+      duration: endTime - startTime,
+      metadata: { fromCache, source: fromCache ? 'cache' : 'api' }
+    });
+    
+    return result;
+  }
+
+  /**
+   * 測量認證檢查時間
+   */
+  measureAuthCheck<T>(operation: () => Promise<T>, fromCache: boolean = false): Promise<T> {
+    const startTime = performance.now();
+    
+    return operation().finally(() => {
+      const endTime = performance.now();
+      this.recordEvent({
+        type: 'auth-check',
+        name: 'auth-validation',
+        startTime,
+        endTime,
+        duration: endTime - startTime,
+        metadata: { fromCache }
+      });
+    });
+  }
+
+  /**
+   * 測量資料獲取時間
+   */
+  measureDataFetch<T>(fetchName: string, fetchOperation: () => Promise<T>, fromCache: boolean = false): Promise<T> {
+    const startTime = performance.now();
+    
+    return fetchOperation().finally(() => {
+      const endTime = performance.now();
+      this.recordEvent({
+        type: 'data-fetch',
+        name: fetchName,
+        startTime,
+        endTime,
+        duration: endTime - startTime,
+        metadata: { fromCache }
+      });
+    });
+  }
+
+  /**
    * 獲取性能分析結果
    */
   getPerformanceAnalysis(): PerformanceAnalysis {
@@ -425,6 +486,129 @@ class PerformanceMonitor {
   }
 
   /**
+   * 生成快取效能報告
+   */
+  getCachePerformanceReport(): {
+    cacheHitRate: number;
+    averageCacheTime: number;
+    averageApiTime: number;
+    totalCacheOperations: number;
+    speedImprovement: number;
+    operations: Record<string, {
+      totalCount: number;
+      cacheHits: number;
+      averageTime: number;
+      cacheAverage: number;
+      apiAverage: number;
+    }>;
+  } {
+    const cacheEvents = this.events.filter(e => 
+      e.type === 'cache-operation' || 
+      e.type === 'data-fetch' || 
+      e.type === 'auth-check'
+    );
+
+    if (cacheEvents.length === 0) {
+      return {
+        cacheHitRate: 0,
+        averageCacheTime: 0,
+        averageApiTime: 0,
+        totalCacheOperations: 0,
+        speedImprovement: 0,
+        operations: {}
+      };
+    }
+
+    const cacheHits = cacheEvents.filter(e => e.metadata?.fromCache === true);
+    const apiCalls = cacheEvents.filter(e => e.metadata?.fromCache === false);
+    
+    const cacheTotalTime = cacheHits.reduce((sum, e) => sum + e.duration, 0);
+    const apiTotalTime = apiCalls.reduce((sum, e) => sum + e.duration, 0);
+    
+    const averageCacheTime = cacheHits.length > 0 ? cacheTotalTime / cacheHits.length : 0;
+    const averageApiTime = apiCalls.length > 0 ? apiTotalTime / apiCalls.length : 0;
+    
+    // 按操作名稱分組統計
+    const operationGroups = cacheEvents.reduce((groups, event) => {
+      const key = event.name;
+      if (!groups[key]) {
+        groups[key] = { cache: [], api: [] };
+      }
+      
+      if (event.metadata?.fromCache) {
+        groups[key].cache.push(event);
+      } else {
+        groups[key].api.push(event);
+      }
+      
+      return groups;
+    }, {} as Record<string, { cache: PerformanceEvent[], api: PerformanceEvent[] }>);
+
+    const operations = Object.keys(operationGroups).reduce((ops, key) => {
+      const group = operationGroups[key];
+      const cacheAvg = group.cache.length > 0 
+        ? group.cache.reduce((sum, e) => sum + e.duration, 0) / group.cache.length 
+        : 0;
+      const apiAvg = group.api.length > 0 
+        ? group.api.reduce((sum, e) => sum + e.duration, 0) / group.api.length 
+        : 0;
+      
+      ops[key] = {
+        totalCount: group.cache.length + group.api.length,
+        cacheHits: group.cache.length,
+        averageTime: (
+          group.cache.reduce((sum, e) => sum + e.duration, 0) + 
+          group.api.reduce((sum, e) => sum + e.duration, 0)
+        ) / (group.cache.length + group.api.length),
+        cacheAverage: cacheAvg,
+        apiAverage: apiAvg
+      };
+      
+      return ops;
+    }, {} as any);
+
+    return {
+      cacheHitRate: (cacheHits.length / cacheEvents.length) * 100,
+      averageCacheTime,
+      averageApiTime,
+      totalCacheOperations: cacheEvents.length,
+      speedImprovement: averageApiTime > 0 ? averageApiTime / averageCacheTime : 0,
+      operations
+    };
+  }
+
+  /**
+   * 列印快取效能報告
+   */
+  printCacheReport(): void {
+    const report = this.getCachePerformanceReport();
+    
+    console.group('🚀 快取效能報告');
+    console.log(`總操作數: ${report.totalCacheOperations}`);
+    console.log(`快取命中率: ${report.cacheHitRate.toFixed(1)}%`);
+    console.log(`快取平均時間: ${report.averageCacheTime.toFixed(2)}ms`);
+    console.log(`API 平均時間: ${report.averageApiTime.toFixed(2)}ms`);
+    
+    if (report.speedImprovement > 1) {
+      console.log(`⚡ 效能提升: ${report.speedImprovement.toFixed(1)}x 倍`);
+    }
+    
+    console.group('各操作詳情:');
+    Object.entries(report.operations).forEach(([operation, stats]) => {
+      const hitRate = ((stats.cacheHits / stats.totalCount) * 100).toFixed(1);
+      console.log(`${operation}:`);
+      console.log(`  - 總次數: ${stats.totalCount}, 快取命中: ${hitRate}%`);
+      console.log(`  - 平均時間: ${stats.averageTime.toFixed(2)}ms`);
+      if (stats.cacheAverage > 0 && stats.apiAverage > 0) {
+        console.log(`  - 快取: ${stats.cacheAverage.toFixed(2)}ms, API: ${stats.apiAverage.toFixed(2)}ms`);
+      }
+    });
+    console.groupEnd();
+    
+    console.groupEnd();
+  }
+
+  /**
    * 銷毀監控器
    */
   destroy(): void {
@@ -454,8 +638,16 @@ export const usePerformanceMonitor = () => {
       performanceMonitor.measureUserInteraction(name, action),
     measureBlockOperation: (name: string, operation: () => void) =>
       performanceMonitor.measureBlockOperation(name, operation),
+    measureCacheOperation: <T>(name: string, operation: () => T, fromCache?: boolean) =>
+      performanceMonitor.measureCacheOperation(name, operation, fromCache),
+    measureDataFetch: <T>(name: string, operation: () => Promise<T>, fromCache?: boolean) =>
+      performanceMonitor.measureDataFetch(name, operation, fromCache),
+    measureAuthCheck: <T>(operation: () => Promise<T>, fromCache?: boolean) =>
+      performanceMonitor.measureAuthCheck(operation, fromCache),
     getMetrics: () => performanceMonitor.getRealTimeMetrics(),
-    getAnalysis: () => performanceMonitor.getPerformanceAnalysis()
+    getAnalysis: () => performanceMonitor.getPerformanceAnalysis(),
+    getCacheReport: () => performanceMonitor.getCachePerformanceReport(),
+    printCacheReport: () => performanceMonitor.printCacheReport()
   };
 };
 

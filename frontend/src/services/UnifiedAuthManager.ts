@@ -18,6 +18,7 @@ import {
   extendAuthCookies,
   hasValidAuth
 } from "../utils/cookieUtils";
+import { cacheService, CACHE_KEYS, CACHE_TTL } from "./CacheService";
 
 const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5分鐘前刷新
 
@@ -48,6 +49,8 @@ export class UnifiedAuthManager {
   private constructor() {
     // 啟動時清理舊的不統一存儲
     this.migrateOldTokens();
+    // 初始化快取服務
+    this.initializeCache();
   }
 
   public static getInstance(): UnifiedAuthManager {
@@ -132,7 +135,7 @@ export class UnifiedAuthManager {
   }
 
   /**
-   * 設定用戶信息到 cookies
+   * 設定用戶信息到 cookies 和快取
    */
   public setUserInfo(user: UnifiedUser, rememberMe = false): void {
     try {
@@ -140,7 +143,13 @@ export class UnifiedAuthManager {
         ...user,
         login_time: Date.now()
       };
+      
+      // 設定到 cookie
       setUserData(userData, rememberMe);
+      
+      // 設定到記憶體快取
+      cacheService.set(CACHE_KEYS.USER_DATA, userData, CACHE_TTL.USER_DATA);
+      
       console.log(`用戶資料已設定 - 記住我: ${rememberMe}`);
     } catch (error) {
       console.error("Error occurred:", error);
@@ -155,12 +164,23 @@ export class UnifiedAuthManager {
   }
 
   /**
-   * 獲取用戶信息 from cookies
+   * 獲取用戶信息 from 快取或 cookies
    */
   public getUserInfo(): UnifiedUser | null {
     try {
-      const userData = getUserData();
-      return userData as UnifiedUser | null;
+      // 首先從快取獲取
+      const cachedUserData = cacheService.get<UnifiedUser>(CACHE_KEYS.USER_DATA);
+      if (cachedUserData) {
+        return cachedUserData;
+      }
+      
+      // 快取未命中，從 cookie 獲取並更新快取
+      const userData = getUserData() as UnifiedUser | null;
+      if (userData) {
+        cacheService.set(CACHE_KEYS.USER_DATA, userData, CACHE_TTL.USER_DATA);
+      }
+      
+      return userData;
     } catch (error) {
       console.error("Error occurred:", error);
       return null;
@@ -168,12 +188,27 @@ export class UnifiedAuthManager {
   }
 
   /**
-   * 檢查是否已認證（帶自動刷新）
+   * 檢查是否已認證（帶自動刷新和快取）
    */
   public async isAuthenticated(): Promise<boolean> {
+    // 首先檢查快取的認證狀態
+    const cachedAuthStatus = cacheService.get<boolean>(CACHE_KEYS.AUTH_STATUS);
+    if (cachedAuthStatus !== null) {
+      // 如果快取顯示已認證，還需要檢查 token 是否真的有效
+      const token = this.getAccessToken();
+      if (token && !isTokenExpired(token) && !this.isTokenNearExpiry(token)) {
+        return true;
+      }
+      // 如果 token 無效或即將過期，清除快取狀態
+      cacheService.delete(CACHE_KEYS.AUTH_STATUS);
+    }
+    
     const token = this.getAccessToken();
     
-    if (!token) return false;
+    if (!token) {
+      cacheService.set(CACHE_KEYS.AUTH_STATUS, false, CACHE_TTL.AUTH_STATUS);
+      return false;
+    }
 
     // 檢查token是否即將過期
     if (this.isTokenNearExpiry(token)) {
@@ -184,11 +219,16 @@ export class UnifiedAuthManager {
         if (isRememberMeActive()) {
           extendAuthCookies();
         }
+        cacheService.set(CACHE_KEYS.AUTH_STATUS, true, CACHE_TTL.AUTH_STATUS);
+      } else {
+        cacheService.set(CACHE_KEYS.AUTH_STATUS, false, CACHE_TTL.AUTH_STATUS);
       }
       return refreshed;
     }
 
-    return !isTokenExpired(token);
+    const isValid = !isTokenExpired(token);
+    cacheService.set(CACHE_KEYS.AUTH_STATUS, isValid, CACHE_TTL.AUTH_STATUS);
+    return isValid;
   }
 
   /**
@@ -271,6 +311,8 @@ export class UnifiedAuthManager {
         // 如果有用戶信息，也更新
         if (tokenData.user) {
           setUserData(tokenData.user, true);
+          // 更新快取
+          cacheService.set(CACHE_KEYS.USER_DATA, tokenData.user, CACHE_TTL.USER_DATA);
         }
         
         console.log('Token 刷新成功');
@@ -308,9 +350,9 @@ export class UnifiedAuthManager {
   }
 
   /**
-   * 完全清除認證信息（cookies + localStorage）
+   * 完全清除認證信息（cookies + localStorage + 記憶體快取）
    */
-  public clearAuth(): void {
+  public clearAuth(reason: 'logout' | 'expired' | 'refresh_failed' = 'expired'): void {
     try {
       // 清除所有認證 cookies
       clearAllAuthCookies();
@@ -323,14 +365,26 @@ export class UnifiedAuthManager {
       ];
       oldKeys.forEach(key => localStorage.removeItem(key));
       
-      console.log('所有認證資料已清除');
+      // 清除快取中的認證相關資料
+      cacheService.clearPattern('^auth:');
+      cacheService.clearPattern('^bots:');
+      
+      // 派發清理事件
+      if (reason === 'logout') {
+        this.dispatchAuthEvent('user_logout', {
+          message: '用戶主動登出',
+          clearAll: true
+        });
+      }
+      
+      console.log(`所有認證資料已清除（包括快取）- 原因: ${reason}`);
     } catch (error) {
       console.error("Error occurred:", error);
     }
   }
 
   /**
-   * 處理認證錯誤
+   * 處理認證錯誤（增強快取清理）
    */
   public handleAuthError(error: unknown): void {
     console.error("Error occurred:", error);
@@ -344,6 +398,9 @@ export class UnifiedAuthManager {
       if (is401Error) {
         const isRememberMe = this.isRememberMeActive();
         
+        // 清除認證快取狀態
+        cacheService.delete(CACHE_KEYS.AUTH_STATUS);
+        
         if (isRememberMe) {
           // 記住我模式下，不立即清除認證信息
           // 可能只是 access token 過期，refresh token 可能還有效
@@ -355,7 +412,7 @@ export class UnifiedAuthManager {
             isRememberMe: true
           });
         } else {
-          // 非記住我模式，直接清除認證信息
+          // 非記住我模式，直接清除認證信息和所有快取
           console.log('非記住我模式的認證錯誤，清除認證信息');
           this.clearAuth();
           
@@ -373,7 +430,10 @@ export class UnifiedAuthManager {
    */
   public handleRefreshFailure(): void {
     console.log('Refresh token 失效，清除所有認證信息');
-    this.clearAuth();
+    // 清除快取中的認證狀態
+    cacheService.delete(CACHE_KEYS.AUTH_STATUS);
+    cacheService.clearPattern('^auth:');
+    this.clearAuth('refresh_failed');
     
     this.dispatchAuthEvent('auth_refresh_failed', {
       message: '認證已過期，請重新登入',
@@ -420,6 +480,47 @@ export class UnifiedAuthManager {
    */
   public extendAuthCookies(): void {
     extendAuthCookies();
+    // 同時延長快取中的認證狀態
+    cacheService.set(CACHE_KEYS.AUTH_STATUS, true, CACHE_TTL.AUTH_STATUS);
+  }
+
+  /**
+   * 初始化快取服務
+   */
+  private initializeCache(): void {
+    try {
+      // 如果已有用戶資料，預填充快取
+      const userData = getUserData();
+      if (userData) {
+        cacheService.set(CACHE_KEYS.USER_DATA, userData, CACHE_TTL.USER_DATA);
+      }
+      
+      console.log('快取服務初始化完成');
+    } catch (error) {
+      console.error('快取服務初始化失敗:', error);
+    }
+  }
+
+  /**
+   * 手動刷新用戶資料快取
+   */
+  public refreshUserDataCache(): void {
+    try {
+      const userData = getUserData();
+      if (userData) {
+        cacheService.set(CACHE_KEYS.USER_DATA, userData, CACHE_TTL.USER_DATA);
+        console.log('用戶資料快取已刷新');
+      }
+    } catch (error) {
+      console.error('刷新用戶資料快取失敗:', error);
+    }
+  }
+
+  /**
+   * 獲取快取統計資訊（用於偵錯）
+   */
+  public getCacheStats() {
+    return cacheService.getStats();
   }
 }
 

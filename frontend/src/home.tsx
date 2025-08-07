@@ -3,7 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { initializeCacheEventHandler } from "@/utils/cacheEventHandler";
+import { authOptimizer } from "@/utils/authOptimizer";
+import PerformancePanel from "@/components/dev/PerformancePanel";
 
 // 使用 React.lazy 進行代碼分割和懶載入
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -51,6 +54,21 @@ const LoadingFallback = () => (
 );
 
 const App = () => {
+  // 初始化快取事件處理器和認證優化器
+  useEffect(() => {
+    initializeCacheEventHandler();
+    console.debug('應用程式啟動，快取事件處理器已初始化');
+    
+    // 預熱認證狀態
+    authOptimizer.preloadAuthStatus();
+    console.debug('認證狀態預熱完成');
+    
+    return () => {
+      // 組件卸載時清理（雖然 App 組件通常不會卸載）
+      console.debug('應用程式關閉，清理優化器');
+      authOptimizer.reset();
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -100,6 +118,9 @@ const App = () => {
             </Routes>
           </Suspense>
         </BrowserRouter>
+        
+        {/* 開發工具效能面板 */}
+        <PerformancePanel />
         
       </TooltipProvider>
     </QueryClientProvider>

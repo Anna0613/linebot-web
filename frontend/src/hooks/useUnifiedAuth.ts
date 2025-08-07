@@ -8,6 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { authManager, UnifiedUser, TokenInfo } from '../services/UnifiedAuthManager';
 import { useToast } from './use-toast';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import { cacheService, CACHE_KEYS, CACHE_TTL } from '../services/CacheService';
+import { authOptimizer } from '../utils/authOptimizer';
+import { performanceMonitor } from '../utils/performanceMonitor';
 
 interface UseUnifiedAuthOptions {
   requireAuth?: boolean;
@@ -26,10 +29,21 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * 刷新用戶信息
+   * 刷新用戶信息（帶快取優化）
    */
-  const refreshUserInfo = useCallback(async () => {
+  const refreshUserInfo = useCallback(async (forceRefresh = false) => {
     try {
+      // 如果不是強制刷新，先檢查快取
+      if (!forceRefresh) {
+        const cachedProfile = cacheService.get<UnifiedUser>(CACHE_KEYS.USER_PROFILE);
+        if (cachedProfile) {
+          console.debug('使用快取的用戶檔案資料');
+          setUser(cachedProfile);
+          onAuthChange?.(true, cachedProfile);
+          return;
+        }
+      }
+      
       // 使用正確的用戶資料 API 端點
       const response = await fetch(
         getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.GET_PROFILE),
@@ -58,6 +72,9 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
           };
 
           authManager.setUserInfo(userData);
+          // 同時快取用戶檔案資料
+          cacheService.set(CACHE_KEYS.USER_PROFILE, userData, CACHE_TTL.USER_PROFILE);
+          
           setUser(userData);
           onAuthChange?.(true, userData);
         }
@@ -68,40 +85,38 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
   }, [onAuthChange]);
 
   /**
-   * 檢查認證狀態
+   * 檢查認證狀態（使用優化器）
    */
   const checkAuthStatus = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // 首先進行同步檢查，避免不必要的異步操作
-      const isSyncAuthenticated = authManager.isAuthenticatedSync();
-      
-      if (isSyncAuthenticated) {
-        // 如果同步檢查已認證，先從本地獲取用戶資料
-        const userData = authManager.getUserInfo();
-        setUser(userData);
-        onAuthChange?.(true, userData);
-        
-        // 背景刷新用戶資料以獲取最新的 LINE 頭像等資訊
-        refreshUserInfo();
-        
-        setLoading(false);
-        return;
+      // 首先從快取獲取用戶資料，提供即時顯示
+      const cachedUser = authManager.getUserInfo();
+      if (cachedUser) {
+        setUser(cachedUser);
+        onAuthChange?.(true, cachedUser);
       }
 
-      // 如果同步檢查未認證，再進行異步檢查（包含token刷新）
-      const isAuthenticated = await authManager.isAuthenticated();
+      // 使用認證優化器進行檢查（帶效能監控）
+      const authResult = await performanceMonitor.measureAuthCheck(
+        () => authOptimizer.checkAuthenticationOptimized('useUnifiedAuth'),
+        false // 這裡會由優化器內部決定是否從快取
+      );
       
-      if (isAuthenticated) {
-        // 重新檢查後發現已認證，更新狀態
+      if (authResult.isAuthenticated) {
+        // 如果已認證，確保用戶資料是最新的
         const userData = authManager.getUserInfo();
         setUser(userData);
         onAuthChange?.(true, userData);
         
-        // 背景刷新用戶資料
-        refreshUserInfo();
+        // 如果是從快取獲取的結果，背景刷新用戶資料
+        if (authResult.fromCache) {
+          setTimeout(() => {
+            refreshUserInfo(false); // 非強制刷新，優先使用快取
+          }, 0);
+        }
       } else {
         setUser(null);
         onAuthChange?.(false, null);
@@ -300,8 +315,8 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
         console.warn('後端登出失敗:', err);
       }
 
-      // 清除本地認證信息
-      authManager.clearAuth();
+      // 清除本地認證信息和快取
+      authManager.clearAuth('logout');
       setUser(null);
       onAuthChange?.(false, null);
 
@@ -351,5 +366,12 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
     // 工具方法
     clearError: () => setError(null),
     setLoading,
+    
+    // 快取管理
+    clearCache: () => {
+      cacheService.clearPattern('^auth:');
+      cacheService.clearPattern('^bots:');
+    },
+    forceRefreshUserInfo: () => refreshUserInfo(true),
   };
 };
