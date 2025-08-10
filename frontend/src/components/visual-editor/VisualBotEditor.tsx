@@ -44,25 +44,29 @@ export const VisualBotEditor: React.FC = () => {
 
   // 標記為有未儲存變更 - 使用防抖優化
   const markAsChanged = useCallback(() => {
-    if (saveStatus !== SaveStatus.PENDING) {
+    // 檢查是否正在儲存中，避免儲存期間觸發狀態變更
+    if (saveStatus !== SaveStatus.PENDING && saveStatus !== SaveStatus.SAVING) {
       setSaveStatus(SaveStatus.PENDING);
       setHasUnsavedChanges(true);
       setSaveError('');
     }
   }, [saveStatus]);
 
-  // 防抖版本的標記變更函數
+  // 防抖版本的標記變更函數 - 加強版本，增加儲存狀態檢查
   const debouncedMarkAsChanged = useMemo(
     () => {
       let timeoutId: NodeJS.Timeout;
       return () => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
-          markAsChanged();
-        }, 300); // 300ms 防抖延遲
+          // 再次檢查儲存狀態，確保不會在儲存完成後立即觸發
+          if (saveStatus !== SaveStatus.SAVING) {
+            markAsChanged();
+          }
+        }, 500); // 增加到 500ms 防抖延遲，給狀態更新更多時間
       };
     },
-    [markAsChanged]
+    [markAsChanged, saveStatus]
   );
 
   // 處理返回上一頁
@@ -79,6 +83,8 @@ export const VisualBotEditor: React.FC = () => {
 
   // 監聽積木變更，標記為未儲存
   const isInitialLoadRef = useRef(true);
+  const previousBlocksRef = useRef({ logicBlocks: [], flexBlocks: [] });
+  const isSavingRef = useRef(false);
 
   // 頁面離開前的確認
   useEffect(() => {
@@ -138,6 +144,12 @@ export const VisualBotEditor: React.FC = () => {
         setSaveError('');
         setLastSavedTime(new Date(template.updated_at));
         
+        // 同步更新參考值，避免載入後被誤判為變更
+        previousBlocksRef.current = { 
+          logicBlocks: template.logic_blocks || [], 
+          flexBlocks: memoizedFlexBlocks 
+        };
+        
         console.log(`已載入邏輯模板 ${template.name} 的數據`);
       } catch (error) {
         console.error("Error occurred:", error);
@@ -175,6 +187,12 @@ export const VisualBotEditor: React.FC = () => {
           setHasUnsavedChanges(false);
           setSaveError('');
           setLastSavedTime(new Date(message.updated_at));
+          
+          // 同步更新參考值，避免載入後被誤判為變更
+          previousBlocksRef.current = { 
+            logicBlocks: memoizedLogicBlocks, 
+            flexBlocks: message.content.blocks || [] 
+          };
           
           console.log(`已載入 FlexMessage ${message.name} 的數據`);
         } else {
@@ -244,6 +262,8 @@ export const VisualBotEditor: React.FC = () => {
   // 儲存邏輯模板
   const handleLogicTemplateSave = async (templateId: string, data: { logicBlocks: UnifiedBlock[], generatedCode: string }) => {
     try {
+      // 設置儲存中狀態，並鎖定儲存操作
+      isSavingRef.current = true;
       setSaveStatus(SaveStatus.SAVING);
       setSaveError('');
 
@@ -252,21 +272,34 @@ export const VisualBotEditor: React.FC = () => {
         generated_code: data.generatedCode
       });
       
+      // 原子性狀態更新：同時設置所有狀態避免競爭
       setSaveStatus(SaveStatus.SAVED);
       setLastSavedTime(new Date());
       setHasUnsavedChanges(false);
+      
+      // 更新參考值，避免後續誤判
+      previousBlocksRef.current = { 
+        logicBlocks: data.logicBlocks, 
+        flexBlocks: memoizedFlexBlocks 
+      };
+      
       console.log(`邏輯模板 ${templateId} 儲存成功`);
     } catch (error) {
       console.error("Error occurred:", error);
       setSaveStatus(SaveStatus.ERROR);
       setSaveError(error instanceof Error ? error.message : '儲存失敗');
       throw error;
+    } finally {
+      // 確保儲存鎖定狀態被釋放
+      isSavingRef.current = false;
     }
   };
 
   // 儲存 FlexMessage
   const handleFlexMessageSave = async (messageId: string, data: { flexBlocks: UnifiedBlock[] }) => {
     try {
+      // 設置儲存中狀態，並鎖定儲存操作
+      isSavingRef.current = true;
       setSaveStatus(SaveStatus.SAVING);
       setSaveError('');
 
@@ -274,21 +307,34 @@ export const VisualBotEditor: React.FC = () => {
         content: { blocks: data.flexBlocks }
       });
       
+      // 原子性狀態更新：同時設置所有狀態避免競爭
       setSaveStatus(SaveStatus.SAVED);
       setLastSavedTime(new Date());
       setHasUnsavedChanges(false);
+      
+      // 更新參考值，避免後續誤判
+      previousBlocksRef.current = { 
+        logicBlocks: memoizedLogicBlocks, 
+        flexBlocks: data.flexBlocks 
+      };
+      
       console.log(`FlexMessage ${messageId} 儲存成功`);
     } catch (error) {
       console.error("Error occurred:", error);
       setSaveStatus(SaveStatus.ERROR);
       setSaveError(error instanceof Error ? error.message : '儲存失敗');
       throw error;
+    } finally {
+      // 確保儲存鎖定狀態被釋放
+      isSavingRef.current = false;
     }
   };
 
   // 處理儲存到 Bot
   const handleSaveToBot = async (botId: string, data: { logicBlocks: UnifiedBlock[], flexBlocks: UnifiedBlock[], generatedCode: string }) => {
     try {
+      // 設置儲存中狀態，並鎖定儲存操作
+      isSavingRef.current = true;
       setSaveStatus(SaveStatus.SAVING);
       setSaveError('');
 
@@ -298,15 +344,26 @@ export const VisualBotEditor: React.FC = () => {
         generated_code: data.generatedCode
       });
       
+      // 原子性狀態更新：同時設置所有狀態避免競爭
       setSaveStatus(SaveStatus.SAVED);
       setLastSavedTime(new Date());
       setHasUnsavedChanges(false);
+      
+      // 更新參考值，避免後續誤判
+      previousBlocksRef.current = { 
+        logicBlocks: data.logicBlocks, 
+        flexBlocks: data.flexBlocks 
+      };
+      
       console.log(`已儲存數據到 Bot ${botId}`);
     } catch (error) {
       console.error("Error occurred:", error);
       setSaveStatus(SaveStatus.ERROR);
       setSaveError(error instanceof Error ? error.message : '儲存失敗');
       throw error;
+    } finally {
+      // 確保儲存鎖定狀態被釋放
+      isSavingRef.current = false;
     }
   };
 
@@ -326,19 +383,38 @@ export const VisualBotEditor: React.FC = () => {
   const memoizedLogicBlocks = useMemo(() => logicBlocks, [logicBlocks]);
   const memoizedFlexBlocks = useMemo(() => flexBlocks, [flexBlocks]);
 
-  // 監聽積木變更的 useEffect（優化版本，使用防抖）
+  // 監聽積木變更的 useEffect（增強版本，精確檢測變更）
   useEffect(() => {
     // 初次載入時不觸發變更檢測
     if (isInitialLoadRef.current) {
       isInitialLoadRef.current = false;
+      previousBlocksRef.current = { 
+        logicBlocks: memoizedLogicBlocks, 
+        flexBlocks: memoizedFlexBlocks 
+      };
       return;
     }
     
-    // 如果不是正在載入數據且有積木，才標記為變更
-    if (!isLoadingData && (memoizedLogicBlocks.length > 0 || memoizedFlexBlocks.length > 0)) {
+    // 如果正在載入數據或正在儲存，不觸發變更檢測
+    if (isLoadingData || isSavingRef.current || saveStatus === SaveStatus.SAVING) {
+      return;
+    }
+    
+    // 比較實際的積木內容是否有變化
+    const logicBlocksChanged = JSON.stringify(memoizedLogicBlocks) !== JSON.stringify(previousBlocksRef.current.logicBlocks);
+    const flexBlocksChanged = JSON.stringify(memoizedFlexBlocks) !== JSON.stringify(previousBlocksRef.current.flexBlocks);
+    
+    // 只有當積木實際發生變更時才標記
+    if (logicBlocksChanged || flexBlocksChanged) {
+      // 更新參考值
+      previousBlocksRef.current = { 
+        logicBlocks: memoizedLogicBlocks, 
+        flexBlocks: memoizedFlexBlocks 
+      };
+      
       debouncedMarkAsChanged();
     }
-  }, [memoizedLogicBlocks, memoizedFlexBlocks, isLoadingData, debouncedMarkAsChanged]);
+  }, [memoizedLogicBlocks, memoizedFlexBlocks, isLoadingData, debouncedMarkAsChanged, saveStatus]);
 
   // 初始化組件
   useEffect(() => {
