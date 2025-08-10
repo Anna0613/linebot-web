@@ -66,8 +66,46 @@ const BLOCK_COMPATIBILITY_RULES = [
 /**
  * 根據 blockType 獲取對應的類別（簡化版）
  */
-function getCategoryFromBlockType(_blockType: string): string {
-  return BlockCategory.SETTING; // 預設類別
+function getCategoryFromBlockType(blockType: string): string {
+  if (!blockType || typeof blockType !== 'string') {
+    console.warn('⚠️ Worker getCategoryFromBlockType: 無效的 blockType:', blockType);
+    return BlockCategory.SETTING; // 預設值
+  }
+  
+  const lowerType = blockType.toLowerCase();
+  
+  // 根據積木類型名稱進行精確映射
+  if (lowerType.includes('event') || lowerType.includes('trigger')) {
+    return BlockCategory.EVENT;
+  }
+  
+  if (lowerType.includes('reply') || lowerType.includes('message') || lowerType.includes('send')) {
+    return BlockCategory.REPLY;
+  }
+  
+  if (lowerType.includes('control') || lowerType.includes('if') || lowerType.includes('loop') || lowerType.includes('condition') || lowerType.includes('wait')) {
+    return BlockCategory.CONTROL;
+  }
+  
+  if (lowerType.includes('flex-container') || lowerType.includes('bubble') || lowerType.includes('carousel') || lowerType.includes('box')) {
+    return BlockCategory.FLEX_CONTAINER;
+  }
+  
+  if (lowerType.includes('flex-content') || (lowerType.includes('flex') && (lowerType.includes('text') || lowerType.includes('image') || lowerType.includes('button') || lowerType.includes('separator')))) {
+    return BlockCategory.FLEX_CONTENT;
+  }
+  
+  if (lowerType.includes('flex-layout') || (lowerType.includes('flex') && (lowerType.includes('spacer') || lowerType.includes('filler') || lowerType.includes('align')))) {
+    return BlockCategory.FLEX_LAYOUT;
+  }
+  
+  if (lowerType.includes('setting') || lowerType.includes('config') || lowerType.includes('variable') || lowerType.includes('userdata')) {
+    return BlockCategory.SETTING;
+  }
+  
+  // 無法推斷時的後備處理
+  console.warn('⚠️ Worker getCategoryFromBlockType: 無法推斷積木類別，使用預設 SETTING:', blockType);
+  return BlockCategory.SETTING;
 }
 
 /**
