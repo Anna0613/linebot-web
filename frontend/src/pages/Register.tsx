@@ -30,12 +30,22 @@ const Register = () => {
       throw new Error("請填寫所有必填欄位");
     }
 
+    // 用戶名稱驗證（與後端一致）
+    if (username.length < 3) {
+      throw new Error("用戶名稱必須至少 3 個字元");
+    }
+
+    if (username.length > 50) {
+      throw new Error("用戶名稱不能超過 50 個字元");
+    }
+
     if (password !== confirmPassword) {
       throw new Error("密碼確認不相符");
     }
 
-    if (password.length < 6) {
-      throw new Error("密碼至少需要 6 個字元");
+    // 密碼驗證（與後端一致）
+    if (password.length < 8) {
+      throw new Error("密碼必須至少 8 個字元");
     }
 
     if (!agreeToTerms) {
@@ -71,7 +81,21 @@ const Register = () => {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.message || "註冊失敗");
+          // 處理不同類型的錯誤回應
+          let errorMessage = "註冊失敗";
+
+          if (response.status === 422) {
+            // 驗證錯誤
+            errorMessage = data.detail || data.message || "資料驗證失敗";
+          } else if (response.status === 409) {
+            // 衝突錯誤（用戶名或郵箱已存在）
+            errorMessage = data.detail || data.message || "用戶名稱或郵箱已被註冊";
+          } else {
+            // 其他錯誤
+            errorMessage = data.detail || data.message || data.error || "註冊失敗";
+          }
+
+          throw new Error(errorMessage);
         }
 
         handleSuccess("註冊成功！請檢查您的電子郵件以驗證帳號。");
@@ -91,7 +115,7 @@ const Register = () => {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="請輸入使用者名稱"
+            placeholder="請輸入使用者名稱（3-50個字元）"
             disabled={loading}
             required
           />
@@ -117,7 +141,7 @@ const Register = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="請輸入密碼（至少 6 個字元）"
+            placeholder="請輸入密碼（至少 8 個字元）"
             disabled={loading}
             required
           />

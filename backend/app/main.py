@@ -7,6 +7,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 
 from app.config import settings
 from app.database import init_database
@@ -62,6 +64,52 @@ if settings.ENVIRONMENT == "production":
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=settings.ALLOWED_HOSTS
+    )
+
+# FastAPI 驗證錯誤處理
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """處理 FastAPI 請求驗證錯誤 (422)"""
+    logger.warning(f"驗證錯誤 - 請求 {request.method} {request.url}: {exc.errors()}")
+
+    # 提取第一個錯誤信息
+    error_detail = "資料驗證失敗"
+    if exc.errors():
+        first_error = exc.errors()[0]
+        field = first_error.get('loc', ['unknown'])[-1]  # 獲取字段名
+        msg = first_error.get('msg', '驗證失敗')
+        error_detail = f"{field}: {msg}"
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": error_detail,
+            "message": error_detail,  # 為了前端相容性
+            "errors": exc.errors()
+        }
+    )
+
+# Pydantic 驗證錯誤處理
+@app.exception_handler(ValidationError)
+async def pydantic_validation_exception_handler(request: Request, exc: ValidationError):
+    """處理 Pydantic 驗證錯誤"""
+    logger.warning(f"Pydantic 驗證錯誤 - 請求 {request.method} {request.url}: {exc.errors()}")
+
+    # 提取第一個錯誤信息
+    error_detail = "資料驗證失敗"
+    if exc.errors():
+        first_error = exc.errors()[0]
+        field = first_error.get('loc', ['unknown'])[-1]  # 獲取字段名
+        msg = first_error.get('msg', '驗證失敗')
+        error_detail = f"{field}: {msg}"
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": error_detail,
+            "message": error_detail,  # 為了前端相容性
+            "errors": exc.errors()
+        }
     )
 
 # 全域異常處理
