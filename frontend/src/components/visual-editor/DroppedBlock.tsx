@@ -265,8 +265,43 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                       </div>
                     )}
                   </div>
+                ) : blockData.replyType === 'flex' ? (
+                  <div className="space-y-2">
+                    <label className="text-xs text-white/80">Flex 訊息 JSON 內容：</label>
+                    <Textarea
+                      placeholder='請輸入 Flex 訊息 JSON，例如：
+{
+  "type": "bubble",
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "Hello World",
+        "size": "md",
+        "weight": "regular",
+        "color": "#000000"
+      }
+    ]
+  }
+}'
+                      value={typeof blockData.flexContent === 'string' ? blockData.flexContent : JSON.stringify(blockData.flexContent || {}, null, 2)}
+                      onChange={(e) => {
+                        try {
+                          const parsed = JSON.parse(e.target.value);
+                          setBlockData({...blockData, flexContent: parsed});
+                        } catch {
+                          // 如果 JSON 無效，暫時儲存為字串
+                          setBlockData({...blockData, flexContent: e.target.value});
+                        }
+                      }}
+                      className="text-black font-mono text-xs"
+                      rows={8}
+                    />
+                  </div>
                 ) : (
-                  <Textarea 
+                  <Textarea
                     placeholder="回覆內容"
                     value={blockData.content || ''}
                     onChange={(e) => setBlockData({...blockData, content: e.target.value})}
@@ -276,10 +311,24 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                 )}
               </div>
             )}
-            {/* 顯示當前選擇的FLEX訊息（非編輯模式） */}
-            {!isEditing && block.blockData.replyType === 'flex' && block.blockData.flexMessageName && (
+            {/* 顯示當前的FLEX訊息內容（非編輯模式） */}
+            {!isEditing && block.blockData.replyType === 'flex' && (
               <div className="text-xs text-white/70 mt-1">
-                FLEX模板: {block.blockData.flexMessageName}
+                {block.blockData.flexMessageName ? (
+                  <div>FLEX模板: {block.blockData.flexMessageName}</div>
+                ) : block.blockData.flexContent && Object.keys(block.blockData.flexContent).length > 0 ? (
+                  <div>
+                    <div>自定義 Flex 訊息</div>
+                    <div className="text-white/50 truncate">
+                      {typeof block.blockData.flexContent === 'string'
+                        ? block.blockData.flexContent.substring(0, 50) + '...'
+                        : JSON.stringify(block.blockData.flexContent).substring(0, 50) + '...'
+                      }
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-orange-300">請設定 Flex 訊息內容</div>
+                )}
               </div>
             )}
           </div>

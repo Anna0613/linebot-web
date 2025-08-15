@@ -7,6 +7,9 @@ import FlexMessagePreview from './FlexMessagePreview';
 import { BlockPalette } from './BlockPalette';
 import LogicTemplateSelector from './LogicTemplateSelector';
 import FlexMessageSelector from './FlexMessageSelector';
+import PreviewControlPanel from './PreviewControlPanel';
+import CodeControlPanel from './CodeControlPanel';
+import { CodeDisplayProvider } from './CodeDisplayContext';
 import { 
   UnifiedBlock, 
   UnifiedDropItem, 
@@ -344,17 +347,44 @@ const Workspace: React.FC<WorkspaceProps> = ({
   };
 
 
+  // 渲染左側面板
+  const renderLeftPanel = () => {
+    switch (activeTab) {
+      case 'logic':
+      case 'flex':
+        return (
+          <BlockPalette
+            currentContext={getCurrentContext()}
+            showAllBlocks={showAllBlocks}
+            onShowAllBlocksChange={setShowAllBlocks}
+          />
+        );
+      case 'preview':
+        return (
+          <PreviewControlPanel
+            blocks={logicBlocks}
+            flexBlocks={flexBlocks}
+          />
+        );
+      case 'code':
+        return (
+          <CodeControlPanel
+            blocks={logicBlocks}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="flex h-full">
-      {/* 積木選擇面板 */}
-      <BlockPalette 
-        currentContext={getCurrentContext()}
-        showAllBlocks={showAllBlocks}
-        onShowAllBlocksChange={setShowAllBlocks}
-      />
-      
-      {/* 主工作區 */}
-      <div className="flex-1 bg-gray-100 flex flex-col">
+    <CodeDisplayProvider>
+      <div className="flex h-full">
+        {/* 左側面板 - 根據當前標籤顯示不同內容 */}
+        {renderLeftPanel()}
+
+        {/* 主工作區 */}
+        <div className="flex-1 bg-gray-100 flex flex-col">
         <Tabs 
           value={activeTab} 
           onValueChange={(value) => {
@@ -461,7 +491,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           
           <TabsContent value="preview" className="flex-1 overflow-hidden">
             <div className="h-full p-4 overflow-auto">
-              <LineBotSimulator blocks={logicBlocks} />
+              <LineBotSimulator blocks={logicBlocks} flexBlocks={flexBlocks} />
             </div>
           </TabsContent>
           
@@ -471,8 +501,9 @@ const Workspace: React.FC<WorkspaceProps> = ({
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
-    </div>
+    </CodeDisplayProvider>
   );
 };
 

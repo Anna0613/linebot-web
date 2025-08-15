@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Copy, Download } from 'lucide-react';
 import LineBotCodeGenerator from '../../utils/codeGenerator';
+import { useCodeDisplay } from './CodeDisplayContext';
 
 interface BlockData {
   [key: string]: unknown;
@@ -19,6 +20,7 @@ interface CodePreviewProps {
 const CodePreview: React.FC<CodePreviewProps> = ({ blocks }) => {
   const [generatedCode, setGeneratedCode] = useState('');
   const [codeGenerator] = useState(new LineBotCodeGenerator());
+  const { state: { showLineNumbers, showComments, codeTheme } } = useCodeDisplay();
 
   useEffect(() => {
     if (blocks && blocks.length > 0) {
@@ -51,20 +53,36 @@ const CodePreview: React.FC<CodePreviewProps> = ({ blocks }) => {
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-medium text-gray-600">生成的程式碼</h3>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" onClick={copyToClipboard}>
+          {/* <Button variant="outline" size="sm" onClick={copyToClipboard}>
             <Copy className="w-4 h-4 mr-2" />
             複製
           </Button>
           <Button variant="outline" size="sm" onClick={downloadCode}>
             <Download className="w-4 h-4 mr-2" />
             下載
-          </Button>
+          </Button> */}
         </div>
       </div>
       
-      <div className="flex-1 bg-gray-900 rounded-lg p-4 overflow-auto">
-        <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap">
-          {generatedCode}
+      <div className={`flex-1 rounded-lg p-4 overflow-auto ${
+        codeTheme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
+      }`}>
+        <pre className={`text-sm font-mono whitespace-pre-wrap ${
+          codeTheme === 'dark' ? 'text-green-400' : 'text-gray-800'
+        }`}>
+          {showLineNumbers ?
+            generatedCode.split('\n').map((line, index) => (
+              <div key={index} className="flex">
+                <span className={`mr-4 select-none ${
+                  codeTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                }`}>
+                  {String(index + 1).padStart(3, ' ')}
+                </span>
+                <span>{line}</span>
+              </div>
+            )) :
+            generatedCode
+          }
         </pre>
       </div>
       

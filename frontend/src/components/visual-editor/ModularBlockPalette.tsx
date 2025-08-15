@@ -97,12 +97,24 @@ const BlockGroup: React.FC<{
   </div>
 );
 
-export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({ 
+export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
   currentContext = WorkspaceContext.LOGIC,
   showAllBlocks = true,
   onShowAllBlocksChange
 }) => {
-  const renderBlocks = (blocks: Array<{blockType: string; name: string; data: Record<string, unknown>}>, color: string) => 
+  // 根據當前上下文自動決定活動標籤
+  const getActiveTab = () => {
+    switch (currentContext) {
+      case WorkspaceContext.LOGIC:
+        return 'logic';
+      case WorkspaceContext.FLEX:
+        return 'flex';
+      default:
+        return 'all';
+    }
+  };
+
+  const renderBlocks = (blocks: Array<{blockType: string; name: string; data: Record<string, unknown>}>, color: string) =>
     blocks.map((block, index) => (
       <DraggableBlock
         key={`${block.blockType}-${index}`}
@@ -140,12 +152,15 @@ export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
             <div className="flex items-center space-x-2">
               <Filter className="w-4 h-4 text-gray-500" />
               <span className="text-sm font-medium text-gray-700">
-                當前模式：{currentContext === WorkspaceContext.LOGIC ? '邏輯編輯器' : 'Flex 設計器'}
+                {currentContext === WorkspaceContext.LOGIC ? '邏輯積木' : 'Flex 組件'}
+              </span>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                自動切換
               </span>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onShowAllBlocksChange?.(!showAllBlocks)}
               className="text-xs"
             >
@@ -154,12 +169,15 @@ export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
           </div>
         </div>
 
-        <Tabs defaultValue="all" className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 m-2 flex-shrink-0">
-            <TabsTrigger value="all">全部積木</TabsTrigger>
-            <TabsTrigger value="logic">邏輯積木</TabsTrigger>
-            <TabsTrigger value="flex">Flex 組件</TabsTrigger>
-          </TabsList>
+        <Tabs value={getActiveTab()} className="flex-1 flex flex-col">
+          {/* 隱藏標籤列表，因為現在由工作區上下文自動控制 */}
+          <div className="hidden">
+            <TabsList className="grid w-full grid-cols-3 m-2 flex-shrink-0">
+              <TabsTrigger value="all">全部積木</TabsTrigger>
+              <TabsTrigger value="logic">邏輯積木</TabsTrigger>
+              <TabsTrigger value="flex">Flex 組件</TabsTrigger>
+            </TabsList>
+          </div>
           
           {/* 全部積木標籤 */}
           <TabsContent value="all" className="flex-1 overflow-hidden">

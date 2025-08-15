@@ -278,9 +278,10 @@ const FlexMessagePreview: React.FC<FlexMessagePreviewProps> = ({ json }) => {
       maxHeight: "none",
       background: bubble.backgroundColor || "#fff",
       borderRadius: bubble.cornerRadius || 20,
-      borderColor: bubble.borderColor || undefined,
-      borderWidth: bubble.borderWidth || undefined,
-      borderStyle: bubble.borderWidth ? "solid" : undefined,
+      // 移除邊框相關屬性
+      // borderColor: bubble.borderColor || undefined,
+      // borderWidth: bubble.borderWidth || undefined,
+      // borderStyle: bubble.borderWidth ? "solid" : undefined,
       overflow: "hidden",
       boxShadow: bubble.shadow === false ? undefined : "0 2px 8px #0001",
       position: "relative",
