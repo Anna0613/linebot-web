@@ -213,7 +213,7 @@ const Setting: React.FC = () => {
     <div className="min-h-screen bg-[#FFFDFA]">
       <DashboardNavbar user={user || authUser} />
 
-      <div className="pt-16 pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="pt-32 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           {/* 頁面標題 */}
           <div className="mb-8">

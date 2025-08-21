@@ -24,15 +24,15 @@ const AuthFormLayout = ({
     <div className="min-h-screen bg-[#FFFDFA] flex flex-col">
       <Navbar />
 
-      <div className="flex-1 flex items-center justify-center px-4 py-8 pt-20 sm:pt-24 md:pt-28 pb-12">
+      <div className="flex-1 flex items-center justify-center px-4 py-8 pt-28 sm:pt-24 md:pt-28 pb-8">
         <div className="w-full max-w-md">
           <Card className="shadow-lg border-0 bg-white">
             <CardHeader className="text-center pb-6">
-              <CardTitle className="text-2xl font-bold text-[#1a1a40]">
+              <CardTitle className="text-2xl font-bold text-[#171635]">
                 {title}
               </CardTitle>
               {description && (
-                <CardDescription className="text-[#5A2C1D] mt-2">
+                <CardDescription className="text-[#00225D] mt-2">
                   {description}
                 </CardDescription>
               )}

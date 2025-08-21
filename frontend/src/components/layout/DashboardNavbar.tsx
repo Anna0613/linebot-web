@@ -171,17 +171,17 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
             </button>
             <Link
               to="/dashboard"
-              className="flex items-center space-x-2 sm:space-x-3 z-10 min-w-0"
+              className="flex items-center gap-2 sm:gap-3 z-10 min-w-0"
             >
               <img
                 src="/images/logo.svg"
                 alt="Logo"
-                className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0"
+                className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain"
               />
-              <h6 className="text-lg sm:text-xl md:text-[28px] font-bold text-[#1a1a40] tracking-wide truncate">
+              <span className="block text-lg sm:text-xl md:text-[28px] font-bold text-[#1a1a40] tracking-wide leading-tight">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
-              </h6>
+              </span>
             </Link>
           </div>
 

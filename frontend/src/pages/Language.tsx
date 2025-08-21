@@ -1,16 +1,111 @@
 import Footer from "../components/layout/Footer";
+import DashboardNavbar from "@/components/layout/DashboardNavbar";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
+import { useUserProfile } from "../hooks/useUserProfile";
+import { useEmailManagement } from "../hooks/useEmailManagement";
+import { useToast } from "@/hooks/use-toast";
 
 const Language = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
+
+  // 使用認證 hook
+  const {
+    user: authUser,
+    loading: authLoading,
+    error: authError,
+  } = useUnifiedAuth({
+    requireAuth: true,
+    redirectTo: "/login",
+  });
+
+  // 使用用戶資料管理 hooks
+  const {
+    user,
+    setUser,
+    userImage,
+    loading: profileLoading,
+    setLoading: setProfileLoading,
+    avatarLoading,
+    loadUserProfile,
+    loadUserAvatar,
+    updateDisplayName,
+    uploadAvatar,
+    deleteAvatar,
+    changePassword,
+    deleteAccount,
+  } = useUserProfile();
+
+  // 使用電子郵件管理 hook
+  const {
+    email,
+    setEmail,
+    emailVerified,
+    setEmailVerified,
+    isEditingEmail,
+    setIsEditingEmail,
+    isResendingEmailVerification,
+    loadEmailStatus,
+    updateEmail,
+    resendEmailVerification,
+  } = useEmailManagement();
+
+  // 初始化用戶資料
+  useEffect(() => {
+    const initializeUserData = async () => {
+      if (authUser && !authLoading) {
+        // 確保用戶數據結構完整
+        const completeUser = {
+          ...authUser,
+          display_name: authUser.display_name || authUser.username || "",
+          username: authUser.username || "",
+        };
+        
+        setUser(completeUser);
+        setDisplayName(completeUser.display_name);
+        setEmail(authUser.email || "");
+        setEmailVerified(authUser.email_verified || false);
+
+        // 載入詳細的用戶資料
+        if (!authUser.isLineUser) {
+          await loadUserProfile();
+          await loadUserAvatar();
+          await loadEmailStatus();
+        }
+
+        setProfileLoading(false);
+      }
+    };
+
+    initializeUserData();
+  }, [
+    authUser,
+    authLoading,
+    setUser,
+    setEmail,
+    setEmailVerified,
+    loadUserProfile,
+    loadUserAvatar,
+    loadEmailStatus,
+    setProfileLoading,
+  ]);
+
   return (
     <div className="min-h-screen bg-[#FFFDFA]">
+      <DashboardNavbar user={user || authUser} />
       {/* 主要內容區域 */}
-      <div className="pt-20 pb-16 px-6">
+      <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
-        <div className="text-center mb-16">
-          <h1 className="text-[#1a1a40] text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
+        <div className="text-center mb-8">
+          <h1 className="text-[#1a1a40] text-3xl font-bold mb-4 leading-tight tracking-wide">
             語言設定
           </h1>
-          <p className="text-[#5A2C1D] text-xl max-w-4xl mx-auto leading-relaxed">
+          <p className="text-[#5A2C1D] max-w-4xl mx-auto leading-relaxed">
             選擇您偏好的語言介面
           </p>
         </div>
