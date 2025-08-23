@@ -29,11 +29,13 @@ class LineBotUser(Base):
     bot = relationship("Bot", backref="line_bot_users")
     interactions = relationship("LineBotUserInteraction", back_populates="line_bot_user", cascade="all, delete-orphan")
     
-    # 表級約束和索引
+    # 表級約束和索引 - 優化查詢效能
     __table_args__ = (
         Index('idx_line_user_bot_line_id', 'bot_id', 'line_user_id', unique=True),
         Index('idx_line_user_last_interaction', 'last_interaction'),
         Index('idx_line_user_followed', 'is_followed'),
+        Index('idx_line_user_bot_followed', 'bot_id', 'is_followed'),  # 複合索引用於 Bot 用戶統計
+        Index('idx_line_user_bot_interaction', 'bot_id', 'last_interaction'),  # 複合索引用於活躍用戶查詢
     )
     
     def __repr__(self):
@@ -53,11 +55,13 @@ class LineBotUserInteraction(Base):
     # 關聯關係
     line_bot_user = relationship("LineBotUser", back_populates="interactions")
     
-    # 表級約束和索引
+    # 表級約束和索引 - 優化分析查詢效能
     __table_args__ = (
         Index('idx_interaction_user_timestamp', 'line_user_id', 'timestamp'),
         Index('idx_interaction_event_type', 'event_type'),
         Index('idx_interaction_timestamp', 'timestamp'),
+        Index('idx_interaction_timestamp_event', 'timestamp', 'event_type'),  # 複合索引用於時間範圍和事件類型查詢
+        Index('idx_interaction_time_extract', 'timestamp'),  # 針對時間擷取函數的索引
     )
     
     def __repr__(self):

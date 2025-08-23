@@ -3,7 +3,7 @@ API v1 路由聚合器
 將所有 API 路由統一管理
 """
 from fastapi import APIRouter
-from app.api.api_v1 import auth, users, bots, bot_analytics, webhook
+from app.api.api_v1 import auth, users, bots, bot_analytics, webhook, bot_dashboard
 
 api_router = APIRouter()
 
@@ -18,6 +18,9 @@ api_router.include_router(bots.router, prefix="/bots", tags=["Bot 管理"])
 
 # Bot 分析路由
 api_router.include_router(bot_analytics.router, prefix="/bots", tags=["Bot 分析"])
+
+# Bot 儀表板路由（高效能複合端點）
+api_router.include_router(bot_dashboard.router, prefix="/bot_dashboard", tags=["Bot 儀表板"])
 
 # Webhook 路由 (不需要認證)
 api_router.include_router(webhook.router, prefix="", tags=["Webhook"])

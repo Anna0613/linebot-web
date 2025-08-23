@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, status
-from app.config import settings
+from ..config import settings
 
 # 密碼加密上下文
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

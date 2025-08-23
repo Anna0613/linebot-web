@@ -8,16 +8,24 @@ from sqlalchemy.exc import OperationalError
 import tenacity
 import logging
 
-from app.config import settings
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
-# 創建資料庫引擎
+# 創建資料庫引擎 - 優化連接池設定
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
     pool_recycle=300,
-    echo=settings.DEBUG
+    pool_size=20,  # 增加連接池大小
+    max_overflow=30,  # 允許最大溢出連接數
+    pool_timeout=30,  # 連接超時設定
+    echo=settings.DEBUG,
+    # 啟用查詢優化選項
+    execution_options={
+        "postgresql_readonly": False,
+        "postgresql_autocommit": False,
+    }
 )
 
 # 創建會話工廠

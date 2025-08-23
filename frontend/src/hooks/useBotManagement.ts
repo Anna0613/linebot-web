@@ -1,248 +1,204 @@
-import { useState, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Bot, BotCreate } from "../services/puzzleApi";
-import { authManager } from "../services/UnifiedAuthManager";
-import { apiClient } from "../services/UnifiedApiClient";
-import { botCacheService } from "../services/BotCacheService";
+/**
+ * Bot 管理相關的 React Query hooks
+ * 提供高效能的資料獲取和狀態管理
+ */
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/services/UnifiedApiClient';
+import { queryKeys, invalidateQueries, optimisticUpdates, batchCacheUpdate } from './useReactQuery';
+import { useToast } from '@/hooks/use-toast';
+import { useCallback } from 'react';
 
-interface UseBotManagementReturn {
-  bots: Bot[];
-  isLoading: boolean;
-  error: string | null;
-  createBot: (botData: BotCreate) => Promise<Bot | null>;
-  fetchBots: (forceRefresh?: boolean) => Promise<void>;
-  deleteBot: (botId: string) => Promise<boolean>;
-  setError: (error: string | null) => void;
-  clearError: () => void;
-  // 新增快取相關方法
-  refreshBotsCache: () => Promise<void>;
-  clearBotsCache: () => void;
-  getCacheStats: () => ReturnType<typeof botCacheService.getCacheStats>;
+// Bot 列表
+export const useBots = () => {
+  return useQuery({
+    queryKey: queryKeys.bots,
+    queryFn: async () => {
+      const response = await apiClient.getBots();
+      return response;
+    },
+    staleTime: 5 * 60 * 1000, // 5 分鐘
+  });
+};
+
+// 單一 Bot 儀表板資料 (複合端點)
+export const useBotDashboard = (
+  botId: string | null,
+  options?: {
+    includeAnalytics?: boolean;
+    includeLogic?: boolean;
+    includeWebhook?: boolean;
+    period?: 'day' | 'week' | 'month';
+    enabled?: boolean;
+  }
+) => {
+  const { enabled = true, ...queryOptions } = options || {};
+  
+  return useQuery({
+    queryKey: [...queryKeys.botDashboard(botId || ''), queryOptions],
+    queryFn: async () => {
+      if (!botId) throw new Error('Bot ID is required');
+      
+      const response = await apiClient.getBotDashboard(botId, queryOptions);
+      
+      // 批次更新相關快取
+      if (response.data) {
+        batchCacheUpdate.updateDashboardData(botId, response.data);
+      }
+      
+      return response;
+    },
+    enabled: enabled && !!botId,
+    staleTime: 3 * 60 * 1000, // 3 分鐘
+  });
+};
+
+// 輕量版儀表板資料 (用於快速載入)
+export const useBotDashboardLight = (botId: string | null, enabled = true) => {
+  return useQuery({
+    queryKey: queryKeys.botDashboardLight(botId || ''),
+    queryFn: async () => {
+      if (!botId) throw new Error('Bot ID is required');
+      return await apiClient.getBotDashboardLight(botId);
+    },
+    enabled: enabled && !!botId,
+    staleTime: 2 * 60 * 1000, // 2 分鐘
+  });
+};
+
+// 邏輯模板
+export const useLogicTemplates = (botId: string | null, enabled = true) => {
+  return useQuery({
+    queryKey: queryKeys.logicTemplates(botId || ''),
+    queryFn: async () => {
+      if (!botId) throw new Error('Bot ID is required');
+      return await apiClient.getBotLogicTemplates(botId);
+    },
+    enabled: enabled && !!botId,
+    staleTime: 5 * 60 * 1000, // 5 分鐘
+  });
+};
+
+// Webhook 狀態
+export const useWebhookStatus = (botId: string | null, enabled = true) => {
+  return useQuery({
+    queryKey: queryKeys.webhookStatus(botId || ''),
+    queryFn: async () => {
+      if (!botId) throw new Error('Bot ID is required');
+      return await apiClient.getWebhookStatus(botId);
+    },
+    enabled: enabled && !!botId,
+    staleTime: 2 * 60 * 1000, // 2 分鐘 (webhook 狀態變化較頻繁)
+  });
+};
+
+// 邏輯模板狀態切換 mutation
+export const useToggleLogicTemplate = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ templateId, isActive }: { templateId: string, isActive: boolean }) => {
+      return await apiClient.toggleLogicTemplate(templateId, isActive);
+    },
+    onMutate: async ({ templateId, isActive }) => {
+      // 找出對應的 botId (從快取中查找)
+      const botId = await findBotIdFromTemplate(templateId, queryClient);
+      
+      if (botId) {
+        // 樂觀更新
+        optimisticUpdates.updateLogicTemplateStatus(botId, templateId, isActive);
+      }
+      
+      return { botId, templateId, isActive };
+    },
+    onSuccess: (data, variables, context) => {
+      toast({
+        title: variables.isActive ? "啟用成功" : "停用成功",
+        description: `邏輯模板已${variables.isActive ? "啟用" : "停用"}`,
+      });
+      
+      if (context?.botId) {
+        // 重新獲取最新資料
+        invalidateQueries.logicTemplates(context.botId);
+      }
+    },
+    onError: (error, variables, context) => {
+      // 回滾樂觀更新
+      if (context?.botId) {
+        optimisticUpdates.updateLogicTemplateStatus(
+          context.botId, 
+          context.templateId, 
+          !context.isActive
+        );
+      }
+      
+      toast({
+        variant: "destructive",
+        title: "操作失敗",
+        description: "無法切換邏輯模板狀態",
+      });
+    }
+  });
+};
+
+// 重新檢查 Webhook 狀態 mutation
+export const useRefreshWebhookStatus = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (botId: string) => {
+      return await apiClient.getWebhookStatus(botId);
+    },
+    onSuccess: (data, botId) => {
+      // 更新快取
+      queryClient.setQueryData(queryKeys.webhookStatus(botId), data);
+      
+      toast({
+        title: "狀態已更新",
+        description: "Webhook 狀態檢查完成",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "檢查失敗",
+        description: "無法獲取 Webhook 狀態",
+      });
+    }
+  });
+};
+
+// 輔助函數：從模板 ID 找出對應的 Bot ID
+async function findBotIdFromTemplate(templateId: string, queryClient: any): Promise<string | null> {
+  // 嘗試從現有快取中找出包含此模板的 Bot
+  const queryCache = queryClient.getQueryCache();
+  
+  for (const query of queryCache.getAll()) {
+    if (query.queryKey[0] === 'bots' && 
+        query.queryKey[2] === 'logicTemplates' && 
+        query.state.data?.data) {
+      
+      const templates = query.state.data.data;
+      const foundTemplate = templates.find((t: any) => t.id === templateId);
+      
+      if (foundTemplate) {
+        return query.queryKey[1] as string; // Bot ID
+      }
+    }
+  }
+  
+  return null;
 }
 
-export const useBotManagement = (): UseBotManagementReturn => {
-  const [bots, setBots] = useState<Bot[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-
-  // 檢查認證狀態 - 使用統一認證管理器
-  const checkAuth = useCallback(async () => {
-    const isAuthenticated = await authManager.isAuthenticated();
-    if (!isAuthenticated) {
-      
-      navigate("/login", {
-        state: {
-          from: window.location.pathname,
-          message: "請先登入才能繼續操作",
-        },
-      });
-      return false;
-    }
-    return true;
-  }, [navigate]);
-
-  // 創建 Bot - 使用統一API客戶端和快取
-  const createBot = useCallback(
-    async (botData: BotCreate): Promise<Bot | null> => {
-      if (!(await checkAuth())) return null;
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await apiClient.createBot(botData);
-        
-        if (response.error) {
-          throw new Error(response.error);
-        }
-
-        const newBot = response.data as Bot;
-        
-        // 更新本地 bot 列表
-        setBots((prevBots) => {
-          const updatedBots = [...prevBots, newBot];
-          // 同時更新快取
-          botCacheService.addBotToCache(newBot);
-          return updatedBots;
-        });
-        
-        return newBot;
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "創建 Bot 失敗";
-        setError(errorMessage);
-
-        // 統一認證管理器會自動處理401錯誤
-        authManager.handleAuthError(err);
-
-        return null;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [checkAuth]
-  );
-
-  // 獲取 Bot 列表 - 帶快取優化
-  const fetchBots = useCallback(async (forceRefresh = false): Promise<void> => {
-    if (!checkAuth()) return;
-
-    // 如果不是強制刷新，先檢查快取
-    if (!forceRefresh) {
-      const cachedBots = botCacheService.getBotsList();
-      
-      if (cachedBots) {
-        console.debug('使用快取的 Bot 清單');
-        setBots(cachedBots);
-        setIsLoading(false);
-        
-        // 背景更新資料（不阻塞 UI）
-        setTimeout(async () => {
-          try {
-            const response = await apiClient.getBots();
-            
-            if (!response.error) {
-              const freshBots = response.data;
-              // 比較資料是否有變化，有變化才更新
-              if (JSON.stringify(freshBots) !== JSON.stringify(cachedBots)) {
-                setBots(freshBots);
-                botCacheService.setBotsList(freshBots);
-                console.debug('背景更新了 Bot 清單');
-              }
-            }
-          } catch (err) {
-            console.warn('背景更新 Bot 清單失敗:', err);
-          }
-        }, 100);
-        
-        return;
-      }
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await apiClient.getBots();
-      
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      const fetchedBots = response.data;
-      setBots(fetchedBots);
-      
-      // 更新快取
-      botCacheService.setBotsList(fetchedBots);
-      
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "獲取 Bot 列表失敗";
-      setError(errorMessage);
-
-      // 如果是認證錯誤，重導向到登入頁
-      if (errorMessage.includes("401") || errorMessage.includes("認證")) {
-        authManager.clearAuth();
-        navigate("/login", {
-          state: {
-            from: window.location.pathname,
-            message: "登入已過期，請重新登入",
-          },
-        });
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [checkAuth, navigate]);
-
-  // 刪除 Bot - 帶快取更新
-  const deleteBot = useCallback(
-    async (botId: string): Promise<boolean> => {
-      if (!checkAuth()) return false;
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await apiClient.deleteBot(botId);
-        if (response.error) {
-          throw new Error(response.error);
-        }
-        
-        // 從本地列表和快取中移除
-        setBots((prevBots) => {
-          const updatedBots = prevBots.filter((bot) => bot.id !== botId);
-          // 同時從快取中移除
-          botCacheService.removeBotFromCache(botId);
-          return updatedBots;
-        });
-        
-        return true;
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "刪除 Bot 失敗";
-        setError(errorMessage);
-
-        // 如果是認證錯誤，重導向到登入頁
-        if (errorMessage.includes("401") || errorMessage.includes("認證")) {
-          authManager.clearAuth();
-          navigate("/login", {
-            state: {
-              from: window.location.pathname,
-              message: "登入已過期，請重新登入",
-            },
-          });
-        }
-
-        return false;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [checkAuth, navigate]
-  );
-
-  // 設置錯誤
-  const setErrorCallback = useCallback((error: string | null) => {
-    setError(error);
-  }, []);
-
-  // 清除錯誤
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
-
-  // 強制刷新 Bot 快取
-  const refreshBotsCache = useCallback(async () => {
-    await fetchBots(true); // 強制從 API 獲取最新資料
-  }, [fetchBots]);
-
-  // 清除 Bot 快取
-  const clearBotsCache = useCallback(() => {
-    botCacheService.clearAllBotCache();
-  }, []);
-
-  // 獲取快取統計
-  const getCacheStats = useCallback(() => {
-    return botCacheService.getCacheStats();
-  }, []);
-
-  // 組件掛載時檢查認證狀態
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
+// 主要的 Bot 管理 hook，提供統一的介面
+export const useBotManagement = () => {
+  const { data: bots, isLoading, error, refetch } = useBots();
+  
   return {
-    bots,
+    bots: bots?.data || [],
     isLoading,
     error,
-    createBot,
-    fetchBots,
-    deleteBot,
-    setError: setErrorCallback,
-    clearError,
-    // 新增快取相關方法
-    refreshBotsCache,
-    clearBotsCache,
-    getCacheStats,
+    fetchBots: refetch,
   };
 };

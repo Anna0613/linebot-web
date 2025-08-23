@@ -562,6 +562,45 @@ export class UnifiedApiClient {
       getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/webhooks/${botId}/info`)
     );
   }
+
+  // 儀表板複合端點 - 高效能資料獲取
+  public async getBotDashboard(
+    botId: string, 
+    options?: {
+      includeAnalytics?: boolean;
+      includeLogic?: boolean;
+      includeWebhook?: boolean;
+      period?: 'day' | 'week' | 'month';
+    }
+  ): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    
+    if (options?.includeAnalytics !== undefined) {
+      params.append('include_analytics', options.includeAnalytics.toString());
+    }
+    if (options?.includeLogic !== undefined) {
+      params.append('include_logic', options.includeLogic.toString());
+    }
+    if (options?.includeWebhook !== undefined) {
+      params.append('include_webhook', options.includeWebhook.toString());
+    }
+    if (options?.period) {
+      params.append('period', options.period);
+    }
+
+    const url = getApiUrl(
+      API_CONFIG.UNIFIED.BASE_URL, 
+      `/bots/${botId}/dashboard${params.toString() ? '?' + params.toString() : ''}`
+    );
+    
+    return this.get(url);
+  }
+
+  public async getBotDashboardLight(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/dashboard/light`)
+    );
+  }
 }
 
 // 導出單例實例
