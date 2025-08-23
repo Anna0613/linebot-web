@@ -94,19 +94,19 @@ const BotManagementPage: React.FC = () => {
   const chartConfig = {
     sent: {
       label: "發送",
-      color: "#3b82f6",
+      color: "hsl(var(--primary))",
     },
     received: {
       label: "接收",
-      color: "#10b981",
+      color: "hsl(var(--accent))",
     },
     activeUsers: {
       label: "活躍用戶",
-      color: "#f59e0b",
+      color: "hsl(222.2 84% 59%)",
     },
     usage: {
       label: "使用率",
-      color: "#8b5cf6",
+      color: "hsl(215.4 16.3% 46.9%)",
     },
   };
 
@@ -377,20 +377,20 @@ const BotManagementPage: React.FC = () => {
   const selectedBot = bots.find(bot => bot.id === selectedBotId);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[hsl(var(--background))]">
       <DashboardNavbar user={user} />
       
       <div className="flex-1 mt-20 mb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* 頁面標題 */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">LINE Bot 管理中心</h1>
-            <p className="text-gray-600">監控和控制您的 LINE Bot，管理邏輯和分析數據</p>
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-1">LINE Bot 管理中心</h1>
+            <p className="text-muted-foreground">監控與控制您的 LINE Bot，管理邏輯與分析數據</p>
           </div>
 
           {/* Bot 選擇器 */}
-          <div className="mb-8">
-            <Card>
+          <div className="mb-6 sticky top-20 z-20">
+            <Card className="glass-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Bot className="h-5 w-5" />
@@ -418,7 +418,7 @@ const BotManagementPage: React.FC = () => {
                         <Activity className="h-3 w-3 mr-1" />
                         啟用中
                       </Badge>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-muted-foreground">
                         建立時間: {new Date(selectedBot.created_at).toLocaleDateString("zh-TW")}
                       </span>
                     </div>
@@ -430,10 +430,10 @@ const BotManagementPage: React.FC = () => {
 
           {selectedBotId && (
             <Tabs defaultValue="analytics" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="analytics">數據分析</TabsTrigger>
-                <TabsTrigger value="control">Bot 控制</TabsTrigger>
-                <TabsTrigger value="logic">邏輯管理</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted p-1">
+                <TabsTrigger value="analytics" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">數據分析</TabsTrigger>
+                <TabsTrigger value="control" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Bot 控制</TabsTrigger>
+                <TabsTrigger value="logic" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">邏輯管理</TabsTrigger>
               </TabsList>
 
               {/* 數據分析頁籤 */}
@@ -446,7 +446,7 @@ const BotManagementPage: React.FC = () => {
                   <>
                     {/* 關鍵指標 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card>
+                  <Card className="shadow-sm hover:shadow-md transition">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">總訊息數</CardTitle>
                       <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -457,7 +457,7 @@ const BotManagementPage: React.FC = () => {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="shadow-sm hover:shadow-md transition">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">活躍用戶</CardTitle>
                       <Users className="h-4 w-4 text-muted-foreground" />
@@ -468,7 +468,7 @@ const BotManagementPage: React.FC = () => {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="shadow-sm hover:shadow-md transition">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">平均回應時間</CardTitle>
                       <Clock className="h-4 w-4 text-muted-foreground" />
@@ -479,7 +479,7 @@ const BotManagementPage: React.FC = () => {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="shadow-sm hover:shadow-md transition">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">成功率</CardTitle>
                       <Target className="h-4 w-4 text-muted-foreground" />
@@ -491,99 +491,103 @@ const BotManagementPage: React.FC = () => {
                   </Card>
                 </div>
 
-                {/* 圖表區域 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* 訊息統計圖表 */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5" />
-                        訊息統計
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ChartContainer config={chartConfig} className="h-[300px]">
-                        <BarChart data={messageStats} width={500} height={300}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Bar dataKey="sent" fill="var(--color-sent)" />
-                          <Bar dataKey="received" fill="var(--color-received)" />
-                        </BarChart>
-                      </ChartContainer>
-                    </CardContent>
-                  </Card>
+                {/* 圖表與洞察版面 */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                  <div className="xl:col-span-8 space-y-6">
+                    {/* 訊息統計圖表 */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5" />
+                          訊息統計
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ChartContainer config={chartConfig} className="h-[300px]">
+                          <BarChart data={messageStats} width={500} height={300}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Bar dataKey="sent" fill="var(--color-sent)" />
+                            <Bar dataKey="received" fill="var(--color-received)" />
+                          </BarChart>
+                        </ChartContainer>
+                      </CardContent>
+                    </Card>
 
-                  {/* 用戶活躍度圖表 */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5" />
-                        用戶活躍度
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ChartContainer config={chartConfig} className="h-[300px]">
-                        <LineChart data={userActivity} width={500} height={300}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="hour" />
-                          <YAxis />
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Line 
-                            type="monotone" 
-                            dataKey="activeUsers" 
-                            stroke="var(--color-activeUsers)" 
-                            strokeWidth={2}
-                          />
-                        </LineChart>
-                      </ChartContainer>
-                    </CardContent>
-                  </Card>
-                </div>
+                    {/* 用戶活躍度圖表 */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5" />
+                          用戶活躍度
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ChartContainer config={chartConfig} className="h-[300px]">
+                          <LineChart data={userActivity} width={500} height={300}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="hour" />
+                            <YAxis />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Line
+                              type="monotone"
+                              dataKey="activeUsers"
+                              stroke="var(--color-activeUsers)"
+                              strokeWidth={2}
+                            />
+                          </LineChart>
+                        </ChartContainer>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-                {/* 使用統計 */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>功能使用統計</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <ChartContainer config={chartConfig} className="h-[200px]">
-                        <PieChart width={350} height={200}>
-                          <Pie
-                            data={usageData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
-                            dataKey="usage"
-                          >
-                            {usageData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
+                  {/* 功能使用統計（右側洞察） */}
+                  <div className="xl:col-span-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>功能使用統計</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-6">
+                          <ChartContainer config={chartConfig} className="h-[200px]">
+                            <PieChart width={350} height={200}>
+                              <Pie
+                                data={usageData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="usage"
+                              >
+                                {usageData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <ChartTooltip content={<ChartTooltipContent />} />
+                            </PieChart>
+                          </ChartContainer>
+                          <div className="space-y-2">
+                            {usageData.map((item, index) => (
+                              <div key={index} className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: item.color }}
+                                  />
+                                  <span className="text-sm">{item.feature}</span>
+                                </div>
+                                <span className="text-sm font-medium">{item.usage}%</span>
+                              </div>
                             ))}
-                          </Pie>
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                        </PieChart>
-                      </ChartContainer>
-                      <div className="space-y-2">
-                        {usageData.map((item, index) => (
-                          <div key={index} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-3 h-3 rounded-full" 
-                                style={{ backgroundColor: item.color }}
-                              />
-                              <span className="text-sm">{item.feature}</span>
-                            </div>
-                            <span className="text-sm font-medium">{item.usage}%</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
                   </>
                 )}
               </TabsContent>
@@ -592,7 +596,7 @@ const BotManagementPage: React.FC = () => {
               <TabsContent value="control" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Bot 資訊 */}
-                  <Card>
+                  <Card className="shadow-sm hover:shadow-md transition">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Eye className="h-5 w-5" />
@@ -604,11 +608,11 @@ const BotManagementPage: React.FC = () => {
                         <>
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <label className="text-sm font-medium text-gray-500">Bot 名稱</label>
+                              <label className="text-sm font-medium text-muted-foreground">Bot 名稱</label>
                               <p className="text-sm">{selectedBot.name}</p>
                             </div>
                             <div>
-                              <label className="text-sm font-medium text-gray-500">狀態</label>
+                              <label className="text-sm font-medium text-muted-foreground">狀態</label>
                               <div className="text-sm">
                                 <Badge className="bg-green-100 text-green-800">啟用中</Badge>
                               </div>
@@ -616,11 +620,11 @@ const BotManagementPage: React.FC = () => {
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <label className="text-sm font-medium text-gray-500">建立時間</label>
+                              <label className="text-sm font-medium text-muted-foreground">建立時間</label>
                               <p className="text-sm">{new Date(selectedBot.created_at).toLocaleString("zh-TW")}</p>
                             </div>
                             <div>
-                              <label className="text-sm font-medium text-gray-500">頻道設定</label>
+                              <label className="text-sm font-medium text-muted-foreground">頻道設定</label>
                               <div className="text-sm">
                                 <Badge variant={selectedBot.channel_token ? "default" : "secondary"}>
                                   {selectedBot.channel_token ? "已設定" : "未設定"}
@@ -634,7 +638,7 @@ const BotManagementPage: React.FC = () => {
                   </Card>
 
                   {/* 測試訊息 */}
-                  <Card>
+                  <Card className="shadow-sm hover:shadow-md transition">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Send className="h-5 w-5" />
@@ -643,7 +647,7 @@ const BotManagementPage: React.FC = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700">用戶 ID</label>
+                        <label className="text-sm font-medium text-muted-foreground">用戶 ID</label>
                         <Input
                           placeholder="輸入測試用戶 ID"
                           value={testUserId}
@@ -651,7 +655,7 @@ const BotManagementPage: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700">測試訊息</label>
+                        <label className="text-sm font-medium text-muted-foreground">測試訊息</label>
                         <Textarea
                           placeholder="輸入要發送的測試訊息..."
                           value={testMessage}
@@ -671,7 +675,7 @@ const BotManagementPage: React.FC = () => {
                   </Card>
 
                   {/* Webhook URL 設定 */}
-                  <Card>
+                  <Card className="shadow-sm hover:shadow-md transition">
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -698,7 +702,7 @@ const BotManagementPage: React.FC = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        <label className="text-sm font-medium text-muted-foreground mb-2 block">
                           LINE Bot Webhook URL
                         </label>
                         <div className="flex gap-2">
@@ -722,7 +726,7 @@ const BotManagementPage: React.FC = () => {
                             )}
                           </Button>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           請將此 URL 設定到 LINE Developers Console 的 Webhook URL 欄位
                         </p>
                       </div>
@@ -731,7 +735,7 @@ const BotManagementPage: React.FC = () => {
                       {webhookStatus && (
                         <div className="border-t pt-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-700">綁定狀態</span>
+                            <span className="text-sm font-medium text-muted-foreground">綁定狀態</span>
                             <Button
                               variant="outline"
                               size="sm"
@@ -744,32 +748,32 @@ const BotManagementPage: React.FC = () => {
                           </div>
                           <div className="grid grid-cols-2 gap-4 text-xs">
                             <div>
-                              <span className="text-gray-500">Bot 配置:</span>
-                              <span className={`ml-1 ${webhookStatus.is_configured ? 'text-green-600' : 'text-red-600'}`}>
+                              <span className="text-muted-foreground">Bot 配置:</span>
+                              <span className={`ml-1 ${webhookStatus.is_configured ? 'text-green-600' : 'text-red-600'} font-medium`}>
                                 {webhookStatus.is_configured ? '✓ 已配置' : '✗ 未配置'}
                               </span>
                             </div>
                             <div>
                               <span className="text-gray-500">LINE API:</span>
-                              <span className={`ml-1 ${webhookStatus.line_api_accessible ? 'text-green-600' : 'text-red-600'}`}>
+                              <span className={`ml-1 ${webhookStatus.line_api_accessible ? 'text-green-600' : 'text-red-600'} font-medium`}>
                                 {webhookStatus.line_api_accessible ? '✓ 可連接' : '✗ 連接失敗'}
                               </span>
                             </div>
                             <div className="col-span-2">
                               <span className="text-gray-500">Webhook 端點:</span>
                               {webhookStatus.webhook_endpoint_info?.is_set ? (
-                                <span className={`ml-1 ${webhookStatus.webhook_endpoint_info?.active ? 'text-green-600' : 'text-orange-600'}`}>
+                                <span className={`ml-1 ${webhookStatus.webhook_endpoint_info?.active ? 'text-green-600' : 'text-orange-600'} font-medium`}>
                                   {webhookStatus.webhook_endpoint_info?.active ? '✓ 已啟用' : '⚠ 已設定但未啟用'}
                                 </span>
                               ) : (
-                                <span className="ml-1 text-red-600">
+                                <span className="ml-1 text-red-600 font-medium">
                                   ✗ 未設定
                                 </span>
                               )}
                             </div>
                             {webhookStatus.webhook_endpoint_info?.endpoint && (
                               <div className="col-span-2">
-                                <span className="text-gray-500">設定的端點:</span>
+                                <span className="text-muted-foreground">設定的端點:</span>
                                 <div className="text-xs text-gray-700 mt-1 break-all">
                                   {webhookStatus.webhook_endpoint_info.endpoint}
                                 </div>
@@ -777,7 +781,7 @@ const BotManagementPage: React.FC = () => {
                             )}
                           </div>
                           {webhookStatus.checked_at && (
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-xs text-muted-foreground mt-2">
                               最後檢查: {new Date(webhookStatus.checked_at).toLocaleString('zh-TW')}
                             </p>
                           )}
@@ -787,7 +791,7 @@ const BotManagementPage: React.FC = () => {
                   </Card>
 
                   {/* 快速操作 */}
-                  <Card>
+                  <Card className="shadow-sm hover:shadow-md transition">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Settings className="h-5 w-5" />
@@ -857,12 +861,12 @@ const BotManagementPage: React.FC = () => {
                         {logicTemplates.map((template) => (
                           <div
                             key={template.id}
-                            className="flex items-center justify-between p-4 border rounded-lg"
+                            className="flex items-center justify-between p-4 border rounded-lg bg-background shadow-sm hover:shadow transition"
                           >
                             <div className="flex-1">
                               <h3 className="font-medium">{template.name}</h3>
                               {template.description && (
-                                <p className="text-sm text-gray-600 mt-1">
+                                <p className="text-sm text-muted-foreground mt-1">
                                   {template.description}
                                 </p>
                               )}

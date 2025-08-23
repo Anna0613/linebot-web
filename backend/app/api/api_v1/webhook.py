@@ -122,8 +122,10 @@ async def get_webhook_info(
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
         
-        # 構建 Webhook URL（需要根據實際部署環境調整）
-        webhook_url = f"/api/v1/webhooks/{bot_id}"
+        # 構建完整的 Webhook URL
+        import os
+        webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
+        webhook_url = f"{webhook_domain}/api/v1/webhooks/{bot_id}"
         
         return {
             "bot_id": bot_id,
@@ -201,6 +203,10 @@ async def get_webhook_status(
         
         from datetime import datetime
         
+        # 獲取 webhook 域名
+        import os
+        webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
+        
         return {
             "bot_id": bot_id,
             "bot_name": bot.name,
@@ -209,7 +215,7 @@ async def get_webhook_status(
             "is_configured": is_configured,
             "line_api_accessible": line_api_accessible,
             "webhook_working": webhook_working,
-            "webhook_url": f"/api/v1/webhooks/{bot_id}",
+            "webhook_url": f"{webhook_domain}/api/v1/webhooks/{bot_id}",
             "webhook_endpoint_info": webhook_endpoint_info,
             "last_webhook_time": last_webhook_time,
             "checked_at": datetime.now().isoformat()
@@ -240,6 +246,10 @@ async def debug_webhook_config(
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
         
+        # 獲取 webhook 域名
+        import os
+        webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
+        
         return {
             "bot_id": bot_id,
             "bot_name": bot.name,
@@ -247,7 +257,7 @@ async def debug_webhook_config(
             "has_channel_secret": bool(bot.channel_secret),
             "channel_token_length": len(bot.channel_token) if bot.channel_token else 0,
             "channel_secret_length": len(bot.channel_secret) if bot.channel_secret else 0,
-            "webhook_url": f"/api/v1/webhooks/{bot_id}",
+            "webhook_url": f"{webhook_domain}/api/v1/webhooks/{bot_id}",
             "status": "configured" if (bot.channel_token and bot.channel_secret) else "not_configured"
         }
         
