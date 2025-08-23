@@ -214,5 +214,14 @@ async def activate_logic_template(
     """激活邏輯模板（設為活躍狀態）"""
     return BotService.activate_logic_template(db, template_id, current_user.id)
 
+@router.post("/logic-templates/{template_id}/deactivate")
+async def deactivate_logic_template(
+    template_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """停用邏輯模板（設為非活躍狀態）"""
+    return BotService.deactivate_logic_template(db, template_id, current_user.id)
+
 
  

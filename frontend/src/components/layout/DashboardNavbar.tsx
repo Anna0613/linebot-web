@@ -415,7 +415,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
             </li>
             <li>
               <Link
-                to="/editbot"
+                to="/bots/management"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
               >

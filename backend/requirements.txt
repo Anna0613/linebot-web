@@ -9,7 +9,8 @@ python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.20
 python-dotenv==1.0.0
-requests==2.31.0
+requests>=2.32.3
 tenacity>=8.2.3
 itsdangerous==2.1.2
-fastapi-mail==1.4.1 
+fastapi-mail==1.4.1
+line-bot-sdk==3.14.0 

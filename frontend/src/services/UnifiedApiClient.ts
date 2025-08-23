@@ -459,6 +459,96 @@ export class UnifiedApiClient {
       { skipAuth: true }
     );
   }
+
+  // 邏輯模板相關API
+  public async getBotLogicTemplates(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/logic-templates`)
+    );
+  }
+
+  public async activateLogicTemplate(templateId: string): Promise<ApiResponse> {
+    return this.post(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/logic-templates/${templateId}/activate`)
+    );
+  }
+
+  public async deactivateLogicTemplate(templateId: string): Promise<ApiResponse> {
+    // 暫時使用 POST 方法，實際可能需要根據後端 API 設計調整
+    return this.post(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/logic-templates/${templateId}/deactivate`)
+    );
+  }
+
+  public async updateLogicTemplate(templateId: string, data: any): Promise<ApiResponse> {
+    return this.put(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/logic-templates/${templateId}`),
+      data
+    );
+  }
+
+  // LINE Bot 分析 API
+  public async getBotAnalytics(botId: string, period: string = "week"): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/analytics?period=${period}`)
+    );
+  }
+
+  public async getBotMessageStats(botId: string, days: number = 7): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/messages/stats?days=${days}`)
+    );
+  }
+
+  public async getBotUserActivity(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/users/activity`)
+    );
+  }
+
+  public async getBotUsageStats(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/usage/stats`)
+    );
+  }
+
+  public async sendTestMessage(botId: string, messageData: { user_id: string; message: string }): Promise<ApiResponse> {
+    return this.post(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/send-message`),
+      messageData
+    );
+  }
+
+  public async getBotProfile(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/profile`)
+    );
+  }
+
+  public async checkBotHealth(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/health`)
+    );
+  }
+
+  public async getBotUsers(botId: string, limit: number = 50, offset: number = 0): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/users?limit=${limit}&offset=${offset}`)
+    );
+  }
+
+  public async getUserInteractions(botId: string, lineUserId: string, limit: number = 20): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/users/${lineUserId}/interactions?limit=${limit}`)
+    );
+  }
+
+  public async broadcastMessage(botId: string, messageData: { message: string; user_ids?: string[] }): Promise<ApiResponse> {
+    return this.post(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/broadcast`),
+      messageData
+    );
+  }
 }
 
 // 導出單例實例

@@ -843,13 +843,7 @@ class BotService:
             )
         
         try:
-            # 先將同個Bot的其他模板設為非活躍
-            db.query(LogicTemplate).filter(
-                LogicTemplate.bot_id == template.bot_id,
-                LogicTemplate.id != template_uuid
-            ).update({LogicTemplate.is_active: "false"})
-            
-            # 設定目標模板為活躍
+            # 設定目標模板為活躍（允許多個模板同時運行）
             template.is_active = "true"
             
             db.commit()
@@ -863,6 +857,46 @@ class BotService:
             )
         
         return {"message": "邏輯模板已成功激活"}
+    
+    @staticmethod
+    def deactivate_logic_template(db: Session, template_id: str, user_id: UUID) -> Dict[str, str]:
+        """停用邏輯模板"""
+        try:
+            # 將字符串 UUID 轉換為 UUID 對象
+            from uuid import UUID as PyUUID
+            template_uuid = PyUUID(template_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無效的邏輯模板 ID 格式"
+            )
+        
+        template = db.query(LogicTemplate).filter(
+            LogicTemplate.id == template_uuid,
+            LogicTemplate.user_id == user_id
+        ).first()
+        
+        if not template:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="邏輯模板不存在"
+            )
+        
+        try:
+            # 設定目標模板為非活躍
+            template.is_active = "false"
+            
+            db.commit()
+            logger.info(f"邏輯模板停用成功: template_id={template_id}")
+        except Exception as e:
+            logger.error(f"停用邏輯模板時發生錯誤: {e}")
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"停用邏輯模板時發生錯誤: {str(e)}"
+            )
+        
+        return {"message": "邏輯模板已成功停用"}
     
     # ===== FLEX訊息增強方法 =====
     
