@@ -549,6 +549,19 @@ export class UnifiedApiClient {
       messageData
     );
   }
+
+  // Webhook 相關方法
+  public async getWebhookStatus(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/webhooks/${botId}/status`)
+    );
+  }
+
+  public async getWebhookInfo(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/webhooks/${botId}/info`)
+    );
+  }
 }
 
 // 導出單例實例

@@ -25,7 +25,9 @@ import {
   Activity,
   Calendar,
   Clock,
-  Target
+  Target,
+  Copy,
+  CheckCircle
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +36,7 @@ import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import { apiClient } from "../services/UnifiedApiClient";
 import { Bot as BotType, LogicTemplate } from "@/types/bot";
+import { getWebhookUrl } from "../config/apiConfig";
 
 // 類型定義
 interface BotAnalytics {
@@ -82,6 +85,9 @@ const BotManagementPage: React.FC = () => {
   const [controlLoading, setControlLoading] = useState(false);
   const [testMessage, setTestMessage] = useState("");
   const [testUserId, setTestUserId] = useState("");
+  const [copiedWebhookUrl, setCopiedWebhookUrl] = useState(false);
+  const [webhookStatus, setWebhookStatus] = useState<any>(null);
+  const [webhookStatusLoading, setWebhookStatusLoading] = useState(false);
 
 
   // 圖表配置
@@ -279,6 +285,58 @@ const BotManagementPage: React.FC = () => {
     }
   };
 
+  // 複製 Webhook URL
+  const handleCopyWebhookUrl = async () => {
+    if (!selectedBotId) return;
+
+    try {
+      const webhookUrl = getWebhookUrl(selectedBotId);
+      await navigator.clipboard.writeText(webhookUrl);
+      
+      setCopiedWebhookUrl(true);
+      toast({
+        title: "複製成功",
+        description: "Webhook URL 已複製到剪貼簿",
+      });
+
+      // 2秒後重置圖標狀態
+      setTimeout(() => {
+        setCopiedWebhookUrl(false);
+      }, 2000);
+    } catch (error) {
+      console.error("複製 Webhook URL 失敗:", error);
+      toast({
+        variant: "destructive",
+        title: "複製失敗",
+        description: "無法複製 Webhook URL",
+      });
+    }
+  };
+
+  // 獲取 Webhook 狀態
+  const fetchWebhookStatus = async (botId: string) => {
+    if (!botId) return;
+
+    setWebhookStatusLoading(true);
+    try {
+      const response = await apiClient.getWebhookStatus(botId);
+      if (response.data) {
+        setWebhookStatus(response.data);
+      }
+    } catch (error) {
+      console.error("獲取 Webhook 狀態失敗:", error);
+      setWebhookStatus(null);
+    } finally {
+      setWebhookStatusLoading(false);
+    }
+  };
+
+  // 檢查 Webhook 狀態
+  const handleCheckWebhookStatus = async () => {
+    if (!selectedBotId) return;
+    await fetchWebhookStatus(selectedBotId);
+  };
+
   // 初始化數據
   useEffect(() => {
     const initializeData = async () => {
@@ -298,7 +356,8 @@ const BotManagementPage: React.FC = () => {
       if (selectedBotId) {
         await Promise.all([
           fetchLogicTemplates(selectedBotId),
-          fetchAnalytics(selectedBotId)
+          fetchAnalytics(selectedBotId),
+          fetchWebhookStatus(selectedBotId)
         ]);
       }
     };
@@ -608,6 +667,122 @@ const BotManagementPage: React.FC = () => {
                         <Send className="h-4 w-4 mr-2" />
                         {controlLoading ? "發送中..." : "發送測試訊息"}
                       </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Webhook URL 設定 */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-5 w-5" />
+                          Webhook URL
+                        </div>
+                        {webhookStatus && (
+                          <Badge 
+                            variant={
+                              webhookStatus.status === 'active' ? 'default' : 
+                              webhookStatus.status === 'not_configured' ? 'secondary' : 
+                              'destructive'
+                            }
+                            className={
+                              webhookStatus.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 
+                              webhookStatus.status === 'not_configured' ? 'bg-gray-100 text-gray-800 border-gray-200' : 
+                              'bg-red-100 text-red-800 border-red-200'
+                            }
+                          >
+                            {webhookStatusLoading ? '檢查中...' : webhookStatus.status_text}
+                          </Badge>
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          LINE Bot Webhook URL
+                        </label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={selectedBotId ? getWebhookUrl(selectedBotId) : ""}
+                            readOnly
+                            className="flex-1"
+                            placeholder="請選擇 Bot"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCopyWebhookUrl}
+                            disabled={!selectedBotId}
+                            className="px-3"
+                          >
+                            {copiedWebhookUrl ? (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          請將此 URL 設定到 LINE Developers Console 的 Webhook URL 欄位
+                        </p>
+                      </div>
+
+                      {/* Webhook 狀態詳細資訊 */}
+                      {webhookStatus && (
+                        <div className="border-t pt-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">綁定狀態</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleCheckWebhookStatus}
+                              disabled={webhookStatusLoading}
+                            >
+                              <Activity className="h-4 w-4 mr-1" />
+                              {webhookStatusLoading ? '檢查中...' : '重新檢查'}
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <span className="text-gray-500">Bot 配置:</span>
+                              <span className={`ml-1 ${webhookStatus.is_configured ? 'text-green-600' : 'text-red-600'}`}>
+                                {webhookStatus.is_configured ? '✓ 已配置' : '✗ 未配置'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">LINE API:</span>
+                              <span className={`ml-1 ${webhookStatus.line_api_accessible ? 'text-green-600' : 'text-red-600'}`}>
+                                {webhookStatus.line_api_accessible ? '✓ 可連接' : '✗ 連接失敗'}
+                              </span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-gray-500">Webhook 端點:</span>
+                              {webhookStatus.webhook_endpoint_info?.is_set ? (
+                                <span className={`ml-1 ${webhookStatus.webhook_endpoint_info?.active ? 'text-green-600' : 'text-orange-600'}`}>
+                                  {webhookStatus.webhook_endpoint_info?.active ? '✓ 已啟用' : '⚠ 已設定但未啟用'}
+                                </span>
+                              ) : (
+                                <span className="ml-1 text-red-600">
+                                  ✗ 未設定
+                                </span>
+                              )}
+                            </div>
+                            {webhookStatus.webhook_endpoint_info?.endpoint && (
+                              <div className="col-span-2">
+                                <span className="text-gray-500">設定的端點:</span>
+                                <div className="text-xs text-gray-700 mt-1 break-all">
+                                  {webhookStatus.webhook_endpoint_info.endpoint}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          {webhookStatus.checked_at && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              最後檢查: {new Date(webhookStatus.checked_at).toLocaleString('zh-TW')}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
 

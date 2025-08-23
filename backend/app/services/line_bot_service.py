@@ -66,12 +66,20 @@ class LineBotService:
             return False
             
         try:
+            import base64
+            
+            # LINE 平台使用 HMAC-SHA256 生成簽名，然後進行 base64 編碼
             hash_value = hmac.new(
                 self.channel_secret.encode('utf-8'),
                 body,
                 hashlib.sha256
             ).digest()
-            expected_signature = "sha256=" + hash_value.hex()
+            
+            # 將計算出的 hash 進行 base64 編碼
+            expected_signature = base64.b64encode(hash_value).decode('utf-8')
+            
+            logger.debug(f"預期簽名: {expected_signature}")
+            logger.debug(f"接收簽名: {signature}")
             
             return hmac.compare_digest(expected_signature, signature)
         except Exception as e:
@@ -146,6 +154,63 @@ class LineBotService:
         except Exception as e:
             logger.error(f"連接檢查失敗: {e}")
             return False
+    
+    def check_webhook_endpoint(self) -> Dict:
+        """
+        檢查 Webhook 端點設定狀態
+        
+        Returns:
+            Dict: Webhook 設定資訊
+        """
+        if not self.is_configured():
+            return {
+                "is_set": False,
+                "endpoint": None,
+                "active": False,
+                "error": "Bot 未配置"
+            }
+            
+        try:
+            # 使用 LINE API 檢查 Webhook 端點
+            headers = {
+                "Authorization": f"Bearer {self.channel_token}",
+                "Content-Type": "application/json"
+            }
+            
+            response = requests.get(
+                "https://api.line.me/v2/bot/channel/webhook/endpoint",
+                headers=headers,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                endpoint = data.get("endpoint")
+                active = data.get("active", False)
+                
+                return {
+                    "is_set": bool(endpoint),
+                    "endpoint": endpoint,
+                    "active": active,
+                    "error": None
+                }
+            else:
+                logger.error(f"檢查 Webhook 端點失敗: {response.status_code} - {response.text}")
+                return {
+                    "is_set": False,
+                    "endpoint": None,
+                    "active": False,
+                    "error": f"API 錯誤: {response.status_code}"
+                }
+                
+        except Exception as e:
+            logger.error(f"檢查 Webhook 端點失敗: {e}")
+            return {
+                "is_set": False,
+                "endpoint": None,
+                "active": False,
+                "error": str(e)
+            }
     
     def send_text_message(self, user_id: str, text: str) -> Dict:
         """
