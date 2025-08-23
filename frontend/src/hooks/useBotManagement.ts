@@ -4,7 +4,6 @@ import { Bot, BotCreate } from "../services/puzzleApi";
 import { authManager } from "../services/UnifiedAuthManager";
 import { apiClient } from "../services/UnifiedApiClient";
 import { botCacheService } from "../services/BotCacheService";
-import { performanceMonitor } from "../utils/performanceMonitor";
 
 interface UseBotManagementReturn {
   bots: Bot[];
@@ -90,11 +89,7 @@ export const useBotManagement = (): UseBotManagementReturn => {
 
     // 如果不是強制刷新，先檢查快取
     if (!forceRefresh) {
-      const cachedBots = performanceMonitor.measureCacheOperation(
-        'getBotsList', 
-        () => botCacheService.getBotsList(),
-        true
-      );
+      const cachedBots = botCacheService.getBotsList();
       
       if (cachedBots) {
         console.debug('使用快取的 Bot 清單');
@@ -104,11 +99,7 @@ export const useBotManagement = (): UseBotManagementReturn => {
         // 背景更新資料（不阻塞 UI）
         setTimeout(async () => {
           try {
-            const response = await performanceMonitor.measureDataFetch(
-              'fetchBots-background',
-              () => apiClient.getBots(),
-              false
-            );
+            const response = await apiClient.getBots();
             
             if (!response.error) {
               const freshBots = response.data;
@@ -132,11 +123,7 @@ export const useBotManagement = (): UseBotManagementReturn => {
     setError(null);
 
     try {
-      const response = await performanceMonitor.measureDataFetch(
-        'fetchBots-api',
-        () => apiClient.getBots(),
-        false
-      );
+      const response = await apiClient.getBots();
       
       if (response.error) {
         throw new Error(response.error);

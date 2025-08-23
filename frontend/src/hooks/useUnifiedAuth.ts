@@ -10,7 +10,6 @@ import { useToast } from './use-toast';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { cacheService, CACHE_KEYS, CACHE_TTL } from '../services/CacheService';
 import { authOptimizer } from '../utils/authOptimizer';
-import { performanceMonitor } from '../utils/performanceMonitor';
 
 interface UseUnifiedAuthOptions {
   requireAuth?: boolean;
@@ -99,11 +98,8 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
         onAuthChange?.(true, cachedUser);
       }
 
-      // 使用認證優化器進行檢查（帶效能監控）
-      const authResult = await performanceMonitor.measureAuthCheck(
-        () => authOptimizer.checkAuthenticationOptimized('useUnifiedAuth'),
-        false // 這裡會由優化器內部決定是否從快取
-      );
+      // 使用認證優化器進行檢查
+      const authResult = await authOptimizer.checkAuthenticationOptimized('useUnifiedAuth');
       
       if (authResult.isAuthenticated) {
         // 如果已認證，確保用戶資料是最新的

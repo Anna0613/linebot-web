@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import { initializeCacheEventHandler } from "@/utils/cacheEventHandler";
 import { authOptimizer } from "@/utils/authOptimizer";
-import PerformancePanel from "@/components/dev/PerformancePanel";
 
 // 使用 React.lazy 進行代碼分割和懶載入
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -118,9 +117,6 @@ const App = () => {
             </Routes>
           </Suspense>
         </BrowserRouter>
-        
-        {/* 開發工具效能面板 */}
-        <PerformancePanel />
         
       </TooltipProvider>
     </QueryClientProvider>
