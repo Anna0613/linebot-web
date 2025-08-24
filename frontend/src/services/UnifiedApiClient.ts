@@ -25,7 +25,7 @@ interface RequestOptions {
 
 export class UnifiedApiClient {
   private static instance: UnifiedApiClient;
-  private readonly defaultTimeout = 5000; // 5秒 (從10秒優化)
+  private readonly defaultTimeout = 15000; // 15秒 (增加超時時間以避免請求被中止)
   private readonly defaultRetries = 1;
   private pendingRequests = new Map<string, AbortController>(); // 請求去重和取消
 
@@ -54,23 +54,11 @@ export class UnifiedApiClient {
       skipAuth = false,
     } = options;
 
-    // 生成請求唯一標識符 (用於去重)
-    const requestKey = `${method}:${endpoint}:${JSON.stringify(body || {})}`;
-    
-    // 檢查是否有相同的請求正在進行
-    if (this.pendingRequests.has(requestKey)) {
-      secureLog(`請求去重: ${requestKey}`);
-      try {
-        // 等待現有請求完成 (簡化實現，實際可以返回 Promise)
-        const existingController = this.pendingRequests.get(requestKey);
-        if (existingController && !existingController.signal.aborted) {
-          // 等待一小段時間後重新發送請求
-          await this.delay(100);
-        }
-      } catch (error) {
-        secureLog('請求去重處理失敗:', error);
-      }
-    }
+    // 生成請求唯一標識符 (用於去重) - 暫時禁用去重功能
+    const requestKey = `${method}:${endpoint}:${JSON.stringify(body || {})}:${Date.now()}`;
+
+    // 暫時禁用請求去重邏輯以避免請求被意外中止
+    // TODO: 重新實現更穩定的請求去重邏輯
 
     let lastError: Error | null = null;
     const controller = new AbortController();
@@ -607,6 +595,12 @@ export class UnifiedApiClient {
     return this.post(
       getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/broadcast`),
       messageData
+    );
+  }
+
+  public async getBotActivities(botId: string, limit: number = 20, offset: number = 0): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/activities?limit=${limit}&offset=${offset}`)
     );
   }
 

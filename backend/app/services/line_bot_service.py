@@ -1149,3 +1149,71 @@ class LineBotService:
         except Exception as e:
             logger.error(f"獲取使用統計失敗: {e}")
             return []
+    
+    def get_bot_activities_real(self, db_session, bot_id: str, limit: int = 20, offset: int = 0) -> List[Dict]:
+        """從數據庫獲取真實的 Bot 活動記錄"""
+        from app.models.line_user import LineBotUser, LineBotUserInteraction
+        from uuid import UUID as PyUUID
+        from sqlalchemy import desc
+        
+        try:
+            bot_uuid = PyUUID(bot_id)
+            
+            # 獲取用戶互動記錄
+            interactions = db_session.query(LineBotUserInteraction).join(
+                LineBotUser, LineBotUser.id == LineBotUserInteraction.line_user_id
+            ).filter(
+                LineBotUser.bot_id == bot_uuid
+            ).order_by(
+                desc(LineBotUserInteraction.timestamp)
+            ).limit(limit).offset(offset).all()
+            
+            activities = []
+            for interaction in interactions:
+                # 根據互動類型決定活動類型
+                activity_type = "message"
+                title = "收到新訊息"
+                description = "用戶發送了一條訊息"
+                
+                if interaction.message_type:
+                    if interaction.message_type == "text":
+                        activity_type = "message"
+                        title = "收到文字訊息"
+                        description = f"用戶發送了文字訊息: {interaction.message_content[:30]}..." if interaction.message_content else "用戶發送了文字訊息"
+                    elif interaction.message_type == "image":
+                        activity_type = "success" 
+                        title = "收到圖片訊息"
+                        description = "用戶發送了圖片"
+                    elif interaction.message_type == "postback":
+                        activity_type = "info"
+                        title = "用戶操作"
+                        description = "用戶點擊了按鈕或選單"
+                    else:
+                        activity_type = "info"
+                        title = "收到其他類型訊息"
+                        description = f"用戶發送了 {interaction.message_type} 類型訊息"
+                
+                # 獲取用戶資訊
+                user = db_session.query(LineBotUser).filter(
+                    LineBotUser.id == interaction.line_user_id
+                ).first()
+                
+                activities.append({
+                    "id": str(interaction.id),
+                    "type": activity_type,
+                    "title": title,
+                    "description": description,
+                    "timestamp": interaction.timestamp.isoformat(),
+                    "metadata": {
+                        "userId": user.line_user_id if user else "unknown",
+                        "userName": user.display_name or f"用戶 {user.line_user_id[:8]}" if user else "未知用戶",
+                        "messageType": interaction.message_type,
+                        "messageId": interaction.message_id
+                    }
+                })
+            
+            return activities
+            
+        except Exception as e:
+            logger.error(f"獲取活動記錄失敗: {e}")
+            return []

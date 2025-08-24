@@ -1,4 +1,6 @@
 
+@import './styles/dashboard.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
