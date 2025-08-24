@@ -379,12 +379,15 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
       </CardHeader>
       
       <CardContent className="pb-6">
-        <ChartContainer 
-          config={config} 
+        <ChartContainer
+          config={config}
           className={cn(
             "w-full transition-all duration-300",
             isExpanded && "h-[500px]"
           )}
+          style={{
+            height: isExpanded ? "500px" : `${height}px`
+          }}
         >
           <ResponsiveContainer width="100%" height="100%">
             {renderChart(chartType, processedData, config, customColors)}

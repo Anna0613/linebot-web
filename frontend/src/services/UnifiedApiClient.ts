@@ -78,27 +78,34 @@ export class UnifiedApiClient {
           };
 
           // 超時控制
-          const timeoutId = setTimeout(() => controller.abort(), timeout);
+          const timeoutId = setTimeout(() => {
+            secureLog(`請求超時，正在取消: ${method} ${endpoint}`, { timeout });
+            controller.abort();
+          }, timeout);
 
           secureLog(`API請求: ${method} ${endpoint}`, {
             attempt: attempt + 1,
             skipAuth,
+            timeout,
           });
 
           const response = await fetch(endpoint, requestInit);
           clearTimeout(timeoutId);
 
           const result = await this.handleResponse<T>(response);
-          
+
           // 成功後清理 pending requests
           this.pendingRequests.delete(requestKey);
-          
+
           return result;
         } catch (_error) {
           lastError = _error instanceof Error ? _error : new Error('請求失敗');
-          
-          // 如果請求被取消，直接返回
+
+          // 如果請求被取消，提供更詳細的錯誤信息
           if (_error instanceof Error && _error.name === 'AbortError') {
+            const abortReason = controller.signal.reason || '請求被取消或超時';
+            secureLog(`請求被中止: ${method} ${endpoint}`, { reason: abortReason });
+            lastError = new Error(`請求被中止: ${abortReason}`);
             break;
           }
           
