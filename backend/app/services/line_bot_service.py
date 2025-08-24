@@ -115,7 +115,7 @@ class LineBotService:
     
     def get_bot_info(self) -> Optional[Dict]:
         """
-        獲取 Bot 基本資訊
+        獲取 Bot 基本資訊，包含 Channel ID
         
         Returns:
             Dict: Bot 資訊
@@ -124,18 +124,37 @@ class LineBotService:
             return None
             
         try:
-            # 模擬 Bot 資訊，實際可能需要呼叫其他 API
+            from linebot.v3.messaging import Configuration, ApiClient, MessagingApi
+            
+            configuration = Configuration(access_token=self.channel_token)
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                bot_info_response = line_bot_api.get_bot_info()
+                
+                # 記錄獲取到的資訊以便調試
+                logger.info(f"獲取到 Bot 資訊 - user_id: {bot_info_response.user_id}, basic_id: {bot_info_response.basic_id}")
+                
+                return {
+                    "user_id": bot_info_response.user_id,  # 這就是 Channel ID
+                    "channel_id": bot_info_response.user_id,  # 明確標示為 channel_id
+                    "basic_id": bot_info_response.basic_id,
+                    "premium_id": bot_info_response.premium_id,
+                    "display_name": bot_info_response.display_name,
+                    "picture_url": bot_info_response.picture_url,
+                    "chat_mode": bot_info_response.chat_mode,
+                    "mark_as_read_mode": bot_info_response.mark_as_read_mode
+                }
+        except Exception as e:
+            logger.error(f"獲取 Bot 資訊失敗: {e}")
+            # 如果 API 調用失敗，返回基本資訊但不包含 channel_id
             return {
-                "status": "active",
                 "display_name": "LINE Bot",
                 "picture_url": None,
                 "basic_id": f"@{self.channel_token[:8]}",
                 "premium_id": None,
-                "greeting_message": "歡迎使用 LINE Bot！"
+                "channel_id": None,
+                "error": f"API 調用失敗: {str(e)}"
             }
-        except Exception as e:
-            logger.error(f"獲取 Bot 資訊失敗: {e}")
-            return None
     
     def check_connection(self) -> bool:
         """

@@ -294,8 +294,9 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
     try:
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
         
-        # 檢查 LINE API 連接
+        # 檢查 LINE API 連接並獲取 Bot 資訊
         line_api_accessible = line_bot_service.check_connection()
+        bot_info = line_bot_service.get_bot_info() if line_api_accessible else None
         
         # 檢查 Webhook 端點設定
         webhook_endpoint_info = line_bot_service.check_webhook_endpoint()
@@ -319,7 +320,7 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
         import os
         webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
         
-        return {
+        result = {
             "bot_id": str(bot.id),
             "bot_name": bot.name,
             "status": status,
@@ -331,6 +332,15 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
             "webhook_endpoint_info": webhook_endpoint_info,
             "checked_at": datetime.now().isoformat()
         }
+        
+        # 如果成功獲取 Bot 資訊，添加 channel_id
+        if bot_info and bot_info.get("channel_id"):
+            result["channel_id"] = bot_info["channel_id"]
+            logger.info(f"Bot {bot.id} - 獲取到 Channel ID: {bot_info['channel_id']}")
+        else:
+            logger.warning(f"Bot {bot.id} - 未能獲取到 Channel ID, bot_info: {bot_info}")
+        
+        return result
         
     except Exception as e:
         logger.error(f"獲取 Webhook 狀態失敗: {str(e)}")
