@@ -6,13 +6,25 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
-from app.config import settings
+# 直接導入 config.py 模組中的設定
+import importlib.util
+import os
+
+# 直接載入 config.py 檔案
+config_path = os.path.join(os.path.dirname(__file__), 'config.py')
+spec = importlib.util.spec_from_file_location("config", config_path)
+config_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(config_module)
+settings = config_module.settings
+
 from app.database import init_database
 from app.api.api_v1.api import api_router
+from app.config.redis_config import init_redis, close_redis
 
 # 配置日誌
 logging.basicConfig(
@@ -29,14 +41,23 @@ async def lifespan(app: FastAPI):
     try:
         init_database()
         logger.info("資料庫初始化完成")
+        
+        # 初始化 Redis 連接
+        await init_redis()
+        logger.info("Redis 初始化完成")
     except Exception as e:
-        logger.error(f"資料庫初始化失敗: {e}")
+        logger.error(f"初始化失敗: {e}")
         raise
     
     yield
     
     # 關閉時
     logger.info("關閉 LineBot-Web 統一 API")
+    try:
+        await close_redis()
+        logger.info("Redis 連接已關閉")
+    except Exception as e:
+        logger.error(f"關閉 Redis 失敗: {e}")
 
 # 創建 FastAPI 應用程式
 app = FastAPI(
@@ -46,6 +67,13 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
+)
+
+# Gzip 壓縮中間件 (應該在其他中間件之前添加)
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=1000,  # 只壓縮大於 1KB 的響應
+    compresslevel=6     # 壓縮等級 1-9，6 是效能與壓縮率的平衡點
 )
 
 # CORS 中間件

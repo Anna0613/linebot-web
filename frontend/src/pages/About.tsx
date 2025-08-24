@@ -1,78 +1,20 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
-import { authManager } from "../services/UnifiedAuthManager";
-import { API_CONFIG, getApiUrl } from "../config/apiConfig";
+import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 
-// 定義 User 介面
-interface User {
-  line_id?: string;
-  display_name: string;
-  picture_url?: string;
-  username?: string;
-  avatar?: string;
-  isLineUser?: boolean;
-}
+// 移除重複的 User 介面定義，使用 UnifiedUser
 
 const About = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  
+  // 使用統一身份驗證Hook - 不強制要求登入
+  const { user, loading, isAuthenticated } = useUnifiedAuth({
+    requireAuth: false, // 允許未登入用戶訪問
+  });
 
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        const authenticated = authManager.isAuthenticated();
-        setIsAuthenticated(authenticated);
-
-        if (authenticated) {
-          // 獲取用戶資訊
-          const token = authManager.getAccessToken();
-          if (token) {
-            try {
-              const response = await fetch(
-                getApiUrl(
-                  API_CONFIG.AUTH.BASE_URL,
-                  API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN
-                ),
-                {
-                  method: "GET",
-                  headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
-              );
-
-              if (response.ok) {
-                const data = await response.json();
-                if (data.authenticated && data.user) {
-                  setUser({
-                    display_name: data.user.username,
-                    username: data.user.username,
-                    email: data.user.email || "",
-                    isLineUser: false,
-                  });
-                }
-              }
-            } catch (_error) {
-              console.error("Error occurred:", _error);
-            }
-          }
-        }
-      } catch (_error) {
-        console.error("Error occurred:", _error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuthStatus();
-  }, []);
+  // 移除舊的 authManager 邏輯，由 useUnifiedAuth hook 處理
 
   if (loading) {
     return (

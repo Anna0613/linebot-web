@@ -248,15 +248,15 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium">設定</CardTitle>
+            <CardTitle className="text-lg font-medium">管理 LINE Bot</CardTitle>
             <Settings className="h-6 w-6 text-purple-600" />
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">
-              管理您的帳戶和 Bot 設定
+              監控和控制您的 LINE Bot
             </p>
             <Button asChild variant="outline" className="w-full">
-              <Link to="/setting">前往設定</Link>
+              <Link to="/bots/management">管理中心</Link>
             </Button>
           </CardContent>
         </Card>

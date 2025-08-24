@@ -5,18 +5,34 @@ import { Loader } from "@/components/ui/loader";
 import { Mail, CheckCircle, RefreshCw } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
+import { UnifiedApiClient } from "@/services/UnifiedApiClient";
 import "@/components/ui/loader.css";
 const EmailVerificationPending = () => {
   const navigate = useNavigate();
   const [resendMessage, setResendMessage] = useState("");
   const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const handleResendEmail = async () => {
     setIsResending(true);
+    setResendMessage("");
+    setResendSuccess(false);
+    
     try {
-      // 這裡需要用戶提供郵箱地址，或者從註冊流程中傳遞
-      // 暫時先提示用戶聯繫客服
-      setResendMessage("如需重新發送驗證郵件，請聯繫客服或重新註冊。");
+      const apiClient = new UnifiedApiClient();
+      const response = await apiClient.resendEmailVerification();
+      
+      if (response.success) {
+        setResendSuccess(true);
+        setResendMessage("驗證郵件已重新發送！請檢查您的郵箱。");
+      } else {
+        setResendSuccess(false);
+        setResendMessage(response.message || "重新發送失敗，請稍後再試或聯繫客服。");
+      }
+    } catch (error) {
+      setResendSuccess(false);
+      setResendMessage("發送失敗，請檢查網絡連接或稍後再試。");
+      console.error("重新發送驗證郵件錯誤:", error);
     } finally {
       setIsResending(false);
     }

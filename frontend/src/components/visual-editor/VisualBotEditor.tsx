@@ -9,8 +9,6 @@ import { SaveStatus } from '../../types/saveStatus';
 import { Button } from '../ui/button';
 import { UnifiedBlock } from '../../types/block';
 import VisualEditorApi from '../../services/visualEditorApi';
-import PerformanceDashboard from './PerformanceDashboard';
-import { usePerformanceMonitor } from '../../utils/performanceMonitor';
 
 // 專案資料介面
 interface ProjectData {
@@ -37,10 +35,6 @@ export const VisualBotEditor: React.FC = () => {
   const [lastSavedTime, setLastSavedTime] = useState<Date | undefined>();
   const [saveError, setSaveError] = useState<string>('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showPerformanceDashboard, setShowPerformanceDashboard] = useState(false);
-
-  // 性能監控 Hook
-  const { measureInteraction } = usePerformanceMonitor();
 
   // 標記為有未儲存變更 - 使用防抖優化
   const markAsChanged = useCallback(() => {
@@ -105,26 +99,24 @@ export const VisualBotEditor: React.FC = () => {
 
 
 
-  // 處理 Bot 選擇變更 - 添加性能監控
+  // 處理 Bot 選擇變更
   const handleBotSelect = async (botId: string) => {
-    measureInteraction('bot-selection', () => {
-      setSelectedBotId(botId);
-      // 清空邏輯模板和 FlexMessage 選擇
-      setSelectedLogicTemplateId('');
-      setSelectedFlexMessageId('');
-      setCurrentLogicTemplateName('');
-      setCurrentFlexMessageName('');
-      
-      if (botId && VisualEditorApi.isValidBotId(botId)) {
-        // 清空當前積木，等待用戶選擇邏輯模板和 FlexMessage
-        setLogicBlocks([]);
-        setFlexBlocks([]);
-      } else {
-        // 清空積木
-        setLogicBlocks([]);
-        setFlexBlocks([]);
-      }
-    });
+    setSelectedBotId(botId);
+    // 清空邏輯模板和 FlexMessage 選擇
+    setSelectedLogicTemplateId('');
+    setSelectedFlexMessageId('');
+    setCurrentLogicTemplateName('');
+    setCurrentFlexMessageName('');
+    
+    if (botId && VisualEditorApi.isValidBotId(botId)) {
+      // 清空當前積木，等待用戶選擇邏輯模板和 FlexMessage
+      setLogicBlocks([]);
+      setFlexBlocks([]);
+    } else {
+      // 清空積木
+      setLogicBlocks([]);
+      setFlexBlocks([]);
+    }
   };
 
   // 處理邏輯模板選擇變更
@@ -496,12 +488,6 @@ export const VisualBotEditor: React.FC = () => {
           />
         </div>
       </div>
-      
-      {/* 性能監控儀表板 */}
-      <PerformanceDashboard 
-        isVisible={showPerformanceDashboard}
-        onToggle={() => setShowPerformanceDashboard(!showPerformanceDashboard)}
-      />
     </DragDropProvider>
   );
 };

@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import { initializeCacheEventHandler } from "@/utils/cacheEventHandler";
 import { authOptimizer } from "@/utils/authOptimizer";
-import PerformancePanel from "@/components/dev/PerformancePanel";
+import { queryClient } from "@/hooks/useReactQuery";
 
 // 使用 React.lazy 進行代碼分割和懶載入
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -30,18 +30,10 @@ const About = lazy(() => import("./pages/About"));
 const Language = lazy(() => import("./pages/Language"));
 const Suggest = lazy(() => import("./pages/Suggest"));
 const VisualBotEditorPage = lazy(() => import("./pages/VisualBotEditorPage"));
+const BotManagementPage = lazy(() => import("./pages/BotManagementPageOptimized"));
+const BotUsersPage = lazy(() => import("./pages/BotUsersPage"));
 
-// 優化的 QueryClient 配置
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5分鐘
-      gcTime: 10 * 60 * 1000, // 10分鐘 (原 cacheTime)
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+// 使用優化的 QueryClient 配置（從 useReactQuery 導入）
 
 // 載入指示器組件
 const LoadingFallback = () => (
@@ -96,6 +88,8 @@ const App = () => {
               <Route path="/bots/create" element={<AddBotPage />} />
               <Route path="/bots/editor" element={<BotEditorPage />} />
               <Route path="/bots/visual-editor" element={<VisualBotEditorPage />} />
+              <Route path="/bots/management" element={<BotManagementPage />} />
+              <Route path="/bots/:botId/users" element={<BotUsersPage />} />
               <Route path="/how-to-establish" element={<HowToEstablish />} />
 
               {/* 向後兼容的舊路由 */}
@@ -118,9 +112,6 @@ const App = () => {
             </Routes>
           </Suspense>
         </BrowserRouter>
-        
-        {/* 開發工具效能面板 */}
-        <PerformancePanel />
         
       </TooltipProvider>
     </QueryClientProvider>

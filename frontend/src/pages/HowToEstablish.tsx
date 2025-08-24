@@ -1,34 +1,23 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import StepOne from "../components/HowToEstablish/StepOne";
 import StepTwo from "../components/HowToEstablish/StepTwo";
 import StepThree from "../components/HowToEstablish/StepThree";
 import StepFour from "../components/HowToEstablish/StepFour";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
-import DashboardFooter from "../components/layout/DashboardFooter";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { API_CONFIG, getApiUrl } from "../config/apiConfig";
-import { /* ChevronRight, CheckCircle, Circle */ } from "lucide-react";
+import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
+import { useNavigate } from "react-router-dom";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 
-interface User {
-  line_id?: string;
-  display_name: string;
-  picture_url?: string;
-  username?: string; // 新增以支援帳號密碼登入
-}
+// 移除重複的 User 介面定義，使用 UnifiedUser
 
 const HowToEstablish = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [_error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
 
-  // 使用統一身份驗證Hook
-  const { user: _authUser, loading: _authLoading, error: _authError } = useUnifiedAuth({
-    requireAuth: true,
-    redirectTo: "/login",
+  // 使用統一身份驗證Hook - 不強制要求登入
+  const { user, loading, isAuthenticated } = useUnifiedAuth({
+    requireAuth: false, // 改為 false，允許未登入用戶訪問
   });
 
   const steps = useMemo(
@@ -40,115 +29,6 @@ const HowToEstablish = () => {
     ],
     []
   );
-
-  const nativeFetch = window.fetch.bind(window); // 保存原生 fetch
-
-  const checkLoginStatus = useCallback(async () => {
-    try {
-      const response = await nativeFetch(
-        getApiUrl(
-          API_CONFIG.AUTH.BASE_URL,
-          API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN
-        ),
-        {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            ...(localStorage.getItem("auth_token") && {
-              Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-            }),
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // 檢查新的 API 回應格式 (authenticated + user)
-        if (data.authenticated && data.user) {
-          setUser({
-            display_name: data.user.username,
-            username: data.user.username,
-          });
-        } else if (data.authenticated === false) {
-          // 明確處理未登入情況
-          console.log("用戶未登入，重定向到登入頁面");
-          setError("請先登入以查看此頁面");
-          navigate("/login");
-          return;
-        }
-        // 相容舊格式：檢查 data.message 是否存在且格式正確
-        else if (data.message && typeof data.message === "string") {
-          const messagePattern = /User (.+?) is logged in/;
-          const match = data.message.match(messagePattern);
-
-          if (match && match[1]) {
-            const username = match[1];
-            setUser({ display_name: username, username });
-          } else {
-            throw new Error("無法從回應中解析用戶名稱");
-          }
-        } else {
-          throw new Error("無效的 API 回應格式");
-        }
-      } else {
-        const errorData = await response.json();
-        console.error("check_login error:", errorData);
-        setError("請先登入");
-        navigate("/login");
-      }
-      setLoading(false);
-    } catch (_error) {
-      console.error("Error occurred:", _error);
-      setError("請先登入");
-      navigate("/login");
-      setLoading(false);
-    }
-  }, [navigate, nativeFetch]);
-
-  useEffect(() => {
-    const token = searchParams.get("token");
-    const displayName = searchParams.get("display_name");
-
-    const verify = async () => {
-      setLoading(true);
-      if (token) {
-        localStorage.setItem("auth_token", token);
-        const userData = await verifyLineToken(token);
-        if (userData) {
-          setUser(userData);
-          setLoading(false);
-        } else {
-          setError("LINE Token 驗證失敗");
-          navigate("/line-login");
-        }
-      } else if (displayName) {
-        setUser({ display_name: displayName });
-        setLoading(false);
-      } else {
-        const storedToken = localStorage.getItem("auth_token");
-        if (storedToken) {
-          const userData = await verifyLineToken(storedToken);
-          if (userData) {
-            setUser(userData);
-            setLoading(false);
-          } else {
-            setTimeout(() => {
-              checkLoginStatus();
-            }, 3000); // 延遲 3 秒
-          }
-        } else {
-          setTimeout(() => {
-            checkLoginStatus();
-          }, 3000); // 延遲 3 秒
-        }
-      }
-    };
-
-    verify();
-  }, [searchParams, navigate, checkLoginStatus]);
 
   // Intersection Observer for step tracking
   useEffect(() => {
@@ -177,33 +57,7 @@ const HowToEstablish = () => {
     };
   }, [steps]);
 
-  const verifyLineToken = async (token: string): Promise<User | null> => {
-    try {
-      const response = await fetch(
-        getApiUrl(
-          API_CONFIG.LINE_LOGIN.BASE_URL,
-          API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN
-        ),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        }
-      );
-      if (!response.ok) throw new Error("Token 驗證失敗");
-      return await response.json();
-    } catch (_error) {
-      console.error("Error occurred:", _error);
-      return null;
-    }
-  };
-
-  const _scrollToStep = (stepId: number) => {
-    const element = document.getElementById(`step-${stepId}`);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  // 移除未使用的 scrollToStep 函數
 
   const nextStep = () => {
     if (currentStep < 4) {
@@ -224,8 +78,8 @@ const HowToEstablish = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
-        <div className="text-[#5A2C1D] text-lg loading-pulse">
-          載入教學內容...
+        <div className="text-[#5A2C1D] text-lg">
+          載入中...
         </div>
       </div>
     );
@@ -248,7 +102,12 @@ const HowToEstablish = () => {
 
   return (
     <div className="min-h-screen bg-[#FFFDFA]">
-      <DashboardNavbar user={user} />
+      {/* 根據登入狀態顯示不同的導航欄 */}
+      {isAuthenticated ? (
+        <DashboardNavbar user={user} />
+      ) : (
+        <Navbar />
+      )}
 
       {/* 主要內容區域 */}
       <div className="pt-14 sm:pt-16 md:pt-20 pb-12 sm:pb-16 px-4 sm:px-6">
@@ -390,7 +249,7 @@ const HowToEstablish = () => {
         )}
       </div>
 
-      <DashboardFooter />
+      <Footer />
     </div>
   );
 };

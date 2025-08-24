@@ -21,3 +21,16 @@ export interface BotUpdateData {
   channel_token?: string;
   channel_secret?: string;
 }
+
+export interface LogicTemplate {
+  id: string;
+  user_id: string;
+  bot_id: string;
+  name: string;
+  description?: string;
+  logic_blocks: any[];
+  is_active: string;
+  generated_code?: string;
+  created_at: string;
+  updated_at: string;
+}

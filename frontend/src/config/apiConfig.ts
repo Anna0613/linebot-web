@@ -2,6 +2,13 @@
 const UNIFIED_API_URL =
   import.meta.env.VITE_UNIFIED_API_URL || "http://localhost:8000";
 
+// Webhook 域名配置
+const WEBHOOK_DOMAIN = 
+  import.meta.env.VITE_WEBHOOK_DOMAIN || 
+  import.meta.env.VITE_DOMAIN || 
+  import.meta.env.REACT_APP_DOMAIN || 
+  UNIFIED_API_URL;
+
 // 向後相容：保留原有環境變數支持
 const LINE_LOGIN_API_URL =
   import.meta.env.VITE_LINE_LOGIN_API_URL || UNIFIED_API_URL;
@@ -14,6 +21,12 @@ export const API_CONFIG = {
   UNIFIED: {
     BASE_URL: `${UNIFIED_API_URL}/api/v1`,
     FULL_URL: UNIFIED_API_URL,
+  },
+
+  // Webhook 配置
+  WEBHOOK: {
+    DOMAIN: WEBHOOK_DOMAIN,
+    BASE_URL: `${WEBHOOK_DOMAIN}/api/v1/webhooks`,
   },
 
   LINE_LOGIN: {
@@ -77,4 +90,9 @@ export const API_CONFIG = {
 // Helper function to construct API URLs
 export function getApiUrl(baseUrl: string, endpoint: string): string {
   return `${baseUrl}${endpoint}`;
+}
+
+// Helper function to generate webhook URL for a specific bot
+export function getWebhookUrl(botId: string): string {
+  return `${API_CONFIG.WEBHOOK.BASE_URL}/${botId}`;
 }

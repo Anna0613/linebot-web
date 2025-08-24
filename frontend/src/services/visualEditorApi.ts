@@ -1,11 +1,14 @@
 /**
  * 視覺化編輯器 API 服務
  * 處理與後端的 Bot 選擇和儲存相關 API 通信
+ * 集成 LocalStorage 快取機制以提升性能
  */
 
 import { UnifiedApiClient } from './UnifiedApiClient';
 import { UnifiedBlock } from '../types/block';
 import { API_CONFIG } from '../config/apiConfig';
+import LocalStorageCacheService from './LocalStorageCacheService';
+import { CACHE_KEYS, CACHE_EXPIRY } from '../config/cacheConfig';
 
 // 介面定義
 export interface BotSummary {
@@ -96,11 +99,22 @@ export interface FlexMessageUpdate {
 
 export class VisualEditorApi {
   private static apiClient = UnifiedApiClient.getInstance();
+  private static cacheService = LocalStorageCacheService;
 
   /**
    * 取得用戶的 Bot 摘要列表（用於下拉選單）
+   * 整合快取機制避免重複請求
    */
-  static async getUserBotsSummary(): Promise<BotSummary[]> {
+  static async getUserBotsSummary(useCache: boolean = true): Promise<BotSummary[]> {
+    // 嘗試從快取獲取數據
+    if (useCache) {
+      const cachedData = await this.cacheService.get<BotSummary[]>(CACHE_KEYS.USER_BOTS_SUMMARY);
+      if (cachedData) {
+        console.debug('Bot 摘要列表：快取命中');
+        return cachedData;
+      }
+    }
+
     try {
       const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/visual-editor/summary`;
       const response = await this.apiClient.get<BotSummary[]>(endpoint);
@@ -115,7 +129,14 @@ export class VisualEditorApi {
         throw new Error(response.error || `API 錯誤 (${response.status})`);
       }
 
-      return response.data || [];
+      const data = response.data || [];
+      
+      // 儲存到快取
+      if (useCache && data.length > 0) {
+        await this.cacheService.set(CACHE_KEYS.USER_BOTS_SUMMARY, data, CACHE_EXPIRY.LIST_DATA);
+      }
+
+      return data;
     } catch (_error) {
       console.error("Error occurred:", _error);
       // 如果是網路錯誤或 404，返回空陣列而不是拋出錯誤
@@ -236,8 +257,20 @@ export class VisualEditorApi {
 
   /**
    * 取得Bot邏輯模板摘要列表（用於下拉選單）
+   * 整合快取機制避免重複請求
    */
-  static async getBotLogicTemplatesSummary(botId: string): Promise<LogicTemplateSummary[]> {
+  static async getBotLogicTemplatesSummary(botId: string, useCache: boolean = true): Promise<LogicTemplateSummary[]> {
+    const cacheKey = `${CACHE_KEYS.LOGIC_TEMPLATES_SUMMARY}_${botId}`;
+    
+    // 嘗試從快取獲取數據
+    if (useCache) {
+      const cachedData = await this.cacheService.get<LogicTemplateSummary[]>(cacheKey);
+      if (cachedData) {
+        console.debug(`Bot ${botId} 邏輯模板摘要列表：快取命中`);
+        return cachedData;
+      }
+    }
+
     try {
       const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/logic-templates/summary`;
       const response = await this.apiClient.get<LogicTemplateSummary[]>(endpoint);
@@ -246,7 +279,14 @@ export class VisualEditorApi {
         throw new Error(response.error || `API 錯誤 (${response.status})`);
       }
 
-      return response.data || [];
+      const data = response.data || [];
+      
+      // 儲存到快取
+      if (useCache && data.length > 0) {
+        await this.cacheService.set(cacheKey, data, CACHE_EXPIRY.LIST_DATA);
+      }
+
+      return data;
     } catch (_error) {
       console.error("Error occurred:", _error);
       if (_error instanceof Error && _error.message.includes('404')) {
@@ -277,6 +317,11 @@ export class VisualEditorApi {
         throw new Error('創建邏輯模板回應格式錯誤');
       }
 
+      // 創建後清除相關快取
+      this.cacheService.invalidateCache('CREATE', 'logic_template');
+      // 也清除該 Bot 的模板摘要列表快取
+      this.cacheService.remove(`${CACHE_KEYS.LOGIC_TEMPLATES_SUMMARY}_${botId}`);
+
       return response.data;
     } catch (_error) {
       console.error("Error occurred:", _error);
@@ -289,8 +334,20 @@ export class VisualEditorApi {
 
   /**
    * 取得特定邏輯模板
+   * 整合快取機制避免重複請求
    */
-  static async getLogicTemplate(templateId: string): Promise<LogicTemplate> {
+  static async getLogicTemplate(templateId: string, useCache: boolean = true): Promise<LogicTemplate> {
+    const cacheKey = `${CACHE_KEYS.LOGIC_TEMPLATE}_${templateId}`;
+    
+    // 嘗試從快取獲取數據
+    if (useCache) {
+      const cachedData = await this.cacheService.get<LogicTemplate>(cacheKey);
+      if (cachedData) {
+        console.debug(`邏輯模板 ${templateId}：快取命中`);
+        return cachedData;
+      }
+    }
+
     try {
       const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/logic-templates/${templateId}`;
       const response = await this.apiClient.get<LogicTemplate>(endpoint);
@@ -301,6 +358,11 @@ export class VisualEditorApi {
 
       if (!response.data) {
         throw new Error('邏輯模板不存在');
+      }
+
+      // 儲存到快取
+      if (useCache) {
+        await this.cacheService.set(cacheKey, response.data, CACHE_EXPIRY.INDIVIDUAL_DATA);
       }
 
       return response.data;
@@ -383,8 +445,18 @@ export class VisualEditorApi {
 
   /**
    * 取得用戶的所有FLEX訊息
+   * 整合快取機制避免重複請求
    */
-  static async getUserFlexMessages(): Promise<FlexMessage[]> {
+  static async getUserFlexMessages(useCache: boolean = true): Promise<FlexMessage[]> {
+    // 嘗試從快取獲取數據
+    if (useCache) {
+      const cachedData = await this.cacheService.get<FlexMessage[]>(CACHE_KEYS.FLEX_MESSAGES);
+      if (cachedData) {
+        console.debug('FLEX訊息列表：快取命中');
+        return cachedData;
+      }
+    }
+
     try {
       const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/messages`;
       
@@ -397,7 +469,14 @@ export class VisualEditorApi {
         throw new Error(errorMsg);
       }
 
-      return response.data || [];
+      const data = response.data || [];
+      
+      // 儲存到快取
+      if (useCache && data.length > 0) {
+        await this.cacheService.set(CACHE_KEYS.FLEX_MESSAGES, data, CACHE_EXPIRY.INDIVIDUAL_DATA);
+      }
+
+      return data;
     } catch (_error) {
       console.error("Error occurred:", _error);
       
@@ -418,8 +497,18 @@ export class VisualEditorApi {
 
   /**
    * 取得用戶FLEX訊息摘要列表（用於下拉選單）
+   * 整合快取機制避免重複請求
    */
-  static async getUserFlexMessagesSummary(): Promise<FlexMessageSummary[]> {
+  static async getUserFlexMessagesSummary(useCache: boolean = true): Promise<FlexMessageSummary[]> {
+    // 嘗試從快取獲取數據
+    if (useCache) {
+      const cachedData = await this.cacheService.get<FlexMessageSummary[]>(CACHE_KEYS.FLEX_MESSAGES_SUMMARY);
+      if (cachedData) {
+        console.debug('FLEX訊息摘要列表：快取命中');
+        return cachedData;
+      }
+    }
+
     try {
       const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/messages/summary`;
       const response = await this.apiClient.get<FlexMessageSummary[]>(endpoint);
@@ -428,7 +517,14 @@ export class VisualEditorApi {
         throw new Error(response.error || `API 錯誤 (${response.status})`);
       }
 
-      return response.data || [];
+      const data = response.data || [];
+      
+      // 儲存到快取
+      if (useCache && data.length > 0) {
+        await this.cacheService.set(CACHE_KEYS.FLEX_MESSAGES_SUMMARY, data, CACHE_EXPIRY.LIST_DATA);
+      }
+
+      return data;
     } catch (_error) {
       console.error("Error occurred:", _error);
       if (_error instanceof Error && _error.message.includes('404')) {
@@ -453,6 +549,9 @@ export class VisualEditorApi {
       if (!response.data) {
         throw new Error('創建FLEX訊息回應格式錯誤');
       }
+
+      // 創建後清除相關快取
+      this.cacheService.invalidateCache('CREATE', 'flex_message');
 
       return response.data;
     } catch (_error) {
@@ -507,6 +606,55 @@ export class VisualEditorApi {
         throw _error;
       }
       throw new Error('刪除FLEX訊息失敗，請稍後再試');
+    }
+  }
+
+  // ===== 快取管理工具方法 =====
+
+  /**
+   * 清除所有快取
+   */
+  static clearAllCache(): boolean {
+    return this.cacheService.clear();
+  }
+
+  /**
+   * 清除特定 Bot 相關的快取
+   */
+  static clearBotCache(botId: string): void {
+    this.cacheService.remove(`${CACHE_KEYS.LOGIC_TEMPLATES_SUMMARY}_${botId}`);
+    // 清除該 Bot 的所有邏輯模板快取
+    const stats = this.cacheService.getStats();
+    Object.keys(localStorage).forEach(key => {
+      if (key.includes(`${CACHE_KEYS.LOGIC_TEMPLATE}_`) || key.includes(botId)) {
+        this.cacheService.remove(key.replace('visual_editor_cache_', ''));
+      }
+    });
+  }
+
+  /**
+   * 獲取快取統計資訊
+   */
+  static getCacheStats() {
+    return this.cacheService.getStats();
+  }
+
+  /**
+   * 手動刷新所有列表數據（不使用快取）
+   */
+  static async refreshAllData() {
+    const promises = [
+      this.getUserBotsSummary(false),
+      this.getUserFlexMessagesSummary(false),
+      this.getUserFlexMessages(false)
+    ];
+    
+    try {
+      await Promise.all(promises);
+      console.log('所有數據已刷新');
+    } catch (error) {
+      console.error('數據刷新失敗:', error);
+      throw error;
     }
   }
 }
