@@ -12,9 +12,8 @@ from functools import wraps
 # 條件導入 Redis - 如果未安裝則使用 mock
 try:
     import redis
+    import redis.asyncio as aioredis
     REDIS_AVAILABLE = True
-    # 延遲導入 aioredis 避免 Python 3.11 的 TimeoutError 問題
-    aioredis = None
 except ImportError:
     print("⚠️  Redis 未安裝，使用模擬模式")
     redis = None
@@ -30,11 +29,12 @@ REDIS_DB = int(os.getenv("REDIS_DB", 0))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 REDIS_URL = os.getenv("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
 
-# 快取配置
-DEFAULT_CACHE_TTL = 300  # 5 分鐘
-WEBHOOK_STATUS_TTL = 120  # 2 分鐘
-BOT_ANALYTICS_TTL = 300   # 5 分鐘
-USER_SESSION_TTL = 1800   # 30 分鐘
+# 快取配置 - 優化後的 TTL 設定
+DEFAULT_CACHE_TTL = 900   # 15 分鐘 (從5分鐘提升)
+WEBHOOK_STATUS_TTL = 600  # 10 分鐘 (從2分鐘提升)
+BOT_ANALYTICS_TTL = 900   # 15 分鐘 (從5分鐘提升)
+BOT_DASHBOARD_TTL = 1200  # 20 分鐘 (新增：儀表板複合數據)
+USER_SESSION_TTL = 1800   # 30 分鐘 (保持不變)
 
 class RedisManager:
     """Redis 連接管理器"""
@@ -50,19 +50,7 @@ class RedisManager:
             return
             
         try:
-            # 動態導入 aioredis 避免模組級別的錯誤
-            global aioredis
-            if aioredis is None:
-                try:
-                    import aioredis
-                except ImportError:
-                    logger.error("aioredis 未安裝，無法建立異步 Redis 連接")
-                    return
-                except Exception as e:
-                    logger.error(f"aioredis 導入失敗（可能是版本問題）: {e}")
-                    logger.warning("跳過 Redis 連接，使用無快取模式")
-                    return
-            
+            # 使用 redis.asyncio 建立連接
             self.redis_client = aioredis.from_url(
                 REDIS_URL,
                 password=REDIS_PASSWORD,

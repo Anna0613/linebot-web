@@ -25,8 +25,9 @@ interface RequestOptions {
 
 export class UnifiedApiClient {
   private static instance: UnifiedApiClient;
-  private readonly defaultTimeout = 10000; // 10秒
+  private readonly defaultTimeout = 5000; // 5秒 (從10秒優化)
   private readonly defaultRetries = 1;
+  private pendingRequests = new Map<string, AbortController>(); // 請求去重和取消
 
   private constructor() {}
 
@@ -38,7 +39,7 @@ export class UnifiedApiClient {
   }
 
   /**
-   * 統一的請求方法
+   * 統一的請求方法 (優化版：包含去重、取消、防抖)
    */
   private async request<T>(
     endpoint: string,
@@ -53,60 +54,119 @@ export class UnifiedApiClient {
       skipAuth = false,
     } = options;
 
-    let lastError: Error | null = null;
-
-    // 重試邏輯
-    for (let attempt = 0; attempt <= retries; attempt++) {
+    // 生成請求唯一標識符 (用於去重)
+    const requestKey = `${method}:${endpoint}:${JSON.stringify(body || {})}`;
+    
+    // 檢查是否有相同的請求正在進行
+    if (this.pendingRequests.has(requestKey)) {
+      secureLog(`請求去重: ${requestKey}`);
       try {
-        const requestHeaders = await this.buildHeaders(headers, skipAuth);
-        const requestInit: RequestInit = {
-          method,
-          headers: requestHeaders,
-          credentials: 'include',
-          ...(body && { body: JSON.stringify(body) }),
-        };
-
-        // 超時控制
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        requestInit.signal = controller.signal;
-
-        secureLog(`API請求: ${method} ${endpoint}`, {
-          attempt: attempt + 1,
-          skipAuth,
-        });
-
-        const response = await fetch(endpoint, requestInit);
-        clearTimeout(timeoutId);
-
-        return await this.handleResponse<T>(response);
-      } catch (_error) {
-        lastError = _error instanceof Error ? _error : new Error('請求失敗');
-        
-        // 如果是 token 刷新成功，立即重試一次（不計入重試次數）
-        if (_error instanceof Error && _error.message === 'TOKEN_REFRESHED') {
-          secureLog('Token 已刷新，立即重試請求');
-          continue;
+        // 等待現有請求完成 (簡化實現，實際可以返回 Promise)
+        const existingController = this.pendingRequests.get(requestKey);
+        if (existingController && !existingController.signal.aborted) {
+          // 等待一小段時間後重新發送請求
+          await this.delay(100);
         }
-        
-        // 如果是最後一次嘗試或者是認證錯誤，不再重試
-        if (
-          attempt === retries ||
-          _error instanceof Error && _error.message.includes('401')
-        ) {
-          break;
-        }
-
-        // 漸進式延遲重試
-        await this.delay(Math.pow(2, attempt) * 1000);
-        secureLog(`重試請求: ${method} ${endpoint}`, { attempt: attempt + 1 });
+      } catch (error) {
+        secureLog('請求去重處理失敗:', error);
       }
+    }
+
+    let lastError: Error | null = null;
+    const controller = new AbortController();
+    this.pendingRequests.set(requestKey, controller);
+
+    try {
+      // 重試邏輯
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const requestHeaders = await this.buildHeaders(headers, skipAuth);
+          const requestInit: RequestInit = {
+            method,
+            headers: requestHeaders,
+            credentials: 'include',
+            signal: controller.signal,
+            ...(body && { body: JSON.stringify(body) }),
+          };
+
+          // 超時控制
+          const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+          secureLog(`API請求: ${method} ${endpoint}`, {
+            attempt: attempt + 1,
+            skipAuth,
+          });
+
+          const response = await fetch(endpoint, requestInit);
+          clearTimeout(timeoutId);
+
+          const result = await this.handleResponse<T>(response);
+          
+          // 成功後清理 pending requests
+          this.pendingRequests.delete(requestKey);
+          
+          return result;
+        } catch (_error) {
+          lastError = _error instanceof Error ? _error : new Error('請求失敗');
+          
+          // 如果請求被取消，直接返回
+          if (_error instanceof Error && _error.name === 'AbortError') {
+            break;
+          }
+          
+          // 如果是 token 刷新成功，立即重試一次（不計入重試次數）
+          if (_error instanceof Error && _error.message === 'TOKEN_REFRESHED') {
+            secureLog('Token 已刷新，立即重試請求');
+            continue;
+          }
+          
+          // 如果是最後一次嘗試或者是認證錯誤，不再重試
+          if (
+            attempt === retries ||
+            _error instanceof Error && _error.message.includes('401')
+          ) {
+            break;
+          }
+
+          // 漸進式延遲重試
+          await this.delay(Math.pow(2, attempt) * 1000);
+          secureLog(`重試請求: ${method} ${endpoint}`, { attempt: attempt + 1 });
+        }
+      }
+    } finally {
+      // 確保清理 pending requests
+      this.pendingRequests.delete(requestKey);
     }
 
     return {
       error: lastError?.message || '請求失敗',
       status: 0,
     };
+  }
+
+  /**
+   * 取消指定端點的請求
+   */
+  public cancelRequest(endpoint: string, method: string = 'GET'): void {
+    const requestKey = `${method}:${endpoint}:{}`;
+    const controller = this.pendingRequests.get(requestKey);
+    
+    if (controller) {
+      controller.abort();
+      this.pendingRequests.delete(requestKey);
+      secureLog(`請求已取消: ${requestKey}`);
+    }
+  }
+
+  /**
+   * 取消所有進行中的請求
+   */
+  public cancelAllRequests(): void {
+    this.pendingRequests.forEach((controller) => {
+      controller.abort();
+    });
+    this.pendingRequests.clear();
+    secureLog('所有請求已取消');
   }
 
   /**
@@ -590,7 +650,7 @@ export class UnifiedApiClient {
 
     const url = getApiUrl(
       API_CONFIG.UNIFIED.BASE_URL, 
-      `/bots/${botId}/dashboard${params.toString() ? '?' + params.toString() : ''}`
+      `/bot_dashboard/${botId}/dashboard${params.toString() ? '?' + params.toString() : ''}`
     );
     
     return this.get(url);
@@ -598,7 +658,7 @@ export class UnifiedApiClient {
 
   public async getBotDashboardLight(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/dashboard/light`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bot_dashboard/${botId}/dashboard/light`)
     );
   }
 }

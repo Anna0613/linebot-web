@@ -1,4 +1,4 @@
-import React, { useState, useCallback, Suspense, useMemo } from "react";
+import React, { useState, useCallback, Suspense, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -101,7 +101,10 @@ const DashboardSkeleton = () => (
 const BotManagementPageOptimized: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, authLoading } = useUnifiedAuth();
+  const { user, loading: authLoading } = useUnifiedAuth({
+    requireAuth: true,
+    redirectTo: "/login"
+  });
 
   // 狀態管理
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
@@ -118,7 +121,7 @@ const BotManagementPageOptimized: React.FC = () => {
   } = useBotDashboardLight(selectedBotId, !!selectedBotId);
 
   // 根據需要載入完整儀表板資料
-  const shouldLoadFullDashboard = selectedBotId && activeTab !== 'overview';
+  const shouldLoadFullDashboard = !!selectedBotId && activeTab !== 'overview';
   const { 
     data: fullDashboard, 
     isLoading: fullLoading,
@@ -144,6 +147,13 @@ const BotManagementPageOptimized: React.FC = () => {
     () => bots.find(bot => bot.id === selectedBotId),
     [bots, selectedBotId]
   );
+
+  // 自動選擇第一個 Bot（如果沒有選擇且有可用的 Bot）
+  useEffect(() => {
+    if (!selectedBotId && bots.length > 0 && !botsLoading) {
+      setSelectedBotId(bots[0].id);
+    }
+  }, [selectedBotId, bots, botsLoading]);
 
   // 智能資料選擇：優先使用完整儀表板，回退到輕量版
   const dashboardData = useMemo(() => {

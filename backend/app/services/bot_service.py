@@ -5,7 +5,7 @@ Bot 管理服務模組
 import logging
 from typing import List, Dict, Any
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from fastapi import HTTPException, status
 import json
 
@@ -69,8 +69,17 @@ class BotService:
     
     @staticmethod
     def get_user_bots(db: Session, user_id: UUID) -> List[BotResponse]:
-        """取得用戶的所有 Bot"""
-        bots = db.query(Bot).filter(Bot.user_id == user_id).all()
+        """取得用戶的所有 Bot (優化查詢：使用 eager loading)"""
+        # 使用 selectinload 預載入相關資料，避免 N+1 問題
+        bots = db.query(Bot)\
+            .options(
+                selectinload(Bot.logic_templates),  # 預載入邏輯模板
+                selectinload(Bot.bot_code)          # 預載入 Bot 程式碼
+            )\
+            .filter(Bot.user_id == user_id)\
+            .order_by(Bot.created_at.desc())\
+            .all()
+            
         return [
             BotResponse(
                 id=str(bot.id),
@@ -86,7 +95,7 @@ class BotService:
     
     @staticmethod
     def get_bot(db: Session, bot_id: str, user_id: UUID) -> BotResponse:
-        """取得特定 Bot"""
+        """取得特定 Bot (優化查詢：使用 eager loading)"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
             from uuid import UUID as PyUUID
@@ -97,10 +106,16 @@ class BotService:
                 detail="無效的 Bot ID 格式"
             )
         
-        bot = db.query(Bot).filter(
-            Bot.id == bot_uuid,
-            Bot.user_id == user_id
-        ).first()
+        # 使用 eager loading 預載入相關資料
+        bot = db.query(Bot)\
+            .options(
+                selectinload(Bot.logic_templates),
+                selectinload(Bot.bot_code)
+            )\
+            .filter(
+                Bot.id == bot_uuid,
+                Bot.user_id == user_id
+            ).first()
         
         if not bot:
             raise HTTPException(

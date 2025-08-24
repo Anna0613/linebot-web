@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
@@ -66,6 +67,13 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
+)
+
+# Gzip 壓縮中間件 (應該在其他中間件之前添加)
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=1000,  # 只壓縮大於 1KB 的響應
+    compresslevel=6     # 壓縮等級 1-9，6 是效能與壓縮率的平衡點
 )
 
 # CORS 中間件

@@ -19,6 +19,7 @@ import {
 interface WebhookStatus {
   bot_id: string;
   bot_name: string;
+  channel_id?: string;
   status: 'active' | 'inactive' | 'configuration_error' | 'not_configured';
   status_text: string;
   is_configured: boolean;
@@ -207,7 +208,7 @@ const WebhookStatusPanel: React.FC<WebhookStatusPanelProps> = ({
                   asChild
                 >
                   <a 
-                    href="https://developers.line.biz/console/" 
+                    href={`https://developers.line.biz/console/channel/${status.channel_id || status.bot_id}/messaging-api`}
                     target="_blank" 
                     rel="noopener noreferrer"
                   >

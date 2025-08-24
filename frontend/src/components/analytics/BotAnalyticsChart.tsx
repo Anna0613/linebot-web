@@ -11,12 +11,14 @@ interface BotAnalyticsData {
   week_interactions: number;
   month_interactions: number;
   activity_distribution?: Array<{
-    time_slot: string;
-    active_users: number;
+    hour: string;
+    activeUsers: number;
   }>;
   period: string;
   start_date: string;
   end_date: string;
+  response_time?: number;
+  success_rate?: number;
 }
 
 interface BotAnalyticsChartProps {
@@ -34,9 +36,9 @@ const BotAnalyticsChart: React.FC<BotAnalyticsChartProps> = ({ data }) => {
   const activityData = data.activity_distribution || [];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="space-y-6">
       {/* 統計摘要 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
@@ -70,10 +72,50 @@ const BotAnalyticsChart: React.FC<BotAnalyticsChartProps> = ({ data }) => {
             </p>
           </CardContent>
         </Card>
+
+        {data.response_time && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                平均回應時間
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">
+                {data.response_time}s
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Bot 平均回應時間
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {data.success_rate && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                <Activity className="h-4 w-4 mr-2" />
+                成功率
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">
+                {data.success_rate}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                請求處理成功率
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* 互動趨勢圖 */}
-      <Card>
+      {/* 圖表區域 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 互動趨勢圖 */}
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
@@ -81,20 +123,26 @@ const BotAnalyticsChart: React.FC<BotAnalyticsChartProps> = ({ data }) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={{}} className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={interactionTrends}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar 
-                  dataKey="value" 
-                  fill="#3b82f6"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+          <ChartContainer
+            config={{
+              value: {
+                label: "互動次數",
+                color: "#3b82f6",
+              },
+            }}
+            className="h-[200px]"
+          >
+            <BarChart data={interactionTrends} width={356} height={200}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar 
+                dataKey="value" 
+                fill="#3b82f6"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
           </ChartContainer>
         </CardContent>
       </Card>
@@ -109,35 +157,42 @@ const BotAnalyticsChart: React.FC<BotAnalyticsChartProps> = ({ data }) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={activityData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="time_slot" 
-                    tick={{ fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="active_users" 
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <ChartContainer
+              config={{
+                activeUsers: {
+                  label: "活躍用戶",
+                  color: "#10b981",
+                },
+              }}
+              className="h-[200px]"
+            >
+              <LineChart data={activityData} width={356} height={200}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="hour" 
+                  tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line 
+                  type="monotone" 
+                  dataKey="activeUsers" 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                />
+              </LineChart>
             </ChartContainer>
           </CardContent>
         </Card>
       )}
+      </div>
 
       {/* 期間資訊 */}
-      <Card className="lg:col-span-2">
+      <Card>
         <CardHeader>
           <CardTitle>統計期間</CardTitle>
         </CardHeader>
