@@ -9,6 +9,8 @@ import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import requests
+import asyncio
+import aiohttp
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import LineBotApiError, InvalidSignatureError
 from linebot.models import (
@@ -156,6 +158,78 @@ class LineBotService:
                 "error": f"API 調用失敗: {str(e)}"
             }
     
+    async def async_get_bot_info(self) -> Optional[Dict]:
+        """
+        異步獲取 Bot 基本資訊，包含 Channel ID
+        
+        Returns:
+            Dict: Bot 資訊
+        """
+        if not self.is_configured():
+            return None
+            
+        try:
+            # 使用 aiohttp 進行異步 HTTP 請求
+            headers = {
+                "Authorization": f"Bearer {self.channel_token}",
+                "Content-Type": "application/json"
+            }
+            
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(
+                    "https://api.line.me/v2/bot/info",
+                    headers=headers
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        
+                        # 記錄獲取到的資訊以便調試
+                        logger.info(f"異步獲取到 Bot 資訊 - userId: {data.get('userId')}, basicId: {data.get('basicId')}")
+                        
+                        return {
+                            "user_id": data.get("userId"),  # 這就是 Channel ID
+                            "channel_id": data.get("userId"),  # 明確標示為 channel_id
+                            "basic_id": data.get("basicId"),
+                            "premium_id": data.get("premiumId"),
+                            "display_name": data.get("displayName", "LINE Bot"),
+                            "picture_url": data.get("pictureUrl"),
+                            "chat_mode": data.get("chatMode"),
+                            "mark_as_read_mode": data.get("markAsReadMode")
+                        }
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"異步獲取 Bot 資訊失敗: {response.status} - {error_text}")
+                        return {
+                            "display_name": "LINE Bot",
+                            "picture_url": None,
+                            "basic_id": f"@{self.channel_token[:8]}",
+                            "premium_id": None,
+                            "channel_id": None,
+                            "error": f"API 調用失敗: {response.status}"
+                        }
+                        
+        except asyncio.TimeoutError:
+            logger.error("異步獲取 Bot 資訊超時")
+            return {
+                "display_name": "LINE Bot",
+                "picture_url": None,
+                "basic_id": f"@{self.channel_token[:8]}",
+                "premium_id": None,
+                "channel_id": None,
+                "error": "請求超時"
+            }
+        except Exception as e:
+            logger.error(f"異步獲取 Bot 資訊失敗: {e}")
+            return {
+                "display_name": "LINE Bot",
+                "picture_url": None,
+                "basic_id": f"@{self.channel_token[:8]}",
+                "premium_id": None,
+                "channel_id": None,
+                "error": f"API 調用失敗: {str(e)}"
+            }
+    
     def check_connection(self) -> bool:
         """
         檢查與 LINE API 的連接狀態
@@ -172,6 +246,24 @@ class LineBotService:
             return True
         except Exception as e:
             logger.error(f"連接檢查失敗: {e}")
+            return False
+    
+    async def async_check_connection(self) -> bool:
+        """
+        異步檢查與 LINE API 的連接狀態
+        
+        Returns:
+            bool: 連接是否正常
+        """
+        if not self.is_configured():
+            return False
+            
+        try:
+            # 異步獲取 Bot 資訊來測試連接
+            await self.async_get_bot_info()
+            return True
+        except Exception as e:
+            logger.error(f"異步連接檢查失敗: {e}")
             return False
     
     def check_webhook_endpoint(self) -> Dict:
@@ -224,6 +316,72 @@ class LineBotService:
                 
         except Exception as e:
             logger.error(f"檢查 Webhook 端點失敗: {e}")
+            return {
+                "is_set": False,
+                "endpoint": None,
+                "active": False,
+                "error": str(e)
+            }
+    
+    async def async_check_webhook_endpoint(self) -> Dict:
+        """
+        異步檢查 Webhook 端點設定狀態
+        
+        Returns:
+            Dict: Webhook 設定資訊
+        """
+        if not self.is_configured():
+            return {
+                "is_set": False,
+                "endpoint": None,
+                "active": False,
+                "error": "Bot 未配置"
+            }
+            
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.channel_token}",
+                "Content-Type": "application/json"
+            }
+            
+            # 使用 aiohttp 進行異步請求
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(
+                    "https://api.line.me/v2/bot/channel/webhook/endpoint",
+                    headers=headers
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        endpoint = data.get("endpoint")
+                        active = data.get("active", False)
+                        
+                        return {
+                            "is_set": bool(endpoint),
+                            "endpoint": endpoint,
+                            "active": active,
+                            "error": None
+                        }
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"異步檢查 Webhook 端點失敗: {response.status} - {error_text}")
+                        return {
+                            "is_set": False,
+                            "endpoint": None,
+                            "active": False,
+                            "error": f"API 錯誤: {response.status}"
+                        }
+                
+        except asyncio.TimeoutError:
+            logger.error("異步檢查 Webhook 端點超時")
+            return {
+                "is_set": False,
+                "endpoint": None,
+                "active": False,
+                "error": "請求超時"
+            }
+        except Exception as e:
+            logger.error(f"異步檢查 Webhook 端點失敗: {e}")
             return {
                 "is_set": False,
                 "endpoint": None,

@@ -12,19 +12,32 @@ from .config import settings
 
 logger = logging.getLogger(__name__)
 
-# 創建資料庫引擎 - 優化連接池設定
+# 創建資料庫引擎 - 進階優化連接池設定
 engine = create_engine(
     settings.DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=300,
-    pool_size=20,  # 增加連接池大小
-    max_overflow=30,  # 允許最大溢出連接數
-    pool_timeout=30,  # 連接超時設定
+    # 連接池設定 - 效能優化
+    pool_pre_ping=True,         # 連接前檢查，避免死連接
+    pool_recycle=1800,          # 30分鐘回收連接，避免長時間佔用
+    pool_size=25,               # 核心連接池大小 (增加至25)
+    max_overflow=50,            # 最大溢出連接數 (增加至50)
+    pool_timeout=20,            # 連接超時 (降至20秒，快速失敗)
     echo=settings.DEBUG,
-    # 啟用查詢優化選項
+    
+    # PostgreSQL 特定優化
+    connect_args={
+        "application_name": "linebot-web-api",
+        # 連接級別優化
+        "keepalives_idle": "600",        # 10分鐘保持連接
+        "keepalives_interval": "30",     # 30秒檢查間隔
+        "keepalives_count": "3",         # 最多重試3次
+        "tcp_user_timeout": "30000",     # TCP 用戶超時 30秒
+    },
+    
+    # 執行選項優化
     execution_options={
         "postgresql_readonly": False,
         "postgresql_autocommit": False,
+        "compiled_cache": {},            # 啟用 SQL 編譯快取
     }
 )
 
