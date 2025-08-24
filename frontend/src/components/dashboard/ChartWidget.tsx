@@ -289,10 +289,12 @@ const renderChart = (
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={40}
-            outerRadius={120}
+            innerRadius={50}
+            outerRadius={100}
             paddingAngle={2}
             dataKey="value"
+            label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
+            labelLine={false}
           >
             {data.map((entry, index) => (
               <Cell 
@@ -301,10 +303,14 @@ const renderChart = (
               />
             ))}
           </Pie>
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip 
+            content={<ChartTooltipContent />} 
+            formatter={(value, name) => [value, name]}
+          />
           <Legend 
             wrapperStyle={{ fontSize: '12px' }}
             iconType="circle"
+            formatter={(value) => value}
           />
         </PieChart>
       );

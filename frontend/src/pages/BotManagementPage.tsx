@@ -685,6 +685,9 @@ const BotManagementPage: React.FC = () => {
                         isLoading={analyticsLoading}
                         colorScheme="blue"
                         showLegend
+                        defaultView="simplified"
+                        showViewToggle={true}
+                        cellSize={18}
                       />
                     </div>
                   </div>
@@ -708,12 +711,24 @@ const BotManagementPage: React.FC = () => {
                         title="功能使用統計"
                         data={usageData.map(usage => ({
                           name: usage.feature,
-                          value: usage.usage
+                          value: usage.usage,
+                          fill: usage.color
                         }))}
                         chartType="pie"
                         isLoading={analyticsLoading}
-                        height={250}
+                        height={280}
                         customColors={usageData.map(u => u.color)}
+                        config={{
+                          value: {
+                            label: "使用次數",
+                            color: "hsl(var(--primary))"
+                          }
+                        }}
+                        trend={{
+                          value: 8.5,
+                          isPositive: true,
+                          description: "相較上週使用率提升"
+                        }}
                       />
                     </div>
                   </div>
