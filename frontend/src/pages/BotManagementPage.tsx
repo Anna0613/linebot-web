@@ -343,12 +343,28 @@ const BotManagementPage: React.FC = () => {
     setWebhookStatusLoading(true);
     try {
       const response = await apiClient.getWebhookStatus(botId);
-      if (response.data) {
-        setWebhookStatus(response.data as Record<string, unknown>);
+      if (response.data && !response.error) {
+        const statusData = response.data as any;
+        setWebhookStatus(statusData);
+        
+        // 根據 Webhook 狀態設置 Bot 健康狀態
+        if (statusData.status === 'active') {
+          setBotHealth("online");
+        } else if (statusData.status === 'not_configured') {
+          setBotHealth("error");
+        } else if (statusData.status === 'configuration_error') {
+          setBotHealth("error");
+        } else {
+          setBotHealth("offline");
+        }
+      } else {
+        setWebhookStatus(null);
+        setBotHealth("error");
       }
     } catch (_error) {
       console.error("獲取 Webhook 狀態失敗:", _error);
       setWebhookStatus(null);
+      setBotHealth("error");
     } finally {
       setWebhookStatusLoading(false);
     }
@@ -398,34 +414,61 @@ const BotManagementPage: React.FC = () => {
   const handleCheckBotHealth = async () => {
     if (!selectedBotId) return;
     
+    setControlLoading(true);
+    
     try {
-      const response = await fetch(`/api/v1/bots/${selectedBotId}/health`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
-      });
+      // 使用 webhook status API 來檢查 Bot 狀態
+      const response = await apiClient.getWebhookStatus(selectedBotId);
       
-      const healthData = await response.json();
-      
-      if (healthData.healthy) {
-        setBotHealth("online");
-        toast({
-          title: "狀態檢查",
-          description: "Bot 運作正常"
-        });
+      if (response.data && !response.error) {
+        const statusData = response.data as any;
+        
+        // 根據 Bot 的配置和 LINE API 連接狀態設定健康狀態
+        if (statusData.status === 'active') {
+          setBotHealth("online");
+          toast({
+            title: "狀態檢查",
+            description: "Bot 運作正常，Webhook 已綁定"
+          });
+        } else if (statusData.status === 'not_configured') {
+          setBotHealth("error");
+          toast({
+            title: "狀態檢查",
+            description: "Bot 尚未配置 Channel Token 或 Channel Secret",
+            variant: "destructive"
+          });
+        } else if (statusData.status === 'configuration_error') {
+          setBotHealth("error");
+          toast({
+            title: "狀態檢查",
+            description: "Bot 配置錯誤，無法連接 LINE API",
+            variant: "destructive"
+          });
+        } else {
+          setBotHealth("offline");
+          toast({
+            title: "狀態檢查",
+            description: "Bot 已配置但 Webhook 未綁定",
+            variant: "destructive"
+          });
+        }
       } else {
-        setBotHealth("offline");
+        setBotHealth("error");
         toast({
-          title: "狀態檢查",
-          description: "Bot 狀態異常",
-          variant: "destructive"
+          variant: "destructive",
+          title: "檢查失敗",
+          description: response.error || "無法獲取 Bot 狀態"
         });
       }
-    } catch (_error) {
+    } catch (error) {
       setBotHealth("error");
       toast({
         variant: "destructive",
         title: "檢查失敗",
-        description: "無法檢查 Bot 狀態"
+        description: "網路錯誤，無法檢查 Bot 狀態"
       });
+    } finally {
+      setControlLoading(false);
     }
   };
 
@@ -633,7 +676,7 @@ const BotManagementPage: React.FC = () => {
           </div>
 
           <Tabs defaultValue="analytics" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 rounded-lg bg-muted p-1">
+              <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted p-1">
                 <TabsTrigger value="analytics" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   數據分析
