@@ -45,10 +45,21 @@ const AnimatedNumber: React.FC<{
   const finalValue = typeof value === "number" ? value : parseFloat(value.toString()) || 0;
 
   useEffect(() => {
-    if (typeof value !== "number") return;
+    if (typeof value !== "number") {
+      setDisplayValue(finalValue);
+      return;
+    }
     
-    const startValue = 0;
+    // 從當前顯示值開始動畫，而不是從 0 開始
+    const startValue = displayValue;
     const difference = finalValue - startValue;
+    
+    // 如果差值很小或為零，直接設置最終值
+    if (Math.abs(difference) < 0.1) {
+      setDisplayValue(finalValue);
+      return;
+    }
+    
     const increment = difference / (duration / 16);
     
     let currentValue = startValue;
@@ -66,7 +77,7 @@ const AnimatedNumber: React.FC<{
     }, 16);
 
     return () => clearInterval(timer);
-  }, [value, finalValue, duration]);
+  }, [finalValue, duration]); // 移除 displayValue 依賴以避免無限循環
 
   if (typeof value === "string") {
     return <span>{value}</span>;

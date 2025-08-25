@@ -1337,7 +1337,11 @@ class LineBotService:
                     if interaction.message_type == "text":
                         activity_type = "message"
                         title = "收到文字訊息"
-                        description = f"用戶發送了文字訊息: {interaction.message_content[:30]}..." if interaction.message_content else "用戶發送了文字訊息"
+                        if interaction.message_content:
+                            content_preview = str(interaction.message_content)[:30]
+                            description = f"用戶發送了文字訊息: {content_preview}..." if len(str(interaction.message_content)) > 30 else f"用戶發送了文字訊息: {interaction.message_content}"
+                        else:
+                            description = "用戶發送了文字訊息"
                     elif interaction.message_type == "image":
                         activity_type = "success" 
                         title = "收到圖片訊息"

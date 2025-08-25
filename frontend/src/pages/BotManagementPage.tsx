@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useReducer } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,8 @@ import {
   Copy,
   CheckCircle,
   Play,
-  Pause
+  Pause,
+  RefreshCw
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
@@ -119,6 +120,12 @@ const BotManagementPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState("week");
   const [_refreshing, setRefreshing] = useState(false);
   const [botHealth, setBotHealth] = useState<"online" | "offline" | "error">("online");
+  const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
+  const [lastRenderTime, setLastRenderTime] = useState(new Date().toISOString());
+  const [dataTimestamp, setDataTimestamp] = useState(Date.now());
+  
+  // 強制重新渲染 reducer
+  const [renderTrigger, forceRender] = useReducer(x => x + 1, 0);
 
   // WebSocket 即時連接
   const { isConnected, connectionError, lastMessage } = useWebSocket({
@@ -337,7 +344,7 @@ const BotManagementPage: React.FC = () => {
   };
 
   // 獲取 Webhook 狀態
-  const fetchWebhookStatus = async (botId: string) => {
+  const fetchWebhookStatus = useCallback(async (botId: string) => {
     if (!botId) return;
 
     setWebhookStatusLoading(true);
@@ -352,7 +359,7 @@ const BotManagementPage: React.FC = () => {
     } finally {
       setWebhookStatusLoading(false);
     }
-  };
+  }, []);
 
   // 檢查 Webhook 狀態
   const handleCheckWebhookStatus = async () => {
@@ -380,6 +387,41 @@ const BotManagementPage: React.FC = () => {
       title: "刷新完成",
       description: "數據已更新"
     });
+  };
+
+  // 測試 WebSocket 更新（調試用）
+  const handleTestWebSocketUpdate = async () => {
+    if (!selectedBotId) return;
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_UNIFIED_API_URL}/api/v1/ws/test/${selectedBotId}/analytics_update`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token') || localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      if (response.ok) {
+        toast({
+          title: "測試成功",
+          description: "WebSocket 更新測試消息已發送",
+          duration: 3000,
+        });
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error('WebSocket 測試失敗:', error);
+      toast({
+        variant: "destructive",
+        title: "測試失敗",
+        description: "無法發送 WebSocket 測試消息",
+      });
+    }
   };
 
   // 處理測試訊息發送
@@ -477,6 +519,228 @@ const BotManagementPage: React.FC = () => {
       isMounted = false;
     };
   }, [selectedBotId]);
+
+  // 處理 WebSocket 即時更新消息
+  useEffect(() => {
+    if (!lastMessage || !selectedBotId) return;
+    
+    console.log('🔄 處理 WebSocket 消息:', lastMessage);
+    
+    // 確保消息是針對當前選中的 Bot
+    if (lastMessage.bot_id !== selectedBotId) {
+      console.log('⚠️ 消息的 Bot ID 與當前選中的 Bot 不匹配，忽略');
+      return;
+    }
+    
+    switch (lastMessage.type) {
+      case 'analytics_update':
+        console.log('📊 收到分析數據更新，強制重新獲取...');
+        // 直接調用 API 重新獲取數據，避免函數依賴
+        setAnalyticsLoading(true);
+        Promise.all([
+          apiClient.getBotAnalytics(selectedBotId, timeRange),
+          apiClient.getBotMessageStats(selectedBotId, 7),
+          apiClient.getBotUserActivity(selectedBotId),
+          apiClient.getBotUsageStats(selectedBotId),
+          apiClient.getBotActivities(selectedBotId, 20, 0)
+        ]).then(([analyticsRes, messageStatsRes, userActivityRes, usageStatsRes, activitiesRes]) => {
+          console.log('🔍 API 響應詳情:');
+          console.log('Analytics:', analyticsRes);
+          console.log('MessageStats:', messageStatsRes);
+          console.log('UserActivity:', userActivityRes);
+          console.log('UsageStats:', usageStatsRes);
+          console.log('Activities:', activitiesRes);
+          
+          // 直接更新狀態，不使用批次更新
+          console.log('🔄 開始更新所有狀態...');
+          
+          // 更新分析數據
+          if (analyticsRes.data && !analyticsRes.error) {
+            console.log('📊 更新分析數據:', analyticsRes.data);
+            const newAnalytics = {
+              totalMessages: analyticsRes.data.totalMessages || 0,
+              activeUsers: analyticsRes.data.activeUsers || 0,
+              responseTime: analyticsRes.data.responseTime || 0,
+              successRate: analyticsRes.data.successRate || 0,
+              todayMessages: analyticsRes.data.todayMessages || 0,
+              weekMessages: analyticsRes.data.weekMessages || 0,
+              monthMessages: analyticsRes.data.monthMessages || 0,
+            } as BotAnalytics;
+            
+            console.log('🔄 設置新的 analytics 狀態:', newAnalytics);
+            setAnalytics(prevAnalytics => {
+              console.log('📊 Analytics 狀態變化:', { 前: prevAnalytics, 後: newAnalytics });
+              return newAnalytics;
+            });
+          } else {
+            console.log('❌ 分析數據無效:', analyticsRes);
+            setAnalytics(null);
+          }
+          
+          // 更新訊息統計
+          if (messageStatsRes.data && !messageStatsRes.error) {
+            console.log('📈 更新訊息統計:', messageStatsRes.data);
+            const newMessageStats = Array.isArray(messageStatsRes.data) ? [...messageStatsRes.data] as MessageStats[] : [];
+            setMessageStats(prev => {
+              console.log('📈 MessageStats 狀態變化:', { 前: prev.length, 後: newMessageStats.length });
+              return newMessageStats;
+            });
+          } else {
+            console.log('❌ 訊息統計數據無效:', messageStatsRes);
+            setMessageStats([]);
+          }
+          
+          // 更新用戶活躍度
+          if (userActivityRes.data && !userActivityRes.error) {
+            console.log('👥 更新用戶活躍度:', userActivityRes.data);
+            const newUserActivity = Array.isArray(userActivityRes.data) ? [...userActivityRes.data] as UserActivity[] : [];
+            setUserActivity(prev => {
+              console.log('👥 UserActivity 狀態變化:', { 前: prev.length, 後: newUserActivity.length });
+              return newUserActivity;
+            });
+          } else {
+            console.log('❌ 用戶活躍度數據無效:', userActivityRes);
+            setUserActivity([]);
+          }
+          
+          // 更新使用統計
+          if (usageStatsRes.data && !usageStatsRes.error) {
+            console.log('📋 更新使用統計:', usageStatsRes.data);
+            const newUsageData = Array.isArray(usageStatsRes.data) ? [...usageStatsRes.data] as UsageData[] : [];
+            setUsageData(prev => {
+              console.log('📋 UsageData 狀態變化:', { 前: prev.length, 後: newUsageData.length });
+              return newUsageData;
+            });
+          } else {
+            console.log('❌ 使用統計數據無效:', usageStatsRes);
+            setUsageData([]);
+          }
+          
+          // 更新活動數據
+          if (activitiesRes.data && !activitiesRes.error) {
+            const responseData = activitiesRes.data as any;
+            const activitiesData = responseData.activities || responseData;
+            console.log('🎯 更新活動數據:', activitiesData);
+            const newActivities = Array.isArray(activitiesData) ? [...activitiesData] as ActivityItem[] : [];
+            setActivities(prev => {
+              console.log('🎯 Activities 狀態變化:', { 前: prev.length, 後: newActivities.length });
+              return newActivities;
+            });
+          } else {
+            console.log('❌ 活動數據無效:', activitiesRes);
+            setActivities([]);
+          }
+          
+          // 強制觸發重新渲染
+          const newTimestamp = Date.now();
+          setDataTimestamp(newTimestamp);
+          setForceUpdateCounter(prev => {
+            const newCount = prev + 1;
+            console.log('🔄 ForceUpdate 計數器更新:', { 前: prev, 後: newCount, 時間戳: newTimestamp });
+            return newCount;
+          });
+          
+          // 額外的強制重新渲染
+          forceRender();
+          console.log('🔄 執行強制重新渲染:', renderTrigger + 1);
+          
+          console.log('✅ 分析數據更新完成，準備顯示通知');
+          
+          // Toast 通知
+          setTimeout(() => {
+            toast({
+              title: "數據已更新",
+              description: "分析數據已同步更新",
+              duration: 2000,
+            });
+          }, 100);
+        }).catch(error => {
+          console.error('❌ 分析數據更新失敗:', error);
+        }).finally(() => {
+          setAnalyticsLoading(false);
+        });
+        break;
+        
+      case 'activity_update':
+        console.log('🎯 收到活動更新:', lastMessage.data);
+        if (lastMessage.data) {
+          // 強制重新獲取活動數據而不是依賴 WebSocket 數據
+          console.log('🔄 重新獲取活動數據...');
+          apiClient.getBotActivities(selectedBotId, 20, 0).then(response => {
+            console.log('📥 活動 API 響應:', response);
+            if (response.data && !response.error) {
+              const responseData = response.data as any;
+              const activitiesData = responseData.activities || responseData;
+              console.log('🔄 設置活動數據:', activitiesData);
+              setActivities(Array.isArray(activitiesData) ? activitiesData as ActivityItem[] : []);
+              console.log('✅ 活動數據更新完成');
+              // 強制觸發重新渲染
+              setForceUpdateCounter(prev => prev + 1);
+              
+              toast({
+                title: "新活動",
+                description: "檢測到新的 Bot 活動",
+                duration: 3000,
+              });
+            }
+          }).catch(error => {
+            console.error('❌ 活動數據更新失敗:', error);
+          });
+        }
+        break;
+        
+      case 'webhook_status_update':
+        console.log('🔗 收到 Webhook 狀態更新');
+        // 直接調用 API 獲取 Webhook 狀態
+        setWebhookStatusLoading(true);
+        apiClient.getWebhookStatus(selectedBotId).then(response => {
+          if (response.data) {
+            setWebhookStatus(response.data as Record<string, unknown>);
+            console.log('✅ Webhook 狀態更新完成');
+          }
+        }).catch(error => {
+          console.error('❌ Webhook 狀態更新失敗:', error);
+        }).finally(() => {
+          setWebhookStatusLoading(false);
+        });
+        break;
+        
+      case 'pong':
+        console.log('💓 收到心跳回應');
+        setBotHealth('online');
+        break;
+        
+      default:
+        console.log('❓ 收到未處理的消息類型:', lastMessage.type);
+    }
+  }, [lastMessage, selectedBotId, timeRange, toast]);
+
+  // 調試狀態變化
+  useEffect(() => {
+    const renderTime = new Date().toISOString();
+    setLastRenderTime(renderTime);
+    console.log('🔍 狀態變化檢測 [' + renderTime + ']:');
+    console.log('Analytics:', analytics);
+    console.log('MessageStats:', messageStats);
+    console.log('UserActivity:', userActivity);
+    console.log('Activities:', activities);
+    console.log('ForceUpdate Counter:', forceUpdateCounter);
+    console.log('Render Trigger:', renderTrigger);
+    console.log('Data Timestamp:', dataTimestamp);
+    
+    // 強制重新渲染檢測
+    if (analytics) {
+      console.log('📊 Analytics 詳細數據:', JSON.stringify(analytics, null, 2));
+      console.log('🔢 總訊息數 (MetricCard 應顯示):', analytics.totalMessages);
+      console.log('👥 活躍用戶數 (MetricCard 應顯示):', analytics.activeUsers);
+      // 強制組件重新渲染的關鍵 - 增加渲染計數器
+      document.title = `Bot Management - ${analytics.totalMessages || 0} messages`;
+    } else {
+      console.log('❌ Analytics 為空，MetricCard 將顯示 0');
+    }
+    
+    console.log('🎯 元件已重新渲染於:', renderTime);
+  }, [analytics, messageStats, userActivity, activities, forceUpdateCounter, renderTrigger, dataTimestamp]);
 
   // 處理加載狀態
   if (authLoading || loading) {
@@ -582,6 +846,7 @@ const BotManagementPage: React.FC = () => {
                     <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                       <div>
                         <MetricCard
+                          key={`total-messages-${dataTimestamp}-${analytics?.totalMessages || 0}-${forceUpdateCounter}-${renderTrigger}`}
                           icon={MessageSquare}
                           title="總訊息數"
                           value={analytics?.totalMessages || 0}
@@ -599,6 +864,7 @@ const BotManagementPage: React.FC = () => {
                       
                       <div>
                         <MetricCard
+                          key={`active-users-${dataTimestamp}-${analytics?.activeUsers || 0}-${forceUpdateCounter}-${renderTrigger}`}
                           icon={Users}
                           title="活躍用戶"
                           value={analytics?.activeUsers || 0}
@@ -615,6 +881,7 @@ const BotManagementPage: React.FC = () => {
                       
                       <div>
                         <MetricCard
+                          key={`response-time-${dataTimestamp}-${analytics?.responseTime || 0}-${forceUpdateCounter}-${renderTrigger}`}
                           icon={Clock}
                           title="平均回應時間"
                           value={analytics?.responseTime || 0}
@@ -630,6 +897,7 @@ const BotManagementPage: React.FC = () => {
                       
                       <div>
                         <MetricCard
+                          key={`success-rate-${dataTimestamp}-${analytics?.successRate || 0}-${forceUpdateCounter}-${renderTrigger}`}
                           icon={Target}
                           title="成功率"
                           value={analytics?.successRate || 0}
@@ -1182,11 +1450,40 @@ const BotManagementPage: React.FC = () => {
                             </Card>
                           </div>
 
-                          {/* 調試信息 */}
-                          <div className="text-xs text-muted-foreground p-3 bg-muted rounded">
-                            <div>WebSocket URL: ws://localhost:8000/api/v1/ws/bot/{selectedBotId}</div>
-                            <div>自動重連: 啟用</div>
-                            <div>心跳間隔: 30 秒</div>
+                          {/* 調試控制區域 */}
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-4">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={handleTestWebSocketUpdate}
+                                disabled={!isConnected}
+                              >
+                                <Activity className="h-4 w-4 mr-2" />
+                                測試數據更新
+                              </Button>
+                              
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={handleRefreshData}
+                              >
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                手動刷新數據
+                              </Button>
+                            </div>
+                            
+                            {/* 調試信息 */}
+                            <div className="text-xs text-muted-foreground p-3 bg-muted rounded">
+                              <div>WebSocket URL: ws://localhost:8000/api/v1/ws/bot/{selectedBotId}</div>
+                              <div>自動重連: 啟用</div>
+                              <div>心跳間隔: 30 秒</div>
+                              <div>最後渲染: {lastRenderTime}</div>
+                              <div>強制更新計數: {forceUpdateCounter}</div>
+                              <div>渲染觸發器: {renderTrigger}</div>
+                              <div>數據時間戳: {dataTimestamp}</div>
+                              <div>Analytics 數據: {analytics ? `訊息數: ${analytics.totalMessages}, 用戶數: ${analytics.activeUsers}` : '無數據'}</div>
+                            </div>
                           </div>
                         </div>
                       </CardContent>

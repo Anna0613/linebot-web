@@ -115,57 +115,12 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       
       console.log('收到 WebSocket 消息:', message);
       
+      // 不在這裡處理具體的數據更新，只是記錄和傳遞消息
+      // 具體的數據更新邏輯由使用該 hook 的組件來處理
+      console.log(`WebSocket 消息類型: ${message.type}, Bot ID: ${message.bot_id}`);
+      
+      // 處理特殊的連接狀態消息
       switch (message.type) {
-        case 'analytics_update':
-          // 更新分析數據快取
-          if (message.bot_id && message.data) {
-            queryClient.setQueryData(
-              queryKeys.botAnalytics(message.bot_id),
-              (old: any) => ({
-                ...old,
-                data: { ...old?.data, ...message.data },
-                lastUpdated: message.timestamp
-              })
-            );
-            console.log(`分析數據已更新: Bot ${message.bot_id}`);
-          }
-          break;
-
-        case 'activity_update':
-          // 更新活動數據快取
-          if (message.bot_id && message.data) {
-            queryClient.setQueryData(
-              queryKeys.botActivities(message.bot_id),
-              (old: any) => {
-                const newActivity = message.data;
-                const existingActivities = old?.data || [];
-                
-                return {
-                  ...old,
-                  data: [newActivity, ...existingActivities].slice(0, 50), // 保持最新 50 條
-                  lastUpdated: message.timestamp
-                };
-              }
-            );
-            console.log(`活動數據已更新: Bot ${message.bot_id}`);
-          }
-          break;
-
-        case 'webhook_status_update':
-          // 更新 Webhook 狀態
-          if (message.bot_id && message.data) {
-            queryClient.setQueryData(
-              queryKeys.webhookStatus(message.bot_id),
-              (old: any) => ({
-                ...old,
-                data: { ...old?.data, ...message.data },
-                lastUpdated: message.timestamp
-              })
-            );
-            console.log(`Webhook 狀態已更新: Bot ${message.bot_id}`);
-          }
-          break;
-
         case 'connected':
           console.log('WebSocket 連接成功:', message.message);
           setIsConnected(true);
@@ -198,7 +153,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       console.error('解析 WebSocket 消息失敗:', error);
       setConnectionError('消息解析失敗');
     }
-  }, [queryClient, botId]);
+  }, [botId]);
 
   // 連接 WebSocket
   const connect = useCallback(() => {

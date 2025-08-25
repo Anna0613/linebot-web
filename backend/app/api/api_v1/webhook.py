@@ -104,6 +104,15 @@ async def handle_webhook_event(
                 await websocket_manager.send_activity_update(bot_id, activity_data)
                 logger.debug(f"已發送活動更新到 WebSocket: {bot_id}")
 
+            # 發送分析數據更新（觸發前端重新獲取統計數據）
+            if events:  # 只有當有事件時才發送分析更新
+                await websocket_manager.send_analytics_update(bot_id, {
+                    'updated_at': webhook_data.get('events', [{}])[0].get('timestamp'),
+                    'trigger': 'webhook_event',
+                    'event_count': len(events)
+                })
+                logger.debug(f"已發送分析數據更新到 WebSocket: {bot_id}")
+
         except Exception as ws_error:
             logger.warning(f"發送 WebSocket 更新失敗: {ws_error}")
 
