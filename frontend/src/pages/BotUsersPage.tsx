@@ -61,10 +61,11 @@ const BotUsersPage: React.FC = () => {
   const { toast } = useToast();
 
   // WebSocket 連接
-  const { isConnected, lastMessage } = useWebSocket(
-    botId ? `ws://localhost:8000/api/v1/ws/bot/${botId}` : null,
-    user?.auth_token
-  );
+  const { isConnected, connectionError, lastMessage } = useWebSocket({
+    botId: botId || undefined,
+    autoReconnect: true,
+    enabled: !!botId
+  });
 
   // 狀態管理
   const [users, setUsers] = useState<LineUser[]>([]);
@@ -113,6 +114,30 @@ const BotUsersPage: React.FC = () => {
     }
   }, [botId, toast]);
 
+  // 靜默更新用戶列表（WebSocket 更新時使用，不顯示 loading）
+  const fetchUsersSilently = useCallback(async (limit: number = 20, offset: number = 0) => {
+    if (!botId) return;
+
+    try {
+      const response = await apiClient.getBotUsers(botId, limit, offset);
+      
+      if (response.data && !response.error) {
+        // 使用函數式更新，保持其他狀態不變
+        setUsers(response.data.users || []);
+        setTotalCount(response.data.total_count || 0);
+        setPagination(prev => ({
+          ...prev,
+          ...response.data.pagination,
+          limit,
+          offset
+        }));
+      }
+    } catch (error) {
+      console.error("靜默更新用戶列表失敗:", error);
+      // 靜默處理錯誤，不顯示通知
+    }
+  }, [botId]);
+
   // 獲取用戶互動歷史
   const fetchUserInteractions = useCallback(async (lineUserId: string) => {
     if (!botId) return;
@@ -135,6 +160,22 @@ const BotUsersPage: React.FC = () => {
       setInteractionsLoading(false);
     }
   }, [botId, toast]);
+
+  // 靜默更新用戶互動記錄（WebSocket 更新時使用，不顯示 loading）
+  const fetchUserInteractionsSilently = useCallback(async (lineUserId: string) => {
+    if (!botId) return;
+
+    try {
+      const response = await apiClient.getUserInteractions(botId, lineUserId);
+      
+      if (response.data && !response.error) {
+        setUserInteractions(response.data.interactions || []);
+      }
+    } catch (error) {
+      console.error("靜默更新用戶互動記錄失敗:", error);
+      // 靜默處理錯誤，不顯示通知
+    }
+  }, [botId]);
 
   // 廣播訊息
   const handleBroadcast = async () => {
@@ -206,14 +247,14 @@ const BotUsersPage: React.FC = () => {
     
     switch (lastMessage.type) {
       case 'activity_update':
-        // 有新活動時更新用戶列表和選中用戶的互動記錄
+        // 有新活動時靜默更新用戶列表和選中用戶的互動記錄
         if (lastMessage.data) {
-          // 靜默重新獲取用戶列表以更新互動次數和最後互動時間
-          fetchUsers(pagination.limit, pagination.offset);
+          // 靜默更新用戶列表以更新互動次數和最後互動時間，不顯示 loading
+          fetchUsersSilently(pagination.limit, pagination.offset);
           
-          // 如果有選中的用戶，更新其互動記錄
+          // 如果有選中的用戶，靜默更新其互動記錄
           if (selectedUser) {
-            fetchUserInteractions(selectedUser.line_user_id);
+            fetchUserInteractionsSilently(selectedUser.line_user_id);
           }
           
           toast({
@@ -225,14 +266,14 @@ const BotUsersPage: React.FC = () => {
         break;
         
       case 'analytics_update':
-        // 分析數據更新時，重新獲取用戶列表以更新統計
-        fetchUsers(pagination.limit, pagination.offset);
+        // 分析數據更新時，靜默重新獲取用戶列表以更新統計
+        fetchUsersSilently(pagination.limit, pagination.offset);
         break;
         
       default:
         // 未處理的消息類型
     }
-  }, [lastMessage, botId, pagination.limit, pagination.offset, selectedUser, fetchUsers, fetchUserInteractions, toast]);
+  }, [lastMessage, botId, pagination.limit, pagination.offset, selectedUser, fetchUsersSilently, fetchUserInteractionsSilently, toast]);
 
   // 處理加載狀態
   if (authLoading || loading) {
@@ -267,9 +308,14 @@ const BotUsersPage: React.FC = () => {
             {/* WebSocket 連接狀態 */}
             <div className="flex items-center gap-2 text-sm">
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
-                {isConnected ? '即時連接' : '離線模式'}
-              </span>
+              <div className="flex flex-col">
+                <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+                  {isConnected ? '即時連接' : '離線模式'}
+                </span>
+                {connectionError && (
+                  <span className="text-red-500 text-xs">({connectionError})</span>
+                )}
+              </div>
             </div>
           </div>
 

@@ -1370,7 +1370,7 @@ class LineBotService:
                         "userId": user.line_user_id if user else "unknown",
                         "userName": user.display_name or f"用戶 {user.line_user_id[:8]}" if user else "未知用戶",
                         "messageType": interaction.message_type,
-                        "messageId": interaction.message_id
+                        "interactionId": str(interaction.id)  # 使用 interaction 的 id 替代不存在的 message_id
                     }
                 })
             
