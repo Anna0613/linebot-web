@@ -23,8 +23,7 @@ import {
   Cell,
   XAxis, 
   YAxis, 
-  CartesianGrid, 
-  ResponsiveContainer,
+  CartesianGrid,
   Legend
 } from "recharts";
 import { 
@@ -392,12 +391,11 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
             isExpanded && "h-[500px]"
           )}
           style={{
-            height: isExpanded ? "500px" : `${height}px`
+            height: isExpanded ? 500 : height,
+            width: "100%"
           }}
         >
-          <ResponsiveContainer width="100%" height="100%">
-            {renderChart(chartType, processedData, config, customColors)}
-          </ResponsiveContainer>
+          {renderChart(chartType, processedData, config, customColors)}
         </ChartContainer>
       </CardContent>
     </Card>

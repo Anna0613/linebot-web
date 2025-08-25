@@ -50,6 +50,11 @@ function ChartContainer({
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`
 
+  // Check if both width and height are fixed values
+  const hasFixedWidth = style?.width && typeof style.width === 'number'
+  const hasFixedHeight = style?.height && typeof style.height === 'number'
+  const useResponsive = !hasFixedWidth || !hasFixedHeight
+
   return (
     <ChartContext.Provider value={{ config }}>
       <div
@@ -66,9 +71,15 @@ function ChartContainer({
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer width="100%" height="100%">
-          {children}
-        </RechartsPrimitive.ResponsiveContainer>
+        {useResponsive ? (
+          <RechartsPrimitive.ResponsiveContainer width="100%" height="100%">
+            {children}
+          </RechartsPrimitive.ResponsiveContainer>
+        ) : (
+          <div style={{ width: style?.width || "100%", height: style?.height || "100%" }}>
+            {children}
+          </div>
+        )}
       </div>
     </ChartContext.Provider>
   )
