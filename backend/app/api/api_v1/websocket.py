@@ -152,7 +152,6 @@ async def handle_websocket_message(bot_id: str, message: dict, websocket: WebSoc
     """處理 Bot WebSocket 消息"""
     
     message_type = message.get('type')
-    logger.debug(f"處理 WebSocket 消息: {message_type} for Bot {bot_id}")
     
     try:
         if message_type == 'subscribe_analytics':
@@ -196,7 +195,6 @@ async def handle_dashboard_message(user_id: str, message: dict, websocket: WebSo
     """處理儀表板 WebSocket 消息"""
     
     message_type = message.get('type')
-    logger.debug(f"處理儀表板消息: {message_type} for User {user_id}")
     
     try:
         if message_type == 'ping':
@@ -296,34 +294,3 @@ async def broadcast_to_bot(
         logger.error(f"廣播消息失敗: {e}")
         raise HTTPException(status_code=500, detail="Failed to broadcast message")
 
-@router.post("/ws/test/{bot_id}/analytics_update")
-async def test_analytics_update(
-    bot_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_websocket)
-):
-    """測試分析數據更新（用於調試）"""
-    try:
-        # 驗證 Bot 所有權
-        bot = db.query(Bot).filter(
-            Bot.id == bot_id,
-            Bot.user_id == current_user.id
-        ).first()
-        
-        if not bot:
-            raise HTTPException(status_code=404, detail="Bot not found")
-        
-        # 發送測試分析更新消息
-        await websocket_manager.send_analytics_update(bot_id, {
-            "test": True,
-            "timestamp": "test_update_" + str(hash(bot_id))
-        })
-        
-        return {
-            "success": True,
-            "message": "Analytics update test message sent"
-        }
-        
-    except Exception as e:
-        logger.error(f"發送測試消息失敗: {e}")
-        raise HTTPException(status_code=500, detail="Failed to send test message")
