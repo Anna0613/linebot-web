@@ -530,10 +530,15 @@ const BotManagementPage: React.FC = () => {
     
     switch (lastMessage.type) {
       case 'analytics_update':
-        // 靜默更新分析數據，不顯示 loading 狀態，保持其他數據不變
-        apiClient.getBotAnalytics(selectedBotId, timeRange).then(analyticsRes => {
+        // 靜默更新所有分析相關數據，保持其他數據不變
+        Promise.all([
+          apiClient.getBotAnalytics(selectedBotId, timeRange),
+          apiClient.getBotMessageStats(selectedBotId, 7),
+          apiClient.getBotUserActivity(selectedBotId),
+          apiClient.getBotUsageStats(selectedBotId)
+        ]).then(([analyticsRes, messageStatsRes, userActivityRes, usageStatsRes]) => {
+          // 更新分析數據
           if (analyticsRes.data && !analyticsRes.error) {
-            // 使用函數式更新，基於當前狀態更新，避免覆蓋其他數據
             setAnalytics(prev => ({
               ...prev,
               totalMessages: analyticsRes.data.totalMessages || prev?.totalMessages || 0,
@@ -544,6 +549,37 @@ const BotManagementPage: React.FC = () => {
               weekMessages: analyticsRes.data.weekMessages || prev?.weekMessages || 0,
               monthMessages: analyticsRes.data.monthMessages || prev?.monthMessages || 0,
             } as BotAnalytics));
+          }
+
+          // 更新訊息統計圖表數據
+          if (messageStatsRes.data && !messageStatsRes.error) {
+            setMessageStats(Array.isArray(messageStatsRes.data) ? messageStatsRes.data as MessageStats[] : []);
+          }
+
+          // 更新用戶活躍度數據和熱力圖
+          if (userActivityRes.data && !userActivityRes.error) {
+            setUserActivity(Array.isArray(userActivityRes.data) ? userActivityRes.data as UserActivity[] : []);
+            
+            // 生成熱力圖數據
+            const heatData: HeatMapDataPoint[] = [];
+            if (Array.isArray(userActivityRes.data)) {
+              (userActivityRes.data as UserActivity[]).forEach((activity: UserActivity) => {
+                for (let day = 0; day < 7; day++) {
+                  heatData.push({
+                    hour: parseInt(activity.hour) || 0,
+                    day: day,
+                    value: activity.activeUsers || 0,
+                    label: `${activity.hour}:00`
+                  });
+                }
+              });
+            }
+            setHeatMapData(heatData);
+          }
+
+          // 更新使用統計數據
+          if (usageStatsRes.data && !usageStatsRes.error) {
+            setUsageData(Array.isArray(usageStatsRes.data) ? usageStatsRes.data as UsageData[] : []);
           }
         }).catch(() => {
           // 靜默處理錯誤，不影響用戶體驗

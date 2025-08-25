@@ -22,6 +22,7 @@ import {
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
+import { useWebSocket } from "../hooks/useWebSocket";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import { apiClient } from "../services/UnifiedApiClient";
@@ -58,6 +59,12 @@ const BotUsersPage: React.FC = () => {
   const { user, loading: authLoading } = useUnifiedAuth({ requireAuth: true, redirectTo: "/login" });
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // WebSocket 連接
+  const { isConnected, lastMessage } = useWebSocket(
+    botId ? `ws://localhost:8000/api/v1/ws/bot/${botId}` : null,
+    user?.auth_token
+  );
 
   // 狀態管理
   const [users, setUsers] = useState<LineUser[]>([]);
@@ -188,6 +195,45 @@ const BotUsersPage: React.FC = () => {
     }
   }, [user, botId, fetchUsers]);
 
+  // 處理 WebSocket 即時更新消息
+  useEffect(() => {
+    if (!lastMessage || !botId) return;
+    
+    // 確保消息是針對當前 Bot
+    if (lastMessage.bot_id !== botId) {
+      return;
+    }
+    
+    switch (lastMessage.type) {
+      case 'activity_update':
+        // 有新活動時更新用戶列表和選中用戶的互動記錄
+        if (lastMessage.data) {
+          // 靜默重新獲取用戶列表以更新互動次數和最後互動時間
+          fetchUsers(pagination.limit, pagination.offset);
+          
+          // 如果有選中的用戶，更新其互動記錄
+          if (selectedUser) {
+            fetchUserInteractions(selectedUser.line_user_id);
+          }
+          
+          toast({
+            title: "新用戶活動",
+            description: "檢測到新的用戶互動",
+            duration: 3000,
+          });
+        }
+        break;
+        
+      case 'analytics_update':
+        // 分析數據更新時，重新獲取用戶列表以更新統計
+        fetchUsers(pagination.limit, pagination.offset);
+        break;
+        
+      default:
+        // 未處理的消息類型
+    }
+  }, [lastMessage, botId, pagination.limit, pagination.offset, selectedUser, fetchUsers, fetchUserInteractions, toast]);
+
   // 處理加載狀態
   if (authLoading || loading) {
     return (
@@ -213,9 +259,17 @@ const BotUsersPage: React.FC = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               返回管理中心
             </Button>
-            <div>
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">用戶管理</h1>
               <p className="text-gray-600">管理 LINE Bot 的關注者和互動記錄</p>
+            </div>
+            
+            {/* WebSocket 連接狀態 */}
+            <div className="flex items-center gap-2 text-sm">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+                {isConnected ? '即時連接' : '離線模式'}
+              </span>
             </div>
           </div>
 
