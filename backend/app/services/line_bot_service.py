@@ -679,16 +679,35 @@ class LineBotService:
         user_id = event_data.get('source', {}).get('userId')
         message_data = event_data.get('message', {})
         message_type = message_data.get('type')
+        line_message_id = message_data.get('id')  # 獲取 LINE 原始 message ID
         
         # 記錄用戶互動到數據庫
-        self.record_user_interaction(
-            db_session=db_session,
-            bot_id=bot_id,
-            user_id=user_id,
-            event_type="message",
-            message_type=message_type,
-            message_content=message_data
-        )
+        try:
+            interaction_id = self.record_user_interaction(
+                db_session=db_session,
+                bot_id=bot_id,
+                user_id=user_id,
+                event_type="message",
+                message_type=message_type,
+                message_content=message_data,
+                line_message_id=line_message_id
+            )
+            if not interaction_id:
+                logger.error(f"無法創建互動記錄，跳過媒體處理")
+        except Exception as e:
+            logger.error(f"處理訊息事件時出錯: {e}")
+            interaction_id = None
+        
+        # 如果是媒體訊息，異步處理媒體檔案上傳
+        if message_type in ['image', 'video', 'audio'] and line_message_id and interaction_id:
+            import asyncio
+            asyncio.create_task(self._process_media_async(
+                interaction_id=str(interaction_id),
+                line_user_id=user_id,
+                message_type=message_type,
+                line_message_id=line_message_id,
+                db_session=db_session
+            ))
         
         return {
             "event_type": "message",
@@ -734,7 +753,7 @@ class LineBotService:
         }
     
     def record_user_interaction(self, db_session, bot_id: str, user_id: str, event_type: str, 
-                               message_type: str = None, message_content: Dict = None):
+                               message_type: str = None, message_content: Dict = None, line_message_id: str = None):
         """記錄用戶互動到資料庫"""
         from app.models.line_user import LineBotUser, LineBotUserInteraction
         from uuid import UUID as PyUUID
@@ -779,22 +798,91 @@ class LineBotService:
                 elif event_type == "unfollow":
                     line_user.is_followed = False
             
-            # 記錄互動
-            interaction = LineBotUserInteraction(
-                line_user_id=line_user.id,
-                event_type=event_type,
-                message_type=message_type,
-                message_content=message_content
-            )
+            # 準備訊息內容，添加 LINE message ID
+            if message_content and line_message_id:
+                enhanced_content = message_content.copy()
+                enhanced_content['line_message_id'] = line_message_id
+            else:
+                enhanced_content = message_content
+            
+            # 記錄互動（安全創建，避免新欄位問題）
+            interaction_data = {
+                'line_user_id': line_user.id,
+                'event_type': event_type,
+                'message_type': message_type,
+                'message_content': enhanced_content
+            }
+            
+            # 安全地添加新欄位（如果 ORM 模型支持）
+            if hasattr(LineBotUserInteraction, 'media_path'):
+                interaction_data['media_path'] = None
+            if hasattr(LineBotUserInteraction, 'media_url'):
+                interaction_data['media_url'] = None
+                
+            interaction = LineBotUserInteraction(**interaction_data)
             db_session.add(interaction)
+            db_session.flush()  # 獲取 ID
+            interaction_id = interaction.id
             db_session.commit()
             
-            return True
+            logger.info(f"✅ 成功記錄互動: ID={interaction_id}, User={user_id}, Type={message_type}")
+            return interaction_id
             
         except Exception as e:
             logger.error(f"記錄用戶互動失敗: {e}")
-            db_session.rollback()
-            return False
+            logger.error(f"Bot ID: {bot_id}, User ID: {user_id}, Event Type: {event_type}")
+            logger.error(f"Message Type: {message_type}, LINE Message ID: {line_message_id}")
+            import traceback
+            logger.error(f"詳細錯誤信息: {traceback.format_exc()}")
+            try:
+                db_session.rollback()
+            except:
+                pass
+            return None
+    
+    async def _process_media_async(self, interaction_id: str, line_user_id: str, message_type: str, 
+                                  line_message_id: str, db_session):
+        """異步處理媒體檔案上傳到 MinIO"""
+        from app.services.minio_service import get_minio_service
+        from app.models.line_user import LineBotUserInteraction
+        from uuid import UUID as PyUUID
+        
+        try:
+            minio_service = get_minio_service()
+            if not minio_service:
+                logger.warning("MinIO 服務未初始化，跳過媒體檔案處理")
+                return
+            
+            # 上傳媒體檔案到 MinIO
+            media_path, media_url = await minio_service.upload_media_from_line(
+                line_user_id=line_user_id,
+                message_type=message_type,
+                channel_token=self.channel_token,
+                line_message_id=line_message_id
+            )
+            
+            if media_path and media_url:
+                # 更新資料庫記錄
+                interaction_uuid = PyUUID(interaction_id)
+                interaction = db_session.query(LineBotUserInteraction).filter(
+                    LineBotUserInteraction.id == interaction_uuid
+                ).first()
+                
+                if interaction:
+                    # 安全地設置新欄位（如果存在）
+                    if hasattr(interaction, 'media_path'):
+                        interaction.media_path = media_path
+                    if hasattr(interaction, 'media_url'):
+                        interaction.media_url = media_url
+                    db_session.commit()
+                    logger.info(f"媒體檔案處理成功: {media_path}")
+                else:
+                    logger.error(f"找不到互動記錄: {interaction_id}")
+            else:
+                logger.error(f"媒體檔案上傳失敗: interaction_id={interaction_id}")
+                
+        except Exception as e:
+            logger.error(f"異步處理媒體檔案失敗: {e}")
     
     def get_bot_followers(self, db_session, bot_id: str, limit: int = 50, offset: int = 0) -> Dict:
         """獲取 Bot 的關注者列表"""
@@ -869,24 +957,69 @@ class LineBotService:
             if not line_user:
                 return []
             
-            # 查詢互動歷史
-            interactions = db_session.query(LineBotUserInteraction).filter(
-                LineBotUserInteraction.line_user_id == line_user.id
-            ).order_by(LineBotUserInteraction.timestamp.desc()).limit(limit).all()
+            # 使用原始 SQL 查詢來避免 ORM 欄位問題
+            from sqlalchemy import text
+            
+            # 先嘗試完整查詢，如果失敗則使用基本查詢
+            try:
+                sql = text("""
+                    SELECT id, line_user_id, event_type, message_type, message_content, 
+                           media_path, media_url, timestamp
+                    FROM line_bot_user_interactions 
+                    WHERE line_user_id = :line_user_id 
+                    ORDER BY timestamp DESC 
+                    LIMIT :limit_val
+                """)
+                result = db_session.execute(sql, {
+                    'line_user_id': line_user.id, 
+                    'limit_val': limit
+                })
+                interactions = result.fetchall()
+            except Exception as e:
+                if "does not exist" in str(e):
+                    # 回滾失敗的事務
+                    db_session.rollback()
+                    
+                    # 如果新欄位不存在，使用基本查詢
+                    sql = text("""
+                        SELECT id, line_user_id, event_type, message_type, message_content, 
+                               NULL as media_path, NULL as media_url, timestamp
+                        FROM line_bot_user_interactions 
+                        WHERE line_user_id = :line_user_id 
+                        ORDER BY timestamp DESC 
+                        LIMIT :limit_val
+                    """)
+                    result = db_session.execute(sql, {
+                        'line_user_id': line_user.id, 
+                        'limit_val': limit
+                    })
+                    interactions = result.fetchall()
+                else:
+                    raise e
             
             history = []
-            for interaction in interactions:
-                history.append({
-                    "event_type": interaction.event_type,
-                    "message_type": interaction.message_type,
-                    "message_content": interaction.message_content,
-                    "timestamp": interaction.timestamp.isoformat()
-                })
+            for row in interactions:
+                # 處理原始 SQL 查詢結果
+                interaction_data = {
+                    "id": str(row[0]),  # id
+                    "event_type": row[2],  # event_type
+                    "message_type": row[3],  # message_type
+                    "message_content": row[4],  # message_content
+                    "media_path": row[5],  # media_path (可能是 None)
+                    "media_url": row[6],  # media_url (可能是 None)
+                    "timestamp": row[7].isoformat() if row[7] else None  # timestamp
+                }
+                history.append(interaction_data)
             
             return history
             
         except Exception as e:
             logger.error(f"獲取用戶互動歷史失敗: {e}")
+            # 確保回滾事務
+            try:
+                db_session.rollback()
+            except:
+                pass
             return []
     
     def create_rich_menu_real(self, db_session, bot_id: str, rich_menu_data: Dict) -> Optional[Dict]:
@@ -1379,3 +1512,85 @@ class LineBotService:
         except Exception as e:
             logger.error(f"獲取活動記錄失敗: {e}")
             return []
+    
+    @staticmethod
+    async def get_message_content_url(
+        channel_token: str, 
+        interaction_id: str, 
+        db_session, 
+        line_user_id: str, 
+        message_type: str
+    ) -> str:
+        """
+        從資料庫獲取媒體檔案 URL，如果不存在則從 LINE API 下載並存儲到 MinIO
+        
+        Args:
+            channel_token: LINE Bot channel token
+            interaction_id: 互動記錄 ID (作為 LINE message ID)
+            db_session: 資料庫會話
+            line_user_id: LINE 用戶 ID
+            message_type: 消息類型 (image, video, audio)
+        
+        Returns:
+            媒體檔案的公開訪問 URL
+        """
+        from app.models.line_user import LineBotUserInteraction
+        from app.services.minio_service import get_minio_service
+        from uuid import UUID as PyUUID
+        
+        try:
+            # 獲取 MinIO 服務
+            minio_service = get_minio_service()
+            if not minio_service:
+                raise Exception("MinIO 服務未初始化")
+            
+            # 查詢資料庫中的媒體記錄
+            interaction_uuid = PyUUID(interaction_id)
+            interaction = db_session.query(LineBotUserInteraction).filter(
+                LineBotUserInteraction.id == interaction_uuid
+            ).first()
+            
+            if not interaction:
+                raise Exception(f"找不到互動記錄: {interaction_id}")
+            
+            # 如果已有媒體 URL 且文件存在，直接返回
+            if interaction.media_url and interaction.media_path:
+                if minio_service.object_exists(interaction.media_path):
+                    # 重新生成預簽名 URL（確保未過期）
+                    new_url = minio_service.get_presigned_url(interaction.media_path)
+                    if new_url:
+                        # 更新資料庫中的 URL
+                        interaction.media_url = new_url
+                        db_session.commit()
+                        return new_url
+            
+            # 從 message_content 中獲取 LINE 的原始 message ID
+            line_message_id = None
+            if interaction.message_content and isinstance(interaction.message_content, dict):
+                line_message_id = interaction.message_content.get('line_message_id') or interaction.message_content.get('id')
+            
+            if not line_message_id:
+                raise Exception("找不到 LINE 原始 message ID")
+            
+            # 從 LINE API 下載並上傳到 MinIO
+            media_path, media_url = await minio_service.upload_media_from_line(
+                line_user_id=line_user_id,
+                message_type=message_type,
+                channel_token=channel_token,
+                line_message_id=line_message_id
+            )
+            
+            if not media_path or not media_url:
+                raise Exception("媒體檔案上傳失敗")
+            
+            # 更新資料庫記錄
+            interaction.media_path = media_path
+            interaction.media_url = media_url
+            db_session.commit()
+            
+            logger.info(f"媒體檔案處理成功: {media_path}")
+            return media_url
+            
+        except Exception as e:
+            logger.error(f"獲取媒體檔案失敗: {e}")
+            raise Exception(f"媒體檔案處理失敗: {str(e)}")

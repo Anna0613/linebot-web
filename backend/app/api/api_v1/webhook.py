@@ -18,6 +18,17 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+@router.get("/webhooks/{bot_id}/test")
+async def test_webhook_connection(bot_id: str):
+    """測試 Webhook 連接"""
+    logger.info(f"🧪 測試 Webhook 連接: Bot ID = {bot_id}")
+    return {
+        "status": "ok",
+        "bot_id": bot_id,
+        "message": "Webhook 端點正常運作",
+        "timestamp": "2025-08-26T02:50:00.000Z"
+    }
+
 @router.post("/webhooks/{bot_id}")
 async def handle_webhook_event(
     bot_id: str,
@@ -40,6 +51,18 @@ async def handle_webhook_event(
     try:
         # 獲取請求體
         body = await request.body()
+        logger.info(f"📥 收到 Webhook 請求: Bot ID = {bot_id}, 內容長度 = {len(body)}")
+        
+        if body:
+            try:
+                body_str = body.decode('utf-8')
+                body_json = json.loads(body_str)
+                events = body_json.get('events', [])
+                logger.info(f"📝 Webhook 事件數量: {len(events)}")
+                for i, event in enumerate(events):
+                    logger.info(f"📋 事件 {i+1}: 類型={event.get('type')}, 來源={event.get('source', {}).get('type')}")
+            except Exception as parse_error:
+                logger.error(f"❌ 解析 Webhook 內容失敗: {parse_error}")
         
         # 查找對應的 Bot
         bot = db.query(Bot).filter(Bot.id == bot_id).first()
@@ -83,7 +106,9 @@ async def handle_webhook_event(
             raise HTTPException(status_code=400, detail="簽名驗證失敗")
         
         # 處理 Webhook 事件
+        logger.info(f"🔄 開始處理 Webhook 事件...")
         result = line_bot_service.handle_webhook_event(body, db, bot_id)
+        logger.info(f"✅ Webhook 事件處理完成，結果數量: {len(result) if result else 0}")
 
         # 發送即時活動更新到 WebSocket
         try:

@@ -14,6 +14,7 @@ from app.schemas.bot import (
     LogicTemplateCreate, LogicTemplateUpdate, LogicTemplateResponse, LogicTemplateSummary
 )
 from app.services.bot_service import BotService
+from app.services.line_bot_service import LineBotService
 
 router = APIRouter()
 
@@ -222,6 +223,69 @@ async def deactivate_logic_template(
 ):
     """停用邏輯模板（設為非活躍狀態）"""
     return BotService.deactivate_logic_template(db, template_id, current_user.id)
+
+# 媒體檔案相關路由
+@router.get("/{bot_id}/messages/{interaction_id}/content")
+async def get_message_content(
+    bot_id: str,
+    interaction_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """取得 LINE 消息的媒體內容"""
+    from app.models.line_user import LineBotUser, LineBotUserInteraction
+    from uuid import UUID as PyUUID
+    
+    try:
+        # 驗證 Bot 所有權
+        bot = BotService.get_bot(db, bot_id, current_user.id)
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot 不存在")
+        
+        # 獲取互動記錄以確定用戶ID和消息類型
+        interaction_uuid = PyUUID(interaction_id)
+        interaction = db.query(LineBotUserInteraction).filter(
+            LineBotUserInteraction.id == interaction_uuid
+        ).first()
+        
+        if not interaction:
+            raise HTTPException(status_code=404, detail="互動記錄不存在")
+        
+        # 獲取 LINE 用戶信息
+        line_user = db.query(LineBotUser).filter(
+            LineBotUser.id == interaction.line_user_id
+        ).first()
+        
+        if not line_user:
+            raise HTTPException(status_code=404, detail="用戶記錄不存在")
+        
+        # 檢查是否為媒體類型消息
+        if interaction.message_type not in ['image', 'video', 'audio']:
+            raise HTTPException(status_code=400, detail="非媒體類型消息")
+        
+        # 獲取媒體檔案 URL
+        content_url = await LineBotService.get_message_content_url(
+            channel_token=bot.channel_token,
+            interaction_id=interaction_id,
+            db_session=db,
+            line_user_id=line_user.line_user_id,
+            message_type=interaction.message_type
+        )
+        
+        return {
+            "success": True,
+            "content_url": content_url,
+            "interaction_id": interaction_id,
+            "message_type": interaction.message_type
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"獲取媒體內容失敗: {str(e)}"
+        )
 
 
  

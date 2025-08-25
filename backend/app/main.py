@@ -9,6 +9,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 # 直接導入 config.py 模組中的設定
@@ -183,6 +184,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # 包含 API 路由
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
+# 掛載媒體檔案靜態檔案服務
+import os
+media_path = os.path.join(os.path.dirname(__file__), "..", "media")
+os.makedirs(media_path, exist_ok=True)
+app.mount("/media", StaticFiles(directory=media_path), name="media")
 
 # 根路由
 @app.get("/")

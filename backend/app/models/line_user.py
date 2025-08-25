@@ -50,6 +50,8 @@ class LineBotUserInteraction(Base):
     event_type = Column(String(50), nullable=False)  # message, follow, unfollow, postback, etc.
     message_type = Column(String(50))  # text, image, audio, video, file, location, sticker
     message_content = Column(JSONB)  # 訊息內容的 JSON
+    media_path = Column(String(500))  # MinIO 媒體檔案路徑
+    media_url = Column(String(500))   # 媒體檔案公開訪問 URL
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     
     # 關聯關係

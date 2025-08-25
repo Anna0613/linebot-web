@@ -542,72 +542,72 @@ export class UnifiedApiClient {
     );
   }
 
-  // LINE Bot 分析 API
+  // LINE Bot 分析 API - 修復：使用正確的 API 路徑
   public async getBotAnalytics(botId: string, period: string = "week"): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/analytics?period=${period}`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/analytics?period=${period}`)
     );
   }
 
   public async getBotMessageStats(botId: string, days: number = 7): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/messages/stats?days=${days}`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/messages/stats?days=${days}`)
     );
   }
 
   public async getBotUserActivity(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/users/activity`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/activity`)
     );
   }
 
   public async getBotUsageStats(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/usage/stats`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/usage/stats`)
     );
   }
 
   public async sendTestMessage(botId: string, messageData: { user_id: string; message: string }): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/send-message`),
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/send-message`),
       messageData
     );
   }
 
   public async getBotProfile(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/profile`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/profile`)
     );
   }
 
   public async checkBotHealth(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/health`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/health`)
     );
   }
 
   public async getBotUsers(botId: string, limit: number = 50, offset: number = 0): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/users?limit=${limit}&offset=${offset}`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users?limit=${limit}&offset=${offset}`)
     );
   }
 
   public async getUserInteractions(botId: string, lineUserId: string, limit: number = 20): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/users/${lineUserId}/interactions?limit=${limit}`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/interactions?limit=${limit}`)
     );
   }
 
   public async broadcastMessage(botId: string, messageData: { message: string; user_ids?: string[] }): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/broadcast`),
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/broadcast`),
       messageData
     );
   }
 
   public async getBotActivities(botId: string, limit: number = 20, offset: number = 0): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/activities?limit=${limit}&offset=${offset}`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/activities?limit=${limit}&offset=${offset}`)
     );
   }
 
@@ -687,8 +687,8 @@ export class UnifiedApiClient {
   public async getBotActivitiesSince(botId: string, since: string): Promise<ApiResponse> {
     return this.get(
       getApiUrl(
-        API_CONFIG.PUZZLE.BASE_URL,
-        `/${botId}/activities/since?since=${encodeURIComponent(since)}`
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/activities/since?since=${encodeURIComponent(since)}`
       )
     );
   }
@@ -704,6 +704,13 @@ export class UnifiedApiClient {
     return this.post(
       getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/ws/broadcast/${botId}`),
       message
+    );
+  }
+
+  // 媒體檔案相關方法
+  public async getMessageContent(botId: string, messageId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/messages/${messageId}/content`)
     );
   }
 }
