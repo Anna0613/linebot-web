@@ -53,10 +53,13 @@ export const queryKeys = {
   
   // Logic Templates 相關
   logicTemplates: (botId: string) => ['bots', botId, 'logicTemplates'] as const,
-  
+
   // Webhook 相關
   webhookStatus: (botId: string) => ['bots', botId, 'webhook', 'status'] as const,
-  
+
+  // Activities 相關
+  botActivities: (botId: string) => ['bots', botId, 'activities'] as const,
+
   // User 相關
   user: ['user'] as const,
   userAvatar: ['user', 'avatar'] as const,

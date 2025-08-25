@@ -28,6 +28,7 @@ import {
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
+import { useWebSocket } from "../hooks/useWebSocket";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import { apiClient } from "../services/UnifiedApiClient";
@@ -119,6 +120,12 @@ const BotManagementPage: React.FC = () => {
   const [_refreshing, setRefreshing] = useState(false);
   const [botHealth, setBotHealth] = useState<"online" | "offline" | "error">("online");
 
+  // WebSocket 即時連接
+  const { isConnected, connectionError, lastMessage } = useWebSocket({
+    botId: selectedBotId || undefined,
+    autoReconnect: true,
+    enabled: !!selectedBotId
+  });
 
   // 圖表配置
   const _chartConfig = {
@@ -140,16 +147,15 @@ const BotManagementPage: React.FC = () => {
     },
   };
 
-  // 獲取用戶的 Bot 列表
+  // 獲取用戶的 Bot 列表 - 修復循環依賴
   const fetchBots = useCallback(async () => {
     try {
       const response = await apiClient.getBots();
       if (response.data && Array.isArray(response.data)) {
         setBots(response.data);
-        if (response.data.length > 0 && !selectedBotId) {
-          setSelectedBotId(response.data[0].id);
-        }
+        return response.data;
       }
+      return [];
     } catch (_error) {
       console.error("獲取 Bot 列表失敗:", _error);
       toast({
@@ -157,8 +163,9 @@ const BotManagementPage: React.FC = () => {
         title: "載入失敗",
         description: "無法載入 Bot 列表",
       });
+      return [];
     }
-  }, [selectedBotId, toast]);
+  }, [toast]); // 移除 selectedBotId 依賴
 
   // 獲取邏輯模板
   const fetchLogicTemplates = useCallback(async (botId: string) => {
@@ -424,18 +431,24 @@ const BotManagementPage: React.FC = () => {
     }
   };
 
-  // 初始化數據
+  // 初始化數據 - 修復循環依賴
   useEffect(() => {
     const initializeData = async () => {
+      if (!user) return;
+
       setLoading(true);
-      await fetchBots();
+      const botList = await fetchBots();
+
+      // 只在初始化時設置第一個 Bot，避免循環依賴
+      if (botList.length > 0 && !selectedBotId) {
+        setSelectedBotId(botList[0].id);
+      }
+
       setLoading(false);
     };
 
-    if (user) {
-      initializeData();
-    }
-  }, [user, fetchBots]);
+    initializeData();
+  }, [user, fetchBots]); // fetchBots 現在不依賴 selectedBotId
 
   // 當選擇的 Bot 變化時獲取相關數據
   useEffect(() => {
@@ -518,9 +531,17 @@ const BotManagementPage: React.FC = () => {
                         <Activity className="h-3 w-3 mr-1" />
                         啟用中
                       </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        建立時間: {new Date(selectedBot.created_at).toLocaleDateString("zh-TW")}
-                      </span>
+
+                      {/* WebSocket 連接狀態 */}
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+                          {isConnected ? '即時連接' : '離線模式'}
+                        </span>
+                        {connectionError && (
+                          <span className="text-red-500 text-xs">({connectionError})</span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -530,7 +551,7 @@ const BotManagementPage: React.FC = () => {
 
           {selectedBotId && (
             <Tabs defaultValue="analytics" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted p-1">
+              <TabsList className="grid w-full grid-cols-4 rounded-lg bg-muted p-1">
                 <TabsTrigger value="analytics" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   數據分析
@@ -542,6 +563,10 @@ const BotManagementPage: React.FC = () => {
                 <TabsTrigger value="logic" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   <Zap className="h-4 w-4 mr-2" />
                   邏輯管理
+                </TabsTrigger>
+                <TabsTrigger value="debug" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <Activity className="h-4 w-4 mr-2" />
+                  即時調試
                 </TabsTrigger>
               </TabsList>
 
@@ -740,98 +765,128 @@ const BotManagementPage: React.FC = () => {
               {/* Bot 控制頁籤 */}
               <TabsContent value="control" className="space-y-6">
                 <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-                  <div>
-                    <QuickActions
-                      botId={selectedBotId}
-                      onSendTestMessage={handleSendTestMessage}
-                      onCheckBotHealth={handleCheckBotHealth}
-                      onViewUsers={() => navigate(`/bots/${selectedBotId}/users`)}
-                      onCopyWebhookUrl={handleCopyWebhookUrl}
-                      webhookUrl={selectedBotId ? getWebhookUrl(selectedBotId) : undefined}
-                      botStatus={botHealth}
-                    />
-                  </div>
-                  
-                  <div>
-                    <div className="space-y-6">
-                  {/* Bot 資訊 */}
-                  <Card className="shadow-sm hover:shadow-md transition">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Eye className="h-5 w-5" />
-                        Bot 資訊
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {selectedBot && (
-                        <>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">Bot 名稱</label>
-                              <p className="text-sm">{selectedBot.name}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">狀態</label>
-                              <div className="text-sm">
-                                <Badge className="bg-green-100 text-green-800">啟用中</Badge>
+                  {/* 左側：Bot 資訊和狀態 */}
+                  <div className="space-y-6">
+                    {/* Bot 資訊與狀態綜合卡片 */}
+                    <Card className="shadow-sm hover:shadow-md transition">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-5 w-5" />
+                            Bot 資訊與狀態
+                          </div>
+                          <Badge 
+                            variant="outline" 
+                            className={`${botHealth === 'online' ? 'bg-green-50 text-green-700 border-green-200' : 
+                                      botHealth === 'offline' ? 'bg-orange-50 text-orange-700 border-orange-200' : 
+                                      'bg-red-50 text-red-700 border-red-200'}`}
+                          >
+                            <Activity className="h-3 w-3 mr-1" />
+                            {botHealth === 'online' ? '運作正常' : botHealth === 'offline' ? '離線' : '錯誤'}
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {selectedBot && (
+                          <>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">Bot 名稱</label>
+                                <p className="text-sm font-medium">{selectedBot.name}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">頻道設定</label>
+                                <div className="text-sm">
+                                  <Badge variant={selectedBot.channel_token ? "default" : "secondary"}>
+                                    {selectedBot.channel_token ? "已設定" : "未設定"}
+                                  </Badge>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">建立時間</label>
-                              <p className="text-sm">{new Date(selectedBot.created_at).toLocaleString("zh-TW")}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">頻道設定</label>
-                              <div className="text-sm">
-                                <Badge variant={selectedBot.channel_token ? "default" : "secondary"}>
-                                  {selectedBot.channel_token ? "已設定" : "未設定"}
-                                </Badge>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">建立時間</label>
+                                <p className="text-sm">{new Date(selectedBot.created_at).toLocaleString("zh-TW")}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">連接狀態</label>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                                  <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+                                    {isConnected ? '即時連接' : '離線模式'}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
+                            <div className="pt-4 border-t">
+                              <Button
+                                className="w-full"
+                                variant="outline"
+                                onClick={handleCheckBotHealth}
+                                disabled={controlLoading}
+                              >
+                                <Activity className="h-4 w-4 mr-2" />
+                                {controlLoading ? "檢查中..." : "重新檢查狀態"}
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
 
-                  {/* 測試訊息 */}
-                  <Card className="shadow-sm hover:shadow-md transition">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Send className="h-5 w-5" />
-                        發送測試訊息
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">用戶 ID</label>
-                        <Input
-                          placeholder="輸入測試用戶 ID"
-                          value={testUserId}
-                          onChange={(e) => setTestUserId(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">測試訊息</label>
-                        <Textarea
-                          placeholder="輸入要發送的測試訊息..."
-                          value={testMessage}
-                          onChange={(e) => setTestMessage(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-                      <Button
-                        className="w-full"
-                        onClick={() => handleSendTestMessage(testUserId, testMessage)}
-                        disabled={controlLoading || !testUserId || !testMessage}
-                      >
-                        <Send className="h-4 w-4 mr-2" />
-                        {controlLoading ? "發送中..." : "發送測試訊息"}
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    {/* 快速操作與測試 */}
+                    <Card className="shadow-sm hover:shadow-md transition">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Send className="h-5 w-5" />
+                          快速操作與測試
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* 用戶管理 */}
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          onClick={() => navigate(`/bots/${selectedBotId}/users`)}
+                          disabled={!selectedBotId}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          查看用戶列表
+                        </Button>
+
+                        <div className="border-t pt-4">
+                          <label className="text-sm font-medium text-muted-foreground mb-2 block">發送測試訊息</label>
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="輸入測試用戶 ID"
+                              value={testUserId}
+                              onChange={(e) => setTestUserId(e.target.value)}
+                              size="sm"
+                            />
+                            <Textarea
+                              placeholder="輸入要發送的測試訊息..."
+                              value={testMessage}
+                              onChange={(e) => setTestMessage(e.target.value)}
+                              rows={2}
+                              className="resize-none"
+                            />
+                            <Button
+                              className="w-full"
+                              size="sm"
+                              onClick={() => handleSendTestMessage(testUserId, testMessage)}
+                              disabled={controlLoading || !testUserId || !testMessage}
+                            >
+                              <Send className="h-4 w-4 mr-2" />
+                              {controlLoading ? "發送中..." : "發送測試訊息"}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* 右側：Webhook 和其他設定 */}
+                  <div className="space-y-6">
 
                   {/* Webhook URL 設定 */}
                   <Card className="shadow-sm hover:shadow-md transition">
@@ -949,41 +1004,32 @@ const BotManagementPage: React.FC = () => {
                     </CardContent>
                   </Card>
 
-                  {/* 快速操作 */}
-                  <Card className="shadow-sm hover:shadow-md transition">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Settings className="h-5 w-5" />
-                        快速操作
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <Button
-                        className="w-full"
-                        variant="outline"
-                        onClick={handleCheckBotHealth}
-                        disabled={controlLoading}
-                      >
-                        <Activity className="h-4 w-4 mr-2" />
-                        {controlLoading ? "檢查中..." : "檢查 Bot 狀態"}
-                      </Button>
-                      <Button className="w-full" variant="outline" disabled>
-                        <Settings className="h-4 w-4 mr-2" />
-                        管理 Rich Menu (開發中)
-                      </Button>
-                      <Button 
-                        className="w-full" 
-                        variant="outline"
-                        onClick={() => navigate(`/bots/${selectedBotId}/users`)}
-                        disabled={!selectedBotId}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        查看用戶列表
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    {/* 進階功能 */}
+                    <Card className="shadow-sm hover:shadow-md transition">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Settings className="h-5 w-5" />
+                          進階功能
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <Button className="w-full" variant="outline" disabled>
+                          <Settings className="h-4 w-4 mr-2" />
+                          管理 Rich Menu
+                          <Badge variant="secondary" className="ml-2 text-xs">開發中</Badge>
+                        </Button>
+                        
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={() => navigate("/bots/visual-editor")}
+                        >
+                          <Zap className="h-4 w-4 mr-2" />
+                          編輯 Bot 邏輯
+                        </Button>
+                      </CardContent>
+                    </Card>
                   </div>
-                </div>
                 </div>
               </TabsContent>
 
@@ -1066,6 +1112,94 @@ const BotManagementPage: React.FC = () => {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              {/* 即時調試頁籤 */}
+              <TabsContent value="debug" className="space-y-6">
+                {selectedBotId ? (
+                  <div className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Activity className="h-5 w-5" />
+                          WebSocket 即時連接調試
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {/* 連接狀態顯示 */}
+                          <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                              <span className={`font-medium ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+                                {isConnected ? '已連接' : '未連接'}
+                              </span>
+                            </div>
+                            {connectionError && (
+                              <span className="text-red-500 text-sm">錯誤: {connectionError}</span>
+                            )}
+                            <div className="text-sm text-muted-foreground">
+                              Bot ID: {selectedBotId}
+                            </div>
+                          </div>
+
+                          {/* 即時數據更新狀態 */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Card>
+                              <CardContent className="p-4">
+                                <div className="text-sm font-medium">分析數據</div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  即時更新統計數據
+                                </div>
+                                <div className={`mt-2 text-xs px-2 py-1 rounded ${isConnected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                  {isConnected ? '已訂閱' : '未連接'}
+                                </div>
+                              </CardContent>
+                            </Card>
+
+                            <Card>
+                              <CardContent className="p-4">
+                                <div className="text-sm font-medium">活動更新</div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  即時接收用戶互動
+                                </div>
+                                <div className={`mt-2 text-xs px-2 py-1 rounded ${isConnected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                  {isConnected ? '已訂閱' : '未連接'}
+                                </div>
+                              </CardContent>
+                            </Card>
+
+                            <Card>
+                              <CardContent className="p-4">
+                                <div className="text-sm font-medium">Webhook 狀態</div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  即時監控連接狀態
+                                </div>
+                                <div className={`mt-2 text-xs px-2 py-1 rounded ${isConnected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                  {isConnected ? '已訂閱' : '未連接'}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+
+                          {/* 調試信息 */}
+                          <div className="text-xs text-muted-foreground p-3 bg-muted rounded">
+                            <div>WebSocket URL: ws://localhost:8000/api/v1/ws/bot/{selectedBotId}</div>
+                            <div>自動重連: 啟用</div>
+                            <div>心跳間隔: 30 秒</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="text-center py-8">
+                      <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">請先選擇一個 Bot 來查看即時調試信息</p>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
             </Tabs>
           )}

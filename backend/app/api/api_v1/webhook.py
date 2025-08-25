@@ -12,6 +12,7 @@ from typing import Optional
 from app.database import get_db
 from app.models.bot import Bot
 from app.services.line_bot_service import LineBotService
+from app.services.websocket_manager import websocket_manager
 
 logger = logging.getLogger(__name__)
 
@@ -83,12 +84,34 @@ async def handle_webhook_event(
         
         # 處理 Webhook 事件
         result = line_bot_service.handle_webhook_event(body, db, bot_id)
-        
+
+        # 發送即時活動更新到 WebSocket
+        try:
+            webhook_data = json.loads(body.decode('utf-8'))
+            events = webhook_data.get('events', [])
+
+            for event in events:
+                activity_data = {
+                    'event_type': event.get('type'),
+                    'timestamp': event.get('timestamp'),
+                    'source_type': event.get('source', {}).get('type'),
+                    'user_id': event.get('source', {}).get('userId'),
+                    'message_type': event.get('message', {}).get('type') if event.get('message') else None,
+                    'message_text': event.get('message', {}).get('text') if event.get('message', {}).get('type') == 'text' else None
+                }
+
+                # 發送活動更新
+                await websocket_manager.send_activity_update(bot_id, activity_data)
+                logger.debug(f"已發送活動更新到 WebSocket: {bot_id}")
+
+        except Exception as ws_error:
+            logger.warning(f"發送 WebSocket 更新失敗: {ws_error}")
+
         if result:
             logger.info(f"Webhook 事件處理成功: {bot_id}, 事件數量: {len(result) if isinstance(result, list) else 1}")
         else:
             logger.info(f"Webhook 事件處理完成，無返回結果: {bot_id}")
-        
+
         # 返回 200 OK，告知 LINE 平台事件已處理
         return Response(status_code=200)
         

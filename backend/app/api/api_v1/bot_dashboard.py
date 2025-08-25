@@ -4,7 +4,7 @@ Bot 儀表板 API 路由
 """
 import asyncio
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
@@ -29,6 +29,7 @@ from app.config.redis_config import (
 from app.services.cache_service import get_cache, cache_async
 from app.utils.query_optimizer import QueryOptimizer
 from app.utils.pagination import LazyLoader, PaginationParams
+from app.services.websocket_manager import websocket_manager
 
 logger = logging.getLogger(__name__)
 
@@ -695,3 +696,130 @@ async def get_bot_summary(
     except Exception as e:
         logger.error(f"獲取概要統計失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取概要統計失敗: {str(e)}")
+
+@router.get("/{bot_id}/analytics/incremental")
+async def get_bot_analytics_incremental(
+    bot_id: str,
+    since: Optional[datetime] = Query(None, description="獲取此時間之後的數據"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """獲取增量分析數據"""
+
+    # 驗證 Bot 所有權
+    bot = db.query(Bot).filter(
+        Bot.id == bot_id,
+        Bot.user_id == current_user.id
+    ).first()
+
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot 不存在")
+
+    # 如果沒有指定時間，返回最近 1 小時的數據
+    if not since:
+        since = datetime.now() - timedelta(hours=1)
+
+    try:
+        # 只查詢增量數據
+        incremental_data = db.query(LineBotUserInteraction).join(
+            LineBotUser
+        ).filter(
+            LineBotUser.bot_id == bot_id,
+            LineBotUserInteraction.timestamp >= since
+        ).order_by(
+            LineBotUserInteraction.timestamp.desc()
+        ).limit(100).all()
+
+        # 計算基本統計
+        total_interactions = len(incremental_data)
+        unique_users = len(set(interaction.line_user_id for interaction in incremental_data))
+
+        return {
+            "bot_id": bot_id,
+            "since": since.isoformat(),
+            "incremental_stats": {
+                "total_interactions": total_interactions,
+                "unique_users": unique_users,
+                "period_start": since.isoformat(),
+                "period_end": datetime.now().isoformat()
+            },
+            "recent_interactions": [
+                {
+                    "timestamp": interaction.timestamp.isoformat(),
+                    "event_type": interaction.event_type,
+                    "message_type": interaction.message_type,
+                    "user_id": interaction.line_user_id
+                }
+                for interaction in incremental_data[:20]  # 只返回最新 20 條
+            ],
+            "has_more": len(incremental_data) == 100
+        }
+
+    except Exception as e:
+        logger.error(f"獲取增量分析數據失敗: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"獲取增量數據失敗: {str(e)}")
+
+@router.get("/{bot_id}/status/quick")
+async def get_bot_status_quick(
+    bot_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """快速獲取 Bot 狀態（輕量級）"""
+
+    # 使用快取
+    cache_key = f"bot_status_quick:{bot_id}"
+    cache = get_cache()
+    cached_status = await cache.get(cache_key)
+
+    if cached_status:
+        return json.loads(cached_status)
+
+    # 驗證 Bot 所有權
+    bot = db.query(Bot).filter(
+        Bot.id == bot_id,
+        Bot.user_id == current_user.id
+    ).first()
+
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot 不存在")
+
+    try:
+        # 輕量級狀態檢查
+        status = {
+            "bot_id": bot_id,
+            "is_configured": bool(bot.channel_token and bot.channel_secret),
+            "last_activity": None,
+            "status": "unknown",
+            "checked_at": datetime.now().isoformat()
+        }
+
+        # 快速查詢最後活動時間
+        last_interaction = db.query(LineBotUserInteraction).join(
+            LineBotUser
+        ).filter(
+            LineBotUser.bot_id == bot_id
+        ).order_by(
+            LineBotUserInteraction.timestamp.desc()
+        ).first()
+
+        if last_interaction:
+            status["last_activity"] = last_interaction.timestamp.isoformat()
+
+            # 根據最後活動時間判斷狀態
+            time_diff = datetime.now() - last_interaction.timestamp
+            if time_diff.total_seconds() < 3600:  # 1 小時內
+                status["status"] = "active"
+            elif time_diff.total_seconds() < 86400:  # 24 小時內
+                status["status"] = "idle"
+            else:
+                status["status"] = "inactive"
+
+        # 快取 30 秒
+        await cache.set(cache_key, json.dumps(status, default=str), ttl=30)
+
+        return status
+
+    except Exception as e:
+        logger.error(f"獲取快速狀態失敗: {str(e)}")
+        raise HTTPException(status_code=500, detail="獲取狀態失敗")

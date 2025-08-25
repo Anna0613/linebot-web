@@ -662,6 +662,50 @@ export class UnifiedApiClient {
       getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bot_dashboard/${botId}/dashboard/light`)
     );
   }
+
+  // 增量更新相關方法
+  public async getBotAnalyticsIncremental(botId: string, since?: string): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    if (since) {
+      params.append('since', since);
+    }
+
+    return this.get(
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bot_dashboard/${botId}/analytics/incremental${params.toString() ? '?' + params.toString() : ''}`
+      )
+    );
+  }
+
+  public async getWebhookStatusQuick(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bot_dashboard/${botId}/status/quick`)
+    );
+  }
+
+  public async getBotActivitiesSince(botId: string, since: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(
+        API_CONFIG.PUZZLE.BASE_URL,
+        `/${botId}/activities/since?since=${encodeURIComponent(since)}`
+      )
+    );
+  }
+
+  // WebSocket 相關方法
+  public async getWebSocketStats(): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, '/ws/stats')
+    );
+  }
+
+  public async broadcastToBot(botId: string, message: any): Promise<ApiResponse> {
+    return this.post(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/ws/broadcast/${botId}`),
+      message
+    );
+  }
 }
 
 // 導出單例實例
