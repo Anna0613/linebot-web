@@ -18,6 +18,13 @@ except ImportError:
     Minio = None
     S3Error = Exception
 
+try:
+    from linebot.v3.messaging import Configuration, ApiClient, MessagingApiBlob
+except ImportError:
+    Configuration = None
+    ApiClient = None
+    MessagingApiBlob = None
+
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -30,12 +37,49 @@ class MinIOService:
         if not Minio:
             raise ImportError("請安裝 minio 套件: pip install minio")
         
-        self.client = Minio(
-            settings.MINIO_ENDPOINT,
-            access_key=settings.MINIO_ACCESS_KEY,
-            secret_key=settings.MINIO_SECRET_KEY,
-            secure=settings.MINIO_SECURE
-        )
+        http_client = None
+        # 建立 http_client 規則：
+        # 1) 若提供自訂 CA -> 強制驗證且使用 CA 檔案
+        # 2) 若關閉憑證檢查 -> 設為 CERT_NONE（僅限測試環境）
+        # 3) 其他 -> 使用預設（系統/Certifi）
+        try:
+            import urllib3  # 由 minio 依賴帶入
+            if settings.MINIO_CA_CERT_FILE:
+                http_client = urllib3.PoolManager(
+                    cert_reqs='CERT_REQUIRED',
+                    ca_certs=settings.MINIO_CA_CERT_FILE
+                )
+                logger.info(f"使用自訂 CA 憑證: {settings.MINIO_CA_CERT_FILE}")
+            elif not settings.MINIO_CERT_CHECK:
+                # 關閉憑證驗證（僅限開發測試使用）
+                urllib3.disable_warnings()  # 抑制 InsecureRequestWarning
+                http_client = urllib3.PoolManager(cert_reqs='CERT_NONE')
+                logger.warning("已關閉 HTTPS 憑證檢查（MINIO_CERT_CHECK=false）")
+        except Exception as e:
+            # 若 urllib3 初始化失敗則沿用預設 http_client=None
+            logger.warning(f"建立客製 http_client 失敗，改用預設: {e}")
+            http_client = None
+
+        # 初始化 MinIO Client，優先嘗試使用 cert_check 參數，若不支援則回退
+        try:
+            self.client = Minio(
+                settings.MINIO_ENDPOINT,
+                access_key=settings.MINIO_ACCESS_KEY,
+                secret_key=settings.MINIO_SECRET_KEY,
+                secure=settings.MINIO_SECURE,
+                cert_check=settings.MINIO_CERT_CHECK,
+                http_client=http_client
+            )
+        except TypeError:
+            # 舊版 minio SDK 無 cert_check 參數
+            logger.info("當前 minio 套件不支援 cert_check 參數，使用回退初始化方式")
+            self.client = Minio(
+                settings.MINIO_ENDPOINT,
+                access_key=settings.MINIO_ACCESS_KEY,
+                secret_key=settings.MINIO_SECRET_KEY,
+                secure=settings.MINIO_SECURE,
+                http_client=http_client
+            )
         self.bucket_name = settings.MINIO_BUCKET_NAME
         self._ensure_bucket_exists()
     
@@ -80,59 +124,70 @@ class MinIOService:
         return folder_map.get(message_type, 'misc')
     
     def _generate_object_path(self, user_id: str, message_type: str, file_extension: str) -> str:
-        """生成 MinIO 對象路徑"""
+        """生成 MinIO 對象路徑 - 格式: {userid}/{media_type}/{filename}"""
         folder = self._get_media_folder(message_type)
         filename = f"{uuid.uuid4().hex}{file_extension}"
-        return f"{user_id}/{folder}/{filename}"
+        # 確保路徑格式為: {userid}/{img|video|audio}/{filename}
+        object_path = f"{user_id}/{folder}/{filename}"
+        logger.debug(f"生成媒體檔案路徑: {object_path}")
+        return object_path
     
     async def upload_media_from_line(
-        self, 
-        line_user_id: str, 
-        message_type: str, 
-        channel_token: str, 
+        self,
+        line_user_id: str,
+        message_type: str,
+        channel_token: str,
         line_message_id: str
     ) -> Tuple[Optional[str], Optional[str]]:
         """
         從 LINE API 下載媒體文件並上傳到 MinIO
-        
+
         Args:
             line_user_id: LINE 用戶 ID
             message_type: 消息類型 (image, video, audio)
             channel_token: LINE Bot channel token
             line_message_id: LINE 消息 ID
-            
+
         Returns:
             Tuple[media_path, media_url]: MinIO 路徑和公開 URL，失敗則返回 None
         """
         try:
-            # 從 LINE API 下載媒體文件
-            line_api_url = f"https://api.line.me/v2/bot/message/{line_message_id}/content"
-            headers = {
-                "Authorization": f"Bearer {channel_token}",
-            }
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.get(line_api_url, headers=headers) as response:
-                    if response.status != 200:
-                        logger.error(f"從 LINE API 下載媒體失敗: {response.status}")
-                        return None, None
-                    
-                    # 獲取文件內容和類型
-                    content_type = response.headers.get('Content-Type', 'application/octet-stream')
-                    file_data = await response.read()
-                    
+            logger.info(f"開始下載媒體檔案: user_id={line_user_id}, type={message_type}, message_id={line_message_id}")
+
+            # 使用 LINE Bot SDK 下載媒體文件
+            if not all([Configuration, ApiClient, MessagingApiBlob]):
+                logger.error("LINE Bot SDK 未正確安裝，回退到 HTTP 方式")
+                return await self._download_media_http(channel_token, line_message_id, line_user_id, message_type)
+
+            # 使用官方 SDK
+            configuration = Configuration(access_token=channel_token)
+
+            try:
+                with ApiClient(configuration) as api_client:
+                    line_bot_blob_api = MessagingApiBlob(api_client)
+                    file_data = line_bot_blob_api.get_message_content(message_id=line_message_id)
+
                     if not file_data:
                         logger.error("從 LINE API 獲取的文件數據為空")
                         return None, None
-                    
-            # 生成存儲路徑
-            file_extension = self._get_file_extension(content_type)
+
+                    logger.info(f"成功下載媒體檔案，大小: {len(file_data)} bytes")
+
+            except Exception as sdk_error:
+                logger.warning(f"SDK 下載失敗，回退到 HTTP 方式: {sdk_error}")
+                return await self._download_media_http(channel_token, line_message_id, line_user_id, message_type)
+
+            # 生成存儲路徑 - 根據消息類型推斷文件擴展名
+            file_extension = self._get_file_extension_by_type(message_type)
             object_path = self._generate_object_path(line_user_id, message_type, file_extension)
-            
+
             # 上傳到 MinIO
             file_stream = BytesIO(file_data)
             file_size = len(file_data)
-            
+
+            # 根據消息類型設置 content_type
+            content_type = self._get_content_type_by_type(message_type)
+
             self.client.put_object(
                 bucket_name=self.bucket_name,
                 object_name=object_path,
@@ -140,14 +195,14 @@ class MinIOService:
                 length=file_size,
                 content_type=content_type
             )
-            
+
             # 生成預簽名 URL (7天有效期)
             presigned_url = self.client.presigned_get_object(
                 bucket_name=self.bucket_name,
                 object_name=object_path,
                 expires=timedelta(days=7)
             )
-            
+
             logger.info(f"媒體文件上傳成功: {object_path}")
             return object_path, presigned_url
             
@@ -172,6 +227,20 @@ class MinIOService:
                 object_name=object_path,
                 expires=expires
             )
+            # 如設定了對外可見的 Public URL，將簽名連結改寫為對外主機/協議
+            try:
+                from urllib.parse import urlparse, urlunparse
+                if settings.MINIO_PUBLIC_URL:
+                    pub = settings.MINIO_PUBLIC_URL
+                    # 確保有 scheme
+                    if not pub.startswith(('http://', 'https://')):
+                        pub = ('https://' if settings.MINIO_SECURE else 'http://') + pub
+                    p_pub = urlparse(pub)
+                    p_pre = urlparse(presigned_url)
+                    # 只替換 scheme/netloc，保留 path/query
+                    presigned_url = urlunparse((p_pub.scheme, p_pub.netloc, p_pre.path, p_pre.params, p_pre.query, p_pre.fragment))
+            except Exception as e:
+                logger.warning(f"重寫 Public URL 失敗，使用預設簽名連結: {e}")
             return presigned_url
         except S3Error as e:
             logger.error(f"生成預簽名 URL 失敗: {e}")
@@ -211,13 +280,112 @@ class MinIOService:
         except S3Error:
             return False
 
-# 創建全局 MinIO 服務實例
-try:
-    minio_service = MinIOService()
-except (ImportError, Exception) as e:
-    logger.warning(f"MinIO 服務初始化失敗: {e}")
-    minio_service = None
+    def _get_file_extension_by_type(self, message_type: str) -> str:
+        """根據消息類型獲取文件擴展名"""
+        type_mapping = {
+            'image': 'jpg',
+            'video': 'mp4',
+            'audio': 'm4a'
+        }
+        return type_mapping.get(message_type, 'bin')
+
+    def _get_content_type_by_type(self, message_type: str) -> str:
+        """根據消息類型獲取 Content-Type"""
+        type_mapping = {
+            'image': 'image/jpeg',
+            'video': 'video/mp4',
+            'audio': 'audio/mp4'
+        }
+        return type_mapping.get(message_type, 'application/octet-stream')
+
+    async def _download_media_http(self, channel_token: str, line_message_id: str,
+                                 line_user_id: str, message_type: str) -> Tuple[Optional[str], Optional[str]]:
+        """使用 HTTP 方式下載媒體檔案（回退方案）"""
+        try:
+            line_api_url = f"https://api.line.me/v2/bot/message/{line_message_id}/content"
+            headers = {
+                "Authorization": f"Bearer {channel_token}",
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(line_api_url, headers=headers) as response:
+                    if response.status != 200:
+                        logger.error(f"從 LINE API 下載媒體失敗: {response.status}")
+                        return None, None
+
+                    # 獲取文件內容和類型
+                    content_type = response.headers.get('Content-Type', 'application/octet-stream')
+                    file_data = await response.read()
+
+                    if not file_data:
+                        logger.error("從 LINE API 獲取的文件數據為空")
+                        return None, None
+
+                    logger.info(f"HTTP 方式下載成功，大小: {len(file_data)} bytes")
+
+            # 生成存儲路徑
+            file_extension = self._get_file_extension(content_type)
+            object_path = self._generate_object_path(line_user_id, message_type, file_extension)
+
+            # 上傳到 MinIO
+            file_stream = BytesIO(file_data)
+            file_size = len(file_data)
+
+            self.client.put_object(
+                bucket_name=self.bucket_name,
+                object_name=object_path,
+                data=file_stream,
+                length=file_size,
+                content_type=content_type
+            )
+
+            # 生成預簽名 URL (7天有效期)
+            presigned_url = self.client.presigned_get_object(
+                bucket_name=self.bucket_name,
+                object_name=object_path,
+                expires=timedelta(days=7)
+            )
+
+            logger.info(f"HTTP 方式媒體文件上傳成功: {object_path}")
+            return object_path, presigned_url
+
+        except Exception as e:
+            logger.error(f"HTTP 方式下載媒體失敗: {e}")
+            return None, None
+
+# 創建全局 MinIO 服務實例（改為延遲初始化）
+minio_service: Optional[MinIOService] = None
+_minio_init_error: Optional[str] = None
+
+def init_minio_service(force: bool = False) -> Tuple[Optional[MinIOService], Optional[str]]:
+    """嘗試初始化 MinIO 服務並回傳狀態。
+
+    Args:
+        force: 是否強制重新初始化
+
+    Returns:
+        (service, error_message)
+    """
+    global minio_service, _minio_init_error
+    if minio_service is not None and not force:
+        return minio_service, None
+    try:
+        svc = MinIOService()
+        minio_service = svc
+        _minio_init_error = None
+        logger.info("MinIO 服務初始化成功")
+        return minio_service, None
+    except (ImportError, Exception) as e:
+        _minio_init_error = f"{type(e).__name__}: {e}"
+        logger.warning(f"MinIO 服務初始化失敗: {_minio_init_error}")
+        minio_service = None
+        return None, _minio_init_error
 
 def get_minio_service() -> Optional[MinIOService]:
-    """獲取 MinIO 服務實例"""
-    return minio_service
+    """獲取 MinIO 服務實例（若尚未初始化會嘗試初始化一次）"""
+    svc, _ = init_minio_service(force=False)
+    return svc
+
+def get_minio_last_error() -> Optional[str]:
+    """取得最近一次初始化錯誤訊息"""
+    return _minio_init_error

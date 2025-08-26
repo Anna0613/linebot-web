@@ -698,16 +698,44 @@ class LineBotService:
             logger.error(f"處理訊息事件時出錯: {e}")
             interaction_id = None
         
-        # 如果是媒體訊息，異步處理媒體檔案上傳
+        # 如果是媒體訊息，使用背景任務處理媒體檔案上傳
         if message_type in ['image', 'video', 'audio'] and line_message_id and interaction_id:
-            import asyncio
-            asyncio.create_task(self._process_media_async(
-                interaction_id=str(interaction_id),
-                line_user_id=user_id,
-                message_type=message_type,
-                line_message_id=line_message_id,
-                db_session=db_session
-            ))
+            try:
+                from app.services.background_tasks import get_task_manager, TaskPriority
+                import asyncio
+                
+                # 獲取任務管理器
+                task_manager = get_task_manager()
+                
+                # 創建媒體處理任務 ID
+                task_id = f"media_upload_{interaction_id}_{line_message_id}"
+                
+                # 使用 asyncio.ensure_future 來確保任務被正確排程
+                loop = asyncio.get_event_loop()
+                loop.create_task(task_manager.add_task(
+                    task_id=task_id,
+                    name=f"媒體上傳 - {message_type}",
+                    func=self._process_media_background,
+                    args=(str(interaction_id), user_id, message_type, line_message_id),
+                    priority=TaskPriority.NORMAL,
+                    max_retries=3
+                ))
+                
+                logger.info(f"媒體處理任務已排程: {task_id} ({message_type})")
+                
+            except Exception as e:
+                logger.error(f"排程媒體處理任務失敗: {e}")
+                # 如果背景任務失敗，嘗試同步處理
+                try:
+                    asyncio.create_task(self._process_media_async(
+                        interaction_id=str(interaction_id),
+                        line_user_id=user_id,
+                        message_type=message_type,
+                        line_message_id=line_message_id,
+                        db_session=db_session
+                    ))
+                except Exception as sync_error:
+                    logger.error(f"同步媒體處理也失敗: {sync_error}")
         
         return {
             "event_type": "message",
@@ -839,6 +867,33 @@ class LineBotService:
             except:
                 pass
             return None
+    
+    def _process_media_background(self, interaction_id: str, line_user_id: str, message_type: str, 
+                                  line_message_id: str):
+        """背景任務處理媒體檔案上傳到 MinIO（同步版本）"""
+        from app.services.minio_service import get_minio_service
+        from app.models.line_user import LineBotUserInteraction
+        from uuid import UUID as PyUUID
+        from app.database import SessionLocal
+        import asyncio
+        
+        db_session = SessionLocal()
+        try:
+            # 運行異步媒體處理
+            asyncio.run(self._process_media_async(
+                interaction_id, line_user_id, message_type, line_message_id, db_session
+            ))
+        except Exception as e:
+            logger.error(f"背景媒體處理失敗: {e}")
+            try:
+                db_session.rollback()
+            except:
+                pass
+        finally:
+            try:
+                db_session.close()
+            except:
+                pass
     
     async def _process_media_async(self, interaction_id: str, line_user_id: str, message_type: str, 
                                   line_message_id: str, db_session):

@@ -3,7 +3,7 @@ API v1 路由聚合器
 將所有 API 路由統一管理
 """
 from fastapi import APIRouter
-from app.api.api_v1 import auth, users, bots, bot_analytics, webhook, bot_dashboard, websocket
+from app.api.api_v1 import auth, users, bots, bot_analytics, webhook, bot_dashboard, websocket, storage_test
 
 api_router = APIRouter()
 
@@ -27,6 +27,9 @@ api_router.include_router(webhook.router, prefix="", tags=["Webhook"])
 
 # WebSocket 路由 (即時通訊)
 api_router.include_router(websocket.router, prefix="", tags=["WebSocket"])
+
+# MinIO 測試路由
+api_router.include_router(storage_test.router, prefix="", tags=["MinIO 測試"])
 
 # 為了與舊版 API 保持相容，添加一些別名路由
 api_router.include_router(auth.router, prefix="", tags=["認證（相容）"])  # 支援 /register, /login 等

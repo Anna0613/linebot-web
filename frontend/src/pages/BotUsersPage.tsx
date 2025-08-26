@@ -99,14 +99,34 @@ const BotUsersPage: React.FC = () => {
     
     try {
       const response = await apiClient.getMessageContent(botId, messageId);
-      if (response.data?.content_url) {
-        setMediaUrls(prev => ({
-          ...prev,
-          [messageId]: response.data.content_url
-        }));
+      if (response.data) {
+        if (response.data.success && response.data.content_url) {
+          // 成功獲取媒體 URL
+          setMediaUrls(prev => ({
+            ...prev,
+            [messageId]: response.data.content_url
+          }));
+        } else if (response.data.error === 'legacy_media') {
+          // 舊媒體記錄，無法載入
+          setMediaUrls(prev => ({
+            ...prev,
+            [messageId]: 'LEGACY_MEDIA_ERROR'
+          }));
+        } else {
+          // 其他錯誤
+          console.warn(`媒體載入失敗 (${messageId}):`, response.data.message || '未知錯誤');
+          setMediaUrls(prev => ({
+            ...prev,
+            [messageId]: 'MEDIA_ERROR'
+          }));
+        }
       }
     } catch (error) {
       console.error("獲取媒體內容失敗:", error);
+      setMediaUrls(prev => ({
+        ...prev,
+        [messageId]: 'NETWORK_ERROR'
+      }));
     }
   }, [botId, mediaUrls]);
 
@@ -171,7 +191,7 @@ const BotUsersPage: React.FC = () => {
       
       return (
         <div>
-          {mediaUrl ? (
+          {mediaUrl && !['LEGACY_MEDIA_ERROR', 'MEDIA_ERROR', 'NETWORK_ERROR'].includes(mediaUrl) ? (
             <img 
               src={mediaUrl} 
               alt="用戶發送的圖片"
@@ -181,6 +201,18 @@ const BotUsersPage: React.FC = () => {
                 e.currentTarget.nextElementSibling!.style.display = 'block';
               }}
             />
+          ) : mediaUrl === 'LEGACY_MEDIA_ERROR' ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded mb-2">
+              📷 舊版媒體訊息，無法載入內容
+            </div>
+          ) : mediaUrl === 'MEDIA_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              📷 媒體載入失敗
+            </div>
+          ) : mediaUrl === 'NETWORK_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              📷 網路錯誤，無法載入
+            </div>
           ) : messageId ? (
             <div className="text-sm text-gray-500 mb-2">📷 圖片載入中...</div>
           ) : (
@@ -202,7 +234,7 @@ const BotUsersPage: React.FC = () => {
       
       return (
         <div>
-          {mediaUrl ? (
+          {mediaUrl && !['LEGACY_MEDIA_ERROR', 'MEDIA_ERROR', 'NETWORK_ERROR'].includes(mediaUrl) ? (
             <video 
               src={mediaUrl} 
               controls
@@ -213,6 +245,18 @@ const BotUsersPage: React.FC = () => {
                 e.currentTarget.nextElementSibling!.style.display = 'block';
               }}
             />
+          ) : mediaUrl === 'LEGACY_MEDIA_ERROR' ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded mb-2">
+              🎥 舊版媒體訊息，無法載入內容
+            </div>
+          ) : mediaUrl === 'MEDIA_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              🎥 媒體載入失敗
+            </div>
+          ) : mediaUrl === 'NETWORK_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              🎥 網路錯誤，無法載入
+            </div>
           ) : messageId ? (
             <div className="text-sm text-gray-500 mb-2">🎥 影片載入中...</div>
           ) : (
@@ -234,7 +278,7 @@ const BotUsersPage: React.FC = () => {
       
       return (
         <div>
-          {mediaUrl ? (
+          {mediaUrl && !['LEGACY_MEDIA_ERROR', 'MEDIA_ERROR', 'NETWORK_ERROR'].includes(mediaUrl) ? (
             <audio 
               src={mediaUrl} 
               controls
@@ -244,6 +288,18 @@ const BotUsersPage: React.FC = () => {
                 e.currentTarget.nextElementSibling!.style.display = 'block';
               }}
             />
+          ) : mediaUrl === 'LEGACY_MEDIA_ERROR' ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded mb-2">
+              🎵 舊版媒體訊息，無法載入內容
+            </div>
+          ) : mediaUrl === 'MEDIA_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              🎵 媒體載入失敗
+            </div>
+          ) : mediaUrl === 'NETWORK_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              🎵 網路錯誤，無法載入
+            </div>
           ) : messageId ? (
             <div className="text-sm text-gray-500 mb-2">🎵 音訊載入中...</div>
           ) : (

@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     MINIO_ACCESS_KEY: str = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
     MINIO_SECRET_KEY: str = os.getenv("MINIO_SECRET_KEY", "minioadmin")
     MINIO_SECURE: bool = os.getenv("MINIO_SECURE", "False").lower() == "true"
+    # HTTPS 憑證檢查（自簽證書測試可設為 False，僅限開發測試）
+    MINIO_CERT_CHECK: bool = os.getenv("MINIO_CERT_CHECK", "True").lower() == "true"
+    # 自訂 CA 憑證（PEM）路徑，若提供會用來驗證 MinIO 憑證
+    MINIO_CA_CERT_FILE: Optional[str] = os.getenv("MINIO_CA_CERT_FILE")
     MINIO_BUCKET_NAME: str = os.getenv("MINIO_BUCKET_NAME", "message-store")
     MINIO_PUBLIC_URL: str = os.getenv("MINIO_PUBLIC_URL", "http://localhost:9000")
     
