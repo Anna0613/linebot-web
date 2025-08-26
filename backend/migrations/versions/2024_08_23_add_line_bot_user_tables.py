@@ -42,13 +42,15 @@ def upgrade():
     op.create_index('idx_line_user_last_interaction', 'line_bot_users', ['last_interaction'])
     op.create_index('idx_line_user_followed', 'line_bot_users', ['is_followed'])
     
-    # Create line_bot_user_interactions table
+    # Create line_bot_user_interactions table (包含媒體欄位)
     op.create_table('line_bot_user_interactions',
         sa.Column('id', postgresql.UUID(as_uuid=True), server_default=sa.text('uuid_generate_v4()'), nullable=False),
         sa.Column('line_user_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('event_type', sa.String(50), nullable=False),
         sa.Column('message_type', sa.String(50), nullable=True),
         sa.Column('message_content', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('media_path', sa.String(500), nullable=True, comment='MinIO 媒體檔案路徑'),
+        sa.Column('media_url', sa.String(500), nullable=True, comment='媒體檔案公開訪問 URL'),
         sa.Column('timestamp', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
         sa.ForeignKeyConstraint(['line_user_id'], ['line_bot_users.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
@@ -58,6 +60,9 @@ def upgrade():
     op.create_index('idx_interaction_user_timestamp', 'line_bot_user_interactions', ['line_user_id', 'timestamp'])
     op.create_index('idx_interaction_event_type', 'line_bot_user_interactions', ['event_type'])
     op.create_index('idx_interaction_timestamp', 'line_bot_user_interactions', ['timestamp'])
+    # 媒體路徑索引 (只為有媒體檔案的記錄建立索引)
+    op.create_index('idx_interaction_media_path', 'line_bot_user_interactions', ['media_path'], 
+                   postgresql_where=sa.text('media_path IS NOT NULL'))
     
     # Create rich_menus table
     op.create_table('rich_menus',
@@ -88,6 +93,7 @@ def downgrade():
     op.drop_index('idx_rich_menu_bot_id', table_name='rich_menus')
     op.drop_table('rich_menus')
     
+    op.drop_index('idx_interaction_media_path', table_name='line_bot_user_interactions')
     op.drop_index('idx_interaction_timestamp', table_name='line_bot_user_interactions')
     op.drop_index('idx_interaction_event_type', table_name='line_bot_user_interactions')
     op.drop_index('idx_interaction_user_timestamp', table_name='line_bot_user_interactions')

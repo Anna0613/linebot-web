@@ -24,6 +24,7 @@ spec.loader.exec_module(config_module)
 settings = config_module.settings
 
 from app.database import init_database
+from app.database_enhanced import init_database_enhanced
 from app.api.api_v1.api import api_router
 from app.config.redis_config import init_redis, close_redis
 from app.services.background_tasks import get_task_manager, PerformanceOptimizer
@@ -42,8 +43,15 @@ async def lifespan(app: FastAPI):
     # 啟動時
     logger.info("啟動 LineBot-Web 統一 API")
     try:
-        init_database()
-        logger.info("資料庫初始化完成")
+        # 使用增強的資料庫初始化系統
+        # __file__ = app/main.py, 所以 backend 目錄是上兩級
+        project_root = os.path.dirname(os.path.dirname(__file__))
+        if init_database_enhanced(settings.DATABASE_URL, project_root):
+            logger.info("✅ 增強資料庫初始化完成")
+        else:
+            logger.warning("⚠️ 增強資料庫初始化失敗，嘗試基本初始化")
+            init_database()
+            logger.info("基本資料庫初始化完成")
         
         # 初始化 Redis 連接
         await init_redis()
