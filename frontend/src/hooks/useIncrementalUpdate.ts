@@ -56,7 +56,7 @@ export const useIncrementalUpdate = (options: UseIncrementalUpdateOptions = {}) 
         // 只獲取最新的增量數據
         const latestData = await apiClient.getBotAnalyticsIncremental(currentBotId);
         
-        queryClient.setQueryData(queryKeys.botAnalytics(currentBotId), (old: any) => {
+        queryClient.setQueryData(queryKeys.botAnalytics(currentBotId), (old: {data?: unknown}) => {
           if (!old?.data) return old;
           
           return {
@@ -129,7 +129,7 @@ export const useIncrementalUpdate = (options: UseIncrementalUpdateOptions = {}) 
       const newActivities = await apiClient.getBotActivitiesSince(currentBotId, since);
       
       if (newActivities.data && newActivities.data.length > 0) {
-        queryClient.setQueryData(queryKeys.botActivities(currentBotId), (old: any) => {
+        queryClient.setQueryData(queryKeys.botActivities(currentBotId), (old: {data?: unknown[]}) => {
           const existingActivities = old?.data || [];
           const combinedActivities = [...newActivities.data, ...existingActivities];
           
@@ -186,7 +186,6 @@ export const useIncrementalUpdate = (options: UseIncrementalUpdateOptions = {}) 
     if (!currentBotId) return;
 
     // 臨時禁用智能更新
-    const originalThreshold = updateThreshold;
     
     try {
       switch (dataType) {
@@ -211,7 +210,7 @@ export const useIncrementalUpdate = (options: UseIncrementalUpdateOptions = {}) 
     } catch (error) {
       console.error(`強制更新 ${dataType} 失敗:`, error);
     }
-  }, [botId, updateThreshold, updateAnalyticsIncremental, updateWebhookStatusSmart, updateActivitiesIncremental, batchIncrementalUpdate, resetUpdateTimes]);
+  }, [botId, updateAnalyticsIncremental, updateWebhookStatusSmart, updateActivitiesIncremental, batchIncrementalUpdate, resetUpdateTimes]);
 
   return {
     updateAnalyticsIncremental,

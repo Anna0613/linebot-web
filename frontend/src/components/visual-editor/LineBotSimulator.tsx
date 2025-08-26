@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Send, User, Bot } from 'lucide-react';
@@ -225,7 +225,7 @@ const LineBotSimulator: React.FC<LineBotSimulatorProps> = ({ blocks, flexBlocks 
             {message.messageType === 'flex' && message.flexMessage ? (
               // FLEX訊息渲染 - 直接顯示，不加外層容器
               <div className="flex-message-container max-w-sm">
-                <FlexMessagePreview json={message.flexMessage as any} />
+                <FlexMessagePreview json={message.flexMessage as Record<string, unknown>} />
               </div>
             ) : (
               // 一般訊息容器

@@ -624,7 +624,7 @@ export class VisualEditorApi {
   static clearBotCache(botId: string): void {
     this.cacheService.remove(`${CACHE_KEYS.LOGIC_TEMPLATES_SUMMARY}_${botId}`);
     // 清除該 Bot 的所有邏輯模板快取
-    const stats = this.cacheService.getStats();
+    this.cacheService.getStats();
     Object.keys(localStorage).forEach(key => {
       if (key.includes(`${CACHE_KEYS.LOGIC_TEMPLATE}_`) || key.includes(botId)) {
         this.cacheService.remove(key.replace('visual_editor_cache_', ''));

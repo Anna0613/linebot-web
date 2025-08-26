@@ -11,6 +11,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useIncrementalUpdate } from '@/hooks/useIncrementalUpdate';
 
+interface WebSocketMessage {
+  type: string;
+  receivedAt: string;
+  [key: string]: unknown;
+}
+
 interface WebSocketTestProps {
   botId?: string;
   userId?: string;
@@ -19,7 +25,7 @@ interface WebSocketTestProps {
 export const WebSocketTest: React.FC<WebSocketTestProps> = ({ botId, userId }) => {
   const [testBotId, setTestBotId] = useState(botId || '');
   const [testUserId, setTestUserId] = useState(userId || '');
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<WebSocketMessage[]>([]);
   const [customMessage, setCustomMessage] = useState('');
 
   // WebSocket Hook
@@ -74,7 +80,7 @@ export const WebSocketTest: React.FC<WebSocketTestProps> = ({ botId, userId }) =
         const message = JSON.parse(customMessage);
         sendMessage(message);
         setCustomMessage('');
-      } catch (error) {
+      } catch (_error) {
         alert('無效的 JSON 格式');
       }
     }

@@ -211,7 +211,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
       
       setDisplayedActivities(sortedActivities);
     }
-  }, [activities, maxItems]);
+  }, [activities, maxItems, displayedActivities]);
 
   // 自動刷新
   useEffect(() => {

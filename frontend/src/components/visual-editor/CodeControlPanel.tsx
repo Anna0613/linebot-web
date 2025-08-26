@@ -14,8 +14,6 @@ import {
   Eye,
   EyeOff,
   Braces,
-  Hash,
-  Type,
   Zap,
   CheckCircle,
   AlertTriangle,
@@ -33,8 +31,8 @@ interface CodeControlPanelProps {
 
 const CodeControlPanel: React.FC<CodeControlPanelProps> = ({
   blocks,
-  onExport,
-  onCopy,
+  onExport: _onExport,
+  onCopy: _onCopy,
   onFormatChange
 }) => {
   const { toast } = useToast();
@@ -118,7 +116,7 @@ const CodeControlPanel: React.FC<CodeControlPanelProps> = ({
         title: "複製成功",
         description: "程式碼已複製到剪貼板",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "複製失敗",
         description: "無法複製程式碼到剪貼板",
@@ -143,7 +141,7 @@ const CodeControlPanel: React.FC<CodeControlPanelProps> = ({
         title: "下載成功",
         description: "程式碼檔案已開始下載",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "下載失敗",
         description: "無法下載程式碼檔案",

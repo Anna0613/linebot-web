@@ -211,7 +211,7 @@ export class CacheTestUtils {
 
 // 在開發環境下暴露到 window 物件供手動測試
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  (window as any).CacheTestUtils = CacheTestUtils;
+  (window as unknown as {CacheTestUtils: typeof CacheTestUtils}).CacheTestUtils = CacheTestUtils;
   console.log('🛠️ CacheTestUtils 已載入，可在控制台使用');
   console.log('快速測試指令：');
   console.log('- CacheTestUtils.runFullTestSuite() // 執行完整測試');

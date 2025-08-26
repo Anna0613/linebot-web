@@ -77,7 +77,7 @@ const AnimatedNumber: React.FC<{
     }, 16);
 
     return () => clearInterval(timer);
-  }, [finalValue, duration]); // 移除 displayValue 依賴以避免無限循環
+  }, [finalValue, duration, displayValue, value]); // 移除 displayValue 依賴以避免無限循環
 
   if (typeof value === "string") {
     return <span>{value}</span>;

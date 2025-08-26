@@ -7,13 +7,12 @@ import {
   CACHE_KEYS, 
   CACHE_EXPIRY, 
   CACHE_SECURITY, 
-  CACHE_STRATEGIES,
   SENSITIVE_FIELDS,
   CACHE_INVALIDATION_TRIGGERS
 } from '../config/cacheConfig';
 
 // 快取項目介面
-interface CacheItem<T = any> {
+interface CacheItem<T = unknown> {
   data: T;
   timestamp: number;
   expiry: number;
@@ -118,13 +117,13 @@ export class LocalStorageCacheService {
 
     const sanitized = JSON.parse(JSON.stringify(data));
     
-    const cleanObject = (obj: any) => {
+    const cleanObject = (obj: unknown): unknown => {
       if (Array.isArray(obj)) {
         return obj.map(item => cleanObject(item));
       }
       
       if (typeof obj === 'object' && obj !== null) {
-        const cleaned: any = {};
+        const cleaned: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(obj)) {
           // 檢查是否為敏感欄位
           const isSensitive = SENSITIVE_FIELDS.some(field => 
@@ -147,7 +146,7 @@ export class LocalStorageCacheService {
   /**
    * 驗證數據類型和結構
    */
-  private validateData(data: any): boolean {
+  private validateData(data: unknown): boolean {
     try {
       // 檢查數據類型
       const dataType = typeof data;
@@ -362,7 +361,7 @@ export class LocalStorageCacheService {
                 cleanedCount++;
               }
             }
-          } catch (error) {
+          } catch (_error) {
             // 如果解析失敗，移除該項目
             localStorage.removeItem(key);
             cleanedCount++;

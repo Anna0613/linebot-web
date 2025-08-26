@@ -17,7 +17,7 @@ interface CodeDisplayContextType {
 
 const CodeDisplayContext = createContext<CodeDisplayContextType | undefined>(undefined);
 
-export const useCodeDisplay = () => {
+const useCodeDisplay = () => {
   const context = useContext(CodeDisplayContext);
   if (!context) {
     throw new Error('useCodeDisplay must be used within a CodeDisplayProvider');
@@ -29,7 +29,7 @@ interface CodeDisplayProviderProps {
   children: ReactNode;
 }
 
-export const CodeDisplayProvider: React.FC<CodeDisplayProviderProps> = ({ children }) => {
+const CodeDisplayProvider: React.FC<CodeDisplayProviderProps> = ({ children }) => {
   const [state, setState] = useState<CodeDisplayState>({
     showLineNumbers: true,
     showComments: true,
@@ -68,4 +68,5 @@ export const CodeDisplayProvider: React.FC<CodeDisplayProviderProps> = ({ childr
   );
 };
 
-export default CodeDisplayContext;
+// eslint-disable-next-line react-refresh/only-export-components
+export { CodeDisplayProvider, useCodeDisplay };

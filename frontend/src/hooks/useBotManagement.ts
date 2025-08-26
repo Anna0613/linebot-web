@@ -6,7 +6,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/UnifiedApiClient';
 import { queryKeys, invalidateQueries, optimisticUpdates, batchCacheUpdate } from './useReactQuery';
 import { useToast } from '@/hooks/use-toast';
-import { useCallback } from 'react';
 
 // Bot 列表
 export const useBots = () => {
@@ -170,9 +169,9 @@ export const useRefreshWebhookStatus = () => {
 };
 
 // 輔助函數：從模板 ID 找出對應的 Bot ID
-async function findBotIdFromTemplate(templateId: string, queryClient: any): Promise<string | null> {
+async function findBotIdFromTemplate(templateId: string, queryClient: unknown): Promise<string | null> {
   // 嘗試從現有快取中找出包含此模板的 Bot
-  const queryCache = queryClient.getQueryCache();
+  const queryCache = (queryClient as {getQueryCache(): {getAll(): Array<{queryKey: unknown[], state: {data?: {data?: unknown[]}}}>}}).getQueryCache();
   
   for (const query of queryCache.getAll()) {
     if (query.queryKey[0] === 'bots' && 
@@ -180,7 +179,7 @@ async function findBotIdFromTemplate(templateId: string, queryClient: any): Prom
         query.state.data?.data) {
       
       const templates = query.state.data.data;
-      const foundTemplate = templates.find((t: any) => t.id === templateId);
+      const foundTemplate = templates.find((t: {id: string}) => t.id === templateId);
       
       if (foundTemplate) {
         return query.queryKey[1] as string; // Bot ID

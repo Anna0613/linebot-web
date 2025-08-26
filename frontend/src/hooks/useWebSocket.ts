@@ -3,14 +3,12 @@
  * 提供即時數據更新功能
  */
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from './useReactQuery';
 
 interface WebSocketMessage {
   type: string;
   bot_id?: string;
   user_id?: string;
-  data?: any;
+  data?: unknown;
   timestamp?: string;
   message?: string;
   subscription?: string;
@@ -39,7 +37,6 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
-  const queryClient = useQueryClient();
 
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -153,7 +150,35 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       console.error('解析 WebSocket 消息失敗:', error);
       setConnectionError('消息解析失敗');
     }
-  }, [botId]);
+  }, []);
+
+  // 發送消息
+  const sendMessage = useCallback((message: Record<string, unknown>) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(message));
+      console.debug('發送 WebSocket 消息:', message);
+    } else {
+      console.warn('WebSocket 未連接，無法發送消息:', message);
+    }
+  }, []);
+
+  // 停止心跳
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = undefined;
+    }
+  }, []);
+
+  // 啟動心跳
+  const startHeartbeat = useCallback(() => {
+    heartbeatIntervalRef.current = setInterval(() => {
+      sendMessage({ 
+        type: 'ping',
+        timestamp: new Date().toISOString()
+      });
+    }, 30000); // 每 30 秒發送心跳
+  }, [sendMessage]);
 
   // 連接 WebSocket
   const connect = useCallback(() => {
@@ -233,7 +258,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
         setConnectionError('無法建立 WebSocket 連接');
       }
     }
-  }, [getWebSocketUrl, handleMessage, autoReconnect, maxReconnectAttempts, reconnectInterval, botId, enabled]);
+  }, [getWebSocketUrl, handleMessage, autoReconnect, maxReconnectAttempts, reconnectInterval, enabled, sendMessage, startHeartbeat, botId, stopHeartbeat]);
 
   // 斷開連接
   const disconnect = useCallback(() => {
@@ -249,35 +274,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     }
 
     setIsConnected(false);
-  }, []);
-
-  // 發送消息
-  const sendMessage = useCallback((message: any) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
-      console.debug('發送 WebSocket 消息:', message);
-    } else {
-      console.warn('WebSocket 未連接，無法發送消息:', message);
-    }
-  }, []);
-
-  // 啟動心跳
-  const startHeartbeat = useCallback(() => {
-    heartbeatIntervalRef.current = setInterval(() => {
-      sendMessage({ 
-        type: 'ping',
-        timestamp: new Date().toISOString()
-      });
-    }, 30000); // 每 30 秒發送心跳
-  }, [sendMessage]);
-
-  // 停止心跳
-  const stopHeartbeat = useCallback(() => {
-    if (heartbeatIntervalRef.current) {
-      clearInterval(heartbeatIntervalRef.current);
-      heartbeatIntervalRef.current = undefined;
-    }
-  }, []);
+  }, [stopHeartbeat]);
 
   // 手動重連
   const reconnect = useCallback(() => {

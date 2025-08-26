@@ -535,7 +535,7 @@ export class UnifiedApiClient {
     );
   }
 
-  public async updateLogicTemplate(templateId: string, data: any): Promise<ApiResponse> {
+  public async updateLogicTemplate(templateId: string, data: Record<string, unknown>): Promise<ApiResponse> {
     return this.put(
       getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/logic-templates/${templateId}`),
       data
@@ -700,7 +700,7 @@ export class UnifiedApiClient {
     );
   }
 
-  public async broadcastToBot(botId: string, message: any): Promise<ApiResponse> {
+  public async broadcastToBot(botId: string, message: Record<string, unknown>): Promise<ApiResponse> {
     return this.post(
       getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/ws/broadcast/${botId}`),
       message

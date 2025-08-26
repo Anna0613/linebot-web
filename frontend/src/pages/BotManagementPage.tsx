@@ -7,7 +7,6 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { 
   Bot, 
   BarChart3, 
@@ -24,7 +23,6 @@ import {
   CheckCircle,
   Play,
   Pause,
-  RefreshCw
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +38,6 @@ import { getWebhookUrl } from "../config/apiConfig";
 import MetricCard from "@/components/dashboard/MetricCard";
 import ChartWidget from "@/components/dashboard/ChartWidget";
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
-import QuickActions from "@/components/dashboard/QuickActions";
 import HeatMap from "@/components/dashboard/HeatMap";
 
 // 類型定義
@@ -118,7 +115,7 @@ const BotManagementPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState("week");
   const [_refreshing, setRefreshing] = useState(false);
   const [botHealth, setBotHealth] = useState<"online" | "offline" | "error">("online");
-  const [lastRenderTime, setLastRenderTime] = useState(new Date().toISOString());
+  const [_lastRenderTime, setLastRenderTime] = useState(new Date().toISOString());
 
   // WebSocket 即時連接
   const { isConnected, connectionError, lastMessage } = useWebSocket({
@@ -157,7 +154,7 @@ const BotManagementPage: React.FC = () => {
       }
       return [];
     } catch (_error) {
-      console.error("獲取 Bot 列表失敗:", _error);
+      console.error("獲取 Bot 列表失敗:", error);
       toast({
         variant: "destructive",
         title: "載入失敗",
@@ -176,7 +173,7 @@ const BotManagementPage: React.FC = () => {
         setLogicTemplates(response.data);
       }
     } catch (_error) {
-      console.error("獲取邏輯模板失敗:", _error);
+      console.error("獲取邏輯模板失敗:", error);
     } finally {
       setLogicLoading(false);
     }
@@ -247,7 +244,7 @@ const BotManagementPage: React.FC = () => {
 
       // 處理活動記錄
       if (activitiesRes.data && !activitiesRes.error) {
-        const responseData = activitiesRes.data as any;
+        const responseData = activitiesRes.data as {activities?: ActivityItem[]};
         const activitiesData = responseData.activities || responseData;
         setActivities(Array.isArray(activitiesData) ? activitiesData as ActivityItem[] : []);
       } else {
@@ -255,7 +252,7 @@ const BotManagementPage: React.FC = () => {
         setActivities([]);
       }
 
-    } catch (error) {
+    } catch (_error) {
       console.error("獲取分析數據失敗:", error);
       toast({
         title: "獲取分析數據失敗",
@@ -297,7 +294,7 @@ const BotManagementPage: React.FC = () => {
         description: `邏輯模板已${isActive ? "啟用" : "停用"}`,
       });
     } catch (_error) {
-      console.error("切換邏輯模板狀態失敗:", _error);
+      console.error("切換邏輯模板狀態失敗:", error);
       toast({
         variant: "destructive",
         title: "操作失敗",
@@ -327,7 +324,7 @@ const BotManagementPage: React.FC = () => {
         setCopiedWebhookUrl(false);
       }, 2000);
     } catch (_error) {
-      console.error("複製 Webhook URL 失敗:", _error);
+      console.error("複製 Webhook URL 失敗:", error);
       toast({
         variant: "destructive",
         title: "複製失敗",
@@ -344,7 +341,7 @@ const BotManagementPage: React.FC = () => {
     try {
       const response = await apiClient.getWebhookStatus(botId);
       if (response.data && !response.error) {
-        const statusData = response.data as any;
+        const statusData = response.data as {status?: string; is_configured?: boolean; line_api_accessible?: boolean; checked_at?: string};
         setWebhookStatus(statusData);
         
         // 根據 Webhook 狀態設置 Bot 健康狀態
@@ -362,7 +359,7 @@ const BotManagementPage: React.FC = () => {
         setBotHealth("error");
       }
     } catch (_error) {
-      console.error("獲取 Webhook 狀態失敗:", _error);
+      console.error("獲取 Webhook 狀態失敗:", error);
       setWebhookStatus(null);
       setBotHealth("error");
     } finally {
@@ -399,7 +396,7 @@ const BotManagementPage: React.FC = () => {
         title: "刷新完成",
         description: "數據已更新"
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "刷新失敗",
         description: "無法獲取最新數據",
@@ -421,7 +418,7 @@ const BotManagementPage: React.FC = () => {
       const response = await apiClient.getWebhookStatus(selectedBotId);
       
       if (response.data && !response.error) {
-        const statusData = response.data as any;
+        const statusData = response.data as {status?: string; is_configured?: boolean; line_api_accessible?: boolean; checked_at?: string};
         
         // 根據 Bot 的配置和 LINE API 連接狀態設定健康狀態
         if (statusData.status === 'active') {
@@ -460,7 +457,7 @@ const BotManagementPage: React.FC = () => {
           description: response.error || "無法獲取 Bot 狀態"
         });
       }
-    } catch (error) {
+    } catch (_error) {
       setBotHealth("error");
       toast({
         variant: "destructive",
@@ -489,7 +486,7 @@ const BotManagementPage: React.FC = () => {
     };
 
     initializeData();
-  }, [user, fetchBots]); // fetchBots 現在不依賴 selectedBotId
+  }, [user, fetchBots, selectedBotId]); // fetchBots 現在不依賴 selectedBotId
 
   // 當選擇的 Bot 變化時獲取相關數據
   useEffect(() => {
@@ -503,7 +500,7 @@ const BotManagementPage: React.FC = () => {
             fetchAnalytics(selectedBotId),
             fetchWebhookStatus(selectedBotId)
           ]);
-        } catch (error) {
+        } catch (_error) {
           if (isMounted) {
             console.error('獲取 Bot 數據失敗:', error);
           }
@@ -517,7 +514,7 @@ const BotManagementPage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedBotId]);
+  }, [selectedBotId, fetchLogicTemplates, fetchAnalytics, fetchWebhookStatus]);
 
   // 處理 WebSocket 即時更新消息
   useEffect(() => {
@@ -591,7 +588,7 @@ const BotManagementPage: React.FC = () => {
           // 靜默更新活動數據，保持其他數據不變
           apiClient.getBotActivities(selectedBotId, 20, 0).then(response => {
             if (response.data && !response.error) {
-              const responseData = response.data as any;
+              const responseData = response.data as {activities?: ActivityItem[]};
               const activitiesData = responseData.activities || responseData;
               setActivities(Array.isArray(activitiesData) ? activitiesData as ActivityItem[] : []);
               
@@ -1054,7 +1051,7 @@ const BotManagementPage: React.FC = () => {
                               'bg-red-100 text-red-800 border-red-200'
                             }
                           >
-                            {webhookStatusLoading ? '檢查中...' : (webhookStatus as any)?.status_text || '未知狀態'}
+                            {webhookStatusLoading ? '檢查中...' : (webhookStatus as {status_text?: string})?.status_text || '未知狀態'}
                           </Badge>
                         )}
                       </CardTitle>
@@ -1120,9 +1117,9 @@ const BotManagementPage: React.FC = () => {
                             </div>
                             <div className="col-span-2">
                               <span className="text-gray-500">Webhook 端點:</span>
-                              {(webhookStatus as any)?.webhook_endpoint_info?.is_set ? (
-                                <span className={`ml-1 ${(webhookStatus as any)?.webhook_endpoint_info?.active ? 'text-green-600' : 'text-orange-600'} font-medium`}>
-                                  {(webhookStatus as any)?.webhook_endpoint_info?.active ? '✓ 已啟用' : '⚠ 已設定但未啟用'}
+                              {(webhookStatus as {webhook_endpoint_info?: {is_set?: boolean; active?: boolean; endpoint?: string}})?.webhook_endpoint_info?.is_set ? (
+                                <span className={`ml-1 ${(webhookStatus as {webhook_endpoint_info?: {active?: boolean}})?.webhook_endpoint_info?.active ? 'text-green-600' : 'text-orange-600'} font-medium`}>
+                                  {(webhookStatus as {webhook_endpoint_info?: {active?: boolean}})?.webhook_endpoint_info?.active ? '✓ 已啟用' : '⚠ 已設定但未啟用'}
                                 </span>
                               ) : (
                                 <span className="ml-1 text-red-600 font-medium">
@@ -1130,18 +1127,18 @@ const BotManagementPage: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            {(webhookStatus as any)?.webhook_endpoint_info?.endpoint && (
+                            {(webhookStatus as {webhook_endpoint_info?: {endpoint?: string}})?.webhook_endpoint_info?.endpoint && (
                               <div className="col-span-2">
                                 <span className="text-muted-foreground">設定的端點:</span>
                                 <div className="text-xs text-gray-700 mt-1 break-all">
-                                  {(webhookStatus as any)?.webhook_endpoint_info?.endpoint}
+                                  {(webhookStatus as {webhook_endpoint_info?: {endpoint?: string}})?.webhook_endpoint_info?.endpoint}
                                 </div>
                               </div>
                             )}
                           </div>
-                          {(webhookStatus as any)?.checked_at && (
+                          {(webhookStatus as {checked_at?: string})?.checked_at && (
                             <p className="text-xs text-muted-foreground mt-2">
-                              最後檢查: {new Date((webhookStatus as any).checked_at).toLocaleString('zh-TW')}
+                              最後檢查: {new Date((webhookStatus as {checked_at: string}).checked_at).toLocaleString('zh-TW')}
                             </p>
                           )}
                         </div>

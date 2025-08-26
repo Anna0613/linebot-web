@@ -15,7 +15,6 @@ import {
   Search,
   Send,
   Eye,
-  Calendar,
   Hash,
   User,
   ChevronLeft,
@@ -46,7 +45,7 @@ interface UserInteraction {
   id: string;
   event_type: string;
   message_type: string;
-  message_content: any;
+  message_content: unknown;
   media_url?: string;
   media_path?: string;
   timestamp: string;
