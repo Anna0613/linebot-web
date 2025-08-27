@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { 
   Search, 
   Users, 
@@ -219,7 +218,7 @@ const BotUsersList: React.FC<BotUsersListProps> = ({
           ) : (
             // 用戶列表
             <div className="divide-y">
-              {usersData.items.map((user: BotUser, index) => (
+              {usersData.items.map((user: BotUser) => (
                 <div key={user.id} className={`p-4 hover:bg-gray-50 ${isFetching ? 'opacity-75' : ''}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">

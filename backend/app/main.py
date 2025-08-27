@@ -9,6 +9,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 # 直接導入 config.py 模組中的設定
@@ -23,8 +24,11 @@ spec.loader.exec_module(config_module)
 settings = config_module.settings
 
 from app.database import init_database
+from app.database_enhanced import init_database_enhanced
 from app.api.api_v1.api import api_router
 from app.config.redis_config import init_redis, close_redis
+from app.services.background_tasks import get_task_manager, PerformanceOptimizer
+from app.services.cache_service import get_cache
 
 # 配置日誌
 logging.basicConfig(
@@ -35,16 +39,48 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """應用程式生命週期管理"""
+    """應用程式生命週期管理 - 整合效能優化服務"""
     # 啟動時
     logger.info("啟動 LineBot-Web 統一 API")
     try:
-        init_database()
-        logger.info("資料庫初始化完成")
+        # 使用增強的資料庫初始化系統
+        # __file__ = app/main.py, 所以 backend 目錄是上兩級
+        project_root = os.path.dirname(os.path.dirname(__file__))
+        if init_database_enhanced(settings.DATABASE_URL, project_root):
+            logger.info("✅ 增強資料庫初始化完成")
+        else:
+            logger.warning("⚠️ 增強資料庫初始化失敗，嘗試基本初始化")
+            init_database()
+            logger.info("基本資料庫初始化完成")
         
         # 初始化 Redis 連接
         await init_redis()
         logger.info("Redis 初始化完成")
+        
+        # 初始化多層快取
+        cache = get_cache()
+        logger.info("多層快取系統初始化完成")
+        
+        # 啟動背景任務管理器
+        task_manager = get_task_manager()
+        await task_manager.start()
+        logger.info("背景任務管理器啟動完成")
+        
+        # 啟動效能優化器
+        optimizer = PerformanceOptimizer()
+        await optimizer.setup_cache_warming()
+        logger.info("效能優化器設置完成")
+        
+        # 添加定期效能報告任務
+        from app.services.background_tasks import generate_performance_report, TaskPriority
+        await task_manager.add_task(
+            "performance_report",
+            "定期效能報告",
+            generate_performance_report,
+            priority=TaskPriority.LOW,
+            delay=300  # 5分鐘後開始
+        )
+        
     except Exception as e:
         logger.error(f"初始化失敗: {e}")
         raise
@@ -54,10 +90,15 @@ async def lifespan(app: FastAPI):
     # 關閉時
     logger.info("關閉 LineBot-Web 統一 API")
     try:
+        # 停止背景任務管理器
+        task_manager = get_task_manager()
+        await task_manager.stop()
+        logger.info("背景任務管理器已停止")
+        
         await close_redis()
         logger.info("Redis 連接已關閉")
     except Exception as e:
-        logger.error(f"關閉 Redis 失敗: {e}")
+        logger.error(f"關閉服務失敗: {e}")
 
 # 創建 FastAPI 應用程式
 app = FastAPI(
@@ -152,6 +193,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 # 包含 API 路由
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
+# 掛載媒體檔案靜態檔案服務
+import os
+media_path = os.path.join(os.path.dirname(__file__), "..", "media")
+os.makedirs(media_path, exist_ok=True)
+app.mount("/media", StaticFiles(directory=media_path), name="media")
+
 # 根路由
 @app.get("/")
 async def root():
@@ -186,6 +233,48 @@ async def database_status():
         return JSONResponse(
             status_code=500,
             content={"connection": "failed", "error": str(e)}
+        )
+
+# 效能監控端點
+@app.get("/api/v1/performance/stats")
+async def get_performance_stats():
+    """獲取效能統計"""
+    try:
+        cache = get_cache()
+        task_manager = get_task_manager()
+        optimizer = PerformanceOptimizer()
+        
+        return {
+            "cache_stats": cache.get_stats(),
+            "task_manager_status": task_manager.get_status(),
+            "optimization_report": optimizer.get_optimization_report()
+        }
+    except Exception as e:
+        logger.error(f"獲取效能統計失敗: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "獲取效能統計失敗", "detail": str(e)}
+        )
+
+@app.get("/api/v1/performance/cache/clear")
+async def clear_cache():
+    """清除快取（管理員功能）"""
+    try:
+        cache = get_cache()
+        
+        # 清除 L1 快取
+        if hasattr(cache, 'l1_cache') and cache.l1_cache:
+            cache.l1_cache.clear()
+        
+        # 清除統計
+        cache.clear_stats()
+        
+        return {"message": "快取清除成功"}
+    except Exception as e:
+        logger.error(f"清除快取失敗: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "清除快取失敗", "detail": str(e)}
         )
 
 if __name__ == "__main__":

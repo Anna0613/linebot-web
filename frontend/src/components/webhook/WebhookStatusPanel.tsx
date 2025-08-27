@@ -2,7 +2,6 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { 
   Globe, 
   CheckCircle, 
@@ -206,18 +205,41 @@ const WebhookStatusPanel: React.FC<WebhookStatusPanelProps> = ({
                   variant="outline" 
                   size="sm"
                   asChild
+                  className={!status.channel_id ? 'opacity-50' : ''}
+                  title={
+                    status.channel_id 
+                      ? `跳轉到 Channel ${status.channel_id} 的管理頁面`
+                      : '無法獲取 Channel ID，將跳轉到 LINE Console 首頁'
+                  }
                 >
                   <a 
-                    href={`https://developers.line.biz/console/channel/${status.channel_id || status.bot_id}/messaging-api`}
+                    href={
+                      status.channel_id 
+                        ? `https://developers.line.biz/console/channel/${status.channel_id}/messaging-api`
+                        : `https://developers.line.biz/console/`
+                    }
                     target="_blank" 
                     rel="noopener noreferrer"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     LINE Console
+                    {status.channel_id && (
+                      <span className="ml-1 text-xs text-green-600">✓</span>
+                    )}
                   </a>
                 </Button>
               </div>
             </div>
+            
+            {/* 顯示 Channel ID 信息 */}
+            {status.channel_id && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                <div className="text-sm text-green-800">
+                  <strong>Channel ID:</strong> {status.channel_id}
+                  <span className="ml-2 text-xs">✓ 已獲取正確的 LINE Channel ID</span>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

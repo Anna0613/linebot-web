@@ -25,7 +25,7 @@ interface RequestOptions {
 
 export class UnifiedApiClient {
   private static instance: UnifiedApiClient;
-  private readonly defaultTimeout = 5000; // 5秒 (從10秒優化)
+  private readonly defaultTimeout = 15000; // 15秒 (增加超時時間以避免請求被中止)
   private readonly defaultRetries = 1;
   private pendingRequests = new Map<string, AbortController>(); // 請求去重和取消
 
@@ -54,23 +54,11 @@ export class UnifiedApiClient {
       skipAuth = false,
     } = options;
 
-    // 生成請求唯一標識符 (用於去重)
-    const requestKey = `${method}:${endpoint}:${JSON.stringify(body || {})}`;
-    
-    // 檢查是否有相同的請求正在進行
-    if (this.pendingRequests.has(requestKey)) {
-      secureLog(`請求去重: ${requestKey}`);
-      try {
-        // 等待現有請求完成 (簡化實現，實際可以返回 Promise)
-        const existingController = this.pendingRequests.get(requestKey);
-        if (existingController && !existingController.signal.aborted) {
-          // 等待一小段時間後重新發送請求
-          await this.delay(100);
-        }
-      } catch (error) {
-        secureLog('請求去重處理失敗:', error);
-      }
-    }
+    // 生成請求唯一標識符 (用於去重) - 暫時禁用去重功能
+    const requestKey = `${method}:${endpoint}:${JSON.stringify(body || {})}:${Date.now()}`;
+
+    // 暫時禁用請求去重邏輯以避免請求被意外中止
+    // TODO: 重新實現更穩定的請求去重邏輯
 
     let lastError: Error | null = null;
     const controller = new AbortController();
@@ -90,27 +78,34 @@ export class UnifiedApiClient {
           };
 
           // 超時控制
-          const timeoutId = setTimeout(() => controller.abort(), timeout);
+          const timeoutId = setTimeout(() => {
+            secureLog(`請求超時，正在取消: ${method} ${endpoint}`, { timeout });
+            controller.abort();
+          }, timeout);
 
           secureLog(`API請求: ${method} ${endpoint}`, {
             attempt: attempt + 1,
             skipAuth,
+            timeout,
           });
 
           const response = await fetch(endpoint, requestInit);
           clearTimeout(timeoutId);
 
           const result = await this.handleResponse<T>(response);
-          
+
           // 成功後清理 pending requests
           this.pendingRequests.delete(requestKey);
-          
+
           return result;
         } catch (_error) {
           lastError = _error instanceof Error ? _error : new Error('請求失敗');
-          
-          // 如果請求被取消，直接返回
+
+          // 如果請求被取消，提供更詳細的錯誤信息
           if (_error instanceof Error && _error.name === 'AbortError') {
+            const abortReason = controller.signal.reason || '請求被取消或超時';
+            secureLog(`請求被中止: ${method} ${endpoint}`, { reason: abortReason });
+            lastError = new Error(`請求被中止: ${abortReason}`);
             break;
           }
           
@@ -540,73 +535,79 @@ export class UnifiedApiClient {
     );
   }
 
-  public async updateLogicTemplate(templateId: string, data: any): Promise<ApiResponse> {
+  public async updateLogicTemplate(templateId: string, data: Record<string, unknown>): Promise<ApiResponse> {
     return this.put(
       getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/logic-templates/${templateId}`),
       data
     );
   }
 
-  // LINE Bot 分析 API
+  // LINE Bot 分析 API - 修復：使用正確的 API 路徑
   public async getBotAnalytics(botId: string, period: string = "week"): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/analytics?period=${period}`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/analytics?period=${period}`)
     );
   }
 
   public async getBotMessageStats(botId: string, days: number = 7): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/messages/stats?days=${days}`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/messages/stats?days=${days}`)
     );
   }
 
   public async getBotUserActivity(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/users/activity`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/activity`)
     );
   }
 
   public async getBotUsageStats(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/usage/stats`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/usage/stats`)
     );
   }
 
   public async sendTestMessage(botId: string, messageData: { user_id: string; message: string }): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/send-message`),
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/send-message`),
       messageData
     );
   }
 
   public async getBotProfile(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/profile`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/profile`)
     );
   }
 
   public async checkBotHealth(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/health`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/health`)
     );
   }
 
   public async getBotUsers(botId: string, limit: number = 50, offset: number = 0): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/users?limit=${limit}&offset=${offset}`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users?limit=${limit}&offset=${offset}`)
     );
   }
 
   public async getUserInteractions(botId: string, lineUserId: string, limit: number = 20): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/users/${lineUserId}/interactions?limit=${limit}`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/interactions?limit=${limit}`)
     );
   }
 
   public async broadcastMessage(botId: string, messageData: { message: string; user_ids?: string[] }): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/broadcast`),
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/broadcast`),
       messageData
+    );
+  }
+
+  public async getBotActivities(botId: string, limit: number = 20, offset: number = 0): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/activities?limit=${limit}&offset=${offset}`)
     );
   }
 
@@ -659,6 +660,57 @@ export class UnifiedApiClient {
   public async getBotDashboardLight(botId: string): Promise<ApiResponse> {
     return this.get(
       getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bot_dashboard/${botId}/dashboard/light`)
+    );
+  }
+
+  // 增量更新相關方法
+  public async getBotAnalyticsIncremental(botId: string, since?: string): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    if (since) {
+      params.append('since', since);
+    }
+
+    return this.get(
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bot_dashboard/${botId}/analytics/incremental${params.toString() ? '?' + params.toString() : ''}`
+      )
+    );
+  }
+
+  public async getWebhookStatusQuick(botId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bot_dashboard/${botId}/status/quick`)
+    );
+  }
+
+  public async getBotActivitiesSince(botId: string, since: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/activities/since?since=${encodeURIComponent(since)}`
+      )
+    );
+  }
+
+  // WebSocket 相關方法
+  public async getWebSocketStats(): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, '/ws/stats')
+    );
+  }
+
+  public async broadcastToBot(botId: string, message: Record<string, unknown>): Promise<ApiResponse> {
+    return this.post(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/ws/broadcast/${botId}`),
+      message
+    );
+  }
+
+  // 媒體檔案相關方法
+  public async getMessageContent(botId: string, messageId: string): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/messages/${messageId}/content`)
     );
   }
 }

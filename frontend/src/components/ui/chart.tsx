@@ -39,6 +39,7 @@ function ChartContainer({
   className,
   children,
   config,
+  style,
   ...props
 }: React.ComponentProps<"div"> & {
   config: ChartConfig
@@ -49,6 +50,11 @@ function ChartContainer({
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`
 
+  // Check if both width and height are fixed values
+  const hasFixedWidth = style?.width && typeof style.width === 'number'
+  const hasFixedHeight = style?.height && typeof style.height === 'number'
+  const useResponsive = !hasFixedWidth || !hasFixedHeight
+
   return (
     <ChartContext.Provider value={{ config }}>
       <div
@@ -58,12 +64,22 @@ function ChartContainer({
           "[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border flex aspect-video justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-surface]:outline-hidden",
           className
         )}
+        style={{
+          minHeight: "200px",
+          ...style
+        }}
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer>
-          {children}
-        </RechartsPrimitive.ResponsiveContainer>
+        {useResponsive ? (
+          <RechartsPrimitive.ResponsiveContainer width="100%" height="100%">
+            {children}
+          </RechartsPrimitive.ResponsiveContainer>
+        ) : (
+          <div style={{ width: style?.width || "100%", height: style?.height || "100%" }}>
+            {children}
+          </div>
+        )}
       </div>
     </ChartContext.Provider>
   )

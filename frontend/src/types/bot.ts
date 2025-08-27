@@ -28,7 +28,7 @@ export interface LogicTemplate {
   bot_id: string;
   name: string;
   description?: string;
-  logic_blocks: any[];
+  logic_blocks: unknown[];
   is_active: string;
   generated_code?: string;
   created_at: string;

@@ -376,3 +376,37 @@ async def broadcast_message(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"廣播訊息失敗: {str(e)}")
+
+@router.get("/{bot_id}/activities")
+async def get_bot_activities(
+    bot_id: str,
+    limit: int = 20,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """獲取 Bot 活動記錄"""
+    
+    # 驗證 Bot 所有權
+    bot = db.query(Bot).filter(
+        Bot.id == bot_id,
+        Bot.user_id == current_user.id
+    ).first()
+    
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
+    
+    try:
+        line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+        
+        # 獲取真實的活動記錄
+        activities = line_bot_service.get_bot_activities_real(db, bot_id, limit, offset)
+        
+        return {
+            "activities": activities,
+            "total_count": len(activities),
+            "has_more": len(activities) == limit
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"獲取活動記錄失敗: {str(e)}")

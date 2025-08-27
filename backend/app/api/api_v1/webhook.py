@@ -12,10 +12,22 @@ from typing import Optional
 from app.database import get_db
 from app.models.bot import Bot
 from app.services.line_bot_service import LineBotService
+from app.services.websocket_manager import websocket_manager
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+@router.get("/webhooks/{bot_id}/test")
+async def test_webhook_connection(bot_id: str):
+    """測試 Webhook 連接"""
+    logger.info(f"🧪 測試 Webhook 連接: Bot ID = {bot_id}")
+    return {
+        "status": "ok",
+        "bot_id": bot_id,
+        "message": "Webhook 端點正常運作",
+        "timestamp": "2025-08-26T02:50:00.000Z"
+    }
 
 @router.post("/webhooks/{bot_id}")
 async def handle_webhook_event(
@@ -39,6 +51,18 @@ async def handle_webhook_event(
     try:
         # 獲取請求體
         body = await request.body()
+        logger.info(f"📥 收到 Webhook 請求: Bot ID = {bot_id}, 內容長度 = {len(body)}")
+        
+        if body:
+            try:
+                body_str = body.decode('utf-8')
+                body_json = json.loads(body_str)
+                events = body_json.get('events', [])
+                logger.info(f"📝 Webhook 事件數量: {len(events)}")
+                for i, event in enumerate(events):
+                    logger.info(f"📋 事件 {i+1}: 類型={event.get('type')}, 來源={event.get('source', {}).get('type')}")
+            except Exception as parse_error:
+                logger.error(f"❌ 解析 Webhook 內容失敗: {parse_error}")
         
         # 查找對應的 Bot
         bot = db.query(Bot).filter(Bot.id == bot_id).first()
@@ -82,13 +106,44 @@ async def handle_webhook_event(
             raise HTTPException(status_code=400, detail="簽名驗證失敗")
         
         # 處理 Webhook 事件
+        logger.info(f"🔄 開始處理 Webhook 事件...")
         result = line_bot_service.handle_webhook_event(body, db, bot_id)
-        
+        logger.info(f"✅ Webhook 事件處理完成，結果數量: {len(result) if result else 0}")
+
+        # 發送即時活動更新到 WebSocket
+        try:
+            webhook_data = json.loads(body.decode('utf-8'))
+            events = webhook_data.get('events', [])
+
+            for event in events:
+                activity_data = {
+                    'event_type': event.get('type'),
+                    'timestamp': event.get('timestamp'),
+                    'source_type': event.get('source', {}).get('type'),
+                    'user_id': event.get('source', {}).get('userId'),
+                    'message_type': event.get('message', {}).get('type') if event.get('message') else None,
+                    'message_text': event.get('message', {}).get('text') if event.get('message', {}).get('type') == 'text' else None
+                }
+
+                # 發送活動更新
+                await websocket_manager.send_activity_update(bot_id, activity_data)
+
+            # 發送分析數據更新（觸發前端重新獲取統計數據）
+            if events:  # 只有當有事件時才發送分析更新
+                await websocket_manager.send_analytics_update(bot_id, {
+                    'updated_at': webhook_data.get('events', [{}])[0].get('timestamp'),
+                    'trigger': 'webhook_event',
+                    'event_count': len(events)
+                })
+
+        except Exception as ws_error:
+            logger.warning(f"發送 WebSocket 更新失敗: {ws_error}")
+
         if result:
             logger.info(f"Webhook 事件處理成功: {bot_id}, 事件數量: {len(result) if isinstance(result, list) else 1}")
         else:
             logger.info(f"Webhook 事件處理完成，無返回結果: {bot_id}")
-        
+
         # 返回 200 OK，告知 LINE 平台事件已處理
         return Response(status_code=200)
         

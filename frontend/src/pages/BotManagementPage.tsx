@@ -6,37 +6,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { 
   Bot, 
   BarChart3, 
   Users, 
   MessageSquare, 
-  TrendingUp,
   Settings,
-  Send,
   Eye,
-  Play,
-  Pause,
   Activity,
-  Calendar,
   Clock,
   Target,
+  Zap,
+  Send,
   Copy,
-  CheckCircle
+  CheckCircle,
+  Play,
+  Pause,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
+import { useWebSocket } from "../hooks/useWebSocket";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import { apiClient } from "../services/UnifiedApiClient";
 import { Bot as BotType, LogicTemplate } from "@/types/bot";
 import { getWebhookUrl } from "../config/apiConfig";
+
+// 導入新的儀表板元件
+import MetricCard from "@/components/dashboard/MetricCard";
+import ChartWidget from "@/components/dashboard/ChartWidget";
+import ActivityFeed from "@/components/dashboard/ActivityFeed";
+import HeatMap from "@/components/dashboard/HeatMap";
 
 // 類型定義
 interface BotAnalytics {
@@ -66,6 +68,28 @@ interface UsageData {
   color: string;
 }
 
+interface HeatMapDataPoint {
+  hour: number;
+  day: number;
+  value: number;
+  label?: string;
+}
+
+interface ActivityItem {
+  id: string;
+  type: "message" | "user_join" | "user_leave" | "error" | "success" | "info";
+  title: string;
+  description?: string;
+  timestamp: string;
+  metadata?: {
+    userId?: string;
+    userName?: string;
+    messageContent?: string;
+    errorCode?: string;
+    [key: string]: string | number | boolean | undefined;
+  };
+}
+
 const BotManagementPage: React.FC = () => {
   const { user, loading: authLoading } = useUnifiedAuth({ requireAuth: true, redirectTo: "/login" });
   const navigate = useNavigate();
@@ -79,19 +103,29 @@ const BotManagementPage: React.FC = () => {
   const [messageStats, setMessageStats] = useState<MessageStats[]>([]);
   const [userActivity, setUserActivity] = useState<UserActivity[]>([]);
   const [usageData, setUsageData] = useState<UsageData[]>([]);
+  const [heatMapData, setHeatMapData] = useState<HeatMapDataPoint[]>([]);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [logicLoading, setLogicLoading] = useState(false);
   const [controlLoading, setControlLoading] = useState(false);
-  const [testMessage, setTestMessage] = useState("");
-  const [testUserId, setTestUserId] = useState("");
   const [copiedWebhookUrl, setCopiedWebhookUrl] = useState(false);
-  const [webhookStatus, setWebhookStatus] = useState<any>(null);
+  const [webhookStatus, setWebhookStatus] = useState<Record<string, unknown> | null>(null);
   const [webhookStatusLoading, setWebhookStatusLoading] = useState(false);
+  const [timeRange, setTimeRange] = useState("week");
+  const [_refreshing, setRefreshing] = useState(false);
+  const [botHealth, setBotHealth] = useState<"online" | "offline" | "error">("online");
+  const [_lastRenderTime, setLastRenderTime] = useState(new Date().toISOString());
 
+  // WebSocket 即時連接
+  const { isConnected, connectionError, lastMessage } = useWebSocket({
+    botId: selectedBotId || undefined,
+    autoReconnect: true,
+    enabled: !!selectedBotId
+  });
 
   // 圖表配置
-  const chartConfig = {
+  const _chartConfig = {
     sent: {
       label: "發送",
       color: "hsl(var(--primary))",
@@ -110,25 +144,25 @@ const BotManagementPage: React.FC = () => {
     },
   };
 
-  // 獲取用戶的 Bot 列表
+  // 獲取用戶的 Bot 列表 - 修復循環依賴
   const fetchBots = useCallback(async () => {
     try {
       const response = await apiClient.getBots();
       if (response.data && Array.isArray(response.data)) {
         setBots(response.data);
-        if (response.data.length > 0 && !selectedBotId) {
-          setSelectedBotId(response.data[0].id);
-        }
+        return response.data;
       }
-    } catch (error) {
+      return [];
+    } catch (_error) {
       console.error("獲取 Bot 列表失敗:", error);
       toast({
         variant: "destructive",
         title: "載入失敗",
         description: "無法載入 Bot 列表",
       });
+      return [];
     }
-  }, [selectedBotId, toast]);
+  }, [toast]); // 移除 selectedBotId 依賴
 
   // 獲取邏輯模板
   const fetchLogicTemplates = useCallback(async (botId: string) => {
@@ -138,63 +172,109 @@ const BotManagementPage: React.FC = () => {
       if (response.data && Array.isArray(response.data)) {
         setLogicTemplates(response.data);
       }
-    } catch (error) {
+    } catch (_error) {
       console.error("獲取邏輯模板失敗:", error);
     } finally {
       setLogicLoading(false);
     }
   }, []);
 
-  // 獲取分析數據
+  // 獲取分析數據 - 使用真實API
   const fetchAnalytics = useCallback(async (botId: string) => {
     setAnalyticsLoading(true);
     try {
-      // 並行獲取所有分析數據
-      const [analyticsRes, messageStatsRes, userActivityRes, usageStatsRes] = await Promise.all([
-        apiClient.getBotAnalytics(botId, "week"),
+      // 使用 apiClient 調用真實的後端API端點
+      const [analyticsRes, messageStatsRes, userActivityRes, usageStatsRes, activitiesRes] = await Promise.all([
+        apiClient.getBotAnalytics(botId, timeRange),
         apiClient.getBotMessageStats(botId, 7),
         apiClient.getBotUserActivity(botId),
-        apiClient.getBotUsageStats(botId)
+        apiClient.getBotUsageStats(botId),
+        apiClient.getBotActivities(botId, 20, 0)
       ]);
 
-      if (analyticsRes.data) {
+      // 處理分析數據響應
+      if (analyticsRes.data && !analyticsRes.error) {
         setAnalytics(analyticsRes.data as BotAnalytics);
+        setBotHealth("online");
+      } else {
+        console.warn('Analytics API 響應錯誤:', analyticsRes.error);
+        setBotHealth("error");
       }
-      
-      if (messageStatsRes.data) {
-        setMessageStats(messageStatsRes.data as MessageStats[]);
+
+      // 處理訊息統計數據
+      if (messageStatsRes.data && !messageStatsRes.error) {
+        setMessageStats(Array.isArray(messageStatsRes.data) ? messageStatsRes.data as MessageStats[] : []);
+      } else {
+        console.warn('Message stats API 響應錯誤:', messageStatsRes.error);
+        setMessageStats([]);
       }
-      
-      if (userActivityRes.data) {
-        setUserActivity(userActivityRes.data as UserActivity[]);
+
+      // 處理用戶活躍度數據
+      if (userActivityRes.data && !userActivityRes.error) {
+        setUserActivity(Array.isArray(userActivityRes.data) ? userActivityRes.data as UserActivity[] : []);
+
+        // 生成熱力圖數據
+        const heatData: HeatMapDataPoint[] = [];
+        if (Array.isArray(userActivityRes.data)) {
+          (userActivityRes.data as UserActivity[]).forEach((activity: UserActivity) => {
+            for (let day = 0; day < 7; day++) {
+              heatData.push({
+                hour: parseInt(activity.hour) || 0,
+                day: day,
+                value: activity.activeUsers || 0,
+                label: `${activity.hour}:00`
+              });
+            }
+          });
+        }
+        setHeatMapData(heatData);
+      } else {
+        console.warn('User activity API 響應錯誤:', userActivityRes.error);
+        setUserActivity([]);
+        setHeatMapData([]);
       }
-      
-      if (usageStatsRes.data) {
-        setUsageData(usageStatsRes.data as UsageData[]);
+
+      // 處理使用統計數據
+      if (usageStatsRes.data && !usageStatsRes.error) {
+        setUsageData(Array.isArray(usageStatsRes.data) ? usageStatsRes.data as UsageData[] : []);
+      } else {
+        console.warn('Usage stats API 響應錯誤:', usageStatsRes.error);
+        setUsageData([]);
       }
-    } catch (error) {
+
+      // 處理活動記錄
+      if (activitiesRes.data && !activitiesRes.error) {
+        const responseData = activitiesRes.data as {activities?: ActivityItem[]};
+        const activitiesData = responseData.activities || responseData;
+        setActivities(Array.isArray(activitiesData) ? activitiesData as ActivityItem[] : []);
+      } else {
+        console.warn('Activities API 響應錯誤:', activitiesRes.error);
+        setActivities([]);
+      }
+
+    } catch (_error) {
       console.error("獲取分析數據失敗:", error);
       toast({
         title: "獲取分析數據失敗",
         description: "無法連接到 LINE Bot API，請檢查您的 Bot 設定",
         variant: "destructive",
       });
-      
-      // 清空數據，不提供虛假數據
-      setAnalytics(null);
-      setMessageStats([]);
-      setUserActivity([]);
-      setUsageData([]);
-      
-      toast({
-        variant: "destructive",
-        title: "數據載入警告",
-        description: "無法載入最新數據，顯示模擬數據",
-      });
+
+      // 設置為離線狀態
+      setBotHealth("error");
+
+      // 只在初始加載時設置空數據，避免覆蓋現有數據
+      setAnalytics(prev => prev || null);
+      setMessageStats(prev => prev.length > 0 ? prev : []);
+      setUserActivity(prev => prev.length > 0 ? prev : []);
+      setUsageData(prev => prev.length > 0 ? prev : []);
+      setHeatMapData(prev => prev.length > 0 ? prev : []);
+      setActivities(prev => prev.length > 0 ? prev : []);
+
     } finally {
       setAnalyticsLoading(false);
     }
-  }, [toast]);
+  }, [toast, timeRange]);
 
   // 切換邏輯模板狀態
   const toggleLogicTemplate = async (templateId: string, isActive: boolean) => {
@@ -213,7 +293,7 @@ const BotManagementPage: React.FC = () => {
         title: isActive ? "啟用成功" : "停用成功",
         description: `邏輯模板已${isActive ? "啟用" : "停用"}`,
       });
-    } catch (error) {
+    } catch (_error) {
       console.error("切換邏輯模板狀態失敗:", error);
       toast({
         variant: "destructive",
@@ -223,67 +303,7 @@ const BotManagementPage: React.FC = () => {
     }
   };
 
-  // 發送測試訊息
-  const handleSendTestMessage = async () => {
-    if (!selectedBotId || !testUserId || !testMessage) {
-      toast({
-        variant: "destructive",
-        title: "參數不足",
-        description: "請填寫用戶 ID 和測試訊息",
-      });
-      return;
-    }
 
-    setControlLoading(true);
-    try {
-      await apiClient.sendTestMessage(selectedBotId, {
-        user_id: testUserId,
-        message: testMessage
-      });
-
-      toast({
-        title: "發送成功",
-        description: "測試訊息已發送",
-      });
-
-      setTestMessage("");
-      setTestUserId("");
-    } catch (error) {
-      console.error("發送測試訊息失敗:", error);
-      toast({
-        variant: "destructive",
-        title: "發送失敗",
-        description: "無法發送測試訊息，請檢查 Bot 設定",
-      });
-    } finally {
-      setControlLoading(false);
-    }
-  };
-
-  // 檢查 Bot 狀態
-  const handleCheckBotHealth = async () => {
-    if (!selectedBotId) return;
-
-    setControlLoading(true);
-    try {
-      const response = await apiClient.checkBotHealth(selectedBotId);
-      
-      toast({
-        title: "狀態檢查",
-        description: response.data ? "Bot 運作正常" : "Bot 狀態異常",
-        variant: response.data ? "default" : "destructive",
-      });
-    } catch (error) {
-      console.error("檢查 Bot 狀態失敗:", error);
-      toast({
-        variant: "destructive",
-        title: "檢查失敗",
-        description: "無法檢查 Bot 狀態",
-      });
-    } finally {
-      setControlLoading(false);
-    }
-  };
 
   // 複製 Webhook URL
   const handleCopyWebhookUrl = async () => {
@@ -303,7 +323,7 @@ const BotManagementPage: React.FC = () => {
       setTimeout(() => {
         setCopiedWebhookUrl(false);
       }, 2000);
-    } catch (error) {
+    } catch (_error) {
       console.error("複製 Webhook URL 失敗:", error);
       toast({
         variant: "destructive",
@@ -314,22 +334,38 @@ const BotManagementPage: React.FC = () => {
   };
 
   // 獲取 Webhook 狀態
-  const fetchWebhookStatus = async (botId: string) => {
+  const fetchWebhookStatus = useCallback(async (botId: string) => {
     if (!botId) return;
 
     setWebhookStatusLoading(true);
     try {
       const response = await apiClient.getWebhookStatus(botId);
-      if (response.data) {
-        setWebhookStatus(response.data);
+      if (response.data && !response.error) {
+        const statusData = response.data as {status?: string; is_configured?: boolean; line_api_accessible?: boolean; checked_at?: string};
+        setWebhookStatus(statusData);
+        
+        // 根據 Webhook 狀態設置 Bot 健康狀態
+        if (statusData.status === 'active') {
+          setBotHealth("online");
+        } else if (statusData.status === 'not_configured') {
+          setBotHealth("error");
+        } else if (statusData.status === 'configuration_error') {
+          setBotHealth("error");
+        } else {
+          setBotHealth("offline");
+        }
+      } else {
+        setWebhookStatus(null);
+        setBotHealth("error");
       }
-    } catch (error) {
+    } catch (_error) {
       console.error("獲取 Webhook 狀態失敗:", error);
       setWebhookStatus(null);
+      setBotHealth("error");
     } finally {
       setWebhookStatusLoading(false);
     }
-  };
+  }, []);
 
   // 檢查 Webhook 狀態
   const handleCheckWebhookStatus = async () => {
@@ -337,33 +373,269 @@ const BotManagementPage: React.FC = () => {
     await fetchWebhookStatus(selectedBotId);
   };
 
-  // 初始化數據
+
+
+  // 處理時間範圍變更
+  const handleTimeRangeChange = (newRange: string) => {
+    setTimeRange(newRange);
+    if (selectedBotId) {
+      fetchAnalytics(selectedBotId);
+    }
+  };
+
+  // 手動刷新數據
+  const handleRefreshData = async () => {
+    if (!selectedBotId) return;
+    setRefreshing(true);
+    try {
+      const analyticsRes = await apiClient.getBotAnalytics(selectedBotId, timeRange);
+      if (analyticsRes.data && !analyticsRes.error) {
+        setAnalytics(analyticsRes.data as BotAnalytics);
+      }
+      toast({
+        title: "刷新完成",
+        description: "數據已更新"
+      });
+    } catch (_error) {
+      toast({
+        title: "刷新失敗",
+        description: "無法獲取最新數據",
+        variant: "destructive"
+      });
+    }
+    setRefreshing(false);
+  };
+
+
+  // 處理Bot健康檢查
+  const handleCheckBotHealth = async () => {
+    if (!selectedBotId) return;
+    
+    setControlLoading(true);
+    
+    try {
+      // 使用 webhook status API 來檢查 Bot 狀態
+      const response = await apiClient.getWebhookStatus(selectedBotId);
+      
+      if (response.data && !response.error) {
+        const statusData = response.data as {status?: string; is_configured?: boolean; line_api_accessible?: boolean; checked_at?: string};
+        
+        // 根據 Bot 的配置和 LINE API 連接狀態設定健康狀態
+        if (statusData.status === 'active') {
+          setBotHealth("online");
+          toast({
+            title: "狀態檢查",
+            description: "Bot 運作正常，Webhook 已綁定"
+          });
+        } else if (statusData.status === 'not_configured') {
+          setBotHealth("error");
+          toast({
+            title: "狀態檢查",
+            description: "Bot 尚未配置 Channel Token 或 Channel Secret",
+            variant: "destructive"
+          });
+        } else if (statusData.status === 'configuration_error') {
+          setBotHealth("error");
+          toast({
+            title: "狀態檢查",
+            description: "Bot 配置錯誤，無法連接 LINE API",
+            variant: "destructive"
+          });
+        } else {
+          setBotHealth("offline");
+          toast({
+            title: "狀態檢查",
+            description: "Bot 已配置但 Webhook 未綁定",
+            variant: "destructive"
+          });
+        }
+      } else {
+        setBotHealth("error");
+        toast({
+          variant: "destructive",
+          title: "檢查失敗",
+          description: response.error || "無法獲取 Bot 狀態"
+        });
+      }
+    } catch (_error) {
+      setBotHealth("error");
+      toast({
+        variant: "destructive",
+        title: "檢查失敗",
+        description: "網路錯誤，無法檢查 Bot 狀態"
+      });
+    } finally {
+      setControlLoading(false);
+    }
+  };
+
+  // 初始化數據 - 修復循環依賴
   useEffect(() => {
     const initializeData = async () => {
+      if (!user) return;
+
       setLoading(true);
-      await fetchBots();
+      const botList = await fetchBots();
+
+      // 只在初始化時設置第一個 Bot，避免循環依賴
+      if (botList.length > 0 && !selectedBotId) {
+        setSelectedBotId(botList[0].id);
+      }
+
       setLoading(false);
     };
 
-    if (user) {
-      initializeData();
-    }
-  }, [user, fetchBots]);
+    initializeData();
+  }, [user, fetchBots, selectedBotId]); // fetchBots 現在不依賴 selectedBotId
 
   // 當選擇的 Bot 變化時獲取相關數據
   useEffect(() => {
+    let isMounted = true;
+
     const fetchBotData = async () => {
-      if (selectedBotId) {
-        await Promise.all([
-          fetchLogicTemplates(selectedBotId),
-          fetchAnalytics(selectedBotId),
-          fetchWebhookStatus(selectedBotId)
-        ]);
+      if (selectedBotId && isMounted) {
+        try {
+          await Promise.all([
+            fetchLogicTemplates(selectedBotId),
+            fetchAnalytics(selectedBotId),
+            fetchWebhookStatus(selectedBotId)
+          ]);
+        } catch (_error) {
+          if (isMounted) {
+            console.error('獲取 Bot 數據失敗:', error);
+          }
+        }
       }
     };
 
     fetchBotData();
-  }, [selectedBotId, fetchLogicTemplates, fetchAnalytics]);
+
+    // 清理函數
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedBotId, fetchLogicTemplates, fetchAnalytics, fetchWebhookStatus]);
+
+  // 處理 WebSocket 即時更新消息
+  useEffect(() => {
+    if (!lastMessage || !selectedBotId) return;
+    
+    // 確保消息是針對當前選中的 Bot
+    if (lastMessage.bot_id !== selectedBotId) {
+      return;
+    }
+    
+    switch (lastMessage.type) {
+      case 'analytics_update':
+        // 靜默更新所有分析相關數據，保持其他數據不變
+        Promise.all([
+          apiClient.getBotAnalytics(selectedBotId, timeRange),
+          apiClient.getBotMessageStats(selectedBotId, 7),
+          apiClient.getBotUserActivity(selectedBotId),
+          apiClient.getBotUsageStats(selectedBotId)
+        ]).then(([analyticsRes, messageStatsRes, userActivityRes, usageStatsRes]) => {
+          // 更新分析數據
+          if (analyticsRes.data && !analyticsRes.error) {
+            setAnalytics(prev => ({
+              ...prev,
+              totalMessages: analyticsRes.data.totalMessages || prev?.totalMessages || 0,
+              activeUsers: analyticsRes.data.activeUsers || prev?.activeUsers || 0,
+              responseTime: analyticsRes.data.responseTime || prev?.responseTime || 0,
+              successRate: analyticsRes.data.successRate || prev?.successRate || 0,
+              todayMessages: analyticsRes.data.todayMessages || prev?.todayMessages || 0,
+              weekMessages: analyticsRes.data.weekMessages || prev?.weekMessages || 0,
+              monthMessages: analyticsRes.data.monthMessages || prev?.monthMessages || 0,
+            } as BotAnalytics));
+          }
+
+          // 更新訊息統計圖表數據
+          if (messageStatsRes.data && !messageStatsRes.error) {
+            setMessageStats(Array.isArray(messageStatsRes.data) ? messageStatsRes.data as MessageStats[] : []);
+          }
+
+          // 更新用戶活躍度數據和熱力圖
+          if (userActivityRes.data && !userActivityRes.error) {
+            setUserActivity(Array.isArray(userActivityRes.data) ? userActivityRes.data as UserActivity[] : []);
+            
+            // 生成熱力圖數據
+            const heatData: HeatMapDataPoint[] = [];
+            if (Array.isArray(userActivityRes.data)) {
+              (userActivityRes.data as UserActivity[]).forEach((activity: UserActivity) => {
+                for (let day = 0; day < 7; day++) {
+                  heatData.push({
+                    hour: parseInt(activity.hour) || 0,
+                    day: day,
+                    value: activity.activeUsers || 0,
+                    label: `${activity.hour}:00`
+                  });
+                }
+              });
+            }
+            setHeatMapData(heatData);
+          }
+
+          // 更新使用統計數據
+          if (usageStatsRes.data && !usageStatsRes.error) {
+            setUsageData(Array.isArray(usageStatsRes.data) ? usageStatsRes.data as UsageData[] : []);
+          }
+        }).catch(() => {
+          // 靜默處理錯誤，不影響用戶體驗
+        });
+        break;
+        
+      case 'activity_update':
+        if (lastMessage.data) {
+          // 靜默更新活動數據，保持其他數據不變
+          apiClient.getBotActivities(selectedBotId, 20, 0).then(response => {
+            if (response.data && !response.error) {
+              const responseData = response.data as {activities?: ActivityItem[]};
+              const activitiesData = responseData.activities || responseData;
+              setActivities(Array.isArray(activitiesData) ? activitiesData as ActivityItem[] : []);
+              
+              toast({
+                title: "新活動",
+                description: "檢測到新的 Bot 活動",
+                duration: 3000,
+              });
+            }
+          }).catch(() => {
+            // 靜默處理錯誤
+          });
+        }
+        break;
+        
+      case 'webhook_status_update':
+        setWebhookStatusLoading(true);
+        apiClient.getWebhookStatus(selectedBotId).then(response => {
+          if (response.data) {
+            setWebhookStatus(response.data as Record<string, unknown>);
+          }
+        }).catch(() => {
+          // 靜默處理錯誤
+        }).finally(() => {
+          setWebhookStatusLoading(false);
+        });
+        break;
+        
+      case 'pong':
+        setBotHealth('online');
+        break;
+        
+      default:
+        // 未處理的消息類型
+    }
+  }, [lastMessage, selectedBotId, timeRange, toast]);
+
+  // 更新渲染時間
+  useEffect(() => {
+    const renderTime = new Date().toISOString();
+    setLastRenderTime(renderTime);
+    
+    // 更新文檔標題
+    if (analytics) {
+      document.title = `Bot Management - ${analytics.totalMessages || 0} messages`;
+    }
+  }, [analytics]);
 
   // 處理加載狀態
   if (authLoading || loading) {
@@ -390,7 +662,7 @@ const BotManagementPage: React.FC = () => {
 
           {/* Bot 選擇器 */}
           <div className="mb-6 sticky top-20 z-20">
-            <Card className="glass-card">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Bot className="h-5 w-5" />
@@ -418,9 +690,17 @@ const BotManagementPage: React.FC = () => {
                         <Activity className="h-3 w-3 mr-1" />
                         啟用中
                       </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        建立時間: {new Date(selectedBot.created_at).toLocaleDateString("zh-TW")}
-                      </span>
+
+                      {/* WebSocket 連接狀態 */}
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+                          {isConnected ? '即時連接' : '離線模式'}
+                        </span>
+                        {connectionError && (
+                          <span className="text-red-500 text-xs">({connectionError})</span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -428,164 +708,215 @@ const BotManagementPage: React.FC = () => {
             </Card>
           </div>
 
-          {selectedBotId && (
-            <Tabs defaultValue="analytics" className="space-y-6">
+          <Tabs defaultValue="analytics" className="space-y-6">
               <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted p-1">
-                <TabsTrigger value="analytics" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">數據分析</TabsTrigger>
-                <TabsTrigger value="control" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Bot 控制</TabsTrigger>
-                <TabsTrigger value="logic" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">邏輯管理</TabsTrigger>
+                <TabsTrigger value="analytics" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  數據分析
+                </TabsTrigger>
+                <TabsTrigger value="control" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Bot 控制
+                </TabsTrigger>
+                <TabsTrigger value="logic" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <Zap className="h-4 w-4 mr-2" />
+                  邏輯管理
+                </TabsTrigger>
               </TabsList>
 
               {/* 數據分析頁籤 */}
               <TabsContent value="analytics" className="space-y-6">
-                {analyticsLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader />
-                  </div>
-                ) : (
+                {!selectedBotId ? (
+                  <Card>
+                    <CardContent className="text-center py-8">
+                      <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">請先選擇一個 Bot 來查看分析數據</p>
+                    </CardContent>
+                  </Card>
+) : (
                   <>
-                    {/* 關鍵指標 */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card className="shadow-sm hover:shadow-md transition">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">總訊息數</CardTitle>
-                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{analytics?.totalMessages.toLocaleString()}</div>
-                      <p className="text-xs text-muted-foreground">+12% 較上月</p>
-                    </CardContent>
-                  </Card>
+                    {/* 現代化的關鍵指標卡片 */}
+                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                      <div>
+                        <MetricCard
+                          key="total-messages"
+                          icon={MessageSquare}
+                          title="總訊息數"
+                          value={analytics?.totalMessages || 0}
+                          trend={{
+                            value: 12,
+                            isPositive: true,
+                            period: "較上月"
+                          }}
+                          variant="info"
+                          showMiniChart
+                          miniChartData={messageStats.map(s => s.sent + s.received)}
+                          onClick={() => {}}
+                        />
+                      </div>
+                      
+                      <div>
+                        <MetricCard
+                          key="active-users"
+                          icon={Users}
+                          title="活躍用戶"
+                          value={analytics?.activeUsers || 0}
+                          trend={{
+                            value: 5,
+                            isPositive: true,
+                            period: "較昨日"
+                          }}
+                          variant="success"
+                          showMiniChart
+                          miniChartData={userActivity.map(u => u.activeUsers)}
+                        />
+                      </div>
+                      
+                      <div>
+                        <MetricCard
+                          key="response-time"
+                          icon={Clock}
+                          title="平均回應時間"
+                          value={analytics?.responseTime || 0}
+                          unit="s"
+                          trend={{
+                            value: 10,
+                            isPositive: false,
+                            period: "較上週"
+                          }}
+                          variant="warning"
+                        />
+                      </div>
+                      
+                      <div>
+                        <MetricCard
+                          key="success-rate"
+                          icon={Target}
+                          title="成功率"
+                          value={analytics?.successRate || 0}
+                          unit="%"
+                          trend={{
+                            value: 0.3,
+                            isPositive: true,
+                            period: "較上週"
+                          }}
+                          variant="success"
+                        />
+                      </div>
+                    </div>
 
-                  <Card className="shadow-sm hover:shadow-md transition">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">活躍用戶</CardTitle>
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{analytics?.activeUsers}</div>
-                      <p className="text-xs text-muted-foreground">+5% 較昨日</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="shadow-sm hover:shadow-md transition">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">平均回應時間</CardTitle>
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{analytics?.responseTime}s</div>
-                      <p className="text-xs text-muted-foreground">-0.2s 較上週</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="shadow-sm hover:shadow-md transition">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">成功率</CardTitle>
-                      <Target className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{analytics?.successRate}%</div>
-                      <p className="text-xs text-muted-foreground">+0.3% 較上週</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* 圖表與洞察版面 */}
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                  <div className="xl:col-span-8 space-y-6">
-                    {/* 訊息統計圖表 */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <BarChart3 className="h-5 w-5" />
-                          訊息統計
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ChartContainer config={chartConfig} className="h-[300px]">
-                          <BarChart data={messageStats} width={500} height={300}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <Bar dataKey="sent" fill="var(--color-sent)" />
-                            <Bar dataKey="received" fill="var(--color-received)" />
-                          </BarChart>
-                        </ChartContainer>
-                      </CardContent>
-                    </Card>
-
-                    {/* 用戶活躍度圖表 */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <TrendingUp className="h-5 w-5" />
-                          用戶活躍度
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ChartContainer config={chartConfig} className="h-[300px]">
-                          <LineChart data={userActivity} width={500} height={300}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="hour" />
-                            <YAxis />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <Line
-                              type="monotone"
-                              dataKey="activeUsers"
-                              stroke="var(--color-activeUsers)"
-                              strokeWidth={2}
-                            />
-                          </LineChart>
-                        </ChartContainer>
-                      </CardContent>
-                    </Card>
+                {/* 現代化的圖表和分析區域 */}
+                <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
+                  <div className="lg:col-span-8">
+                    <div className="space-y-6">
+                      {/* 增強版訊息統計圖表 */}
+                      <ChartWidget
+                        title="訊息統計趋勢"
+                        data={messageStats.map(stat => ({
+                          name: stat.date,
+                          發送: stat.sent,
+                          接收: stat.received
+                        }))}
+                        chartType="bar"
+                        isLoading={analyticsLoading}
+                        height={300}
+                        showControls
+                        showRefresh
+                        onRefresh={handleRefreshData}
+                        trend={{
+                          value: 8.5,
+                          isPositive: true,
+                          description: "本週較上週增長"
+                        }}
+                        config={{
+                          發送: { label: "發送", color: "hsl(var(--primary))" },
+                          接收: { label: "接收", color: "hsl(var(--secondary))" }
+                        }}
+                        timeRange={{
+                          current: timeRange,
+                          options: [
+                            { value: "day", label: "今日" },
+                            { value: "week", label: "本週" },
+                            { value: "month", label: "本月" }
+                          ],
+                          onChange: handleTimeRangeChange
+                        }}
+                      />
+                      
+                      {/* 用戶活躍度圖表 */}
+                      <ChartWidget
+                        title="用戶活躍度分析"
+                        data={userActivity.map(activity => ({
+                          name: `${activity.hour}:00`,
+                          活躍用戶: activity.activeUsers
+                        }))}
+                        chartType="line"
+                        isLoading={analyticsLoading}
+                        height={300}
+                        showControls
+                        trend={{
+                          value: 15.2,
+                          isPositive: true,
+                          description: "活躍度提升"
+                        }}
+                        config={{
+                          活躍用戶: { label: "活躍用戶", color: "hsl(222.2 84% 59%)" }
+                        }}
+                      />
+                      
+                      {/* 熱力圖 */}
+                      <HeatMap
+                        data={heatMapData}
+                        title="一週用戶活躍時間分布"
+                        isLoading={analyticsLoading}
+                        colorScheme="blue"
+                        showLegend
+                        defaultView="simplified"
+                        showViewToggle={true}
+                        cellSize={18}
+                      />
+                    </div>
                   </div>
 
-                  {/* 功能使用統計（右側洞察） */}
-                  <div className="xl:col-span-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>功能使用統計</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-6">
-                          <ChartContainer config={chartConfig} className="h-[200px]">
-                            <PieChart width={350} height={200}>
-                              <Pie
-                                data={usageData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="usage"
-                              >
-                                {usageData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                              </Pie>
-                              <ChartTooltip content={<ChartTooltipContent />} />
-                            </PieChart>
-                          </ChartContainer>
-                          <div className="space-y-2">
-                            {usageData.map((item, index) => (
-                              <div key={index} className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: item.color }}
-                                  />
-                                  <span className="text-sm">{item.feature}</span>
-                                </div>
-                                <span className="text-sm font-medium">{item.usage}%</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  {/* 右側工具欄和統計 */}
+                  <div className="lg:col-span-4">
+                    <div className="space-y-6">
+                      {/* 即時活動動態 */}
+                      <ActivityFeed
+                        activities={activities}
+                        isLoading={analyticsLoading}
+                        height={350}
+                        showRefresh
+                        onRefresh={handleRefreshData}
+                        autoRefresh
+                        refreshInterval={30000}
+                      />
+                      
+                      {/* 功能使用統計 */}
+                      <ChartWidget
+                        title="功能使用統計"
+                        data={usageData.map(usage => ({
+                          name: usage.feature,
+                          value: usage.usage,
+                          fill: usage.color
+                        }))}
+                        chartType="pie"
+                        isLoading={analyticsLoading}
+                        height={280}
+                        customColors={usageData.map(u => u.color)}
+                        config={{
+                          value: {
+                            label: "使用次數",
+                            color: "hsl(var(--primary))"
+                          }
+                        }}
+                        trend={{
+                          value: 8.5,
+                          isPositive: true,
+                          description: "相較上週使用率提升"
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
                   </>
@@ -594,85 +925,110 @@ const BotManagementPage: React.FC = () => {
 
               {/* Bot 控制頁籤 */}
               <TabsContent value="control" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Bot 資訊 */}
-                  <Card className="shadow-sm hover:shadow-md transition">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Eye className="h-5 w-5" />
-                        Bot 資訊
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {selectedBot && (
-                        <>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">Bot 名稱</label>
-                              <p className="text-sm">{selectedBot.name}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">狀態</label>
-                              <div className="text-sm">
-                                <Badge className="bg-green-100 text-green-800">啟用中</Badge>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">建立時間</label>
-                              <p className="text-sm">{new Date(selectedBot.created_at).toLocaleString("zh-TW")}</p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">頻道設定</label>
-                              <div className="text-sm">
-                                <Badge variant={selectedBot.channel_token ? "default" : "secondary"}>
-                                  {selectedBot.channel_token ? "已設定" : "未設定"}
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      )}
+                {!selectedBotId ? (
+                  <Card>
+                    <CardContent className="text-center py-8">
+                      <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">請先選擇一個 Bot 來查看控制選項</p>
                     </CardContent>
                   </Card>
+                ) : (
+                  <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+                  {/* 左側：Bot 資訊和狀態 */}
+                  <div className="space-y-6">
+                    {/* Bot 資訊與狀態綜合卡片 */}
+                    <Card className="shadow-sm hover:shadow-md transition">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-5 w-5" />
+                            Bot 資訊與狀態
+                          </div>
+                          <Badge 
+                            variant="outline" 
+                            className={`${botHealth === 'online' ? 'bg-green-50 text-green-700 border-green-200' : 
+                                      botHealth === 'offline' ? 'bg-orange-50 text-orange-700 border-orange-200' : 
+                                      'bg-red-50 text-red-700 border-red-200'}`}
+                          >
+                            <Activity className="h-3 w-3 mr-1" />
+                            {botHealth === 'online' ? '運作正常' : botHealth === 'offline' ? '離線' : '錯誤'}
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {selectedBot && (
+                          <>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">Bot 名稱</label>
+                                <p className="text-sm font-medium">{selectedBot.name}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">頻道設定</label>
+                                <div className="text-sm">
+                                  <Badge variant={selectedBot.channel_token ? "default" : "secondary"}>
+                                    {selectedBot.channel_token ? "已設定" : "未設定"}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">建立時間</label>
+                                <p className="text-sm">{new Date(selectedBot.created_at).toLocaleString("zh-TW")}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">連接狀態</label>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                                  <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+                                    {isConnected ? '即時連接' : '離線模式'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="pt-4 border-t">
+                              <Button
+                                className="w-full"
+                                variant="outline"
+                                onClick={handleCheckBotHealth}
+                                disabled={controlLoading}
+                              >
+                                <Activity className="h-4 w-4 mr-2" />
+                                {controlLoading ? "檢查中..." : "重新檢查狀態"}
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
 
-                  {/* 測試訊息 */}
-                  <Card className="shadow-sm hover:shadow-md transition">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Send className="h-5 w-5" />
-                        發送測試訊息
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">用戶 ID</label>
-                        <Input
-                          placeholder="輸入測試用戶 ID"
-                          value={testUserId}
-                          onChange={(e) => setTestUserId(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">測試訊息</label>
-                        <Textarea
-                          placeholder="輸入要發送的測試訊息..."
-                          value={testMessage}
-                          onChange={(e) => setTestMessage(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-                      <Button
-                        className="w-full"
-                        onClick={handleSendTestMessage}
-                        disabled={controlLoading || !testUserId || !testMessage}
-                      >
-                        <Send className="h-4 w-4 mr-2" />
-                        {controlLoading ? "發送中..." : "發送測試訊息"}
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    {/* 快速操作 */}
+                    <Card className="shadow-sm hover:shadow-md transition">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Send className="h-5 w-5" />
+                          快速操作
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* 用戶管理 */}
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          onClick={() => navigate(`/bots/${selectedBotId}/users`)}
+                          disabled={!selectedBotId}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          查看用戶列表
+                        </Button>
+
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* 右側：Webhook 和其他設定 */}
+                  <div className="space-y-6">
 
                   {/* Webhook URL 設定 */}
                   <Card className="shadow-sm hover:shadow-md transition">
@@ -695,7 +1051,7 @@ const BotManagementPage: React.FC = () => {
                               'bg-red-100 text-red-800 border-red-200'
                             }
                           >
-                            {webhookStatusLoading ? '檢查中...' : webhookStatus.status_text}
+                            {webhookStatusLoading ? '檢查中...' : (webhookStatus as {status_text?: string})?.status_text || '未知狀態'}
                           </Badge>
                         )}
                       </CardTitle>
@@ -761,9 +1117,9 @@ const BotManagementPage: React.FC = () => {
                             </div>
                             <div className="col-span-2">
                               <span className="text-gray-500">Webhook 端點:</span>
-                              {webhookStatus.webhook_endpoint_info?.is_set ? (
-                                <span className={`ml-1 ${webhookStatus.webhook_endpoint_info?.active ? 'text-green-600' : 'text-orange-600'} font-medium`}>
-                                  {webhookStatus.webhook_endpoint_info?.active ? '✓ 已啟用' : '⚠ 已設定但未啟用'}
+                              {(webhookStatus as {webhook_endpoint_info?: {is_set?: boolean; active?: boolean; endpoint?: string}})?.webhook_endpoint_info?.is_set ? (
+                                <span className={`ml-1 ${(webhookStatus as {webhook_endpoint_info?: {active?: boolean}})?.webhook_endpoint_info?.active ? 'text-green-600' : 'text-orange-600'} font-medium`}>
+                                  {(webhookStatus as {webhook_endpoint_info?: {active?: boolean}})?.webhook_endpoint_info?.active ? '✓ 已啟用' : '⚠ 已設定但未啟用'}
                                 </span>
                               ) : (
                                 <span className="ml-1 text-red-600 font-medium">
@@ -771,18 +1127,18 @@ const BotManagementPage: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            {webhookStatus.webhook_endpoint_info?.endpoint && (
+                            {(webhookStatus as {webhook_endpoint_info?: {endpoint?: string}})?.webhook_endpoint_info?.endpoint && (
                               <div className="col-span-2">
                                 <span className="text-muted-foreground">設定的端點:</span>
                                 <div className="text-xs text-gray-700 mt-1 break-all">
-                                  {webhookStatus.webhook_endpoint_info.endpoint}
+                                  {(webhookStatus as {webhook_endpoint_info?: {endpoint?: string}})?.webhook_endpoint_info?.endpoint}
                                 </div>
                               </div>
                             )}
                           </div>
-                          {webhookStatus.checked_at && (
+                          {(webhookStatus as {checked_at?: string})?.checked_at && (
                             <p className="text-xs text-muted-foreground mt-2">
-                              最後檢查: {new Date(webhookStatus.checked_at).toLocaleString('zh-TW')}
+                              最後檢查: {new Date((webhookStatus as {checked_at: string}).checked_at).toLocaleString('zh-TW')}
                             </p>
                           )}
                         </div>
@@ -790,45 +1146,47 @@ const BotManagementPage: React.FC = () => {
                     </CardContent>
                   </Card>
 
-                  {/* 快速操作 */}
-                  <Card className="shadow-sm hover:shadow-md transition">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Settings className="h-5 w-5" />
-                        快速操作
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <Button
-                        className="w-full"
-                        variant="outline"
-                        onClick={handleCheckBotHealth}
-                        disabled={controlLoading}
-                      >
-                        <Activity className="h-4 w-4 mr-2" />
-                        {controlLoading ? "檢查中..." : "檢查 Bot 狀態"}
-                      </Button>
-                      <Button className="w-full" variant="outline" disabled>
-                        <Settings className="h-4 w-4 mr-2" />
-                        管理 Rich Menu (開發中)
-                      </Button>
-                      <Button 
-                        className="w-full" 
-                        variant="outline"
-                        onClick={() => navigate(`/bots/${selectedBotId}/users`)}
-                        disabled={!selectedBotId}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        查看用戶列表
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
+                    {/* 進階功能 */}
+                    <Card className="shadow-sm hover:shadow-md transition">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Settings className="h-5 w-5" />
+                          進階功能
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <Button className="w-full" variant="outline" disabled>
+                          <Settings className="h-4 w-4 mr-2" />
+                          管理 Rich Menu
+                          <Badge variant="secondary" className="ml-2 text-xs">開發中</Badge>
+                        </Button>
+                        
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={() => navigate("/bots/visual-editor")}
+                        >
+                          <Zap className="h-4 w-4 mr-2" />
+                          編輯 Bot 邏輯
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  </div>
+                )}
               </TabsContent>
 
               {/* 邏輯管理頁籤 */}
               <TabsContent value="logic" className="space-y-6">
-                <Card>
+                {!selectedBotId ? (
+                  <Card>
+                    <CardContent className="text-center py-8">
+                      <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">請先選擇一個 Bot 來管理邏輯</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -904,10 +1262,11 @@ const BotManagementPage: React.FC = () => {
                       </div>
                     )}
                   </CardContent>
-                </Card>
+                  </Card>
+                )}
               </TabsContent>
+
             </Tabs>
-          )}
 
           {bots.length === 0 && !loading && (
             <Card>

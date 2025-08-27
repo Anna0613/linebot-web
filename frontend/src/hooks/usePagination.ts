@@ -3,7 +3,7 @@
  * 提供高效的資料載入和分頁管理
  */
 import { useQuery, useInfiniteQuery, UseQueryOptions } from '@tanstack/react-query';
-import { unifiedApiClient } from '@/lib/UnifiedApiClient';
+import { apiClient } from '@/services/UnifiedApiClient';
 
 export interface PaginationParams {
   page?: number;
@@ -40,7 +40,7 @@ export interface BotInteraction {
   id: string;
   event_type: string;
   message_type?: string;
-  message_content?: any;
+  message_content?: unknown;
   timestamp: string;
   user?: {
     line_user_id: string;
@@ -84,7 +84,7 @@ export const useBotUsers = (
   return useQuery({
     queryKey: ['botUsers', botId, params],
     queryFn: async () => {
-      const response = await unifiedApiClient.get(`/bot_dashboard/${botId}/users`, {
+      const response = await apiClient.get(`/bot_dashboard/${botId}/users`, {
         params: {
           page: params.page || 1,
           limit: params.limit || 20,
@@ -110,7 +110,7 @@ export const useBotInteractions = (
   return useQuery({
     queryKey: ['botInteractions', botId, params],
     queryFn: async () => {
-      const response = await unifiedApiClient.get(`/bot_dashboard/${botId}/interactions`, {
+      const response = await apiClient.get(`/bot_dashboard/${botId}/interactions`, {
         params: {
           page: params.page || 1,
           limit: params.limit || 50,
@@ -135,7 +135,7 @@ export const useLogicTemplates = (
   return useQuery({
     queryKey: ['logicTemplates', botId, params],
     queryFn: async () => {
-      const response = await unifiedApiClient.get(`/bot_dashboard/${botId}/templates`, {
+      const response = await apiClient.get(`/bot_dashboard/${botId}/templates`, {
         params: {
           page: params.page || 1,
           limit: params.limit || 10,
@@ -159,7 +159,7 @@ export const useBotSummary = (
   return useQuery({
     queryKey: ['botSummary', botId],
     queryFn: async () => {
-      const response = await unifiedApiClient.get(`/bot_dashboard/${botId}/summary`);
+      const response = await apiClient.get(`/bot_dashboard/${botId}/summary`);
       return response.data;
     },
     enabled: !!botId,
@@ -173,12 +173,12 @@ export const useBotSummary = (
 export const useBotUsersInfinite = (
   botId: string,
   params: Omit<PaginationParams, 'page'> = {},
-  options?: any
+  options?: {enabled?: boolean; staleTime?: number; gcTime?: number}
 ) => {
   return useInfiniteQuery({
     queryKey: ['botUsersInfinite', botId, params],
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await unifiedApiClient.get(`/bot_dashboard/${botId}/users`, {
+      const response = await apiClient.get(`/bot_dashboard/${botId}/users`, {
         params: {
           page: pageParam,
           limit: params.limit || 20,
@@ -203,12 +203,12 @@ export const useBotUsersInfinite = (
 export const useBotInteractionsInfinite = (
   botId: string,
   params: Omit<PaginationParams, 'page'> = {},
-  options?: any
+  options?: {enabled?: boolean; staleTime?: number; gcTime?: number}
 ) => {
   return useInfiniteQuery({
     queryKey: ['botInteractionsInfinite', botId, params],
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await unifiedApiClient.get(`/bot_dashboard/${botId}/interactions`, {
+      const response = await apiClient.get(`/bot_dashboard/${botId}/interactions`, {
         params: {
           page: pageParam,
           limit: params.limit || 50,
@@ -229,7 +229,7 @@ export const useBotInteractionsInfinite = (
 };
 
 // 輔助函數：創建分頁快取失效器
-export const createPaginationInvalidator = (queryClient: any, botId: string) => {
+export const createPaginationInvalidator = (queryClient: unknown, botId: string) => {
   return {
     invalidateUsers: () => {
       queryClient.invalidateQueries({ queryKey: ['botUsers', botId] });

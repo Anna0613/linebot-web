@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../ui/button';
-import { Copy, Download } from 'lucide-react';
 import LineBotCodeGenerator from '../../utils/codeGenerator';
 import { useCodeDisplay } from './CodeDisplayContext';
 
@@ -20,7 +18,7 @@ interface CodePreviewProps {
 const CodePreview: React.FC<CodePreviewProps> = ({ blocks }) => {
   const [generatedCode, setGeneratedCode] = useState('');
   const [codeGenerator] = useState(new LineBotCodeGenerator());
-  const { state: { showLineNumbers, showComments, codeTheme } } = useCodeDisplay();
+  const { state: { showLineNumbers, codeTheme } } = useCodeDisplay();
 
   useEffect(() => {
     if (blocks && blocks.length > 0) {
@@ -31,12 +29,12 @@ const CodePreview: React.FC<CodePreviewProps> = ({ blocks }) => {
     }
   }, [blocks, codeGenerator]);
 
-  const copyToClipboard = () => {
+  const _copyToClipboard = () => {
     navigator.clipboard.writeText(generatedCode);
     // 可以加入成功提示
   };
 
-  const downloadCode = () => {
+  const _downloadCode = () => {
     const blob = new Blob([generatedCode], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

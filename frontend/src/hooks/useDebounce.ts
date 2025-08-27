@@ -32,7 +32,7 @@ export function useDebounce<T>(value: T, delay: number): T {
  * @param delay 延遲時間（毫秒）
  * @returns 防抖後的函數
  */
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number
 ): T {
@@ -54,7 +54,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   }, []);
 
   return useCallback(
-    ((...args: any[]) => {
+    ((...args: Parameters<T>) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -73,7 +73,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
  * @param delay 防抖延遲時間
  * @returns { debouncedCall, cancel }
  */
-export function useDebouncedApiCall<T extends (...args: any[]) => Promise<any>>(
+export function useDebouncedApiCall<T extends (...args: unknown[]) => Promise<unknown>>(
   apiCall: T,
   delay: number = 300
 ) {

@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { 
   Users, 
   MessageSquare, 
@@ -13,7 +15,6 @@ import {
   Search,
   Send,
   Eye,
-  Calendar,
   Hash,
   User,
   ChevronLeft,
@@ -22,6 +23,7 @@ import {
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
+import { useWebSocket } from "../hooks/useWebSocket";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import { apiClient } from "../services/UnifiedApiClient";
@@ -40,9 +42,12 @@ interface LineUser {
 }
 
 interface UserInteraction {
+  id: string;
   event_type: string;
   message_type: string;
-  message_content: any;
+  message_content: unknown;
+  media_url?: string;
+  media_path?: string;
   timestamp: string;
 }
 
@@ -58,6 +63,13 @@ const BotUsersPage: React.FC = () => {
   const { user, loading: authLoading } = useUnifiedAuth({ requireAuth: true, redirectTo: "/login" });
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // WebSocket 連接
+  const { isConnected, connectionError, lastMessage } = useWebSocket({
+    botId: botId || undefined,
+    autoReconnect: true,
+    enabled: !!botId
+  });
 
   // 狀態管理
   const [users, setUsers] = useState<LineUser[]>([]);
@@ -75,6 +87,255 @@ const BotUsersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastLoading, setBroadcastLoading] = useState(false);
+  const [isDetailedMode, setIsDetailedMode] = useState(false);  // 基本/詳細模式切換
+
+  // 媒體 URL 緩存狀態
+  const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
+
+  // 獲取媒體內容 URL
+  const fetchMediaContent = useCallback(async (messageId: string) => {
+    if (!botId || !messageId || mediaUrls[messageId]) return;
+    
+    try {
+      const response = await apiClient.getMessageContent(botId, messageId);
+      if (response.data) {
+        if (response.data.success && response.data.content_url) {
+          // 成功獲取媒體 URL
+          setMediaUrls(prev => ({
+            ...prev,
+            [messageId]: response.data.content_url
+          }));
+        } else if (response.data.error === 'legacy_media') {
+          // 舊媒體記錄，無法載入
+          setMediaUrls(prev => ({
+            ...prev,
+            [messageId]: 'LEGACY_MEDIA_ERROR'
+          }));
+        } else {
+          // 其他錯誤
+          console.warn(`媒體載入失敗 (${messageId}):`, response.data.message || '未知錯誤');
+          setMediaUrls(prev => ({
+            ...prev,
+            [messageId]: 'MEDIA_ERROR'
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("獲取媒體內容失敗:", error);
+      setMediaUrls(prev => ({
+        ...prev,
+        [messageId]: 'NETWORK_ERROR'
+      }));
+    }
+  }, [botId, mediaUrls]);
+
+  // 事件類型文本映射
+  const getEventTypeText = (eventType: string) => {
+    const eventMap: Record<string, string> = {
+      follow: "用戶關注",
+      unfollow: "用戶取消關注",
+      message: "訊息",
+      postback: "點擊按鈕",
+      join: "加入群組",
+      leave: "離開群組"
+    };
+    return eventMap[eventType] || eventType;
+  };
+
+  // 渲染訊息內容（支持媒體文件）
+  const renderMessageContent = (interaction: UserInteraction, isDetailed: boolean) => {
+    if (!interaction.message_content) {
+      return <span className="text-sm">無內容</span>;
+    }
+
+    const content = interaction.message_content;
+    
+    // 基本模式：只顯示簡化的訊息
+    if (!isDetailed) {
+      if (interaction.message_type === "text" && content.text) {
+        return <span className="text-sm">{content.text}</span>;
+      } else if (interaction.message_type === "image") {
+        return <span className="text-sm">📷 圖片</span>;
+      } else if (interaction.message_type === "video") {
+        return <span className="text-sm">🎥 影片</span>;
+      } else if (interaction.message_type === "audio") {
+        return <span className="text-sm">🎵 音訊</span>;
+      } else if (interaction.message_type === "file") {
+        return <span className="text-sm">📎 檔案</span>;
+      } else if (interaction.message_type === "sticker") {
+        return <span className="text-sm">😊 貼圖</span>;
+      } else if (interaction.message_type === "location") {
+        return <span className="text-sm">📍 位置</span>;
+      }
+      return <span className="text-sm">{interaction.message_type}</span>;
+    }
+
+    // 詳細模式：顯示完整內容和媒體
+    if (interaction.message_type === "text" && content.text) {
+      return (
+        <div>
+          <div className="text-sm mb-1">{content.text}</div>
+          <div className="text-xs opacity-75">文字訊息</div>
+        </div>
+      );
+    } else if (interaction.message_type === "image") {
+      const messageId = interaction.id;
+      // 優先使用資料庫中的 media_url，否則使用動態獲取的 URL
+      const mediaUrl = interaction.media_url || mediaUrls[messageId];
+      
+      // 如果沒有媒體 URL，嘗試獲取
+      if (!mediaUrl && messageId) {
+        fetchMediaContent(messageId);
+      }
+      
+      return (
+        <div>
+          {mediaUrl && !['LEGACY_MEDIA_ERROR', 'MEDIA_ERROR', 'NETWORK_ERROR'].includes(mediaUrl) ? (
+            <img 
+              src={mediaUrl} 
+              alt="用戶發送的圖片"
+              className="max-w-full rounded-lg mb-2"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling!.style.display = 'block';
+              }}
+            />
+          ) : mediaUrl === 'LEGACY_MEDIA_ERROR' ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded mb-2">
+              📷 舊版媒體訊息，無法載入內容
+            </div>
+          ) : mediaUrl === 'MEDIA_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              📷 媒體載入失敗
+            </div>
+          ) : mediaUrl === 'NETWORK_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              📷 網路錯誤，無法載入
+            </div>
+          ) : messageId ? (
+            <div className="text-sm text-gray-500 mb-2">📷 圖片載入中...</div>
+          ) : (
+            <div className="text-sm text-gray-500 mb-2">📷 圖片</div>
+          )}
+          <div className="hidden text-sm">📷 圖片載入失敗</div>
+          <div className="text-xs opacity-75">圖片訊息</div>
+        </div>
+      );
+    } else if (interaction.message_type === "video") {
+      const messageId = interaction.id;
+      // 優先使用資料庫中的 media_url，否則使用動態獲取的 URL
+      const mediaUrl = interaction.media_url || mediaUrls[messageId];
+      
+      // 如果沒有媒體 URL，嘗試獲取
+      if (!mediaUrl && messageId) {
+        fetchMediaContent(messageId);
+      }
+      
+      return (
+        <div>
+          {mediaUrl && !['LEGACY_MEDIA_ERROR', 'MEDIA_ERROR', 'NETWORK_ERROR'].includes(mediaUrl) ? (
+            <video 
+              src={mediaUrl} 
+              controls
+              className="max-w-full rounded-lg mb-2"
+              style={{ maxHeight: "200px" }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling!.style.display = 'block';
+              }}
+            />
+          ) : mediaUrl === 'LEGACY_MEDIA_ERROR' ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded mb-2">
+              🎥 舊版媒體訊息，無法載入內容
+            </div>
+          ) : mediaUrl === 'MEDIA_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              🎥 媒體載入失敗
+            </div>
+          ) : mediaUrl === 'NETWORK_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              🎥 網路錯誤，無法載入
+            </div>
+          ) : messageId ? (
+            <div className="text-sm text-gray-500 mb-2">🎥 影片載入中...</div>
+          ) : (
+            <div className="text-sm text-gray-500 mb-2">🎥 影片</div>
+          )}
+          <div className="hidden text-sm">🎥 影片載入失敗</div>
+          <div className="text-xs opacity-75">影片訊息</div>
+        </div>
+      );
+    } else if (interaction.message_type === "audio") {
+      const messageId = interaction.id;
+      // 優先使用資料庫中的 media_url，否則使用動態獲取的 URL
+      const mediaUrl = interaction.media_url || mediaUrls[messageId];
+      
+      // 如果沒有媒體 URL，嘗試獲取
+      if (!mediaUrl && messageId) {
+        fetchMediaContent(messageId);
+      }
+      
+      return (
+        <div>
+          {mediaUrl && !['LEGACY_MEDIA_ERROR', 'MEDIA_ERROR', 'NETWORK_ERROR'].includes(mediaUrl) ? (
+            <audio 
+              src={mediaUrl} 
+              controls
+              className="w-full mb-2"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling!.style.display = 'block';
+              }}
+            />
+          ) : mediaUrl === 'LEGACY_MEDIA_ERROR' ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded mb-2">
+              🎵 舊版媒體訊息，無法載入內容
+            </div>
+          ) : mediaUrl === 'MEDIA_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              🎵 媒體載入失敗
+            </div>
+          ) : mediaUrl === 'NETWORK_ERROR' ? (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded mb-2">
+              🎵 網路錯誤，無法載入
+            </div>
+          ) : messageId ? (
+            <div className="text-sm text-gray-500 mb-2">🎵 音訊載入中...</div>
+          ) : (
+            <div className="text-sm text-gray-500 mb-2">🎵 音訊</div>
+          )}
+          <div className="hidden text-sm">🎵 音訊載入失敗</div>
+          <div className="text-xs opacity-75">音訊訊息</div>
+        </div>
+      );
+    } else if (interaction.message_type === "sticker") {
+      return (
+        <div>
+          <div className="text-2xl mb-1">😊</div>
+          <div className="text-xs opacity-75">
+            貼圖 ID: {content.stickerId || 'unknown'}
+          </div>
+        </div>
+      );
+    } else if (interaction.message_type === "location" && content.address) {
+      return (
+        <div>
+          <div className="text-sm mb-1">📍 {content.title || content.address}</div>
+          {content.address && <div className="text-xs opacity-75">{content.address}</div>}
+        </div>
+      );
+    }
+
+    // 其他類型或包含原始JSON的詳細信息
+    return (
+      <div>
+        <div className="text-sm mb-2">{interaction.message_type}</div>
+        <pre className="whitespace-pre-wrap font-mono text-xs bg-black/20 p-2 rounded max-h-32 overflow-y-auto">
+          {JSON.stringify(content, null, 2)}
+        </pre>
+      </div>
+    );
+  };
 
   // 獲取用戶列表
   const fetchUsers = useCallback(async (limit: number = 20, offset: number = 0) => {
@@ -106,6 +367,30 @@ const BotUsersPage: React.FC = () => {
     }
   }, [botId, toast]);
 
+  // 靜默更新用戶列表（WebSocket 更新時使用，不顯示 loading）
+  const fetchUsersSilently = useCallback(async (limit: number = 20, offset: number = 0) => {
+    if (!botId) return;
+
+    try {
+      const response = await apiClient.getBotUsers(botId, limit, offset);
+      
+      if (response.data && !response.error) {
+        // 使用函數式更新，保持其他狀態不變
+        setUsers(response.data.users || []);
+        setTotalCount(response.data.total_count || 0);
+        setPagination(prev => ({
+          ...prev,
+          ...response.data.pagination,
+          limit,
+          offset
+        }));
+      }
+    } catch (error) {
+      console.error("靜默更新用戶列表失敗:", error);
+      // 靜默處理錯誤，不顯示通知
+    }
+  }, [botId]);
+
   // 獲取用戶互動歷史
   const fetchUserInteractions = useCallback(async (lineUserId: string) => {
     if (!botId) return;
@@ -128,6 +413,22 @@ const BotUsersPage: React.FC = () => {
       setInteractionsLoading(false);
     }
   }, [botId, toast]);
+
+  // 靜默更新用戶互動記錄（WebSocket 更新時使用，不顯示 loading）
+  const fetchUserInteractionsSilently = useCallback(async (lineUserId: string) => {
+    if (!botId) return;
+
+    try {
+      const response = await apiClient.getUserInteractions(botId, lineUserId);
+      
+      if (response.data && !response.error) {
+        setUserInteractions(response.data.interactions || []);
+      }
+    } catch (error) {
+      console.error("靜默更新用戶互動記錄失敗:", error);
+      // 靜默處理錯誤，不顯示通知
+    }
+  }, [botId]);
 
   // 廣播訊息
   const handleBroadcast = async () => {
@@ -188,6 +489,45 @@ const BotUsersPage: React.FC = () => {
     }
   }, [user, botId, fetchUsers]);
 
+  // 處理 WebSocket 即時更新消息
+  useEffect(() => {
+    if (!lastMessage || !botId) return;
+    
+    // 確保消息是針對當前 Bot
+    if (lastMessage.bot_id !== botId) {
+      return;
+    }
+    
+    switch (lastMessage.type) {
+      case 'activity_update':
+        // 有新活動時靜默更新用戶列表和選中用戶的互動記錄
+        if (lastMessage.data) {
+          // 靜默更新用戶列表以更新互動次數和最後互動時間，不顯示 loading
+          fetchUsersSilently(pagination.limit, pagination.offset);
+          
+          // 如果有選中的用戶，靜默更新其互動記錄
+          if (selectedUser) {
+            fetchUserInteractionsSilently(selectedUser.line_user_id);
+          }
+          
+          toast({
+            title: "新用戶活動",
+            description: "檢測到新的用戶互動",
+            duration: 3000,
+          });
+        }
+        break;
+        
+      case 'analytics_update':
+        // 分析數據更新時，靜默重新獲取用戶列表以更新統計
+        fetchUsersSilently(pagination.limit, pagination.offset);
+        break;
+        
+      default:
+        // 未處理的消息類型
+    }
+  }, [lastMessage, botId, pagination.limit, pagination.offset, selectedUser, fetchUsersSilently, fetchUserInteractionsSilently, toast]);
+
   // 處理加載狀態
   if (authLoading || loading) {
     return (
@@ -213,9 +553,22 @@ const BotUsersPage: React.FC = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               返回管理中心
             </Button>
-            <div>
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">用戶管理</h1>
               <p className="text-gray-600">管理 LINE Bot 的關注者和互動記錄</p>
+            </div>
+            
+            {/* WebSocket 連接狀態 */}
+            <div className="flex items-center gap-2 text-sm">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div className="flex flex-col">
+                <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+                  {isConnected ? '即時連接' : '離線模式'}
+                </span>
+                {connectionError && (
+                  <span className="text-red-500 text-xs">({connectionError})</span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -427,15 +780,32 @@ const BotUsersPage: React.FC = () => {
                     </CardContent>
                   </Card>
 
-                  {/* 互動歷史 */}
+                  {/* 互動歷史 - 聊天室樣式 */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <MessageSquare className="h-5 w-5" />
-                        互動歷史
-                      </CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                          <MessageSquare className="h-5 w-5" />
+                          互動歷史
+                        </CardTitle>
+                        
+                        {/* 基本/詳細模式切換 */}
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="detailed-mode" className="text-sm text-muted-foreground">
+                            基本
+                          </Label>
+                          <Switch
+                            id="detailed-mode"
+                            checked={isDetailedMode}
+                            onCheckedChange={setIsDetailedMode}
+                          />
+                          <Label htmlFor="detailed-mode" className="text-sm text-muted-foreground">
+                            詳細
+                          </Label>
+                        </div>
+                      </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                       {interactionsLoading ? (
                         <div className="flex justify-center py-8">
                           <Loader />
@@ -446,38 +816,38 @@ const BotUsersPage: React.FC = () => {
                           <p className="text-gray-500">尚無互動記錄</p>
                         </div>
                       ) : (
-                        <div className="space-y-3">
+                        <div className="h-96 overflow-y-auto p-4 space-y-4">
                           {userInteractions.map((interaction, index) => (
-                            <div
-                              key={index}
-                              className="p-3 bg-gray-50 rounded-lg"
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <Badge
-                                  variant={
-                                    interaction.event_type === "message"
-                                      ? "default"
-                                      : interaction.event_type === "follow"
-                                      ? "default"
-                                      : "secondary"
-                                  }
-                                >
-                                  {interaction.event_type}
-                                </Badge>
-                                <span className="text-xs text-gray-500">
-                                  {new Date(interaction.timestamp).toLocaleString("zh-TW")}
-                                </span>
+                            <div key={index} className="flex flex-col">
+                              {/* 用戶訊息 */}
+                              <div className="flex justify-end mb-2">
+                                <div className="max-w-xs lg:max-w-md">
+                                  <div className="bg-blue-500 text-white rounded-2xl rounded-br-md px-4 py-2">
+                                    {renderMessageContent(interaction, isDetailedMode)}
+                                  </div>
+                                  {isDetailedMode && (
+                                    <div className="flex justify-end mt-1">
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(interaction.timestamp).toLocaleString("zh-TW")}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              {interaction.message_type && (
-                                <p className="text-sm text-gray-600 mb-1">
-                                  類型: {interaction.message_type}
-                                </p>
-                              )}
-                              {interaction.message_content && (
-                                <div className="text-sm text-gray-800">
-                                  <pre className="whitespace-pre-wrap font-mono text-xs bg-white p-2 rounded border">
-                                    {JSON.stringify(interaction.message_content, null, 2)}
-                                  </pre>
+                              
+                              {/* 事件信息（詳細模式才顯示） */}
+                              {isDetailedMode && interaction.event_type !== "message" && (
+                                <div className="flex justify-center mb-2">
+                                  <Badge
+                                    variant={
+                                      interaction.event_type === "follow"
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {getEventTypeText(interaction.event_type)}
+                                  </Badge>
                                 </div>
                               )}
                             </div>

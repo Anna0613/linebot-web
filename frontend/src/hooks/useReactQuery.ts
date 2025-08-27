@@ -13,7 +13,7 @@ export const queryClient = new QueryClient({
       // 在 5 分鐘內被視為新鮮，避免不必要的重新獲取
       gcTime: 10 * 60 * 1000, // 10 分鐘的垃圾收集時間
       // 自動重試失敗的請求
-      retry: (failureCount, error: any) => {
+      retry: (failureCount, error: {response?: {status?: number}}) => {
         // 如果是認證錯誤，不重試
         if (error?.response?.status === 401 || error?.response?.status === 403) {
           return false;
@@ -53,10 +53,13 @@ export const queryKeys = {
   
   // Logic Templates 相關
   logicTemplates: (botId: string) => ['bots', botId, 'logicTemplates'] as const,
-  
+
   // Webhook 相關
   webhookStatus: (botId: string) => ['bots', botId, 'webhook', 'status'] as const,
-  
+
+  // Activities 相關
+  botActivities: (botId: string) => ['bots', botId, 'activities'] as const,
+
   // User 相關
   user: ['user'] as const,
   userAvatar: ['user', 'avatar'] as const,
@@ -118,12 +121,12 @@ export const prefetchQueries = {
 export const optimisticUpdates = {
   // 樂觀更新邏輯模板狀態
   updateLogicTemplateStatus: (botId: string, templateId: string, isActive: boolean) => {
-    queryClient.setQueryData(queryKeys.logicTemplates(botId), (old: any) => {
+    queryClient.setQueryData(queryKeys.logicTemplates(botId), (old: {data?: Array<{id: string; is_active: boolean}>}) => {
       if (!old?.data) return old;
       
       return {
         ...old,
-        data: old.data.map((template: any) => 
+        data: old.data.map((template) => 
           template.id === templateId 
             ? { ...template, is_active: isActive }
             : template
@@ -134,7 +137,7 @@ export const optimisticUpdates = {
   
   // 樂觀更新 Webhook 狀態
   updateWebhookStatus: (botId: string, status: string) => {
-    queryClient.setQueryData(queryKeys.webhookStatus(botId), (old: any) => {
+    queryClient.setQueryData(queryKeys.webhookStatus(botId), (old: {data?: {status?: string; status_text?: string; checked_at?: string}}) => {
       if (!old?.data) return old;
       
       return {
@@ -153,12 +156,12 @@ export const optimisticUpdates = {
 // 批次快取更新
 export const batchCacheUpdate = {
   // 批次更新儀表板資料
-  updateDashboardData: (botId: string, dashboardData: any) => {
-    const { bot_info, basic_stats, logic_templates, analytics, webhook_status } = dashboardData;
+  updateDashboardData: (botId: string, dashboardData: {bot_info?: unknown; basic_stats?: unknown; logic_templates?: unknown; analytics?: {period?: string}; webhook_status?: unknown}) => {
+    const { bot_info, logic_templates, analytics, webhook_status } = dashboardData;
     
     // 更新基本資訊
     if (bot_info) {
-      queryClient.setQueryData(queryKeys.bot(botId), (old: any) => ({
+      queryClient.setQueryData(queryKeys.bot(botId), (old: {data?: unknown}) => ({
         ...old,
         data: { ...old?.data, ...bot_info }
       }));

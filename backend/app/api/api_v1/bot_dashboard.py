@@ -2,8 +2,9 @@
 Bot 儀表板 API 路由
 提供複合資料端點以優化效能
 """
+import asyncio
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
@@ -25,8 +26,10 @@ from app.config.redis_config import (
     BOT_DASHBOARD_TTL,
     DEFAULT_CACHE_TTL
 )
+from app.services.cache_service import get_cache, cache_async
 from app.utils.query_optimizer import QueryOptimizer
 from app.utils.pagination import LazyLoader, PaginationParams
+from app.services.websocket_manager import websocket_manager
 
 logger = logging.getLogger(__name__)
 
@@ -87,32 +90,46 @@ async def get_bot_dashboard(
         "timestamp": datetime.now().isoformat()
     }
     
-    # 並行獲取資料以提升效能
+    # 並行獲取資料以提升效能 - 優化版本
     try:
-        # 基本統計資料（總是獲取，因為開銷小）
-        total_users = db.query(LineBotUser).filter(LineBotUser.bot_id == bot_id).count()
-        dashboard_data["basic_stats"] = {
-            "total_users": total_users
-        }
+        # 建立並行任務列表
+        parallel_tasks = []
         
-        # 獲取邏輯模板（優化查詢：使用索引優化的查詢）
-        if include_logic:
-            # 使用新的複合索引 (bot_id, is_active, updated_at) 優化查詢
-            logic_templates = db.query(
-                LogicTemplate.id,
-                LogicTemplate.name,
-                LogicTemplate.description,
-                LogicTemplate.is_active,
-                LogicTemplate.created_at,
-                LogicTemplate.updated_at
-            ).filter(
-                LogicTemplate.bot_id == bot_id
-            ).order_by(
-                LogicTemplate.is_active.desc(),  # 先顯示啟用的模板
-                LogicTemplate.updated_at.desc()
-            ).all()
+        # 基本統計資料（總是獲取，因為開銷小）
+        async def get_basic_stats():
+            # 使用異步方式執行同步查詢
+            import asyncio
+            loop = asyncio.get_event_loop()
+            total_users = await loop.run_in_executor(
+                None, 
+                lambda: db.query(LineBotUser).filter(LineBotUser.bot_id == bot_id).count()
+            )
+            return {"total_users": total_users}
+        
+        # 邏輯模板查詢
+        async def get_logic_templates():
+            if not include_logic:
+                return None
+                
+            loop = asyncio.get_event_loop()
+            logic_templates = await loop.run_in_executor(
+                None,
+                lambda: db.query(
+                    LogicTemplate.id,
+                    LogicTemplate.name,
+                    LogicTemplate.description,
+                    LogicTemplate.is_active,
+                    LogicTemplate.created_at,
+                    LogicTemplate.updated_at
+                ).filter(
+                    LogicTemplate.bot_id == bot_id
+                ).order_by(
+                    LogicTemplate.is_active.desc(),
+                    LogicTemplate.updated_at.desc()
+                ).all()
+            )
             
-            dashboard_data["logic_templates"] = [
+            return [
                 {
                     "id": str(template.id),
                     "name": template.name,
@@ -124,15 +141,39 @@ async def get_bot_dashboard(
                 for template in logic_templates
             ]
         
-        # 獲取分析資料
-        if include_analytics:
-            analytics_data = await _get_analytics_data(bot_id, period, db)
-            dashboard_data["analytics"] = analytics_data
+        # 建立並行任務
+        tasks = {
+            "basic_stats": get_basic_stats(),
+            "logic_templates": get_logic_templates() if include_logic else None,
+            "analytics": _get_analytics_data(bot_id, period, db) if include_analytics else None,
+            "webhook_status": _get_webhook_status(bot) if include_webhook else None
+        }
         
-        # 獲取 Webhook 狀態
-        if include_webhook:
-            webhook_data = await _get_webhook_status(bot)
-            dashboard_data["webhook_status"] = webhook_data
+        # 過濾掉 None 的任務
+        active_tasks = {k: v for k, v in tasks.items() if v is not None}
+        
+        # 並行執行所有任務
+        results = await asyncio.gather(*active_tasks.values(), return_exceptions=True)
+        
+        # 將結果對應回原始鍵
+        for i, (key, _) in enumerate(active_tasks.items()):
+            result = results[i]
+            if isinstance(result, Exception):
+                logger.error(f"並行任務 {key} 執行失敗: {result}")
+                # 設定預設值
+                if key == "basic_stats":
+                    dashboard_data[key] = {"total_users": 0}
+                elif key == "logic_templates":
+                    dashboard_data[key] = []
+                elif key == "analytics":
+                    dashboard_data[key] = {"error": str(result)}
+                elif key == "webhook_status":
+                    dashboard_data[key] = {"error": str(result)}
+            else:
+                if key == "logic_templates" and result is not None:
+                    dashboard_data[key] = result
+                elif key != "logic_templates":
+                    dashboard_data[key] = result
             
     except Exception as e:
         logger.error(f"獲取儀表板資料失敗: {str(e)}")
@@ -141,10 +182,12 @@ async def get_bot_dashboard(
     
     return dashboard_data
 
-@cache_result(
-    key_generator=lambda bot_id, period, db: CacheKeys.bot_analytics(bot_id, period),
+@cache_async(
+    key_prefix="analytics",
     ttl=BOT_ANALYTICS_TTL,
-    use_user_context=False
+    l1_ttl=300,   # L1 快取 5 分鐘
+    l2_ttl=900,   # L2 快取 15 分鐘
+    use_args_in_key=True
 )
 async def _get_analytics_data(bot_id: str, period: str, db: Session) -> Dict[str, Any]:
     """獲取分析資料"""
@@ -273,13 +316,15 @@ async def _get_analytics_data(bot_id: str, period: str, db: Session) -> Dict[str
             "month_interactions": 0
         }
 
-@cache_result(
-    key_generator=lambda bot: CacheKeys.webhook_status(str(bot.id)),
+@cache_async(
+    key_prefix="webhook_status",
     ttl=WEBHOOK_STATUS_TTL,
-    use_user_context=False
+    l1_ttl=180,    # L1 快取 3 分鐘 (webhook 狀態變化較快)
+    l2_ttl=600,    # L2 快取 10 分鐘
+    use_args_in_key=False  # 使用 bot_id 作為唯一鍵
 )
 async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
-    """獲取 Webhook 狀態"""
+    """獲取 Webhook 狀態 - 使用異步並行處理"""
     
     if not bot.channel_token or not bot.channel_secret:
         return {
@@ -294,11 +339,31 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
     try:
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
         
-        # 檢查 LINE API 連接
-        line_api_accessible = line_bot_service.check_connection()
+        # 使用 asyncio.gather 並行執行 API 檢查 - 效能優化
+        check_tasks = [
+            line_bot_service.async_check_connection(),
+            line_bot_service.async_get_bot_info(),
+            line_bot_service.async_check_webhook_endpoint()
+        ]
         
-        # 檢查 Webhook 端點設定
-        webhook_endpoint_info = line_bot_service.check_webhook_endpoint()
+        # 並行執行所有檢查，顯著提升效能
+        line_api_accessible, bot_info, webhook_endpoint_info = await asyncio.gather(
+            *check_tasks, return_exceptions=True
+        )
+        
+        # 處理異常結果
+        if isinstance(line_api_accessible, Exception):
+            logger.error(f"檢查連接失敗: {line_api_accessible}")
+            line_api_accessible = False
+        
+        if isinstance(bot_info, Exception):
+            logger.error(f"獲取Bot資訊失敗: {bot_info}")
+            bot_info = None
+        
+        if isinstance(webhook_endpoint_info, Exception):
+            logger.error(f"檢查Webhook失敗: {webhook_endpoint_info}")
+            webhook_endpoint_info = {"is_set": False, "active": False, "error": str(webhook_endpoint_info)}
+        
         webhook_working = (
             webhook_endpoint_info.get("is_set", False) and 
             webhook_endpoint_info.get("active", False)
@@ -319,7 +384,7 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
         import os
         webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
         
-        return {
+        result = {
             "bot_id": str(bot.id),
             "bot_name": bot.name,
             "status": status,
@@ -332,8 +397,17 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
             "checked_at": datetime.now().isoformat()
         }
         
+        # 如果成功獲取 Bot 資訊，添加 channel_id
+        if bot_info and bot_info.get("channel_id"):
+            result["channel_id"] = bot_info["channel_id"]
+            logger.info(f"Bot {bot.id} - 異步獲取到 Channel ID: {bot_info['channel_id']}")
+        else:
+            logger.warning(f"Bot {bot.id} - 未能異步獲取到 Channel ID, bot_info: {bot_info}")
+        
+        return result
+        
     except Exception as e:
-        logger.error(f"獲取 Webhook 狀態失敗: {str(e)}")
+        logger.error(f"異步獲取 Webhook 狀態失敗: {str(e)}")
         return {
             "status": "error",
             "status_text": "檢查失敗",
@@ -622,3 +696,130 @@ async def get_bot_summary(
     except Exception as e:
         logger.error(f"獲取概要統計失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取概要統計失敗: {str(e)}")
+
+@router.get("/{bot_id}/analytics/incremental")
+async def get_bot_analytics_incremental(
+    bot_id: str,
+    since: Optional[datetime] = Query(None, description="獲取此時間之後的數據"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """獲取增量分析數據"""
+
+    # 驗證 Bot 所有權
+    bot = db.query(Bot).filter(
+        Bot.id == bot_id,
+        Bot.user_id == current_user.id
+    ).first()
+
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot 不存在")
+
+    # 如果沒有指定時間，返回最近 1 小時的數據
+    if not since:
+        since = datetime.now() - timedelta(hours=1)
+
+    try:
+        # 只查詢增量數據
+        incremental_data = db.query(LineBotUserInteraction).join(
+            LineBotUser
+        ).filter(
+            LineBotUser.bot_id == bot_id,
+            LineBotUserInteraction.timestamp >= since
+        ).order_by(
+            LineBotUserInteraction.timestamp.desc()
+        ).limit(100).all()
+
+        # 計算基本統計
+        total_interactions = len(incremental_data)
+        unique_users = len(set(interaction.line_user_id for interaction in incremental_data))
+
+        return {
+            "bot_id": bot_id,
+            "since": since.isoformat(),
+            "incremental_stats": {
+                "total_interactions": total_interactions,
+                "unique_users": unique_users,
+                "period_start": since.isoformat(),
+                "period_end": datetime.now().isoformat()
+            },
+            "recent_interactions": [
+                {
+                    "timestamp": interaction.timestamp.isoformat(),
+                    "event_type": interaction.event_type,
+                    "message_type": interaction.message_type,
+                    "user_id": interaction.line_user_id
+                }
+                for interaction in incremental_data[:20]  # 只返回最新 20 條
+            ],
+            "has_more": len(incremental_data) == 100
+        }
+
+    except Exception as e:
+        logger.error(f"獲取增量分析數據失敗: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"獲取增量數據失敗: {str(e)}")
+
+@router.get("/{bot_id}/status/quick")
+async def get_bot_status_quick(
+    bot_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """快速獲取 Bot 狀態（輕量級）"""
+
+    # 使用快取
+    cache_key = f"bot_status_quick:{bot_id}"
+    cache = get_cache()
+    cached_status = await cache.get(cache_key)
+
+    if cached_status:
+        return json.loads(cached_status)
+
+    # 驗證 Bot 所有權
+    bot = db.query(Bot).filter(
+        Bot.id == bot_id,
+        Bot.user_id == current_user.id
+    ).first()
+
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot 不存在")
+
+    try:
+        # 輕量級狀態檢查
+        status = {
+            "bot_id": bot_id,
+            "is_configured": bool(bot.channel_token and bot.channel_secret),
+            "last_activity": None,
+            "status": "unknown",
+            "checked_at": datetime.now().isoformat()
+        }
+
+        # 快速查詢最後活動時間
+        last_interaction = db.query(LineBotUserInteraction).join(
+            LineBotUser
+        ).filter(
+            LineBotUser.bot_id == bot_id
+        ).order_by(
+            LineBotUserInteraction.timestamp.desc()
+        ).first()
+
+        if last_interaction:
+            status["last_activity"] = last_interaction.timestamp.isoformat()
+
+            # 根據最後活動時間判斷狀態
+            time_diff = datetime.now() - last_interaction.timestamp
+            if time_diff.total_seconds() < 3600:  # 1 小時內
+                status["status"] = "active"
+            elif time_diff.total_seconds() < 86400:  # 24 小時內
+                status["status"] = "idle"
+            else:
+                status["status"] = "inactive"
+
+        # 快取 30 秒
+        await cache.set(cache_key, json.dumps(status, default=str), ttl=30)
+
+        return status
+
+    except Exception as e:
+        logger.error(f"獲取快速狀態失敗: {str(e)}")
+        raise HTTPException(status_code=500, detail="獲取狀態失敗")
