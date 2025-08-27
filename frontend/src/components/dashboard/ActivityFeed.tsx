@@ -195,23 +195,25 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         .slice(0, maxItems);
       
-      // 檢查是否有新活動
-      const currentIds = new Set(displayedActivities.map(a => a.id));
-      const newIds = sortedActivities
-        .filter(a => !currentIds.has(a.id))
-        .map(a => a.id);
-      
-      if (newIds.length > 0) {
-        setNewActivities(new Set(newIds));
-        // 5秒後移除"新"標記
-        setTimeout(() => {
-          setNewActivities(new Set());
-        }, 5000);
-      }
-      
-      setDisplayedActivities(sortedActivities);
+      setDisplayedActivities(prevDisplayed => {
+        // 檢查是否有新活動
+        const currentIds = new Set(prevDisplayed.map(a => a.id));
+        const newIds = sortedActivities
+          .filter(a => !currentIds.has(a.id))
+          .map(a => a.id);
+        
+        if (newIds.length > 0) {
+          setNewActivities(new Set(newIds));
+          // 5秒後移除"新"標記
+          setTimeout(() => {
+            setNewActivities(new Set());
+          }, 5000);
+        }
+        
+        return sortedActivities;
+      });
     }
-  }, [activities, maxItems, displayedActivities]);
+  }, [activities, maxItems]);
 
   // 自動刷新
   useEffect(() => {

@@ -180,9 +180,14 @@ const BotManagementPage: React.FC = () => {
   }, []);
 
   // 獲取分析數據 - 使用真實API
-  const fetchAnalytics = useCallback(async (botId: string) => {
+  const fetchAnalytics = useCallback(async (botId: string, abortSignal?: AbortSignal) => {
     setAnalyticsLoading(true);
     try {
+      // 檢查是否已被中止
+      if (abortSignal?.aborted) {
+        return;
+      }
+
       // 使用 apiClient 調用真實的後端API端點
       const [analyticsRes, messageStatsRes, userActivityRes, usageStatsRes, activitiesRes] = await Promise.all([
         apiClient.getBotAnalytics(botId, timeRange),
@@ -252,7 +257,13 @@ const BotManagementPage: React.FC = () => {
         setActivities([]);
       }
 
-    } catch (_error) {
+    } catch (error: any) {
+      // 如果是中止錯誤，不顯示錯誤訊息
+      if (error?.name === 'AbortError' || abortSignal?.aborted) {
+        console.log("分析數據請求被中止");
+        return;
+      }
+
       console.error("獲取分析數據失敗:", error);
       toast({
         title: "獲取分析數據失敗",
@@ -490,6 +501,7 @@ const BotManagementPage: React.FC = () => {
 
   // 當選擇的 Bot 變化時獲取相關數據
   useEffect(() => {
+    const abortController = new AbortController();
     let isMounted = true;
 
     const fetchBotData = async () => {
@@ -497,11 +509,11 @@ const BotManagementPage: React.FC = () => {
         try {
           await Promise.all([
             fetchLogicTemplates(selectedBotId),
-            fetchAnalytics(selectedBotId),
+            fetchAnalytics(selectedBotId, abortController.signal),
             fetchWebhookStatus(selectedBotId)
           ]);
-        } catch (_error) {
-          if (isMounted) {
+        } catch (error: any) {
+          if (isMounted && error.name !== 'AbortError') {
             console.error('獲取 Bot 數據失敗:', error);
           }
         }
@@ -513,6 +525,7 @@ const BotManagementPage: React.FC = () => {
     // 清理函數
     return () => {
       isMounted = false;
+      abortController.abort();
     };
   }, [selectedBotId, fetchLogicTemplates, fetchAnalytics, fetchWebhookStatus]);
 
