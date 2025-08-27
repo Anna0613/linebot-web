@@ -72,9 +72,9 @@ const LoginSuccess: React.FC = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <CheckCircle className="w-16 h-16 text-green-500" />
+            <CheckCircle className="w-16 h-16 text-[#425B4F]" />
           </div>
-          <CardTitle className="text-2xl text-green-600">登入成功！</CardTitle>
+          <CardTitle className="text-2xl text-[#425B4F]">登入成功！</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-gray-600">您已成功透過 LINE 登入系統</p>

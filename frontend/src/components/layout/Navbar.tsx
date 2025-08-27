@@ -149,21 +149,17 @@ const Navbar = () => {
         {/* 側邊選單遮罩 */}
         {mobileMenuOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-30 z-30"
+            className="fixed inset-0 bg-black bg-opacity-30 z-40"
             onClick={toggleMobileMenu}
           />
         )}
-
-        {/* 側邊選單 */}
         <div
-          className={`fixed top-0 left-0 h-full w-72 bg-white z-40 shadow-2xl p-6 transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 animate__animated ${mobileMenuOpen ? "animate__fadeInLeft animate__faster" : "hidden"}`}
         >
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-lg font-bold text-[#1a1a40]">選單</h3>
+          <div className="flex justify-end">
             <button
               onClick={toggleMobileMenu}
-              className="text-2xl text-gray-700 hover:bg-gray-100 rounded-full p-1 transition-colors"
-              aria-label="關閉選單"
+              className="text-2xl text-gray-700"
             >
               <X />
             </button>
@@ -174,7 +170,6 @@ const Navbar = () => {
               onClick={toggleMobileMenu}
               className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-[#1a1a40] transition-colors"
             >
-              <span className="text-lg">🏠</span>
               首頁
             </Link>
             <Link
@@ -182,7 +177,6 @@ const Navbar = () => {
               onClick={toggleMobileMenu}
               className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-[#1a1a40] transition-colors"
             >
-              <span className="text-lg">ℹ️</span>
               關於
             </Link>
             <Link
@@ -190,7 +184,6 @@ const Navbar = () => {
               onClick={toggleMobileMenu}
               className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-[#1a1a40] transition-colors"
             >
-              <span className="text-lg">🔑</span>
               登入
             </Link>
             <Link
@@ -198,7 +191,6 @@ const Navbar = () => {
               onClick={toggleMobileMenu}
               className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-[#1a1a40] transition-colors"
             >
-              <span className="text-lg">📝</span>
               註冊
             </Link>
           </nav>

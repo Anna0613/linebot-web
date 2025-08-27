@@ -28,11 +28,11 @@ const AuthFormLayout = ({
         <div className="w-full max-w-md">
           <Card className="shadow-lg border-0 bg-white">
             <CardHeader className="text-center pb-6">
-              <CardTitle className="text-2xl font-bold text-[#171635]">
+              <CardTitle className="text-2xl font-bold text-[#3A4960]">
                 {title}
               </CardTitle>
               {description && (
-                <CardDescription className="text-[#00225D] mt-2">
+                <CardDescription className="text-[#554540] mt-2">
                   {description}
                 </CardDescription>
               )}

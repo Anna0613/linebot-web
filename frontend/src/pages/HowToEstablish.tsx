@@ -9,7 +9,8 @@ import Footer from "../components/layout/Footer";
 import { useNavigate } from "react-router-dom";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 
-// 移除重複的 User 介面定義，使用 UnifiedUser
+const ACCENT = "#3D5A80";   
+const ACCENT_LT = "#98C1D9"; 
 
 const HowToEstablish = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const HowToEstablish = () => {
 
   // 使用統一身份驗證Hook - 不強制要求登入
   const { user, loading, isAuthenticated } = useUnifiedAuth({
-    requireAuth: false, // 改為 false，允許未登入用戶訪問
+    requireAuth: false, // 允許未登入用戶訪問
   });
 
   const steps = useMemo(
@@ -57,8 +58,6 @@ const HowToEstablish = () => {
     };
   }, [steps]);
 
-  // 移除未使用的 scrollToStep 函數
-
   const nextStep = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
@@ -78,9 +77,7 @@ const HowToEstablish = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
-        <div className="text-[#5A2C1D] text-lg">
-          載入中...
-        </div>
+        <div className="text-[#5A2C1D] text-lg">載入中...</div>
       </div>
     );
   }
@@ -103,15 +100,11 @@ const HowToEstablish = () => {
   return (
     <div className="min-h-screen bg-[#FFFDFA]">
       {/* 根據登入狀態顯示不同的導航欄 */}
-      {isAuthenticated ? (
-        <DashboardNavbar user={user} />
-      ) : (
-        <Navbar />
-      )}
+      {isAuthenticated ? <DashboardNavbar user={user} /> : <Navbar />}
 
       {/* 主要內容區域 */}
-      <div className="pt-14 sm:pt-16 md:pt-20 pb-12 sm:pb-16 px-4 sm:px-6">
-        {/* 標題區域 */}
+      <div className="pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6">
+
         <div className="text-center mb-8 sm:mb-12 fade-in-element">
           <h1 className="text-[#1a1a40] text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] font-bold mb-3 sm:mb-4 leading-tight tracking-wide px-2">
             LINE Bot 建立教學
@@ -123,7 +116,10 @@ const HowToEstablish = () => {
 
         {/* 進度指示器 */}
         <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
-          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border-l-4 border-[#F4A261]">
+          <div
+            className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border-l-4"
+            style={{ borderLeftColor: ACCENT }}
+          >
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
               <h2 className="text-[#383A45] text-lg sm:text-xl font-bold text-center sm:text-left">
                 教學進度
@@ -141,15 +137,20 @@ const HowToEstablish = () => {
                   onClick={() => goToStep(step)}
                   className={`p-3 md:p-4 rounded-lg text-center transition-all duration-200 ${
                     step === currentStep
-                      ? "bg-[#F4A261] text-white shadow-lg transform scale-105"
+                      ? "text-white shadow-lg transform scale-105"
                       : step < currentStep
-                        ? "bg-[#A0D6B4] text-white hover:shadow-md"
-                        : "bg-gray-100 text-[#5A2C1D] hover:bg-gray-200"
+                      ? "text-white hover:shadow-md"
+                      : "bg-gray-100 text-[#5A2C1D] hover:bg-gray-200"
                   }`}
+                  style={
+                    step === currentStep
+                      ? { backgroundColor: ACCENT }
+                      : step < currentStep
+                      ? { backgroundColor: ACCENT_LT }
+                      : {}
+                  }
                 >
-                  <div className="font-bold text-base md:text-lg mb-1">
-                    步驟 {step}
-                  </div>
+                  <div className="font-bold text-base md:text-lg mb-1">步驟 {step}</div>
                   <div className="text-xs md:text-sm">
                     {step === 1 && "建立頻道"}
                     {step === 2 && "設定 Webhook"}
@@ -168,11 +169,18 @@ const HowToEstablish = () => {
                   onClick={() => goToStep(step)}
                   className={`w-full p-3 rounded-lg text-left transition-all duration-200 flex items-center justify-between ${
                     step === currentStep
-                      ? "bg-[#F4A261] text-white shadow-lg"
+                      ? "text-white shadow-lg"
                       : step < currentStep
-                        ? "bg-[#A0D6B4] text-white"
-                        : "bg-gray-100 text-[#5A2C1D] hover:bg-gray-200"
+                      ? "text-white"
+                      : "bg-gray-100 text-[#5A2C1D] hover:bg-gray-200"
                   }`}
+                  style={
+                    step === currentStep
+                      ? { backgroundColor: ACCENT }
+                      : step < currentStep
+                      ? { backgroundColor: ACCENT_LT }
+                      : {}
+                  }
                 >
                   <div className="flex items-center space-x-3">
                     <div className="font-bold text-lg">步驟 {step}</div>
@@ -183,16 +191,10 @@ const HowToEstablish = () => {
                       {step === 4 && "完成設定"}
                     </div>
                   </div>
-                  {step === currentStep && (
-                    <div className="w-3 h-3 bg-white rounded-full"></div>
-                  )}
+                  {step === currentStep && <div className="w-3 h-3 bg-white rounded-full"></div>}
                   {step < currentStep && (
                     <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                      <svg
-                        className="w-3 h-3 text-green-600"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
+                      <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                         <path
                           fillRule="evenodd"
                           d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -209,8 +211,11 @@ const HowToEstablish = () => {
             <div className="mt-4 sm:mt-6">
               <div className="bg-gray-200 rounded-full h-2 sm:h-3 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-[#F4A261] to-[#A0D6B4] h-full rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${(currentStep / 4) * 100}%` }}
+                  className="h-full rounded-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${(currentStep / 4) * 100}%`,
+                    background: `linear-gradient(90deg, ${ACCENT} 0%, ${ACCENT_LT} 100%)`,
+                  }}
                 ></div>
               </div>
             </div>
@@ -223,14 +228,18 @@ const HowToEstablish = () => {
         {/* 行動呼籲區域 */}
         {currentStep === 4 && (
           <div className="max-w-4xl mx-auto mt-12 sm:mt-16">
-            <div className="bg-gradient-to-r from-[#8ECAE6] to-[#A0D6B4] rounded-lg shadow-lg p-6 sm:p-8 md:p-12 text-white text-center">
+            <div
+              className="rounded-lg shadow-lg p-6 sm:p-8 md:p-12 text-white text-center"
+              style={{ background: `linear-gradient(${ACCENT_LT} 100%)` }}
+            >
               <h2 className="text-white text-xl sm:text-2xl md:text-[28px] font-bold mb-4 sm:mb-6">
                 恭喜！您已完成所有設定
               </h2>
-              <p className="text-white/90 text-base sm:text-lg mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto">
+              <p className="text-white text-base sm:text-lg mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto">
                 現在您可以開始建立您的第一個 LINE Bot 了
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center max-w-md mx-auto">
+
                 <button
                   onClick={() => navigate("/add-server")}
                   className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-[#383A45] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
@@ -239,7 +248,17 @@ const HowToEstablish = () => {
                 </button>
                 <button
                   onClick={() => setCurrentStep(1)}
-                  className="px-6 sm:px-8 py-3 sm:py-4 bg-[#FFD59E] text-[#5A2C1D] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
+                  className="px-6 sm:px-8 py-3 sm:py-4 font-bold rounded-lg transition-all duration-200 text-base sm:text-lg border"
+                  style={{
+                    borderColor: "rgba(255,255,255,0.9)",
+                    color: "#ffffff",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(255,255,255,0.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+                  }}
                 >
                   重新查看教學
                 </button>
