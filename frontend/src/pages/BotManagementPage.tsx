@@ -153,7 +153,7 @@ const BotManagementPage: React.FC = () => {
         return response.data;
       }
       return [];
-    } catch (_error) {
+    } catch (error) {
       console.error("獲取 Bot 列表失敗:", error);
       toast({
         variant: "destructive",
@@ -172,7 +172,7 @@ const BotManagementPage: React.FC = () => {
       if (response.data && Array.isArray(response.data)) {
         setLogicTemplates(response.data);
       }
-    } catch (_error) {
+    } catch (error) {
       console.error("獲取邏輯模板失敗:", error);
     } finally {
       setLogicLoading(false);
@@ -202,7 +202,9 @@ const BotManagementPage: React.FC = () => {
         setAnalytics(analyticsRes.data as BotAnalytics);
         setBotHealth("online");
       } else {
-        console.warn('Analytics API 響應錯誤:', analyticsRes.error);
+        if (!String(analyticsRes.error).includes('AbortError')) {
+          console.warn('Analytics API 響應錯誤:', analyticsRes.error);
+        }
         setBotHealth("error");
       }
 
@@ -210,7 +212,9 @@ const BotManagementPage: React.FC = () => {
       if (messageStatsRes.data && !messageStatsRes.error) {
         setMessageStats(Array.isArray(messageStatsRes.data) ? messageStatsRes.data as MessageStats[] : []);
       } else {
-        console.warn('Message stats API 響應錯誤:', messageStatsRes.error);
+        if (!String(messageStatsRes.error).includes('AbortError')) {
+          console.warn('Message stats API 響應錯誤:', messageStatsRes.error);
+        }
         setMessageStats([]);
       }
 
@@ -234,7 +238,9 @@ const BotManagementPage: React.FC = () => {
         }
         setHeatMapData(heatData);
       } else {
-        console.warn('User activity API 響應錯誤:', userActivityRes.error);
+        if (!String(userActivityRes.error).includes('AbortError')) {
+          console.warn('User activity API 響應錯誤:', userActivityRes.error);
+        }
         setUserActivity([]);
         setHeatMapData([]);
       }
@@ -243,7 +249,9 @@ const BotManagementPage: React.FC = () => {
       if (usageStatsRes.data && !usageStatsRes.error) {
         setUsageData(Array.isArray(usageStatsRes.data) ? usageStatsRes.data as UsageData[] : []);
       } else {
-        console.warn('Usage stats API 響應錯誤:', usageStatsRes.error);
+        if (!String(usageStatsRes.error).includes('AbortError')) {
+          console.warn('Usage stats API 響應錯誤:', usageStatsRes.error);
+        }
         setUsageData([]);
       }
 
@@ -253,7 +261,9 @@ const BotManagementPage: React.FC = () => {
         const activitiesData = responseData.activities || responseData;
         setActivities(Array.isArray(activitiesData) ? activitiesData as ActivityItem[] : []);
       } else {
-        console.warn('Activities API 響應錯誤:', activitiesRes.error);
+        if (!String(activitiesRes.error).includes('AbortError')) {
+          console.warn('Activities API 響應錯誤:', activitiesRes.error);
+        }
         setActivities([]);
       }
 
@@ -304,7 +314,7 @@ const BotManagementPage: React.FC = () => {
         title: isActive ? "啟用成功" : "停用成功",
         description: `邏輯模板已${isActive ? "啟用" : "停用"}`,
       });
-    } catch (_error) {
+    } catch (error) {
       console.error("切換邏輯模板狀態失敗:", error);
       toast({
         variant: "destructive",
@@ -334,7 +344,7 @@ const BotManagementPage: React.FC = () => {
       setTimeout(() => {
         setCopiedWebhookUrl(false);
       }, 2000);
-    } catch (_error) {
+    } catch (error) {
       console.error("複製 Webhook URL 失敗:", error);
       toast({
         variant: "destructive",
@@ -369,7 +379,7 @@ const BotManagementPage: React.FC = () => {
         setWebhookStatus(null);
         setBotHealth("error");
       }
-    } catch (_error) {
+    } catch (error) {
       console.error("獲取 Webhook 狀態失敗:", error);
       setWebhookStatus(null);
       setBotHealth("error");
@@ -549,15 +559,16 @@ const BotManagementPage: React.FC = () => {
         ]).then(([analyticsRes, messageStatsRes, userActivityRes, usageStatsRes]) => {
           // 更新分析數據
           if (analyticsRes.data && !analyticsRes.error) {
+            const analyticsData = analyticsRes.data as BotAnalytics;
             setAnalytics(prev => ({
               ...prev,
-              totalMessages: analyticsRes.data.totalMessages || prev?.totalMessages || 0,
-              activeUsers: analyticsRes.data.activeUsers || prev?.activeUsers || 0,
-              responseTime: analyticsRes.data.responseTime || prev?.responseTime || 0,
-              successRate: analyticsRes.data.successRate || prev?.successRate || 0,
-              todayMessages: analyticsRes.data.todayMessages || prev?.todayMessages || 0,
-              weekMessages: analyticsRes.data.weekMessages || prev?.weekMessages || 0,
-              monthMessages: analyticsRes.data.monthMessages || prev?.monthMessages || 0,
+              totalMessages: analyticsData.totalMessages || prev?.totalMessages || 0,
+              activeUsers: analyticsData.activeUsers || prev?.activeUsers || 0,
+              responseTime: analyticsData.responseTime || prev?.responseTime || 0,
+              successRate: analyticsData.successRate || prev?.successRate || 0,
+              todayMessages: analyticsData.todayMessages || prev?.todayMessages || 0,
+              weekMessages: analyticsData.weekMessages || prev?.weekMessages || 0,
+              monthMessages: analyticsData.monthMessages || prev?.monthMessages || 0,
             } as BotAnalytics));
           }
 
