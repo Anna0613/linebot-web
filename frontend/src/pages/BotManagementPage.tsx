@@ -824,7 +824,7 @@ const BotManagementPage: React.FC = () => {
                     <div className="space-y-6">
                       {/* 增強版訊息統計圖表 */}
                       <ChartWidget
-                        title="訊息統計趋勢"
+                        title="訊息統計趨勢"
                         data={messageStats.map(stat => ({
                           name: stat.date,
                           發送: stat.sent,

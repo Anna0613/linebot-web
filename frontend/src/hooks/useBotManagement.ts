@@ -190,14 +190,52 @@ async function findBotIdFromTemplate(templateId: string, queryClient: unknown): 
   return null;
 }
 
+// 創建 Bot mutation
+export const useCreateBot = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (botData: { name: string, channel_access_token: string, channel_secret: string }) => {
+      return await apiClient.createBot(botData);
+    },
+    onSuccess: (data) => {
+      // 使快取失效，重新獲取 Bot 列表
+      invalidateQueries.bots();
+      
+      toast({
+        title: "創建成功",
+        description: "Bot 已成功創建",
+      });
+      
+      return data;
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "創建失敗", 
+        description: error?.message || "無法創建 Bot",
+      });
+      throw error;
+    }
+  });
+};
+
 // 主要的 Bot 管理 hook，提供統一的介面
 export const useBotManagement = () => {
   const { data: bots, isLoading, error, refetch } = useBots();
+  const createBotMutation = useCreateBot();
   
   return {
     bots: bots?.data || [],
     isLoading,
     error,
     fetchBots: refetch,
+    createBot: async (botData: { name: string, channel_access_token: string, channel_secret: string }) => {
+      const result = await createBotMutation.mutateAsync(botData);
+      return result.data;
+    },
+    setError: () => {}, // placeholder
+    clearError: () => {}, // placeholder
   };
 };
