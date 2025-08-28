@@ -283,10 +283,18 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     setTimeout(connect, 1000);
   }, [disconnect, connect]);
 
-  // 組件掛載時連接
+  // 組件掛載時連接 - 延遲連接以確保認證狀態穩定
   useEffect(() => {
     if ((botId || userId) && enabled) {
-      connect();
+      // 延遲連接，讓頁面先完成初始化
+      const delayTimer = setTimeout(() => {
+        connect();
+      }, 1000); // 延遲 1 秒
+
+      return () => {
+        clearTimeout(delayTimer);
+        disconnect();
+      };
     }
 
     return () => {
