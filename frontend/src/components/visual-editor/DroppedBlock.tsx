@@ -215,12 +215,59 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
             <div className="font-medium">{block.blockData.title}</div>
             {isEditing && (
               <div className="mt-2 space-y-2">
-                <Input 
-                  placeholder="事件條件"
-                  value={blockData.condition || ''}
-                  onChange={(e) => setBlockData({...blockData, condition: e.target.value})}
-                  className="text-black"
-                />
+                {/* 根據事件類型顯示不同的輸入介面 */}
+                {block.blockData.eventType === 'message.text' && (
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="觸發文字訊息內容 (例如: 123)"
+                      value={String(blockData.pattern || '')}
+                      onChange={(e) => setBlockData({...blockData, pattern: e.target.value})}
+                      className="text-black"
+                    />
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`caseSensitive-${index}`}
+                        checked={Boolean(blockData.caseSensitive) || false}
+                        onChange={(e) => setBlockData({...blockData, caseSensitive: e.target.checked})}
+                        className="rounded border-gray-300"
+                      />
+                      <label htmlFor={`caseSensitive-${index}`} className="text-xs text-white/80">
+                        區分大小寫
+                      </label>
+                    </div>
+                  </div>
+                )}
+                {block.blockData.eventType === 'postback' && (
+                  <Input 
+                    placeholder="按鈕回傳資料"
+                    value={String(blockData.data || '')}
+                    onChange={(e) => setBlockData({...blockData, data: e.target.value})}
+                    className="text-black"
+                  />
+                )}
+                {(!block.blockData.eventType || (block.blockData.eventType !== 'message.text' && block.blockData.eventType !== 'postback')) && (
+                  <Input 
+                    placeholder="事件條件"
+                    value={blockData.condition || ''}
+                    onChange={(e) => setBlockData({...blockData, condition: e.target.value})}
+                    className="text-black"
+                  />
+                )}
+              </div>
+            )}
+            {/* 顯示當前設定的條件（非編輯模式） */}
+            {!isEditing && (
+              <div className="text-xs text-white/70 mt-1">
+                {block.blockData.eventType === 'message.text' && block.blockData.pattern && (
+                  <div>觸發條件: "{String(block.blockData.pattern)}"</div>
+                )}
+                {block.blockData.eventType === 'postback' && block.blockData.data && (
+                  <div>按鈕資料: {String(block.blockData.data)}</div>
+                )}
+                {block.blockData.condition && (
+                  <div>條件: {block.blockData.condition}</div>
+                )}
               </div>
             )}
           </div>
@@ -301,33 +348,45 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                     />
                   </div>
                 ) : (
-                  <Textarea
-                    placeholder="回覆內容"
-                    value={blockData.content || ''}
-                    onChange={(e) => setBlockData({...blockData, content: e.target.value})}
-                    className="text-black"
-                    rows={3}
-                  />
+                  <div className="space-y-2">
+                    <label className="text-xs text-white/80">回覆文字內容：</label>
+                    <Textarea
+                      placeholder="請輸入回覆內容 (例如: 321)"
+                      value={String(blockData.text || '')}
+                      onChange={(e) => setBlockData({...blockData, text: e.target.value})}
+                      className="text-black"
+                      rows={3}
+                    />
+                  </div>
                 )}
               </div>
             )}
-            {/* 顯示當前的FLEX訊息內容（非編輯模式） */}
-            {!isEditing && block.blockData.replyType === 'flex' && (
+            {/* 顯示當前的回覆內容（非編輯模式） */}
+            {!isEditing && (
               <div className="text-xs text-white/70 mt-1">
-                {block.blockData.flexMessageName ? (
-                  <div>FLEX模板: {block.blockData.flexMessageName}</div>
-                ) : block.blockData.flexContent && Object.keys(block.blockData.flexContent).length > 0 ? (
-                  <div>
-                    <div>自定義 Flex 訊息</div>
-                    <div className="text-white/50 truncate">
-                      {typeof block.blockData.flexContent === 'string'
-                        ? block.blockData.flexContent.substring(0, 50) + '...'
-                        : JSON.stringify(block.blockData.flexContent).substring(0, 50) + '...'
-                      }
+                {block.blockData.replyType === 'flex' ? (
+                  block.blockData.flexMessageName ? (
+                    <div>FLEX模板: {block.blockData.flexMessageName}</div>
+                  ) : block.blockData.flexContent && Object.keys(block.blockData.flexContent).length > 0 ? (
+                    <div>
+                      <div>自定義 Flex 訊息</div>
+                      <div className="text-white/50 truncate">
+                        {typeof block.blockData.flexContent === 'string'
+                          ? block.blockData.flexContent.substring(0, 50) + '...'
+                          : JSON.stringify(block.blockData.flexContent).substring(0, 50) + '...'
+                        }
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-orange-300">請設定 Flex 訊息內容</div>
+                  )
                 ) : (
-                  <div className="text-orange-300">請設定 Flex 訊息內容</div>
+                  // 顯示一般回覆內容
+                  (block.blockData.text || block.blockData.content) ? (
+                    <div>回覆內容: "{block.blockData.text || block.blockData.content}"</div>
+                  ) : (
+                    <div className="text-orange-300">請設定回覆內容</div>
+                  )
                 )}
               </div>
             )}

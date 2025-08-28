@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { useToast } from '../../hooks/use-toast';
-import { useCodeDisplay } from './CodeDisplayContext';
+import { useCodeDisplay } from './useCodeDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
@@ -14,8 +14,6 @@ import {
   Eye,
   EyeOff,
   Braces,
-  Hash,
-  Type,
   Zap,
   CheckCircle,
   AlertTriangle,
@@ -26,16 +24,10 @@ import LineBotCodeGenerator from '../../utils/codeGenerator';
 
 interface CodeControlPanelProps {
   blocks: UnifiedBlock[];
-  onExport?: (format: string) => void;
-  onCopy?: () => void;
-  onFormatChange?: (format: string) => void;
 }
 
 const CodeControlPanel: React.FC<CodeControlPanelProps> = ({
-  blocks,
-  onExport,
-  onCopy,
-  onFormatChange
+  blocks
 }) => {
   const { toast } = useToast();
   const {
@@ -48,7 +40,6 @@ const CodeControlPanel: React.FC<CodeControlPanelProps> = ({
 
   const handleFormatChange = (format: 'python') => {
     setSelectedFormat(format);
-    onFormatChange?.(format);
   };
     const [generatedCode, setGeneratedCode] = useState('');
     const [codeGenerator] = useState(new LineBotCodeGenerator());
@@ -118,7 +109,7 @@ const CodeControlPanel: React.FC<CodeControlPanelProps> = ({
         title: "複製成功",
         description: "程式碼已複製到剪貼板",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "複製失敗",
         description: "無法複製程式碼到剪貼板",
@@ -143,7 +134,7 @@ const CodeControlPanel: React.FC<CodeControlPanelProps> = ({
         title: "下載成功",
         description: "程式碼檔案已開始下載",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "下載失敗",
         description: "無法下載程式碼檔案",

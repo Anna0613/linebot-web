@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useState, ReactNode } from 'react';
 
 interface CodeDisplayState {
   showLineNumbers: boolean;
@@ -16,14 +16,6 @@ interface CodeDisplayContextType {
 }
 
 const CodeDisplayContext = createContext<CodeDisplayContextType | undefined>(undefined);
-
-export const useCodeDisplay = () => {
-  const context = useContext(CodeDisplayContext);
-  if (!context) {
-    throw new Error('useCodeDisplay must be used within a CodeDisplayProvider');
-  }
-  return context;
-};
 
 interface CodeDisplayProviderProps {
   children: ReactNode;

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../ui/button';
-import { Copy, Download } from 'lucide-react';
 import LineBotCodeGenerator from '../../utils/codeGenerator';
-import { useCodeDisplay } from './CodeDisplayContext';
+import { useCodeDisplay } from './useCodeDisplay';
 
 interface BlockData {
   [key: string]: unknown;
@@ -20,7 +18,7 @@ interface CodePreviewProps {
 const CodePreview: React.FC<CodePreviewProps> = ({ blocks }) => {
   const [generatedCode, setGeneratedCode] = useState('');
   const [codeGenerator] = useState(new LineBotCodeGenerator());
-  const { state: { showLineNumbers, showComments, codeTheme } } = useCodeDisplay();
+  const { state: { showLineNumbers, codeTheme } } = useCodeDisplay();
 
   useEffect(() => {
     if (blocks && blocks.length > 0) {
@@ -31,36 +29,13 @@ const CodePreview: React.FC<CodePreviewProps> = ({ blocks }) => {
     }
   }, [blocks, codeGenerator]);
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedCode);
-    // 可以加入成功提示
-  };
-
-  const downloadCode = () => {
-    const blob = new Blob([generatedCode], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'linebot.py';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-medium text-gray-600">生成的程式碼</h3>
         <div className="flex space-x-2">
-          {/* <Button variant="outline" size="sm" onClick={copyToClipboard}>
-            <Copy className="w-4 h-4 mr-2" />
-            複製
-          </Button>
-          <Button variant="outline" size="sm" onClick={downloadCode}>
-            <Download className="w-4 h-4 mr-2" />
-            下載
-          </Button> */}
+          {/* 操作按鈕已移除以避免未使用變數警告 */}
         </div>
       </div>
       

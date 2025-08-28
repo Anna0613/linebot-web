@@ -170,17 +170,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
   }, [logicBlocks, flexBlocks, debouncedValidation]);
 
   const handleLogicDrop = useCallback((item: UnifiedDropItem) => {
-    let blockToAdd: UnifiedBlock;
-    
-    if ('category' in item) {
-      blockToAdd = {
-        ...(item as UnifiedDropItem),
-        id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        children: []
-      } as UnifiedBlock;
-    } else {
-      blockToAdd = item as UnifiedDropItem;
-    }
+    const blockToAdd: UnifiedBlock = {
+      ...item,
+      id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      children: []
+    };
     
     onLogicBlocksChange(prev => [...prev, blockToAdd]);
   }, [onLogicBlocksChange]);
@@ -194,17 +188,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
     });
     
     try {
-      let blockToAdd: UnifiedBlock;
-      
-      if ('category' in item) {
-        blockToAdd = {
-          ...(item as UnifiedDropItem),
-          id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          children: []
-        } as UnifiedBlock;
-      } else {
-        blockToAdd = item as UnifiedDropItem;
-      }
+      const blockToAdd: UnifiedBlock = {
+        ...item,
+        id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        children: []
+      };
       
       console.log('✅ 積木成功添加到 Flex 設計器:', blockToAdd);
       onFlexBlocksChange(prev => [...prev, blockToAdd]);
@@ -256,17 +244,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   // 新增：插入積木功能
   const insertLogicBlock = useCallback((index: number, item: UnifiedDropItem) => {
-    let blockToAdd: UnifiedBlock;
-    
-    if ('category' in item) {
-      blockToAdd = {
-        ...(item as UnifiedDropItem),
-        id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        children: []
-      } as UnifiedBlock;
-    } else {
-      blockToAdd = item as UnifiedDropItem;
-    }
+    const blockToAdd: UnifiedBlock = {
+      ...item,
+      id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      children: []
+    };
     
     onLogicBlocksChange(prev => {
       const newBlocks = [...prev];
@@ -435,19 +417,27 @@ const Workspace: React.FC<WorkspaceProps> = ({
               )}
               
               <div className="flex-1 p-4 overflow-auto">
-                <DropZone 
-                  title={currentLogicTemplateName ? 
-                    `邏輯編輯器 - ${currentLogicTemplateName}` : 
-                    "邏輯編輯器 - 請選擇邏輯模板"
-                  }
-                  context={WorkspaceContext.LOGIC}
-                  onDrop={handleLogicDrop}
-                  blocks={logicBlocks}
-                  onRemove={removeLogicBlock}
-                  onUpdate={updateLogicBlock}
-                  onMove={moveLogicBlock}
-                  onInsert={insertLogicBlock}
-                />
+                <div className="grid grid-cols-2 gap-4 h-full min-h-0">
+                  <div className="flex flex-col min-h-0">
+                    <DropZone 
+                      title={currentLogicTemplateName ? 
+                        `邏輯編輯器 - ${currentLogicTemplateName}` : 
+                        "邏輯編輯器 - 請選擇邏輯模板"
+                      }
+                      context={WorkspaceContext.LOGIC}
+                      onDrop={handleLogicDrop}
+                      blocks={logicBlocks}
+                      onRemove={removeLogicBlock}
+                      onUpdate={updateLogicBlock}
+                      onMove={moveLogicBlock}
+                      onInsert={insertLogicBlock}
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col min-h-0">
+                    <LineBotSimulator blocks={logicBlocks as Block[]} flexBlocks={flexBlocks as Block[]} />
+                  </div>
+                </div>
               </div>
             </div>
           </TabsContent>

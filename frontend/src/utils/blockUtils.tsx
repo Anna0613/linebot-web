@@ -1,5 +1,5 @@
 /**
- * 積木實用工具函數
+ * 積木實用工具函數和組件
  */
 
 import React from 'react';
@@ -16,9 +16,17 @@ import {
 import { BlockCategory, WorkspaceContext } from '../types/block';
 
 /**
- * 獲取積木類別對應的圖示組件
+ * 積木類別圖示組件
  */
-export const getCategoryIcon = (category: BlockCategory, className: string = "w-3 h-3") => {
+interface CategoryIconProps {
+  category: BlockCategory;
+  className?: string;
+}
+
+export const CategoryIcon: React.FC<CategoryIconProps> = ({ 
+  category, 
+  className = "w-3 h-3" 
+}) => {
   switch (category) {
     case BlockCategory.EVENT:
       return <Zap className={className} />;
@@ -37,6 +45,13 @@ export const getCategoryIcon = (category: BlockCategory, className: string = "w-
     default:
       return <Info className={className} />;
   }
+};
+
+/**
+ * 獲取積木類別對應的圖示組件 (向後相容)
+ */
+export const getCategoryIcon = (category: BlockCategory, className: string = "w-3 h-3") => {
+  return <CategoryIcon category={category} className={className} />;
 };
 
 /**
