@@ -127,6 +127,23 @@ async def handle_webhook_event(
 
                 # 發送活動更新
                 await websocket_manager.send_activity_update(bot_id, activity_data)
+                
+                # 如果是用戶訊息，發送專門的聊天更新通知
+                if (event.get('type') == 'message' and 
+                    event.get('source', {}).get('type') == 'user' and 
+                    event.get('source', {}).get('userId')):
+                    
+                    user_id = event.get('source', {}).get('userId')
+                    await websocket_manager.send_new_user_message(
+                        bot_id, 
+                        user_id, 
+                        {
+                            'event_type': event.get('type'),
+                            'message_type': event.get('message', {}).get('type'),
+                            'message_content': event.get('message', {}).get('text') if event.get('message', {}).get('type') == 'text' else None,
+                            'timestamp': event.get('timestamp')
+                        }
+                    )
 
             # 發送分析數據更新（觸發前端重新獲取統計數據）
             if events:  # 只有當有事件時才發送分析更新

@@ -154,11 +154,21 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
 
   // 發送消息
   const sendMessage = useCallback((message: Record<string, unknown>) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
-      console.debug('發送 WebSocket 消息:', message);
+    if (wsRef.current) {
+      const readyState = wsRef.current.readyState;
+      const readyStateNames = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
+      
+      if (readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify(message));
+        console.debug('發送 WebSocket 消息:', message);
+        return true;
+      } else {
+        console.warn(`WebSocket 未連接，當前狀態: ${readyStateNames[readyState] || readyState}，無法發送消息:`, message);
+        return false;
+      }
     } else {
-      console.warn('WebSocket 未連接，無法發送消息:', message);
+      console.warn('WebSocket 實例不存在，無法發送消息:', message);
+      return false;
     }
   }, []);
 
@@ -173,10 +183,17 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   // 啟動心跳
   const startHeartbeat = useCallback(() => {
     heartbeatIntervalRef.current = setInterval(() => {
-      sendMessage({ 
-        type: 'ping',
-        timestamp: new Date().toISOString()
-      });
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        const success = sendMessage({ 
+          type: 'ping',
+          timestamp: new Date().toISOString()
+        });
+        if (!success) {
+          console.warn('心跳發送失敗，WebSocket 可能已斷開');
+        }
+      } else {
+        console.debug('跳過心跳發送，WebSocket 未連接');
+      }
     }, 30000); // 每 30 秒發送心跳
   }, [sendMessage]);
 
@@ -196,14 +213,42 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
         setConnectionError(null);
         reconnectAttemptsRef.current = 0;
 
-        // 訂閱數據更新
+        // 訂閱數據更新 - 使用重試機制確保發送成功
         if (botId) {
-          setTimeout(() => {
-            sendMessage({ type: 'subscribe_analytics' });
-            sendMessage({ type: 'subscribe_activities' });
-            sendMessage({ type: 'subscribe_webhook_status' });
-            sendMessage({ type: 'get_initial_data' });
-          }, 100);
+          const sendSubscriptions = (retries = 3) => {
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+              console.log('準備發送 WebSocket 訂閱消息...');
+              
+              const subscriptions = [
+                { type: 'subscribe_analytics' },
+                { type: 'subscribe_activities' },
+                { type: 'subscribe_webhook_status' },
+                { type: 'get_initial_data' }
+              ];
+              
+              let successCount = 0;
+              subscriptions.forEach((subscription) => {
+                const success = sendMessage(subscription);
+                if (success) {
+                  successCount++;
+                  console.log(`✅ 已發送: ${subscription.type}`);
+                } else {
+                  console.error(`❌ 發送失敗: ${subscription.type}`);
+                }
+              });
+              
+              console.log(`WebSocket 訂閱完成: ${successCount}/${subscriptions.length} 成功`);
+            } else if (retries > 0) {
+              console.log(`WebSocket 尚未就緒，${retries} 次重試後再嘗試...`);
+              setTimeout(() => sendSubscriptions(retries - 1), 300);
+            } else {
+              console.error('WebSocket 訂閱失敗：連接未建立');
+              setConnectionError('訂閱失敗：連接未建立');
+            }
+          };
+          
+          // 延遲後發送訂閱
+          setTimeout(() => sendSubscriptions(), 100);
         }
 
         // 啟動心跳
