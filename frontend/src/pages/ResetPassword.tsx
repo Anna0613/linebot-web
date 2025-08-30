@@ -169,7 +169,7 @@ const ResetPassword = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] font-bold hover:bg-[#e6bc00] h-11"
+                className="w-full rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold hover:bg-[hsl(var(--line-green-hover))] h-11"
               >
                 {loading ? "處理中..." : "重設密碼"}
               </Button>

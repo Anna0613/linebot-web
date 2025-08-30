@@ -5,7 +5,7 @@ const DashboardFooter = () => {
   return (
     <footer
       id="contact"
-      className="bg-[#C4D4C9] pt-12 sm:pt-16 pb-6 sm:pb-8 mt-auto"
+      className="bg-secondary pt-12 sm:pt-16 pb-6 sm:pb-8 mt-auto"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* 主要內容區域 */}
@@ -120,7 +120,7 @@ const DashboardFooter = () => {
                 href="https://www.facebook.com/MCU1957"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#454658] hover:text-[#1a1a40] transition-colors p-2 hover:bg-white/20 rounded-full"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-white/20 rounded-full"
                 aria-label="Facebook"
               >
                 <svg
@@ -136,7 +136,7 @@ const DashboardFooter = () => {
                 href="https://www.instagram.com/mcu1957/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#454658] hover:text-[#1a1a40] transition-colors p-2 hover:bg-white/20 rounded-full"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-white/20 rounded-full"
                 aria-label="Instagram"
               >
                 <svg
@@ -152,7 +152,7 @@ const DashboardFooter = () => {
                 href="https://www.youtube.com/mcu1957"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#454658] hover:text-[#1a1a40] transition-colors p-2 hover:bg-white/20 rounded-full"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-white/20 rounded-full"
                 aria-label="YouTube"
               >
                 <svg
@@ -168,7 +168,7 @@ const DashboardFooter = () => {
                 href="https://www.weibo.com/welcomemcu"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#454658] hover:text-[#1a1a40] transition-colors p-2 hover:bg-white/20 rounded-full"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-white/20 rounded-full"
                 aria-label="weibo"
               >
                 <svg

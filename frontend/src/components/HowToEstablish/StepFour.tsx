@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 const StepFour = () => {
   return (
-    <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-[#F8F6F3] to-[#FFFDFA] relative overflow-hidden">
+    <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-secondary relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute top-12 sm:top-20 left-0 w-60 h-60 sm:w-80 sm:h-80 bg-primary/5 rounded-full blur-3xl"></div>
       <div className="absolute bottom-12 sm:bottom-20 right-0 w-72 h-72 sm:w-96 sm:h-96 bg-accent/5 rounded-full blur-3xl"></div>
@@ -186,7 +186,7 @@ const StepFour = () => {
                 <Link to="/bots/create" className="inline-flex w-full sm:w-auto">
                   <Button
                     size="lg"
-                    className="w-full bg-[#F4CD41] hover:bg-[#e6bc00] text-foreground rounded-full shadow-lg hover:shadow-xl transition-all group text-sm sm:text-base"
+                  className="w-full bg-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-hover))] text-[hsl(var(--primary-foreground))] rounded-full shadow-lg hover:shadow-xl transition-all group text-sm sm:text-base"
                   >
                     開始設定伺服器
                     <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />

@@ -104,7 +104,7 @@ const LoginSuccess: React.FC = () => {
           <p className="text-sm text-gray-500">3 秒後將自動跳轉到主頁面...</p>
           <Button
             onClick={handleContinue}
-            className="w-full bg-[#F4CD41] text-[#1a1a40] font-bold rounded-[5px] text-[16px] hover:bg-[#e6bc00]"
+            className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-[5px] text-[16px] hover:bg-[hsl(var(--line-green-hover))]"
           >
             立即進入
           </Button>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 const StepTwo = () => {
   return (
-    <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-gradient-to-br from-[#F8F6F3] to-[#FFFDFA] relative overflow-hidden">
+    <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-secondary relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute top-12 sm:top-20 left-0 w-60 h-60 sm:w-80 sm:h-80 bg-accent/5 rounded-full blur-3xl"></div>
       <div className="absolute bottom-12 sm:bottom-20 right-0 w-72 h-72 sm:w-96 sm:h-96 bg-primary/5 rounded-full blur-3xl"></div>

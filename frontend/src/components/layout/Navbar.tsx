@@ -31,7 +31,7 @@ const Navbar = () => {
           {/* 左側：漢堡選單和Logo */}
           <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
             <button
-              className="text-[#1a1a40] p-1 hover:bg-gray-100 rounded-md transition-colors"
+              className="text-foreground p-1 hover:bg-secondary rounded-md transition-colors"
               onClick={toggleMobileMenu}
               aria-label="開啟選單"
             >
@@ -47,7 +47,7 @@ const Navbar = () => {
                 alt="Logo"
                 className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0"
               />
-              <h6 className="text-lg sm:text-xl md:text-[28px] font-bold text-[#1a1a40] tracking-wide truncate">
+              <h6 className="text-lg sm:text-xl md:text-[28px] font-bold text-foreground tracking-wide truncate">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
               </h6>
@@ -63,7 +63,7 @@ const Navbar = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-full custom-signin hover:bg-[#A0A0A0] text-xs md:text-sm px-3 md:px-4 h-8 md:h-10"
+                className="rounded-full custom-signin hover:bg-secondary text-xs md:text-sm px-3 md:px-4 h-8 md:h-10"
               >
                 登入
               </Button>
@@ -71,7 +71,7 @@ const Navbar = () => {
             <Link to="/register">
               <Button
                 size="sm"
-                className="rounded-full custom-joinus hover:bg-[#e6bc00] text-xs md:text-sm px-3 md:px-4 h-8 md:h-10"
+                className="rounded-full custom-joinus hover:bg-[hsl(var(--line-green-hover))] text-xs md:text-sm px-3 md:px-4 h-8 md:h-10"
               >
                 立即加入
               </Button>

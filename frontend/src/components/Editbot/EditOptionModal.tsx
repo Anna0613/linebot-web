@@ -33,7 +33,7 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         {/* 標題 */}
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-[#383A45]">選擇編輯類型</h3>
+          <h3 className="text-lg font-semibold text-foreground">選擇編輯類型</h3>
           <p className="text-sm text-gray-600 mt-1">請選擇您要編輯的內容</p>
         </div>
 
@@ -44,7 +44,7 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
             className="w-full p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-[#82C29B] rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"
                   fill="none"
@@ -60,10 +60,10 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
                 </svg>
               </div>
               <div className="text-left">
-                <h4 className="font-medium text-[#383A45] group-hover:text-[#819780]">
+                <h4 className="font-medium text-foreground group-hover:text-[hsl(var(--primary))]">
                   編輯基本資料
                 </h4>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   修改Bot名稱、Token、Secret等設定
                 </p>
               </div>
@@ -75,7 +75,7 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
             className="w-full p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-[#819780] rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"
                   fill="none"
@@ -91,10 +91,10 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
                 </svg>
               </div>
               <div className="text-left">
-                <h4 className="font-medium text-[#383A45] group-hover:text-[#819780]">
+                <h4 className="font-medium text-foreground group-hover:text-[hsl(var(--primary))]">
                   編輯功能
                 </h4>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   設計Bot的回應邏輯和功能流程
                 </p>
               </div>
@@ -106,7 +106,7 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
         <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-[#E74C3C] text-white rounded-md font-bold hover:bg-[#C0392B] transition-all duration-200"
+            className="px-4 py-2 bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] rounded-md font-bold hover:opacity-90 transition-all duration-200"
           >
             取消
           </button>

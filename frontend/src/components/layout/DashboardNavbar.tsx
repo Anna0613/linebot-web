@@ -169,7 +169,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
           {/* 左側：漢堡選單和Logo */}
           <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
             <button
-              className="text-[#1a1a40] p-1 hover:bg-gray-100 rounded-md transition-colors"
+              className="text-foreground p-1 hover:bg-secondary rounded-md transition-colors"
               onClick={toggleMobileMenu}
               aria-label="開啟選單"
             >
@@ -185,7 +185,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                 alt="Logo"
                 className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0"
               />
-              <h6 className="text-lg sm:text-xl md:text-[28px] font-bold text-[#1a1a40] tracking-wide truncate">
+              <h6 className="text-lg sm:text-xl md:text-[28px] font-bold text-foreground tracking-wide truncate">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
               </h6>
@@ -209,7 +209,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               </div>
             </Link>
             <Link to="/bots/create">
-              <Button className="bg-[#F4CD41] text-[#1a1a40] font-bold rounded-[5px] text-sm lg:text-[16px] hover:bg-[#e6bc00] px-3 lg:px-4 h-8 lg:h-10">
+              <Button className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-[5px] text-sm lg:text-[16px] hover:bg-[hsl(var(--line-green-hover))] px-3 lg:px-4 h-8 lg:h-10">
                 建立設計
               </Button>
             </Link>
@@ -218,7 +218,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={toggleDropdown}
-                className="flex items-center justify-center h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-gray-200 overflow-hidden hover:ring-2 hover:ring-[#F4CD41] transition-all"
+                className="flex items-center justify-center h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-gray-200 overflow-hidden hover:ring-2 hover:ring-[hsl(var(--primary))] transition-all"
               >
                 {userImage ? (
                   <img
@@ -279,7 +279,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                     />
                   </div>
 
-                  <nav className="space-y-2 text-sm text-[#1a1a40]">
+                  <nav className="space-y-2 text-sm text-foreground">
                     <hr className="my-2 border-gray-300" />
                     <button
                       onClick={toggleTheme}

@@ -18,7 +18,7 @@ const BotEditorPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-[#5A2C1D] text-lg loading-pulse">載入中...</div>
       </div>
     );
@@ -26,7 +26,7 @@ const BotEditorPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-red-600 text-lg">{error}</div>
       </div>
     );
@@ -58,7 +58,7 @@ const BotEditorPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FFFDFA]">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar3 user={user} />
       <main className="pt-24 sm:pt-28 md:pt-32 flex flex-col items-center flex-1">
         <div className="w-full max-w-7xl px-4 sm:px-6 mb-16 sm:mb-20 md:mb-24 flex justify-center items-start">

@@ -6,8 +6,8 @@ const Hero = () => {
   return (
     <section className="relative min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-4.5rem)] lg:min-h-[calc(100vh-5rem)] flex items-center pt-14 sm:pt-16 md:pt-18 lg:pt-20 overflow-hidden px-3 sm:px-4 md:px-6 lg:px-8">
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-[#fffdfa]  from-blue-50 to-transparent opacity-60"></div>
-        <div className="absolute bottom-0 left-0 w-1/2 h-full bg-[#fffdfa]  from-green-50 to-transparent opacity-60"></div>
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-background opacity-60"></div>
+        <div className="absolute bottom-0 left-0 w-1/2 h-full bg-background opacity-60"></div>
         <div className="absolute inset-0 dot-pattern opacity-10"></div>
       </div>
 
@@ -31,7 +31,7 @@ const Hero = () => {
             <Link to="/register">
               <Button
                 size="lg"
-                className="w-full xs:w-auto rounded-full bg-[#F4CD41] text-sm xs:text-base font-bold hover:bg-[#e6bc00] h-10 xs:h-11 shadow-lg hover:shadow-xl transition-all"
+                className="w-full xs:w-auto rounded-full bg-[hsl(var(--primary))] text-sm xs:text-base font-bold hover:bg-[hsl(var(--line-green-hover))] h-10 xs:h-11 shadow-lg hover:shadow-xl transition-all text-[hsl(var(--primary-foreground))]"
               >
                 開始設計
                 <ArrowRight className="ml-2 h-5 w-5" />
