@@ -183,7 +183,7 @@ const StepFour = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <Link to="/add server" className="inline-flex w-full sm:w-auto">
+                <Link to="/bots/create" className="inline-flex w-full sm:w-auto">
                   <Button
                     size="lg"
                     className="w-full bg-[#F4CD41] hover:bg-[#e6bc00] text-foreground rounded-full shadow-lg hover:shadow-xl transition-all group text-sm sm:text-base"

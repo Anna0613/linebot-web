@@ -20,7 +20,7 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
 
   const handleEditFunction = () => {
     onClose();
-    navigate("/block");
+    navigate("/bots/editor");
   };
 
   const handleEditBasicInfo = () => {

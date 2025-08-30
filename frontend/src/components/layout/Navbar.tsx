@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageToggle from "../LanguageToggle/LanguageToggle";
+import QuickActions from "@/components/common/QuickActions";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -10,20 +11,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-
-      const backToTop = document.getElementById("backToTop");
-      if (backToTop) {
-        if (window.scrollY > 300) {
-          backToTop.style.display = "flex";
-        } else {
-          backToTop.style.display = "none";
-        }
-      }
+      setIsScrolled(window.scrollY > 10);
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -32,10 +20,6 @@ const Navbar = () => {
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -205,36 +189,7 @@ const Navbar = () => {
         </div>
       </header>
 
-      {/* 回到頂部按鈕 */}
-      <div
-        id="backToTop"
-        className="back-to-top fixed hidden right-4 bottom-20 sm:bottom-24 lg:bottom-20 w-10 h-10 sm:w-12 sm:h-12 bg-[#919191] text-center rounded-full cursor-pointer z-[1001] items-center justify-center hover:bg-[#575757] hover:scale-110 transition-all duration-300 shadow-lg"
-        onClick={scrollToTop}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 512 512"
-          className="w-5 h-5 sm:w-6 sm:h-6 fill-white"
-        >
-          <path d="M233.4 105.4c12.5-12.5 32.8-12.5 45.3 0l192 192c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L256 173.3 86.6 342.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l192-192z" />
-        </svg>
-      </div>
-
-      {/* LINE 聯繫按鈕 */}
-      <a
-        href="https://line.me/ti/p/OQV3UIgmr7"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed right-4 bottom-4 sm:bottom-6 z-[1001]"
-      >
-        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center hover:scale-110 transition-all duration-300">
-          <img
-            src="/images/line-logo.svg"
-            alt="Line icon"
-            className="w-full h-full object-cover"
-          />
-        </div>
-      </a>
+      <QuickActions />
     </>
   );
 };

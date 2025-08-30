@@ -44,7 +44,7 @@ const DashboardFooter = () => {
               </li>
               <li>
                 <Link
-                  to="/how to establish"
+                  to="/how-to-establish"
                   className="text-muted-foreground hover:text-[#0B346E] transition-colors text-sm block py-1"
                 >
                   如何建立LINE Bot
@@ -52,7 +52,7 @@ const DashboardFooter = () => {
               </li>
               <li>
                 <Link
-                  to="/add server"
+                  to="/bots/create"
                   className="text-muted-foreground hover:text-[#0B346E] transition-colors text-sm block py-1"
                 >
                   建立LINE Bot
@@ -60,7 +60,7 @@ const DashboardFooter = () => {
               </li>
               <li>
                 <Link
-                  to="/block"
+                  to="/bots/editor"
                   className="text-muted-foreground hover:text-[#0B346E] transition-colors text-sm block py-1"
                 >
                   開始設計LINE Bot
@@ -68,7 +68,7 @@ const DashboardFooter = () => {
               </li>
               <li>
                 <Link
-                  to="/editbot"
+                  to="/bots/management"
                   className="text-muted-foreground hover:text-[#0B346E] transition-colors text-sm block py-1"
                 >
                   管理LINE Bot

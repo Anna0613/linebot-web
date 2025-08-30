@@ -274,7 +274,7 @@ const About = () => {
                 查看建立教學
               </button>
               <button
-                onClick={() => navigate("/add-server")}
+                onClick={() => navigate("/bots/create")}
                 className="px-8 py-4 bg-[#FFD59E] text-[#5A2C1D] font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
               >
                 開始建立 Bot

@@ -232,7 +232,7 @@ const HowToEstablish = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center max-w-md mx-auto">
                 <button
-                  onClick={() => navigate("/add-server")}
+                  onClick={() => navigate("/bots/create")}
                   className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-[#383A45] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
                 >
                   立即建立 Bot
