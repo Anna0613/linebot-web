@@ -3,6 +3,7 @@
  * 提供即時數據更新功能
  */
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { UnifiedAuthManager } from '../services/UnifiedAuthManager';
 
 interface WebSocketMessage {
   type: string;
@@ -42,46 +43,25 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
 
-  // 獲取認證 token（支持多種存儲方式）
+  // 獲取認證 token（使用統一認證管理器）
   const getAuthToken = useCallback(() => {
     console.debug('🔍 開始查找認證 token...');
 
-    // 方法 1: 嘗試從 localStorage 獲取（舊系統）
-    let token = localStorage.getItem('token');
-    if (token) {
-      console.debug('✅ 從 localStorage[token] 找到 token');
-      return token;
-    }
-
-    // 方法 2: 嘗試從 localStorage 獲取（舊系統的另一個 key）
-    token = localStorage.getItem('auth_token');
-    if (token) {
-      console.debug('✅ 從 localStorage[auth_token] 找到 token');
-      return token;
-    }
-
-    // 方法 3: 嘗試從 cookies 獲取（新系統）
     try {
-      console.debug('🍪 檢查 cookies:', document.cookie);
-      const cookies = document.cookie.split(';');
-      for (const cookie of cookies) {
-        const [name, value] = cookie.trim().split('=');
-        if ((name === 'auth_token' || name === 'auth_token_remember' || name === 'token') && value) {
-          console.debug(`✅ 從 cookie[${name}] 找到 token`);
-          return decodeURIComponent(value);
-        }
+      const authManager = UnifiedAuthManager.getInstance();
+      const token = authManager.getAccessToken();
+      
+      if (token) {
+        console.debug('✅ 從 UnifiedAuthManager 找到 token');
+        return token;
       }
+
+      console.warn('❌ UnifiedAuthManager 中未找到認證 token');
+      return null;
     } catch (error) {
-      console.warn('從 cookies 獲取 token 失敗:', error);
+      console.error('從 UnifiedAuthManager 獲取 token 失敗:', error);
+      return null;
     }
-
-    console.warn('❌ 未找到任何認證 token');
-    console.debug('檢查項目：');
-    console.debug('- localStorage.token:', !!localStorage.getItem('token'));
-    console.debug('- localStorage.auth_token:', !!localStorage.getItem('auth_token'));
-    console.debug('- document.cookie:', document.cookie);
-
-    return null;
   }, []);
 
   // 獲取 WebSocket URL（包含認證 token）

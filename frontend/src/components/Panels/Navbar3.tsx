@@ -140,10 +140,8 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
           credentials: "include",
         }
       );
-      // 使用 AuthService 清除所有認證資料
+      // 使用 UnifiedAuthManager 清除所有認證資料
       authManager.clearAuth();
-      // 清除其他可能的 LINE 登入相關資料
-      localStorage.removeItem("line_token");
       setShowDropdown(false);
       // 使用 React Router 進行導航
       navigate("/login");
@@ -151,7 +149,6 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
       console.error("Error occurred:", _error);
       // 即使後端請求失敗，也要清除前端的認證資料
       authManager.clearAuth();
-      localStorage.removeItem("line_token");
       setShowDropdown(false);
       navigate("/login");
     }

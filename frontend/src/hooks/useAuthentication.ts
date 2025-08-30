@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "./use-toast";
 // import { LineLoginService } from "../services/lineLogin";
 import { API_CONFIG, getApiUrl } from "../config/apiConfig";
-import { AuthService } from "../services/auth";
+import { UnifiedAuthManager } from "../services/UnifiedAuthManager";
 
 interface User {
   line_id?: string;
@@ -35,9 +35,14 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const authManager = UnifiedAuthManager.getInstance();
 
   const checkLoginStatus = useCallback(async () => {
     try {
+      const authManager = UnifiedAuthManager.getInstance();
+      const authHeaders = authManager.getAuthHeaders();
+      
       const nativeFetch = window.fetch.bind(window);
       const response = await nativeFetch(
         getApiUrl(
@@ -50,9 +55,7 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-            ...(localStorage.getItem("auth_token") && {
-              Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-            }),
+            ...authHeaders,
           },
         }
       );
@@ -107,7 +110,7 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
         // 如果需要認證但用戶已認證，且防止返回登入頁
         if (
           requireAuth &&
-          AuthService.isAuthenticated() &&
+          await authManager.isAuthenticated() &&
           preventBackToLogin
         ) {
           navigate("/dashboard", { replace: true });
@@ -115,7 +118,7 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
         }
 
         // 如果不需要認證但用戶已認證
-        if (!requireAuth && AuthService.isAuthenticated()) {
+        if (!requireAuth && await authManager.isAuthenticated()) {
           navigate("/dashboard", { replace: true });
           return;
         }
@@ -140,14 +143,15 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
         }
 
         // 檢查現有的認證狀態
-        const storedToken = localStorage.getItem("auth_token");
-        if (storedToken) {
-          const userData = await verifyLineToken(storedToken);
-          if (userData) {
-            setUser(userData);
-          } else {
-            await checkLoginStatus();
-          }
+        const userInfo = authManager.getUserInfo();
+        if (userInfo && await authManager.isAuthenticated()) {
+          setUser({
+            display_name: userInfo.display_name,
+            username: userInfo.username,
+            email: userInfo.email,
+            line_id: userInfo.line_id,
+            picture_url: userInfo.picture_url
+          });
         } else {
           await checkLoginStatus();
         }
@@ -199,8 +203,7 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
 
 
   const logout = () => {
-    AuthService.clearToken();
-    localStorage.clear();
+    authManager.clearAuth('logout');
     setUser(null);
     navigate("/login");
     toast({
