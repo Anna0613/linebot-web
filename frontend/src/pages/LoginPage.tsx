@@ -221,7 +221,7 @@ const LoginPage = () => {
           </div>
           <Link
             to="/forgetthepassword"
-            className="text-sm font-bold text-[#A41D1A] hover:underline"
+            className="text-sm text-[hsl(var(--primary))] hover:underline"
           >
             忘記密碼？
           </Link>
@@ -229,7 +229,7 @@ const LoginPage = () => {
 
         <Button
           type="submit"
-          className="w-full bg-[#466CA6] hover:bg-[#00225D] text-white"
+          className="w-full bg-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-hover))] text-[hsl(var(--primary-foreground))]"
           disabled={loading}
         >
           {loading ? <Loader size="sm" /> : "登入"}
@@ -248,7 +248,7 @@ const LoginPage = () => {
 
       <p className="text-center text-sm text-muted-foreground mt-4">
         還沒有帳號？{" "}
-        <Link to="/register" className="text-[#A41D1A] font-bold hover:underline">
+        <Link to="/register" className="text-[hsl(var(--primary))] hover:underline">
           立即註冊
         </Link>
       </p>

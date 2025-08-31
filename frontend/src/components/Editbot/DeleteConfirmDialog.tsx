@@ -19,7 +19,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white rounded-[15px] p-6 w-full max-w-md mx-4 shadow-[-8px_8px_0_#819780] animate-scale-in border border-black">
+      <div className="bg-white rounded-[15px] p-6 w-full max-w-md mx-4 shadow-[-8px_8px_0_hsl(var(--line-green))] animate-scale-in border border-black">
         {/* 標題區域 */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -37,12 +37,12 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
               />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-[#383A45] mb-2">
+          <h2 className="text-xl font-bold text-foreground mb-2">
             確認刪除機器人
           </h2>
           <p className="text-sm text-gray-600">
             您即將刪除機器人「
-            <span className="font-semibold text-[#383A45]">{botName}</span>」
+            <span className="font-semibold text-foreground">{botName}</span>」
           </p>
         </div>
 
@@ -77,7 +77,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 px-4 py-3 bg-[#F0F0F0] text-[#383A45] rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-3 bg-secondary text-foreground rounded-lg hover:brightness-95 transition-all duration-200 shadow-sm text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             取消
           </button>
@@ -85,7 +85,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className="flex-1 px-4 py-3 bg-[#E74C3C] text-white rounded-lg hover:bg-[#C0392B] transition-all duration-200 shadow-sm text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="flex-1 px-4 py-3 bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] rounded-lg hover:opacity-90 transition-all duration-200 shadow-sm text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isLoading ? (
               <>

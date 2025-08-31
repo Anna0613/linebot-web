@@ -140,10 +140,8 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
           credentials: "include",
         }
       );
-      // 使用 AuthService 清除所有認證資料
+      // 使用 UnifiedAuthManager 清除所有認證資料
       authManager.clearAuth();
-      // 清除其他可能的 LINE 登入相關資料
-      localStorage.removeItem("line_token");
       setShowDropdown(false);
       // 使用 React Router 進行導航
       navigate("/login");
@@ -151,7 +149,6 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
       console.error("Error occurred:", _error);
       // 即使後端請求失敗，也要清除前端的認證資料
       authManager.clearAuth();
-      localStorage.removeItem("line_token");
       setShowDropdown(false);
       navigate("/login");
     }
@@ -180,7 +177,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
 
           <div className="hidden md:flex items-center space-x-4">
             <LanguageToggle />
-            <Link to="/how to establish">
+            <Link to="/how-to-establish">
               <div className="circle-question" title="操作說明">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -191,7 +188,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                 </svg>
               </div>
             </Link>
-            <Link to="/editbot">
+            <Link to="/bots/management">
               <div className="ml-2 mr-2" title="我的LINE Bot">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -386,7 +383,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
             </li>
             <li>
               <Link
-                to="/how to establish"
+                to="/how-to-establish"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
               >
@@ -395,7 +392,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
             </li>
             <li>
               <Link
-                to="/add server"
+                to="/bots/create"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
               >
@@ -404,7 +401,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
             </li>
             <li>
               <Link
-                to="/block"
+                to="/bots/editor"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
               >
@@ -413,7 +410,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
             </li>
             <li>
               <Link
-                to="/editbot"
+                to="/bots/management"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
               >

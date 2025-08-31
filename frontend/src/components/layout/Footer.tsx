@@ -3,7 +3,7 @@ import LanguageToggle from "../LanguageToggle/LanguageToggle";
 
 const Footer = () => {
   return (
-    <footer id="contact" className="bg-[#C4D4C9] pt-12 sm:pt-16 pb-6 sm:pb-8">
+    <footer id="contact" className="bg-secondary pt-12 sm:pt-16 pb-6 sm:pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-8 sm:gap-12 lg:gap-[120px] mb-8 sm:mb-12">
           <div className="space-y-4 text-center md:text-left">
@@ -102,7 +102,7 @@ const Footer = () => {
                 href="https://www.facebook.com/MCU1957"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#454658] hover:text-[#1a1a40] transition-colors p-2 hover:bg-white/20 rounded-full"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-white/20 rounded-full"
                 aria-label="Facebook"
               >
                 <svg
@@ -118,7 +118,7 @@ const Footer = () => {
                 href="https://www.instagram.com/mcu1957/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#454658] hover:text-[#1a1a40] transition-colors p-2 hover:bg-white/20 rounded-full"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-white/20 rounded-full"
                 aria-label="Instagram"
               >
                 <svg
@@ -134,7 +134,7 @@ const Footer = () => {
                 href="https://www.youtube.com/mcu1957"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#454658] hover:text-[#1a1a40] transition-colors p-2 hover:bg-white/20 rounded-full"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-white/20 rounded-full"
                 aria-label="YouTube"
               >
                 <svg
@@ -150,7 +150,7 @@ const Footer = () => {
                 href="https://www.weibo.com/welcomemcu"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#454658] hover:text-[#1a1a40] transition-colors p-2 hover:bg-white/20 rounded-full"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-white/20 rounded-full"
                 aria-label="weibo"
               >
                 <svg

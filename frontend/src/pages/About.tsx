@@ -18,49 +18,49 @@ const About = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
-        <div className="text-[#1a1a40] text-lg">載入中...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground text-lg">載入中...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFDFA]">
+    <div className="min-h-screen bg-background">
       {isAuthenticated ? <DashboardNavbar user={user} /> : <Navbar />}
       {/* 主要內容區域 */}
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16 fade-in-element">
-          <h1 className="text-[#1a1a40] text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
+          <h1 className="text-foreground text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
             關於本網站
           </h1>
-          <p className="text-[#5A2C1D] text-xl max-w-4xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground text-xl max-w-4xl mx-auto leading-relaxed">
             了解 LineBot Web 平台的設計理念與功能特色
           </p>
         </div>
 
         {/* 平台簡介區域 */}
         <div className="max-w-6xl mx-auto mb-20">
-          <div className="bg-white rounded-lg shadow-lg p-8 sm:p-12 border-l-4 border-[#8ECAE6]">
-            <h2 className="text-[#383A45] text-[32px] font-bold mb-8">
+          <div className="bg-card text-card-foreground rounded-lg shadow-lg p-8 sm:p-12 border-l-4 border-border">
+            <h2 className="text-foreground text-[32px] font-bold mb-8">
               平台簡介
             </h2>
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="space-y-6">
-                <p className="text-[#5A2C1D] text-lg leading-relaxed">
+                <p className="text-muted-foreground text-lg leading-relaxed">
                   本網站旨在協助使用者快速建立與設計 LINE
                   Bot，無需撰寫複雜程式碼，即可透過圖形化介面完成機器人邏輯設計。
                 </p>
-                <p className="text-[#5A2C1D] text-lg leading-relaxed">
+                <p className="text-muted-foreground text-lg leading-relaxed">
                   使用者可以透過簡單的步驟輸入必要資訊（如 Channel access token
                   和 Channel secret），接著拖拉元件設計回應流程，最後部署上線。
                 </p>
-                <p className="text-[#5A2C1D] text-lg leading-relaxed">
+                <p className="text-muted-foreground text-lg leading-relaxed">
                   我們的目標是降低技術門檻，讓更多人能發揮創意並建立屬於自己的聊天機器人。
                 </p>
               </div>
-              <div className="bg-gradient-to-br from-[#FFF7E0] to-[#F9F7F3] rounded-lg p-8 text-center">
-                <div className="w-24 h-24 bg-[#F4A261] rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="bg-secondary rounded-lg p-8 text-center">
+                <div className="w-24 h-24 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center mx-auto mb-6">
                   <svg
                     className="w-12 h-12 text-white"
                     fill="none"
@@ -75,10 +75,10 @@ const About = () => {
                     />
                   </svg>
                 </div>
-                <h3 className="text-[#383A45] text-xl font-bold mb-3">
+                <h3 className="text-foreground text-xl font-bold mb-3">
                   視覺化開發
                 </h3>
-                <p className="text-[#5A2C1D]">拖拉元件，快速建立對話流程</p>
+                <p className="text-muted-foreground">拖拉元件，快速建立對話流程</p>
               </div>
             </div>
           </div>
@@ -86,12 +86,12 @@ const About = () => {
 
         {/* 功能特色區域 */}
         <div className="max-w-7xl mx-auto mb-20">
-          <h2 className="text-[#383A45] text-[32px] font-bold text-center mb-12">
+          <h2 className="text-foreground text-[32px] font-bold text-center mb-12">
             功能特色
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="bg-white rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center border-t-4 border-[#F4A261]">
-              <div className="w-16 h-16 bg-[#F4A261] rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="bg-card rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center border-t-4 border-[hsl(var(--primary))]">
+              <div className="w-16 h-16 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg
                   className="w-8 h-8 text-white"
                   fill="currentColor"
@@ -100,16 +100,16 @@ const About = () => {
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-[#383A45] font-bold text-xl mb-4">
+              <h3 className="text-foreground font-bold text-xl mb-4">
                 簡單易用
               </h3>
-              <p className="text-[#5A2C1D] leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 直觀的圖形化介面，無需程式設計背景即可快速上手
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center border-t-4 border-[#2A9D8F]">
-              <div className="w-16 h-16 bg-[#2A9D8F] rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="bg-card rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center border-t-4 border-[hsl(var(--primary))]">
+              <div className="w-16 h-16 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg
                   className="w-8 h-8 text-white"
                   fill="currentColor"
@@ -118,16 +118,16 @@ const About = () => {
                   <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
                 </svg>
               </div>
-              <h3 className="text-[#383A45] font-bold text-xl mb-4">
+              <h3 className="text-foreground font-bold text-xl mb-4">
                 功能豐富
               </h3>
-              <p className="text-[#5A2C1D] leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 支援多種互動元件，滿足不同類型機器人的需求
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center border-t-4 border-[#8ECAE6]">
-              <div className="w-16 h-16 bg-[#8ECAE6] rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="bg-card rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center border-t-4 border-[hsl(var(--primary))]">
+              <div className="w-16 h-16 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg
                   className="w-8 h-8 text-white"
                   fill="currentColor"
@@ -140,16 +140,16 @@ const About = () => {
                   />
                 </svg>
               </div>
-              <h3 className="text-[#383A45] font-bold text-xl mb-4">
+              <h3 className="text-foreground font-bold text-xl mb-4">
                 快速部署
               </h3>
-              <p className="text-[#5A2C1D] leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 一鍵部署功能，讓您的機器人立即上線服務
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center border-t-4 border-[#CDB4DB]">
-              <div className="w-16 h-16 bg-[#CDB4DB] rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="bg-card rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center border-t-4 border-[hsl(var(--primary))]">
+              <div className="w-16 h-16 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg
                   className="w-8 h-8 text-white"
                   fill="currentColor"
@@ -159,10 +159,10 @@ const About = () => {
                   <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
                 </svg>
               </div>
-              <h3 className="text-[#383A45] font-bold text-xl mb-4">
+              <h3 className="text-foreground font-bold text-xl mb-4">
                 數據分析
               </h3>
-              <p className="text-[#5A2C1D] leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 提供詳細的使用統計，幫助您優化機器人表現
               </p>
             </div>
@@ -171,13 +171,13 @@ const About = () => {
 
         {/* 應用場景區域 */}
         <div className="max-w-6xl mx-auto mb-20">
-          <div className="bg-gradient-to-r from-[#FFF7E0] to-[#F9F7F3] rounded-lg p-12">
-            <h2 className="text-[#383A45] text-[32px] font-bold text-center mb-12">
+          <div className="bg-secondary rounded-lg p-12">
+            <h2 className="text-foreground text-[32px] font-bold text-center mb-12">
               應用場景
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center">
-                <div className="w-20 h-20 bg-[#A0D6B4] rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-20 h-20 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center mx-auto mb-6">
                   <svg
                     className="w-10 h-10 text-white"
                     fill="none"
@@ -192,18 +192,18 @@ const About = () => {
                     />
                   </svg>
                 </div>
-                <h3 className="text-[#383A45] font-bold text-xl mb-4">
+                <h3 className="text-foreground font-bold text-xl mb-4">
                   教育領域
                 </h3>
-                <p className="text-[#5A2C1D] leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed">
                   建立智能教學助手，提供課程諮詢、作業提醒等服務
                 </p>
               </div>
 
               <div className="text-center">
-                <div className="w-20 h-20 bg-[#FFD59E] rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-20 h-20 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center mx-auto mb-6">
                   <svg
-                    className="w-10 h-10 text-[#5A2C1D]"
+                    className="w-10 h-10 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -222,16 +222,16 @@ const About = () => {
                     />
                   </svg>
                 </div>
-                <h3 className="text-[#383A45] font-bold text-xl mb-4">
+                <h3 className="text-foreground font-bold text-xl mb-4">
                   行銷推廣
                 </h3>
-                <p className="text-[#5A2C1D] leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed">
                   設計互動式行銷機器人，增加品牌曝光與客戶參與度
                 </p>
               </div>
 
               <div className="text-center">
-                <div className="w-20 h-20 bg-[#8ECAE6] rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-20 h-20 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center mx-auto mb-6">
                   <svg
                     className="w-10 h-10 text-white"
                     fill="none"
@@ -246,10 +246,10 @@ const About = () => {
                     />
                   </svg>
                 </div>
-                <h3 className="text-[#383A45] font-bold text-xl mb-4">
+                <h3 className="text-foreground font-bold text-xl mb-4">
                   客戶服務
                 </h3>
-                <p className="text-[#5A2C1D] leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed">
                   建立自動化客服系統，24小時回應客戶問題
                 </p>
               </div>
@@ -259,23 +259,23 @@ const About = () => {
 
         {/* 行動呼籲區域 */}
         <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-white rounded-lg shadow-lg p-12">
-            <h2 className="text-[#383A45] text-[28px] font-bold mb-6">
+          <div className="bg-card rounded-lg shadow-lg p-12">
+            <h2 className="text-foreground text-[28px] font-bold mb-6">
               準備開始建立您的 LINE Bot 嗎？
             </h2>
-            <p className="text-[#5A2C1D] text-lg mb-8 leading-relaxed">
+            <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
               現在就開始您的 LINE Bot 開發之旅，體驗最直觀的機器人設計平台
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <button
                 onClick={() => navigate("/how-to-establish")}
-                className="px-8 py-4 bg-[#A0D6B4] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
+                className="px-8 py-4 bg-[hsl(var(--primary))] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
               >
                 查看建立教學
               </button>
               <button
-                onClick={() => navigate("/add-server")}
-                className="px-8 py-4 bg-[#FFD59E] text-[#5A2C1D] font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
+                onClick={() => navigate("/bots/create")}
+                className="px-8 py-4 bg-secondary text-foreground font-bold rounded-lg shadow-lg hover:brightness-95 hover:shadow-xl transition-all duration-200 text-lg"
               >
                 開始建立 Bot
               </button>

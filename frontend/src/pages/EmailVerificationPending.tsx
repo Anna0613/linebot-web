@@ -113,7 +113,7 @@ const EmailVerificationPending = () => {
                 
                 <Button
                   onClick={handleLoginRedirect}
-                  className="w-full bg-[#F4CD41] text-[#1a1a40] font-bold hover:bg-[#e6bc00]"
+                  className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold hover:bg-[hsl(var(--line-green-hover))]"
                 >
                   我稍後再驗證，先去登入
                 </Button>

@@ -149,7 +149,7 @@ const AddServerPage = () => {
       <div className="space-y-12">
         {/* 成功標題區域 */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-[#A0D6B4] rounded-full mb-6 shadow-lg">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-[hsl(var(--primary))] rounded-full mb-6 shadow-lg">
             <svg
               className="w-10 h-10 text-white"
               fill="none"
@@ -164,39 +164,39 @@ const AddServerPage = () => {
               />
             </svg>
           </div>
-          <h1 className="text-[#1a1a40] text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
+          <h1 className="text-foreground text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
             建立成功！
           </h1>
-          <p className="text-[#5A2C1D] text-xl leading-relaxed">
+          <p className="text-muted-foreground text-xl leading-relaxed">
             您的 LINE Bot 已成功建立
           </p>
         </div>
 
         {/* 成功訊息區域 */}
         <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 border-l-4 border-[#A0D6B4]">
-            <h2 className="text-[#383A45] text-[24px] font-bold mb-6">
+          <div className="bg-white rounded-lg shadow-lg p-8 border-l-4 border-[hsl(var(--primary))]">
+            <h2 className="text-foreground text-[24px] font-bold mb-6">
               建立完成
             </h2>
             <div className="space-y-4">
-              <div className="bg-[#A0D6B4]/10 rounded-lg p-6">
-                <h3 className="text-[#383A45] font-bold text-lg mb-4">
+              <div className="bg-[hsl(var(--line-green-soft))] rounded-lg p-6">
+                <h3 className="text-foreground font-bold text-lg mb-4">
                   機器人資訊
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <span className="text-[#5A2C1D] font-medium">名稱：</span>
-                    <span className="text-[#5A2C1D]">{formData.name}</span>
+                    <span className="text-muted-foreground font-medium">名稱：</span>
+                    <span className="text-foreground/80">{formData.name}</span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <span className="text-[#5A2C1D] font-medium">狀態：</span>
-                    <span className="text-[#A0D6B4] font-bold">已建立</span>
+                    <span className="text-muted-foreground font-medium">狀態：</span>
+                    <span className="text-[hsl(var(--primary))] font-bold">已建立</span>
                   </div>
                   <div className="flex items-center justify-between py-2">
-                    <span className="text-[#5A2C1D] font-medium">
+                    <span className="text-muted-foreground font-medium">
                       建立時間：
                     </span>
-                    <span className="text-[#5A2C1D]">
+                    <span className="text-foreground/80">
                       {new Date().toLocaleString("zh-TW")}
                     </span>
                   </div>
@@ -208,7 +208,7 @@ const AddServerPage = () => {
 
         {/* 下一步區域 */}
         <div className="max-w-4xl mx-auto">
-          <div className="bg-gradient-to-r from-[#FFF7E0] to-[#F9F7F3] rounded-lg p-8">
+          <div className="bg-secondary rounded-lg p-8">
             <h2 className="text-[#383A45] text-[24px] font-bold text-center mb-8">
               下一步操作
             </h2>

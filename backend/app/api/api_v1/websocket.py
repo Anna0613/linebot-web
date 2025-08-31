@@ -36,13 +36,13 @@ async def websocket_bot_endpoint(
     try:
         # 驗證 token 並獲取用戶
         payload = verify_token(token)
-        user_id = payload.get("sub")
+        username = payload.get("sub")
 
-        if not user_id:
+        if not username:
             await websocket.close(code=4001, reason="Invalid token")
             return
 
-        user = db.query(User).filter(User.username == user_id).first()
+        user = db.query(User).filter(User.username == username).first()
         if not user:
             await websocket.close(code=4001, reason="User not found")
             return
@@ -111,9 +111,9 @@ async def websocket_dashboard_endpoint(
     try:
         # 驗證 token 並獲取用戶
         payload = verify_token(token)
-        token_user_id = payload.get("sub")
+        token_username = payload.get("sub")
 
-        if not token_user_id or token_user_id != user_id:
+        if not token_username or token_username != user_id:
             await websocket.close(code=4001, reason="Invalid token or user mismatch")
             return
 

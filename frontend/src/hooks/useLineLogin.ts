@@ -2,6 +2,7 @@ import { useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LineLoginService } from "../services/lineLogin";
 import { useAuthForm } from "./useAuthForm";
+import { UnifiedAuthManager } from "../services/UnifiedAuthManager";
 
 export const useLineLogin = () => {
   const [searchParams] = useSearchParams();
@@ -19,11 +20,16 @@ export const useLineLogin = () => {
           }
 
           if (result.display_name) {
-            localStorage.setItem("line_token", token);
-            localStorage.setItem("username", result.display_name);
-            if (result.email) {
-              localStorage.setItem("email", result.email);
-            }
+            // 使用 UnifiedAuthManager 設置認證資訊
+            const authManager = UnifiedAuthManager.getInstance();
+            await authManager.setTokens({
+              access_token: token,
+              token_type: "line",
+              user_info: {
+                username: result.display_name,
+                email: result.email || ""
+              }
+            });
 
             // 清除登入前的歷史記錄
             window.history.replaceState(null, "", "/login");

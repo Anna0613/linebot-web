@@ -1,4 +1,4 @@
-import { AuthService } from "./auth";
+import { UnifiedAuthManager } from "./UnifiedAuthManager";
 import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 
 export interface Bot {
@@ -30,7 +30,12 @@ export class PuzzleApiService {
 
   // 獲取認證headers
   private static getHeaders(): Headers {
-    const headers = AuthService.getAuthHeaders();
+    const authManager = UnifiedAuthManager.getInstance();
+    const authHeaders = authManager.getAuthHeaders();
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      ...authHeaders
+    });
     return headers;
   }
 

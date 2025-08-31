@@ -605,10 +605,34 @@ export class UnifiedApiClient {
     );
   }
 
-  public async getBotActivities(botId: string, limit: number = 20, offset: number = 0): Promise<ApiResponse> {
-    return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/activities?limit=${limit}&offset=${offset}`)
+  public async sendMessageToUser(botId: string, lineUserId: string, messageData: { message: string }): Promise<ApiResponse> {
+    return this.post(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/message`),
+      messageData
     );
+  }
+
+  public async selectiveBroadcastMessage(botId: string, messageData: { message: string; user_ids: string[] }): Promise<ApiResponse> {
+    return this.post(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/broadcast/selective`),
+      messageData
+    );
+  }
+
+  public async getChatHistory(botId: string, lineUserId: string, limit: number = 50, offset: number = 0): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/chat-history?limit=${limit}&offset=${offset}`)
+    );
+  }
+
+  public async getBotActivities(botId: string, limit: number = 20, offset: number = 0): Promise<ApiResponse> {
+    const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/activities?limit=${limit}&offset=${offset}`);
+    console.log('調用 getBotActivities API:', url);
+    
+    const response = await this.get(url);
+    console.log('getBotActivities API 響應:', response);
+    
+    return response;
   }
 
   // Webhook 相關方法

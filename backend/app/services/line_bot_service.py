@@ -614,6 +614,38 @@ class LineBotService:
             logger.error(f"廣播訊息失敗: {e}")
             raise Exception(f"廣播失敗: {str(e)}")
     
+    def send_message_to_user(self, user_id: str, message: str) -> Dict:
+        """
+        發送訊息給特定用戶
+        
+        Args:
+            user_id: LINE 用戶 ID
+            message: 訊息內容
+            
+        Returns:
+            Dict: 發送結果
+        """
+        if not self.is_configured():
+            raise ValueError("LINE Bot 未正確配置")
+            
+        try:
+            text_message = TextSendMessage(text=message)
+            
+            # 發送訊息給特定用戶
+            self.line_bot_api.push_message(user_id, text_message)
+            
+            return {
+                "success": True,
+                "message": f"訊息已發送至用戶 {user_id}",
+                "timestamp": datetime.now().isoformat()
+            }
+        except LineBotApiError as e:
+            logger.error(f"發送訊息失敗: {e}")
+            raise Exception(f"LINE API 錯誤: {e.message}")
+        except Exception as e:
+            logger.error(f"發送訊息失敗: {e}")
+            raise Exception(f"發送失敗: {str(e)}")
+    
     def handle_webhook_event(self, body: bytes, db_session, bot_id: str) -> List[Dict]:
         """
         處理 Webhook 事件

@@ -41,7 +41,7 @@ const NotFound = () => {
         {isAuthenticated !== null && (
           <Button
             onClick={handleReturnHome}
-            className="bg-[#F4CD41] text-[#1a1a40] font-bold rounded-[5px] text-[16px] hover:bg-[#e6bc00] px-6 py-2"
+            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-[5px] text-[16px] hover:bg-[hsl(var(--line-green-hover))] px-6 py-2"
           >
             Return to Home
           </Button>

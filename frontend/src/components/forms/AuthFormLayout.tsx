@@ -21,18 +21,18 @@ const AuthFormLayout = ({
   children,
 }: AuthFormLayoutProps) => {
   return (
-    <div className="min-h-screen bg-[#FFFDFA] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
       <div className="flex-1 flex items-center justify-center px-4 py-8 pt-28 sm:pt-24 md:pt-28 pb-8">
         <div className="w-full max-w-md">
           <Card className="shadow-lg border-0 bg-white">
             <CardHeader className="text-center pb-6">
-              <CardTitle className="text-2xl font-bold text-[#3A4960]">
+            <CardTitle className="text-2xl font-bold text-foreground">
                 {title}
               </CardTitle>
               {description && (
-                <CardDescription className="text-[#554540] mt-2">
+                <CardDescription className="text-muted-foreground mt-2">
                   {description}
                 </CardDescription>
               )}

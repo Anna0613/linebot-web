@@ -78,7 +78,7 @@ const EmailVerification = () => {
             </p>
             <Button
               onClick={() => navigate("/login")}
-              className="rounded-full bg-[#F4CD41] text-[#1a1a40] font-bold hover:bg-[#e6bc00] px-8"
+              className="rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold hover:bg-[hsl(var(--line-green-hover))] px-8"
             >
               前往登入
             </Button>
@@ -122,7 +122,7 @@ const EmailVerification = () => {
               </Button>
               <Button
                 onClick={() => navigate("/login")}
-                className="rounded-full bg-[#F4CD41] text-[#1a1a40] font-bold hover:bg-[#e6bc00] px-8 w-full"
+                className="rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold hover:bg-[hsl(var(--line-green-hover))] px-8 w-full"
               >
                 返回登入頁面
               </Button>

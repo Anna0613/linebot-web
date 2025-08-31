@@ -90,6 +90,91 @@ interface ActivityItem {
   };
 }
 
+// 後端資料結構介面（從資料庫查詢結果）
+interface BackendActivityData {
+  id?: string;
+  line_bot_user_interactions_id?: string;
+  interaction_type?: string;
+  message_content?: string;
+  timestamp?: string;
+  created_at?: string;
+  line_bot_users_id?: string;
+  user_id?: string;
+  username?: string;
+  display_name?: string;
+  [key: string]: any;
+}
+
+// 資料轉換函式：將後端資料轉換為前端 ActivityItem 格式
+const convertBackendDataToActivityItem = (backendData: BackendActivityData[]): ActivityItem[] => {
+  if (!Array.isArray(backendData)) {
+    console.warn('後端資料不是陣列格式:', backendData);
+    return [];
+  }
+
+  return backendData.map((item: BackendActivityData) => {
+    // 取得 ID（優先使用 line_bot_user_interactions_id，其次使用 id）
+    const id = item.line_bot_user_interactions_id || item.id || `activity_${Date.now()}_${Math.random()}`;
+    
+    // 根據互動類型決定活動類型
+    let type: ActivityItem['type'] = 'info';
+    let title = '未知活動';
+    let description = '';
+    
+    switch (item.interaction_type) {
+      case 'message':
+        type = 'message';
+        title = `用戶發送訊息`;
+        description = item.message_content || '無內容';
+        break;
+      case 'join':
+      case 'user_join':
+        type = 'user_join';
+        title = `新用戶加入`;
+        description = `用戶 ${item.display_name || item.username || '匿名用戶'} 加入對話`;
+        break;
+      case 'leave':
+      case 'user_leave':
+        type = 'user_leave';
+        title = `用戶離開`;
+        description = `用戶 ${item.display_name || item.username || '匿名用戶'} 離開對話`;
+        break;
+      case 'follow':
+        type = 'success';
+        title = `用戶追蹤`;
+        description = `用戶 ${item.display_name || item.username || '匿名用戶'} 開始追蹤機器人`;
+        break;
+      case 'unfollow':
+        type = 'user_leave';
+        title = `用戶取消追蹤`;
+        description = `用戶 ${item.display_name || item.username || '匿名用戶'} 取消追蹤機器人`;
+        break;
+      default:
+        type = 'info';
+        title = `${item.interaction_type || '系統活動'}`;
+        description = item.message_content || '無詳細資訊';
+    }
+    
+    // 使用 timestamp 或 created_at，如果都沒有則使用當前時間
+    const timestamp = item.timestamp || item.created_at || new Date().toISOString();
+    
+    return {
+      id,
+      type,
+      title,
+      description,
+      timestamp,
+      metadata: {
+        userId: item.line_bot_users_id || item.user_id,
+        userName: item.display_name || item.username,
+        messageContent: item.message_content,
+        interactionType: item.interaction_type,
+        ...item // 保留其他所有欄位
+      }
+    };
+  });
+};
+
 const BotManagementPage: React.FC = () => {
   const { user, loading: authLoading } = useUnifiedAuth({ requireAuth: true, redirectTo: "/login" });
   const navigate = useNavigate();
@@ -117,10 +202,11 @@ const BotManagementPage: React.FC = () => {
   const [botHealth, setBotHealth] = useState<"online" | "offline" | "error">("online");
   const [_lastRenderTime, setLastRenderTime] = useState(new Date().toISOString());
 
-  // WebSocket 即時連接
+  // WebSocket 即時連接 - 在選擇 Bot 後立即連接，由 useWebSocket 內部處理延遲
   const { isConnected, connectionError, lastMessage } = useWebSocket({
     botId: selectedBotId || undefined,
     autoReconnect: true,
+    // 只要選中了 Bot 就啟用 WebSocket，連接時序由 hook 內部處理
     enabled: !!selectedBotId
   });
 
@@ -153,7 +239,7 @@ const BotManagementPage: React.FC = () => {
         return response.data;
       }
       return [];
-    } catch (_error) {
+    } catch (error) {
       console.error("獲取 Bot 列表失敗:", error);
       toast({
         variant: "destructive",
@@ -172,17 +258,25 @@ const BotManagementPage: React.FC = () => {
       if (response.data && Array.isArray(response.data)) {
         setLogicTemplates(response.data);
       }
-    } catch (_error) {
+    } catch (error) {
       console.error("獲取邏輯模板失敗:", error);
     } finally {
       setLogicLoading(false);
     }
   }, []);
 
-  // 獲取分析數據 - 使用真實API
-  const fetchAnalytics = useCallback(async (botId: string) => {
+  // 獲取分析數據 - 使用真實API，改善錯誤處理
+  const fetchAnalytics = useCallback(async (botId: string, abortSignal?: AbortSignal, isInitialLoad = false) => {
     setAnalyticsLoading(true);
+    let hasError = false;
+    let errorCount = 0;
+    
     try {
+      // 檢查是否已被中止
+      if (abortSignal?.aborted) {
+        return;
+      }
+
       // 使用 apiClient 調用真實的後端API端點
       const [analyticsRes, messageStatsRes, userActivityRes, usageStatsRes, activitiesRes] = await Promise.all([
         apiClient.getBotAnalytics(botId, timeRange),
@@ -197,15 +291,22 @@ const BotManagementPage: React.FC = () => {
         setAnalytics(analyticsRes.data as BotAnalytics);
         setBotHealth("online");
       } else {
-        console.warn('Analytics API 響應錯誤:', analyticsRes.error);
-        setBotHealth("error");
+        errorCount++;
+        if (!String(analyticsRes.error).includes('AbortError')) {
+          console.warn('Analytics API 響應錯誤:', analyticsRes.error);
+          hasError = true;
+        }
       }
 
       // 處理訊息統計數據
       if (messageStatsRes.data && !messageStatsRes.error) {
         setMessageStats(Array.isArray(messageStatsRes.data) ? messageStatsRes.data as MessageStats[] : []);
       } else {
-        console.warn('Message stats API 響應錯誤:', messageStatsRes.error);
+        errorCount++;
+        if (!String(messageStatsRes.error).includes('AbortError')) {
+          console.warn('Message stats API 響應錯誤:', messageStatsRes.error);
+          hasError = true;
+        }
         setMessageStats([]);
       }
 
@@ -229,7 +330,11 @@ const BotManagementPage: React.FC = () => {
         }
         setHeatMapData(heatData);
       } else {
-        console.warn('User activity API 響應錯誤:', userActivityRes.error);
+        errorCount++;
+        if (!String(userActivityRes.error).includes('AbortError')) {
+          console.warn('User activity API 響應錯誤:', userActivityRes.error);
+          hasError = true;
+        }
         setUserActivity([]);
         setHeatMapData([]);
       }
@@ -238,38 +343,97 @@ const BotManagementPage: React.FC = () => {
       if (usageStatsRes.data && !usageStatsRes.error) {
         setUsageData(Array.isArray(usageStatsRes.data) ? usageStatsRes.data as UsageData[] : []);
       } else {
-        console.warn('Usage stats API 響應錯誤:', usageStatsRes.error);
+        errorCount++;
+        if (!String(usageStatsRes.error).includes('AbortError')) {
+          console.warn('Usage stats API 響應錯誤:', usageStatsRes.error);
+          hasError = true;
+        }
         setUsageData([]);
       }
 
       // 處理活動記錄
       if (activitiesRes.data && !activitiesRes.error) {
-        const responseData = activitiesRes.data as {activities?: ActivityItem[]};
-        const activitiesData = responseData.activities || responseData;
-        setActivities(Array.isArray(activitiesData) ? activitiesData as ActivityItem[] : []);
+        console.log('Activities API 原始響應:', activitiesRes.data);
+        
+        let activitiesData: any = activitiesRes.data;
+        
+        // 嘗試從不同的可能結構中提取資料
+        if (activitiesData.activities && Array.isArray(activitiesData.activities)) {
+          activitiesData = activitiesData.activities;
+        } else if (activitiesData.data && Array.isArray(activitiesData.data)) {
+          activitiesData = activitiesData.data;
+        } else if (!Array.isArray(activitiesData)) {
+          console.warn('活動數據結構異常，嘗試轉換為陣列:', activitiesData);
+          activitiesData = []; // 設為空陣列
+        }
+        
+        console.log('提取後的活動數據:', activitiesData);
+        
+        if (Array.isArray(activitiesData)) {
+          // 使用轉換函式處理後端資料
+          const convertedActivities = convertBackendDataToActivityItem(activitiesData as BackendActivityData[]);
+          console.log('轉換後的活動數據:', convertedActivities);
+          
+          setActivities(convertedActivities);
+          console.log('成功設置活動數據，數量:', convertedActivities.length);
+        } else {
+          console.warn('活動數據不是數組格式:', typeof activitiesData, activitiesData);
+          setActivities([]);
+        }
       } else {
-        console.warn('Activities API 響應錯誤:', activitiesRes.error);
+        errorCount++;
+        if (!String(activitiesRes.error).includes('AbortError')) {
+          console.warn('Activities API 響應錯誤:', activitiesRes.error);
+          console.warn('Activities API 完整響應:', activitiesRes);
+          hasError = true;
+        }
         setActivities([]);
       }
 
-    } catch (_error) {
-      console.error("獲取分析數據失敗:", error);
-      toast({
-        title: "獲取分析數據失敗",
-        description: "無法連接到 LINE Bot API，請檢查您的 Bot 設定",
-        variant: "destructive",
-      });
+      // 根據錯誤情況設置 Bot 健康狀態
+      if (errorCount >= 3) {
+        setBotHealth("error");
+      } else if (errorCount >= 1) {
+        setBotHealth("offline");
+      }
 
+      // 只有在首次載入且有錯誤時才顯示錯誤提示
+      if (isInitialLoad && hasError) {
+        console.warn(`數據載入警告: ${errorCount}/5 個 API 端點返回錯誤`);
+        // 不顯示 toast，避免影響用戶體驗，數據會在後續的刷新或 WebSocket 更新中修復
+      }
+
+    } catch (error: any) {
+      // 如果是中止錯誤，不顯示錯誤訊息
+      if (error?.name === 'AbortError' || abortSignal?.aborted) {
+        console.log("分析數據請求被中止");
+        return;
+      }
+
+      console.error("獲取分析數據失敗:", error);
+      
       // 設置為離線狀態
       setBotHealth("error");
 
+      // 只有在首次載入失敗時才顯示錯誤提示
+      if (isInitialLoad) {
+        toast({
+          title: "數據載入失敗",
+          description: "首次載入時發生錯誤，請刷新頁面或檢查網路連線",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+
       // 只在初始加載時設置空數據，避免覆蓋現有數據
-      setAnalytics(prev => prev || null);
-      setMessageStats(prev => prev.length > 0 ? prev : []);
-      setUserActivity(prev => prev.length > 0 ? prev : []);
-      setUsageData(prev => prev.length > 0 ? prev : []);
-      setHeatMapData(prev => prev.length > 0 ? prev : []);
-      setActivities(prev => prev.length > 0 ? prev : []);
+      if (isInitialLoad) {
+        setAnalytics(null);
+        setMessageStats([]);
+        setUserActivity([]);
+        setUsageData([]);
+        setHeatMapData([]);
+        setActivities([]);
+      }
 
     } finally {
       setAnalyticsLoading(false);
@@ -293,7 +457,7 @@ const BotManagementPage: React.FC = () => {
         title: isActive ? "啟用成功" : "停用成功",
         description: `邏輯模板已${isActive ? "啟用" : "停用"}`,
       });
-    } catch (_error) {
+    } catch (error) {
       console.error("切換邏輯模板狀態失敗:", error);
       toast({
         variant: "destructive",
@@ -323,7 +487,7 @@ const BotManagementPage: React.FC = () => {
       setTimeout(() => {
         setCopiedWebhookUrl(false);
       }, 2000);
-    } catch (_error) {
+    } catch (error) {
       console.error("複製 Webhook URL 失敗:", error);
       toast({
         variant: "destructive",
@@ -358,7 +522,7 @@ const BotManagementPage: React.FC = () => {
         setWebhookStatus(null);
         setBotHealth("error");
       }
-    } catch (_error) {
+    } catch (error) {
       console.error("獲取 Webhook 狀態失敗:", error);
       setWebhookStatus(null);
       setBotHealth("error");
@@ -379,7 +543,8 @@ const BotManagementPage: React.FC = () => {
   const handleTimeRangeChange = (newRange: string) => {
     setTimeRange(newRange);
     if (selectedBotId) {
-      fetchAnalytics(selectedBotId);
+      // 時間範圍變更不算作初始載入，可以顯示錯誤提示
+      fetchAnalytics(selectedBotId, undefined, false);
     }
   };
 
@@ -388,10 +553,8 @@ const BotManagementPage: React.FC = () => {
     if (!selectedBotId) return;
     setRefreshing(true);
     try {
-      const analyticsRes = await apiClient.getBotAnalytics(selectedBotId, timeRange);
-      if (analyticsRes.data && !analyticsRes.error) {
-        setAnalytics(analyticsRes.data as BotAnalytics);
-      }
+      // 使用統一的 fetchAnalytics 函數來刷新所有數據
+      await fetchAnalytics(selectedBotId, undefined, false);
       toast({
         title: "刷新完成",
         description: "數據已更新"
@@ -402,8 +565,69 @@ const BotManagementPage: React.FC = () => {
         description: "無法獲取最新數據",
         variant: "destructive"
       });
+    } finally {
+      setRefreshing(false);
     }
-    setRefreshing(false);
+  };
+
+  // 單獨刷新活動數據
+  const handleRefreshActivities = async () => {
+    if (!selectedBotId) return;
+    console.log('手動刷新活動數據...');
+    
+    try {
+      const response = await apiClient.getBotActivities(selectedBotId, 20, 0);
+      console.log('手動刷新活動 API 響應:', response);
+      
+      if (response.data && !response.error) {
+        console.log('手動刷新 - 原始響應數據:', response.data);
+        
+        let activitiesData: any = response.data;
+        
+        // 嘗試從不同的可能結構中提取資料
+        if (activitiesData.activities && Array.isArray(activitiesData.activities)) {
+          activitiesData = activitiesData.activities;
+        } else if (activitiesData.data && Array.isArray(activitiesData.data)) {
+          activitiesData = activitiesData.data;
+        } else if (!Array.isArray(activitiesData)) {
+          console.warn('手動刷新：活動數據結構異常:', activitiesData);
+          activitiesData = []; // 設為空陣列
+        }
+        
+        console.log('手動刷新 - 提取後的活動數據:', activitiesData);
+        
+        if (Array.isArray(activitiesData)) {
+          // 使用轉換函式處理後端資料
+          const convertedActivities = convertBackendDataToActivityItem(activitiesData as BackendActivityData[]);
+          console.log('手動刷新 - 轉換後的活動數據:', convertedActivities);
+          
+          setActivities(convertedActivities);
+          toast({
+            title: "活動數據已刷新",
+            description: `載入了 ${convertedActivities.length} 條活動記錄`
+          });
+        } else {
+          toast({
+            title: "活動數據格式錯誤",
+            description: "服務器返回的數據格式不正確",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "刷新活動失敗",
+          description: response.error || "無法獲取活動數據",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('手動刷新活動錯誤:', error);
+      toast({
+        title: "刷新活動失敗",
+        description: "網路錯誤或服務器不可用",
+        variant: "destructive"
+      });
+    }
   };
 
 
@@ -475,33 +699,52 @@ const BotManagementPage: React.FC = () => {
       if (!user) return;
 
       setLoading(true);
-      const botList = await fetchBots();
+      try {
+        const botList = await fetchBots();
 
-      // 只在初始化時設置第一個 Bot，避免循環依賴
-      if (botList.length > 0 && !selectedBotId) {
-        setSelectedBotId(botList[0].id);
+        // 只在初始化時設置第一個 Bot，避免循環依賴
+        if (botList.length > 0 && !selectedBotId) {
+          setSelectedBotId(botList[0].id);
+        }
+      } catch (error) {
+        console.error('初始化數據失敗:', error);
+        toast({
+          variant: "destructive",
+          title: "初始化失敗",
+          description: "載入頁面資料時發生錯誤，請刷新頁面重試",
+        });
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     initializeData();
-  }, [user, fetchBots, selectedBotId]); // fetchBots 現在不依賴 selectedBotId
+  }, [user, fetchBots]); // 移除 selectedBotId 依賴，避免循環
 
   // 當選擇的 Bot 變化時獲取相關數據
   useEffect(() => {
+    const abortController = new AbortController();
     let isMounted = true;
+    let isInitialLoad = true;
 
     const fetchBotData = async () => {
       if (selectedBotId && isMounted) {
         try {
+          // 順序載入，避免並發問題
+          // 1. 先載入邏輯模板和 Webhook 狀態（較快的 API）
           await Promise.all([
             fetchLogicTemplates(selectedBotId),
-            fetchAnalytics(selectedBotId),
             fetchWebhookStatus(selectedBotId)
           ]);
-        } catch (_error) {
-          if (isMounted) {
+          
+          // 2. 檢查是否還在載入中且未被取消
+          if (isMounted && !abortController.signal.aborted) {
+            // 延遲載入分析數據，給其他 API 更多時間完成
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await fetchAnalytics(selectedBotId, abortController.signal, isInitialLoad);
+          }
+        } catch (error: any) {
+          if (isMounted && error.name !== 'AbortError') {
             console.error('獲取 Bot 數據失敗:', error);
           }
         }
@@ -510,9 +753,15 @@ const BotManagementPage: React.FC = () => {
 
     fetchBotData();
 
-    // 清理函數
+    // 清理函數 - 延遲中止避免影響正在進行的關鍵請求
     return () => {
       isMounted = false;
+      // 延遲中止，給正在進行的關鍵請求一些時間完成
+      setTimeout(() => {
+        if (!abortController.signal.aborted) {
+          abortController.abort('Bot changed or component unmounting');
+        }
+      }, 500);
     };
   }, [selectedBotId, fetchLogicTemplates, fetchAnalytics, fetchWebhookStatus]);
 
@@ -536,15 +785,16 @@ const BotManagementPage: React.FC = () => {
         ]).then(([analyticsRes, messageStatsRes, userActivityRes, usageStatsRes]) => {
           // 更新分析數據
           if (analyticsRes.data && !analyticsRes.error) {
+            const analyticsData = analyticsRes.data as BotAnalytics;
             setAnalytics(prev => ({
               ...prev,
-              totalMessages: analyticsRes.data.totalMessages || prev?.totalMessages || 0,
-              activeUsers: analyticsRes.data.activeUsers || prev?.activeUsers || 0,
-              responseTime: analyticsRes.data.responseTime || prev?.responseTime || 0,
-              successRate: analyticsRes.data.successRate || prev?.successRate || 0,
-              todayMessages: analyticsRes.data.todayMessages || prev?.todayMessages || 0,
-              weekMessages: analyticsRes.data.weekMessages || prev?.weekMessages || 0,
-              monthMessages: analyticsRes.data.monthMessages || prev?.monthMessages || 0,
+              totalMessages: analyticsData.totalMessages || prev?.totalMessages || 0,
+              activeUsers: analyticsData.activeUsers || prev?.activeUsers || 0,
+              responseTime: analyticsData.responseTime || prev?.responseTime || 0,
+              successRate: analyticsData.successRate || prev?.successRate || 0,
+              todayMessages: analyticsData.todayMessages || prev?.todayMessages || 0,
+              weekMessages: analyticsData.weekMessages || prev?.weekMessages || 0,
+              monthMessages: analyticsData.monthMessages || prev?.monthMessages || 0,
             } as BotAnalytics));
           }
 
@@ -585,21 +835,48 @@ const BotManagementPage: React.FC = () => {
         
       case 'activity_update':
         if (lastMessage.data) {
+          console.log('收到 WebSocket 活動更新:', lastMessage.data);
           // 靜默更新活動數據，保持其他數據不變
           apiClient.getBotActivities(selectedBotId, 20, 0).then(response => {
+            console.log('WebSocket 觸發的活動 API 響應:', response);
             if (response.data && !response.error) {
-              const responseData = response.data as {activities?: ActivityItem[]};
-              const activitiesData = responseData.activities || responseData;
-              setActivities(Array.isArray(activitiesData) ? activitiesData as ActivityItem[] : []);
+              console.log('WebSocket - 原始響應數據:', response.data);
               
-              toast({
-                title: "新活動",
-                description: "檢測到新的 Bot 活動",
-                duration: 3000,
-              });
+              let activitiesData: any = response.data;
+              
+              // 嘗試從不同的可能結構中提取資料
+              if (activitiesData.activities && Array.isArray(activitiesData.activities)) {
+                activitiesData = activitiesData.activities;
+              } else if (activitiesData.data && Array.isArray(activitiesData.data)) {
+                activitiesData = activitiesData.data;
+              } else if (!Array.isArray(activitiesData)) {
+                console.warn('WebSocket：活動數據結構異常:', activitiesData);
+                activitiesData = []; // 設為空陣列
+              }
+              
+              console.log('WebSocket - 提取後的活動數據:', activitiesData);
+              
+              if (Array.isArray(activitiesData)) {
+                // 使用轉換函式處理後端資料
+                const convertedActivities = convertBackendDataToActivityItem(activitiesData as BackendActivityData[]);
+                console.log('WebSocket - 轉換後的活動數據:', convertedActivities);
+                
+                setActivities(convertedActivities);
+                console.log('WebSocket 成功更新活動數據，數量:', convertedActivities.length);
+                
+                toast({
+                  title: "新活動",
+                  description: "檢測到新的 Bot 活動",
+                  duration: 3000,
+                });
+              } else {
+                console.warn('WebSocket 活動數據格式錯誤:', typeof activitiesData, activitiesData);
+              }
+            } else {
+              console.error('WebSocket 活動 API 調用失敗:', response.error);
             }
-          }).catch(() => {
-            // 靜默處理錯誤
+          }).catch((error) => {
+            console.error('WebSocket 活動更新錯誤:', error);
           });
         }
         break;
@@ -637,11 +914,23 @@ const BotManagementPage: React.FC = () => {
     }
   }, [analytics]);
 
-  // 處理加載狀態
-  if (authLoading || loading) {
+  // 處理加載狀態 - 改善載入體驗
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader />
+      </div>
+    );
+  }
+
+  // 如果用戶已認證但仍在載入 Bot 列表，顯示載入器
+  if (loading && bots.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader />
+          <p className="mt-4 text-muted-foreground">載入 Bot 列表中...</p>
+        </div>
       </div>
     );
   }
@@ -733,6 +1022,55 @@ const BotManagementPage: React.FC = () => {
                       <p className="text-gray-500">請先選擇一個 Bot 來查看分析數據</p>
                     </CardContent>
                   </Card>
+                ) : analyticsLoading && !analytics ? (
+                  /* 首次載入骨架屏 */
+                  <>
+                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                      {[1, 2, 3, 4].map((i) => (
+                        <Card key={i} className="animate-pulse">
+                          <CardHeader className="pb-2">
+                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-full"></div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                    <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
+                      <div className="lg:col-span-8">
+                        <Card className="animate-pulse">
+                          <CardHeader>
+                            <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="h-64 bg-gray-200 rounded"></div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      <div className="lg:col-span-4">
+                        <Card className="animate-pulse">
+                          <CardHeader>
+                            <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <div key={i} className="flex space-x-3">
+                                  <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                                  <div className="flex-1 space-y-1">
+                                    <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  </>
 ) : (
                   <>
                     {/* 現代化的關鍵指標卡片 */}
@@ -811,7 +1149,7 @@ const BotManagementPage: React.FC = () => {
                     <div className="space-y-6">
                       {/* 增強版訊息統計圖表 */}
                       <ChartWidget
-                        title="訊息統計趋勢"
+                        title="訊息統計趨勢"
                         data={messageStats.map(stat => ({
                           name: stat.date,
                           發送: stat.sent,
@@ -885,9 +1223,9 @@ const BotManagementPage: React.FC = () => {
                       <ActivityFeed
                         activities={activities}
                         isLoading={analyticsLoading}
-                        height={350}
+                        height={400}
                         showRefresh
-                        onRefresh={handleRefreshData}
+                        onRefresh={handleRefreshActivities}
                         autoRefresh
                         refreshInterval={30000}
                       />

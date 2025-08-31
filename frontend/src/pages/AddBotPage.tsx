@@ -12,7 +12,7 @@ const AddBotPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-[#5A2C1D] text-lg loading-pulse">載入中...</div>
       </div>
     );
@@ -20,14 +20,14 @@ const AddBotPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-red-600 text-lg">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFDFA]">
+    <div className="min-h-screen bg-background">
       <DashboardNavbar user={user} />
       <main className="flex-1">
         <div className="pt-16 md:pt-20 pb-16 px-6">

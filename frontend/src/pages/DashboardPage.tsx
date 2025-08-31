@@ -66,7 +66,7 @@ const DashboardPage = memo(() => {
   return (
     <div className="min-h-screen flex flex-col">
       <DashboardNavbar user={user} />
-      <div className="mt-40 mb-20">
+      <div className="pt-24 md:pt-28 mb-20">
         <HomeBotfly user={user} />
         
       </div>

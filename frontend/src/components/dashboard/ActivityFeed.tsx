@@ -97,54 +97,60 @@ const ActivityItemComponent: React.FC<{
   return (
     <div 
       className={cn(
-        "flex items-start space-x-3 p-3 rounded-lg border transition-all duration-300",
+        "flex items-start space-x-2 p-3 rounded-lg border transition-all duration-300 activity-item",
         isNew ? "bg-blue-50 border-blue-200 animate-in slide-in-from-left-2" : "bg-background border-border hover:bg-muted/50"
       )}
     >
-      <div className={cn("flex-shrink-0 p-1 rounded-full", colorClasses)}>
-        <Icon className="h-4 w-4" />
+      <div className={cn("flex-shrink-0 p-1 rounded-full mt-0.5", colorClasses)}>
+        <Icon className="h-3 w-3" />
       </div>
       
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-medium text-foreground truncate">
-            {activity.title}
-          </h4>
-          <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-            <Badge 
-              variant="outline" 
-              className={cn("text-xs px-1.5 py-0.5", colorClasses)}
-            >
-              {activity.type}
-            </Badge>
-            <span className="text-xs text-muted-foreground flex items-center">
-              <Clock className="h-3 w-3 mr-1" />
-              {formatTimeAgo(activity.timestamp)}
-            </span>
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-medium text-foreground leading-tight mb-1">
+              <span className="line-clamp-2">
+                {activity.title}
+              </span>
+            </h4>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground flex items-center">
+                <Clock className="h-3 w-3 mr-1" />
+                {formatTimeAgo(activity.timestamp)}
+              </span>
+              <Badge 
+                variant="outline" 
+                className={cn("text-xs px-1.5 py-0.5", colorClasses)}
+              >
+                {activity.type}
+              </Badge>
+            </div>
           </div>
         </div>
         
         {activity.description && (
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-            {activity.description}
+          <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
+            <span className="line-clamp-2">
+              {activity.description}
+            </span>
           </p>
         )}
         
         {activity.metadata && (
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-1 mt-1">
             {activity.metadata.userName && (
-              <Badge variant="secondary" className="text-xs">
-                用戶: {activity.metadata.userName}
+              <Badge variant="secondary" className="text-xs px-2 py-0.5 max-w-20 truncate">
+                {activity.metadata.userName}
               </Badge>
             )}
             {activity.metadata.messageContent && (
-              <Badge variant="outline" className="text-xs max-w-32 truncate">
+              <Badge variant="outline" className="text-xs px-2 py-0.5 max-w-28 truncate">
                 {activity.metadata.messageContent}
               </Badge>
             )}
             {activity.metadata.errorCode && (
-              <Badge variant="destructive" className="text-xs">
-                錯誤: {activity.metadata.errorCode}
+              <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                {activity.metadata.errorCode}
               </Badge>
             )}
           </div>
@@ -190,28 +196,39 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
   // 處理活動更新
   useEffect(() => {
+    console.log('ActivityFeed 收到新的活動數據:', activities);
+    console.log('活動數據長度:', activities.length);
+    
     if (activities.length > 0) {
       const sortedActivities = [...activities]
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         .slice(0, maxItems);
       
-      // 檢查是否有新活動
-      const currentIds = new Set(displayedActivities.map(a => a.id));
-      const newIds = sortedActivities
-        .filter(a => !currentIds.has(a.id))
-        .map(a => a.id);
+      console.log('排序後的活動數據:', sortedActivities);
       
-      if (newIds.length > 0) {
-        setNewActivities(new Set(newIds));
-        // 5秒後移除"新"標記
-        setTimeout(() => {
-          setNewActivities(new Set());
-        }, 5000);
-      }
-      
-      setDisplayedActivities(sortedActivities);
+      setDisplayedActivities(prevDisplayed => {
+        // 檢查是否有新活動
+        const currentIds = new Set(prevDisplayed.map(a => a.id));
+        const newIds = sortedActivities
+          .filter(a => !currentIds.has(a.id))
+          .map(a => a.id);
+        
+        if (newIds.length > 0) {
+          console.log('發現新活動:', newIds);
+          setNewActivities(new Set(newIds));
+          // 5秒後移除"新"標記
+          setTimeout(() => {
+            setNewActivities(new Set());
+          }, 5000);
+        }
+        
+        return sortedActivities;
+      });
+    } else {
+      console.log('活動數據為空，清空顯示的活動');
+      setDisplayedActivities([]);
     }
-  }, [activities, maxItems, displayedActivities]);
+  }, [activities, maxItems]);
 
   // 自動刷新
   useEffect(() => {
@@ -249,7 +266,10 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
       </CardHeader>
       
       <CardContent className="pb-4">
-        <ScrollArea className={`h-[${height}px] pr-4`}>
+        <ScrollArea 
+          className="pr-4 activity-scroll" 
+          style={{ height: `${height}px` }}
+        >
           <div className="space-y-3">
             {isLoading ? (
               // 載入骨架
@@ -258,18 +278,42 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
               ))
             ) : displayedActivities.length > 0 ? (
               // 活動列表
-              displayedActivities.map((activity) => (
-                <ActivityItemComponent
-                  key={activity.id}
-                  activity={activity}
-                  isNew={newActivities.has(activity.id)}
-                />
-              ))
+              <>
+                {/* 調試信息 */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                    <p><strong>調試信息:</strong></p>
+                    <p>原始活動數量: {activities.length}</p>
+                    <p>顯示活動數量: {displayedActivities.length}</p>
+                    <p>新活動標記: {Array.from(newActivities).join(', ') || '無'}</p>
+                    <p>載入狀態: {isLoading ? '載入中' : '已載入'}</p>
+                  </div>
+                )}
+                
+                {displayedActivities.map((activity) => (
+                  <ActivityItemComponent
+                    key={activity.id}
+                    activity={activity}
+                    isNew={newActivities.has(activity.id)}
+                  />
+                ))}
+              </>
             ) : (
               // 空狀態
               <div className="text-center py-8">
                 <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground text-sm">暫無活動記錄</p>
+                
+                {/* 調試信息 */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-4 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
+                    <p><strong>調試信息:</strong></p>
+                    <p>原始活動數量: {activities.length}</p>
+                    <p>載入狀態: {isLoading ? '載入中' : '已載入'}</p>
+                    <p>最大項目數: {maxItems}</p>
+                  </div>
+                )}
+                
                 {onRefresh && (
                   <Button
                     variant="outline"

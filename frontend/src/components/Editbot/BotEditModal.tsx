@@ -233,12 +233,12 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white rounded-[15px] p-6 w-full max-w-md mx-4 shadow-[-8px_8px_0_#819780] animate-scale-in border border-black">
+      <div className="bg-white rounded-[15px] p-6 w-full max-w-md mx-4 shadow-[-8px_8px_0_hsl(var(--line-green))] animate-scale-in border border-black">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-[#383A45]">{getTitle()}</h2>
+          <h2 className="text-xl font-bold text-foreground">{getTitle()}</h2>
           <button
             onClick={onClose}
-            className="px-3 py-1 bg-[#E74C3C] text-white rounded-md text-sm font-bold hover:bg-[#C0392B] transition"
+            className="px-3 py-1 bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] rounded-md text-sm font-bold hover:opacity-90 transition"
           >
             關閉
           </button>
@@ -246,13 +246,13 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-[#5A2C1D] loading-pulse">載入中...</div>
+            <div className="text-muted-foreground loading-pulse">載入中...</div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {(editType === "name" || editType === "all") && (
               <div>
-                <label className="block text-sm font-medium text-[#5A2C1D] mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Bot名稱
                 </label>
                 <input
@@ -261,7 +261,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780] transition-all duration-200"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all duration-200"
                   placeholder="請輸入Bot名稱"
                   required
                 />
@@ -270,7 +270,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
 
             {(editType === "token" || editType === "all") && (
               <div>
-                <label className="block text-sm font-medium text-[#5A2C1D] mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Channel Token
                 </label>
                 <input
@@ -279,7 +279,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, channel_token: e.target.value })
                   }
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780] transition-all duration-200"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all duration-200"
                   placeholder="請輸入Channel Token"
                   required
                 />
@@ -288,7 +288,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
 
             {(editType === "secret" || editType === "all") && (
               <div>
-                <label className="block text-sm font-medium text-[#5A2C1D] mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Channel Secret
                 </label>
                 <input
@@ -297,7 +297,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, channel_secret: e.target.value })
                   }
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#819780] transition-all duration-200"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all duration-200"
                   placeholder="請輸入Channel Secret"
                   required
                 />
@@ -307,8 +307,8 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
             {/* 資料變化狀態指示器 */}
             <div className="pt-2">
               {hasDataChanged ? (
-                <div className="flex items-center text-xs text-[#8ECAE6] font-medium">
-                  <div className="w-2 h-2 bg-[#8ECAE6] rounded-full mr-2 animate-pulse"></div>
+                <div className="flex items-center text-xs text-muted-foreground font-medium">
+                  <div className="w-2 h-2 bg-[hsl(var(--primary))] rounded-full mr-2 animate-pulse"></div>
                   檢測到資料變化
                 </div>
               ) : (
@@ -324,7 +324,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 bg-[#E74C3C] text-white rounded-md font-bold hover:bg-[#C0392B] transition-all duration-200"
+                  className="px-4 py-2 bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] rounded-md font-bold hover:opacity-90 transition-all duration-200"
                   disabled={loading}
                 >
                   取消
@@ -333,7 +333,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="px-4 py-2 bg-[#FFD59E] text-[#5A2C1D] rounded-md font-bold hover:brightness-90 transition-all duration-200"
+                    className="px-4 py-2 bg-secondary text-foreground rounded-md font-bold hover:brightness-95 transition-all duration-200"
                     disabled={loading}
                   >
                     重置
@@ -344,7 +344,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                 type="submit"
                 className={`px-4 py-2 rounded-md font-bold transition-all duration-200 ${
                   hasDataChanged
-                    ? "bg-[#A0D6B4] text-white hover:brightness-90"
+                    ? "bg-[hsl(var(--primary))] text-white hover:brightness-95"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
                 disabled={loading || !hasDataChanged}

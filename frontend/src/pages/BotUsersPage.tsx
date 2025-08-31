@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Users, 
   MessageSquare, 
@@ -18,7 +19,12 @@ import {
   Hash,
   User,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Info,
+  UserCheck,
+  CheckSquare,
+  Square,
+  MessageCircle
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +33,8 @@ import { useWebSocket } from "../hooks/useWebSocket";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import { apiClient } from "../services/UnifiedApiClient";
+import ChatPanel from "../components/users/ChatPanel";
+import UserDetailsModal from "../components/users/UserDetailsModal";
 
 // 類型定義
 interface LineUser {
@@ -88,6 +96,13 @@ const BotUsersPage: React.FC = () => {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastLoading, setBroadcastLoading] = useState(false);
   const [isDetailedMode, setIsDetailedMode] = useState(false);  // 基本/詳細模式切換
+
+  // 新增功能狀態
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [showChatPanel, setShowChatPanel] = useState(false);
+  const [showUserDetails, setShowUserDetails] = useState(false);
+  const [currentChatUser, setCurrentChatUser] = useState<LineUser | null>(null);
+  const [selectiveBroadcastLoading, setSelectiveBroadcastLoading] = useState(false);
 
   // 媒體 URL 緩存狀態
   const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
@@ -476,6 +491,75 @@ const BotUsersPage: React.FC = () => {
     fetchUserInteractions(user.line_user_id);
   };
 
+  // 處理用戶多選
+  const handleUserCheck = (userId: string, checked: boolean) => {
+    const newSelected = new Set(selectedUserIds);
+    if (checked) {
+      newSelected.add(userId);
+    } else {
+      newSelected.delete(userId);
+    }
+    setSelectedUserIds(newSelected);
+  };
+
+  // 全選/取消全選
+  const handleSelectAll = () => {
+    if (selectedUserIds.size === filteredUsers.length) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(filteredUsers.map(user => user.line_user_id)));
+    }
+  };
+
+  // 開始聊天
+  const handleStartChat = (user: LineUser) => {
+    setCurrentChatUser(user);
+    setShowChatPanel(true);
+  };
+
+  // 查看用戶詳情
+  const handleViewUserDetails = (user: LineUser) => {
+    setSelectedUser(user);
+    setShowUserDetails(true);
+  };
+
+  // 選擇性廣播
+  const handleSelectiveBroadcast = async () => {
+    if (!botId || !broadcastMessage.trim() || selectedUserIds.size === 0) {
+      toast({
+        variant: "destructive",
+        title: "參數不足",
+        description: "請選擇用戶並填寫廣播訊息內容",
+      });
+      return;
+    }
+
+    setSelectiveBroadcastLoading(true);
+    try {
+      await apiClient.selectiveBroadcastMessage(botId, {
+        message: broadcastMessage,
+        user_ids: Array.from(selectedUserIds)
+      });
+
+      toast({
+        title: "廣播成功",
+        description: `訊息已發送給 ${selectedUserIds.size} 個選中的用戶`,
+      });
+
+      setBroadcastMessage("");
+      setSelectedUserIds(new Set());
+    } catch (error) {
+      console.error("選擇性廣播失敗:", error);
+      toast({
+        variant: "destructive",
+        title: "廣播失敗",
+        description: "無法發送選擇性廣播訊息",
+      });
+    } finally {
+      setSelectiveBroadcastLoading(false);
+    }
+  };
+
   // 過濾用戶列表
   const filteredUsers = users.filter(user =>
     user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -572,9 +656,9 @@ const BotUsersPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* 用戶列表 */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6">
               {/* 廣播訊息 */}
               <Card>
                 <CardHeader>
@@ -590,14 +674,25 @@ const BotUsersPage: React.FC = () => {
                     onChange={(e) => setBroadcastMessage(e.target.value)}
                     rows={3}
                   />
-                  <Button
-                    onClick={handleBroadcast}
-                    disabled={broadcastLoading || !broadcastMessage.trim()}
-                    className="w-full"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {broadcastLoading ? "發送中..." : `發送給所有用戶 (${totalCount})`}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleBroadcast}
+                      disabled={broadcastLoading || !broadcastMessage.trim()}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {broadcastLoading ? "發送中..." : `全部用戶 (${totalCount})`}
+                    </Button>
+                    <Button
+                      onClick={handleSelectiveBroadcast}
+                      disabled={selectiveBroadcastLoading || !broadcastMessage.trim() || selectedUserIds.size === 0}
+                      className="flex-1"
+                    >
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      {selectiveBroadcastLoading ? "發送中..." : `選中用戶 (${selectedUserIds.size})`}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -608,6 +703,26 @@ const BotUsersPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <Users className="h-5 w-5" />
                       關注者列表 ({totalCount})
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSelectAll}
+                        className="flex items-center gap-1"
+                      >
+                        {selectedUserIds.size === filteredUsers.length && filteredUsers.length > 0 ? (
+                          <CheckSquare className="h-4 w-4" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                        全選
+                      </Button>
+                      {selectedUserIds.size > 0 && (
+                        <Badge variant="secondary">
+                          已選 {selectedUserIds.size}
+                        </Badge>
+                      )}
                     </div>
                   </CardTitle>
                 </CardHeader>
@@ -633,24 +748,40 @@ const BotUsersPage: React.FC = () => {
                       filteredUsers.map((user) => (
                         <div
                           key={user.id}
-                          className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${
+                          className={`p-4 border rounded-lg transition-colors hover:bg-gray-50 ${
                             selectedUser?.id === user.id ? "border-blue-500 bg-blue-50" : ""
                           }`}
-                          onClick={() => handleUserSelect(user)}
                         >
                           <div className="flex items-center gap-3">
+                            {/* 復選框 */}
+                            <Checkbox
+                              checked={selectedUserIds.has(user.line_user_id)}
+                              onCheckedChange={(checked) => handleUserCheck(user.line_user_id, !!checked)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            
+                            {/* 用戶頭像 */}
                             {user.picture_url ? (
                               <img
                                 src={user.picture_url}
                                 alt={user.display_name}
-                                className="w-10 h-10 rounded-full object-cover"
+                                className="w-10 h-10 rounded-full object-cover cursor-pointer"
+                                onClick={() => handleUserSelect(user)}
                               />
                             ) : (
-                              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                              <div 
+                                className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center cursor-pointer"
+                                onClick={() => handleUserSelect(user)}
+                              >
                                 <User className="h-5 w-5 text-gray-600" />
                               </div>
                             )}
-                            <div className="flex-1 min-w-0">
+                            
+                            {/* 用戶信息 */}
+                            <div 
+                              className="flex-1 min-w-0 cursor-pointer"
+                              onClick={() => handleUserSelect(user)}
+                            >
                               <h3 className="font-medium text-gray-900 truncate">
                                 {user.display_name || "未設定名稱"}
                               </h3>
@@ -663,7 +794,9 @@ const BotUsersPage: React.FC = () => {
                                 </p>
                               )}
                             </div>
-                            <div className="text-right">
+                            
+                            {/* 互動統計 */}
+                            <div className="text-center">
                               <Badge variant="secondary" className="text-xs">
                                 <Hash className="h-3 w-3 mr-1" />
                                 {user.interaction_count}
@@ -671,6 +804,32 @@ const BotUsersPage: React.FC = () => {
                               <p className="text-xs text-gray-500 mt-1">
                                 {new Date(user.last_interaction).toLocaleDateString("zh-TW")}
                               </p>
+                            </div>
+                            
+                            {/* 操作按鈕 */}
+                            <div className="flex flex-col gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewUserDetails(user);
+                                }}
+                                className="px-2"
+                              >
+                                <Info className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartChat(user);
+                                }}
+                                className="px-2"
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -708,169 +867,25 @@ const BotUsersPage: React.FC = () => {
               </Card>
             </div>
 
-            {/* 用戶詳情和互動歷史 */}
+            {/* 聊天面板區域 */}
             <div className="space-y-6">
-              {selectedUser ? (
-                <>
-                  {/* 用戶詳情 */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Eye className="h-5 w-5" />
-                        用戶詳情
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        {selectedUser.picture_url ? (
-                          <img
-                            src={selectedUser.picture_url}
-                            alt={selectedUser.display_name}
-                            className="w-16 h-16 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center">
-                            <User className="h-8 w-8 text-gray-600" />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">
-                            {selectedUser.display_name || "未設定名稱"}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            {selectedUser.line_user_id}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">狀態訊息</span>
-                          <span className="text-sm">
-                            {selectedUser.status_message || "無"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">語言</span>
-                          <span className="text-sm">
-                            {selectedUser.language || "未知"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">互動次數</span>
-                          <Badge variant="secondary">
-                            {selectedUser.interaction_count}
-                          </Badge>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">首次互動</span>
-                          <span className="text-sm">
-                            {new Date(selectedUser.first_interaction).toLocaleString("zh-TW")}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">最後互動</span>
-                          <span className="text-sm">
-                            {new Date(selectedUser.last_interaction).toLocaleString("zh-TW")}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* 互動歷史 - 聊天室樣式 */}
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                          <MessageSquare className="h-5 w-5" />
-                          互動歷史
-                        </CardTitle>
-                        
-                        {/* 基本/詳細模式切換 */}
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor="detailed-mode" className="text-sm text-muted-foreground">
-                            基本
-                          </Label>
-                          <Switch
-                            id="detailed-mode"
-                            checked={isDetailedMode}
-                            onCheckedChange={setIsDetailedMode}
-                          />
-                          <Label htmlFor="detailed-mode" className="text-sm text-muted-foreground">
-                            詳細
-                          </Label>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      {interactionsLoading ? (
-                        <div className="flex justify-center py-8">
-                          <Loader />
-                        </div>
-                      ) : userInteractions.length === 0 ? (
-                        <div className="text-center py-8">
-                          <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                          <p className="text-gray-500">尚無互動記錄</p>
-                        </div>
-                      ) : (
-                        <div className="h-96 overflow-y-auto p-4 space-y-4">
-                          {userInteractions.map((interaction, index) => (
-                            <div key={index} className="flex flex-col">
-                              {/* 用戶訊息 */}
-                              <div className="flex justify-end mb-2">
-                                <div className="max-w-xs lg:max-w-md">
-                                  <div className="bg-blue-500 text-white rounded-2xl rounded-br-md px-4 py-2">
-                                    {renderMessageContent(interaction, isDetailedMode)}
-                                  </div>
-                                  {isDetailedMode && (
-                                    <div className="flex justify-end mt-1">
-                                      <span className="text-xs text-gray-500">
-                                        {new Date(interaction.timestamp).toLocaleString("zh-TW")}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {/* 事件信息（詳細模式才顯示） */}
-                              {isDetailedMode && interaction.event_type !== "message" && (
-                                <div className="flex justify-center mb-2">
-                                  <Badge
-                                    variant={
-                                      interaction.event_type === "follow"
-                                        ? "default"
-                                        : "secondary"
-                                    }
-                                    className="text-xs"
-                                  >
-                                    {getEventTypeText(interaction.event_type)}
-                                  </Badge>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </>
-              ) : (
-                <Card>
-                  <CardContent className="text-center py-12">
-                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">請點選左側用戶查看詳細資訊</p>
-                  </CardContent>
-                </Card>
-              )}
+              <ChatPanel 
+                botId={botId || ""} 
+                selectedUser={currentChatUser}
+              />
             </div>
           </div>
         </div>
       </div>
 
       <DashboardFooter />
+      
+      {/* 用戶詳細資訊彈窗 */}
+      <UserDetailsModal
+        user={selectedUser}
+        isOpen={showUserDetails}
+        onClose={() => setShowUserDetails(false)}
+      />
     </div>
   );
 };

@@ -183,8 +183,8 @@ const Setting: React.FC = () => {
   // 載入中狀態
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
-        <div className="text-[#5A2C1D] text-lg">載入設定頁面...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground text-lg">載入設定頁面...</div>
       </div>
     );
   }
@@ -192,7 +192,7 @@ const Setting: React.FC = () => {
   // 錯誤狀態
   if (authError) {
     return (
-      <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Alert className="max-w-md">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{authError}</AlertDescription>
@@ -203,22 +203,22 @@ const Setting: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
-        <div className="text-[#5A2C1D] text-lg">載入用戶資料...</div>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground text-lg">載入用戶資料...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFDFA]">
+    <div className="min-h-screen bg-background">
       <DashboardNavbar user={user || authUser} />
 
       <div className="pt-32 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           {/* 頁面標題 */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-[#1a1a40] mb-2">帳號設定</h1>
-            <p className="text-[#5A2C1D]">
+            <h1 className="text-3xl font-bold text-foreground mb-2">帳號設定</h1>
+            <p className="text-muted-foreground">
               管理您的個人資料、安全設定和帳號偏好
             </p>
           </div>

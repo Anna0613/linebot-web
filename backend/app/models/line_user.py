@@ -52,10 +52,13 @@ class LineBotUserInteraction(Base):
     message_content = Column(JSONB)  # 訊息內容的 JSON
     media_path = Column(String(500))  # MinIO 媒體檔案路徑
     media_url = Column(String(500))   # 媒體檔案公開訪問 URL
+    sender_type = Column(String(20), default="user")  # user, admin - 用來區分是用戶發送還是管理者發送
+    admin_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # 如果是管理者發送，記錄管理者ID
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     
     # 關聯關係
     line_bot_user = relationship("LineBotUser", back_populates="interactions")
+    admin_user = relationship("User", backref="sent_interactions")  # 管理者發送的互動記錄
     
     # 表級約束和索引 - 優化分析查詢效能
     __table_args__ = (
@@ -64,6 +67,9 @@ class LineBotUserInteraction(Base):
         Index('idx_interaction_timestamp', 'timestamp'),
         Index('idx_interaction_timestamp_event', 'timestamp', 'event_type'),  # 複合索引用於時間範圍和事件類型查詢
         Index('idx_interaction_time_extract', 'timestamp'),  # 針對時間擷取函數的索引
+        Index('idx_interaction_sender_type', 'sender_type'),  # 新增：發送者類型索引
+        Index('idx_interaction_admin_user', 'admin_user_id'),  # 新增：管理者用戶索引
+        Index('idx_interaction_user_sender', 'line_user_id', 'sender_type', 'timestamp'),  # 新增：複合索引用於聊天記錄查詢
     )
     
     def __repr__(self):
@@ -96,3 +102,34 @@ class RichMenu(Base):
     
     def __repr__(self):
         return f"<RichMenu(name={self.name}, selected={self.selected})>"
+
+class AdminMessage(Base):
+    """管理者發送訊息記錄模型"""
+    __tablename__ = "admin_messages"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    bot_id = Column(UUID(as_uuid=True), ForeignKey("bots.id", ondelete="CASCADE"), nullable=False)
+    line_user_id = Column(String(255), nullable=False)  # LINE 平台的用戶 ID
+    admin_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # 發送訊息的管理者
+    message_content = Column(Text, nullable=False)
+    message_type = Column(String(50), default="text")  # text, image, audio, video, file, location, sticker
+    message_metadata = Column(JSONB)  # 額外的訊息資訊（如媒體URL等）
+    sent_status = Column(String(20), default="pending")  # pending, sent, failed
+    line_message_id = Column(String(255))  # LINE 平台返回的訊息 ID
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # 關聯關係
+    bot = relationship("Bot", backref="admin_messages")
+    admin_user = relationship("User", backref="admin_messages")
+    
+    # 表級約束和索引
+    __table_args__ = (
+        Index('idx_admin_message_bot_user', 'bot_id', 'line_user_id'),
+        Index('idx_admin_message_admin', 'admin_user_id'),
+        Index('idx_admin_message_created', 'created_at'),
+        Index('idx_admin_message_status', 'sent_status'),
+    )
+    
+    def __repr__(self):
+        return f"<AdminMessage(line_user_id={self.line_user_id}, message_type={self.message_type})>"

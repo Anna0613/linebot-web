@@ -25,7 +25,6 @@ const BotEditorPage = lazy(() => import("./pages/BotEditorPage"));
 const HowToEstablish = lazy(() => import("./pages/HowToEstablish"));
 const Setting = lazy(() => import("./pages/Setting"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const Editbot = lazy(() => import("./pages/Editbot"));
 const About = lazy(() => import("./pages/About"));
 const Language = lazy(() => import("./pages/Language"));
 const Suggest = lazy(() => import("./pages/Suggest"));
@@ -92,19 +91,13 @@ const App = () => {
               <Route path="/bots/:botId/users" element={<BotUsersPage />} />
               <Route path="/how-to-establish" element={<HowToEstablish />} />
 
-              {/* 向後兼容的舊路由 */}
-              <Route path="/dashboard-legacy" element={<DashboardPage />} />
-              <Route path="/add server" element={<AddBotPage />} />
-              <Route path="/add-server" element={<AddBotPage />} />
-              <Route path="/block" element={<BotEditorPage />} />
-              <Route path="/how to establish" element={<HowToEstablish />} />
 
               <Route path="/setting" element={<Setting />} />
               <Route path="/verify-email" element={<EmailVerification />} />
               <Route path="/email-verification" element={<EmailVerification />} />
               <Route path="/email-verification-pending" element={<EmailVerificationPending />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/editbot" element={<Editbot />} />
+              {/* 移除所有舊路由，僅保留新語義化路由 */}
               <Route path="/about" element={<About />} />
               <Route path="/language" element={<Language />} />
               <Route path="/suggest" element={<Suggest />} />

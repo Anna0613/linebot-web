@@ -61,7 +61,7 @@ export class UnifiedAuthManager {
   }
 
   /**
-   * 遷移舊的token存儲到統一格式
+   * 遷移舊的token存儲到統一格式，清除不兼容的舊格式
    */
   private migrateOldTokens(): void {
     try {
@@ -70,16 +70,36 @@ export class UnifiedAuthManager {
       const oldLineToken = localStorage.getItem('line_token');
       const oldUserData = localStorage.getItem('unified_user_data') || localStorage.getItem('user_data');
       
+      // 檢查 Token 格式是否兼容（新格式應該有 "sub" 字段，不應該有 "data" 字段）
+      const isTokenCompatible = (token: string): boolean => {
+        try {
+          const payload = parseJWTToken(token);
+          // 新格式：有 "sub" 字段且沒有 "data" 字段
+          return payload?.sub && !payload?.data;
+        } catch {
+          return false;
+        }
+      };
+      
       if (oldAuthToken && !getAuthToken()) {
-        // 遷移到 cookie（預設為會話模式）
-        setAuthToken(oldAuthToken, false, 'Bearer');
-        console.log('已將舊 localStorage token 遷移到 cookie');
+        if (isTokenCompatible(oldAuthToken)) {
+          // 只遷移兼容的新格式 Token
+          setAuthToken(oldAuthToken, false, 'Bearer');
+          console.log('已將舊 localStorage token 遷移到 cookie');
+        } else {
+          console.warn('發現不兼容的舊格式 token，將被清除');
+          clearAllAuthCookies(); // 確保清除所有認證資料
+        }
       }
       
       if (oldLineToken && !getAuthToken()) {
-        // 遷移 LINE token 到 cookie
-        setAuthToken(oldLineToken, false, 'LINE');
-        console.log('已將舊 LINE token 遷移到 cookie');
+        if (isTokenCompatible(oldLineToken)) {
+          setAuthToken(oldLineToken, false, 'LINE');
+          console.log('已將舊 LINE token 遷移到 cookie');
+        } else {
+          console.warn('發現不兼容的舊格式 LINE token，將被清除');
+          clearAllAuthCookies();
+        }
       }
       
       if (oldUserData && !getUserData()) {
@@ -96,16 +116,18 @@ export class UnifiedAuthManager {
       const oldKeys = [
         'auth_token', 'line_token', 'username', 'email', 'display_name',
         'unified_access_token', 'unified_refresh_token', 'unified_user_data',
-        'unified_token_type', 'user_data', 'token_type'
+        'unified_token_type', 'user_data', 'token_type', 'token' // 加上 'token' key
       ];
       
       oldKeys.forEach(key => {
         localStorage.removeItem(key);
       });
       
-      console.log('舊 localStorage 資料遷移完成');
+      console.log('舊 localStorage 資料清理完成');
     } catch (error) {
-      console.error("Error occurred:", error);
+      console.error("Token 遷移過程中發生錯誤:", error);
+      // 發生錯誤時清除所有認證資料以確保安全
+      clearAllAuthCookies();
     }
   }
 

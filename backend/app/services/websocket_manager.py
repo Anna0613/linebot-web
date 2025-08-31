@@ -134,6 +134,42 @@ class WebSocketManager:
         
         await self._send_to_subscribers(bot_id, self.webhook_subscribers, message)
     
+    async def send_new_user_message(self, bot_id: str, line_user_id: str, message_data: dict):
+        """發送新用戶訊息通知（用於即時聊天更新）"""
+        message = {
+            'type': 'new_user_message',
+            'bot_id': bot_id,
+            'line_user_id': line_user_id,
+            'data': {
+                'line_user_id': line_user_id,
+                'message_data': message_data,
+                'timestamp': datetime.now().isoformat()
+            },
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # 發送到所有該 Bot 的連接
+        await self._send_to_bot_connections(bot_id, message)
+        
+        # 也發送到活動訂閱者
+        await self._send_to_subscribers(bot_id, self.activity_subscribers, message)
+    
+    async def _send_to_bot_connections(self, bot_id: str, message: dict):
+        """發送消息到 Bot 的所有連接"""
+        if bot_id in self.bot_connections:
+            websockets_to_remove = []
+            
+            for websocket in self.bot_connections[bot_id].copy():
+                try:
+                    await self.send_to_websocket(websocket, message)
+                except Exception as e:
+                    logger.warning(f"發送消息到 WebSocket 失敗: {e}")
+                    websockets_to_remove.append(websocket)
+            
+            # 清理失效的連接
+            for ws in websockets_to_remove:
+                self.bot_connections[bot_id].discard(ws)
+    
     async def _send_to_subscribers(self, bot_id: str, subscribers_dict: Dict[str, Set[WebSocket]], message: dict):
         """向訂閱者發送消息"""
         if bot_id not in subscribers_dict:

@@ -96,13 +96,12 @@ const Language = () => {
   ]);
 
   return (
-    <div className="min-h-screen bg-[#FFFDFA]">
-      <DashboardNavbar user={user || authUser} />
+    <div className="min-h-screen bg-background">
       {/* 主要內容區域 */}
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
-        <div className="text-center mb-8">
-          <h1 className="text-[#1a1a40] text-3xl font-bold mb-4 leading-tight tracking-wide">
+        <div className="text-center mb-16">
+          <h1 className="text-foreground text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
             語言設定
           </h1>
           <p className="text-[#5A2C1D] max-w-4xl mx-auto leading-relaxed">
@@ -120,7 +119,7 @@ const Language = () => {
               <div className="p-6 border-2 border-[#8ECAE6] rounded-lg cursor-pointer hover:bg-[#8ECAE6]/10 transition-colors">
                 <div className="text-center">
                   <div className="text-4xl mb-4">🇹🇼</div>
-                  <h3 className="text-[#383A45] font-bold text-xl mb-2">
+                  <h3 className="text-foreground font-bold text-xl mb-2">
                     繁體中文
                   </h3>
                   <p className="text-[#5A2C1D]">Traditional Chinese</p>
@@ -133,13 +132,13 @@ const Language = () => {
                   <h3 className="text-[#383A45] font-bold text-xl mb-2">
                     English
                   </h3>
-                  <p className="text-[#5A2C1D]">English (US)</p>
+                  <p className="text-muted-foreground">English (US)</p>
                 </div>
               </div>
             </div>
 
             <div className="text-center mt-8">
-              <p className="text-[#4B4B4B] text-sm">更多語言選項即將推出</p>
+              <p className="text-muted-foreground text-sm">更多語言選項即將推出</p>
             </div>
           </div>
         </div>

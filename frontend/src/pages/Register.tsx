@@ -248,11 +248,11 @@ const Register = () => {
           />
           <Label htmlFor="terms" className="text-sm">
             我同意{" "}
-            <Link to="/terms" className="text-[#A41D1A] font-bold hover:underline">
+            <Link to="/terms" className="text-[hsl(var(--primary))] hover:underline">
               服務條款
             </Link>{" "}
             和{" "}
-            <Link to="/privacy" className="text-[#A41D1A] font-bold hover:underline">
+            <Link to="/privacy" className="text-[hsl(var(--primary))] hover:underline">
               隱私政策
             </Link>
           </Label>
@@ -260,7 +260,7 @@ const Register = () => {
 
         <Button
           type="submit"
-          className="w-full bg-[#466CA6] hover:bg-[#00225D] text-white"
+          className="w-full bg-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-hover))] text-[hsl(var(--primary-foreground))]"
           disabled={loading}
         >
           {loading ? <Loader size="sm" /> : "註冊"}
@@ -279,7 +279,7 @@ const Register = () => {
 
       <p className="text-center text-sm text-muted-foreground mt-4">
         已經有帳號了？{" "}
-        <Link to="/login" className="text-[#A41D1A] font-bold hover:underline">
+        <Link to="/login" className="text-[hsl(var(--primary))] hover:underline">
           立即登入
         </Link>
       </p>

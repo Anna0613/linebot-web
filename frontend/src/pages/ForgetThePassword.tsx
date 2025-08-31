@@ -141,7 +141,7 @@ const ForgetPassword = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-full bg-[#F4CD41] text-[#1a1a40] text-base font-bold hover:bg-[#e6bc00] h-11"
+                className="w-full rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-base font-bold hover:bg-[hsl(var(--line-green-hover))] h-11"
               >
                 {loading ? "載入中..." : "寄送重設連結"}
               </Button>

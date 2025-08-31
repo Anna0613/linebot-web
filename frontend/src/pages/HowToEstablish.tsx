@@ -76,8 +76,10 @@ const HowToEstablish = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFFDFA] flex items-center justify-center">
-        <div className="text-[#5A2C1D] text-lg">載入中...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-[#5A2C1D] text-lg">
+          載入中...
+        </div>
       </div>
     );
   }
@@ -98,7 +100,7 @@ const HowToEstablish = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFDFA]">
+    <div className="min-h-screen bg-background">
       {/* 根據登入狀態顯示不同的導航欄 */}
       {isAuthenticated ? <DashboardNavbar user={user} /> : <Navbar />}
 
@@ -106,25 +108,22 @@ const HowToEstablish = () => {
       <div className="pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6">
 
         <div className="text-center mb-8 sm:mb-12 fade-in-element">
-          <h1 className="text-[#1a1a40] text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] font-bold mb-3 sm:mb-4 leading-tight tracking-wide px-2">
+          <h1 className="text-foreground text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] font-bold mb-3 sm:mb-4 leading-tight tracking-wide px-2">
             LINE Bot 建立教學
           </h1>
-          <p className="text-[#5A2C1D] text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto px-4">
+          <p className="text-muted-foreground text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto px-4">
             跟著我們的詳細步驟，輕鬆建立您的第一個 LINE Bot
           </p>
         </div>
 
         {/* 進度指示器 */}
         <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
-          <div
-            className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border-l-4"
-            style={{ borderLeftColor: ACCENT }}
-          >
+          <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border-l-4 border-[hsl(var(--primary))]">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
               <h2 className="text-[#383A45] text-lg sm:text-xl font-bold text-center sm:text-left">
                 教學進度
               </h2>
-              <span className="text-[#5A2C1D] font-medium text-sm sm:text-base text-center sm:text-right">
+              <span className="text-muted-foreground font-medium text-sm sm:text-base text-center sm:text-right">
                 第 {currentStep} 步，共 4 步
               </span>
             </div>
@@ -137,10 +136,10 @@ const HowToEstablish = () => {
                   onClick={() => goToStep(step)}
                   className={`p-3 md:p-4 rounded-lg text-center transition-all duration-200 ${
                     step === currentStep
-                      ? "text-white shadow-lg transform scale-105"
+                      ? "bg-[hsl(var(--primary))] text-white shadow-lg transform scale-105"
                       : step < currentStep
-                      ? "text-white hover:shadow-md"
-                      : "bg-gray-100 text-[#5A2C1D] hover:bg-gray-200"
+                        ? "bg-[hsl(var(--line-green))]/30 text-foreground hover:shadow-md"
+                        : "bg-secondary text-muted-foreground hover:bg-gray-200"
                   }`}
                   style={
                     step === currentStep
@@ -169,10 +168,10 @@ const HowToEstablish = () => {
                   onClick={() => goToStep(step)}
                   className={`w-full p-3 rounded-lg text-left transition-all duration-200 flex items-center justify-between ${
                     step === currentStep
-                      ? "text-white shadow-lg"
+                      ? "bg-[hsl(var(--primary))] text-white shadow-lg"
                       : step < currentStep
-                      ? "text-white"
-                      : "bg-gray-100 text-[#5A2C1D] hover:bg-gray-200"
+                        ? "bg-[hsl(var(--line-green))]/30 text-foreground"
+                        : "bg-secondary text-muted-foreground hover:bg-gray-200"
                   }`}
                   style={
                     step === currentStep
@@ -228,10 +227,7 @@ const HowToEstablish = () => {
         {/* 行動呼籲區域 */}
         {currentStep === 4 && (
           <div className="max-w-4xl mx-auto mt-12 sm:mt-16">
-            <div
-              className="rounded-lg shadow-lg p-6 sm:p-8 md:p-12 text-white text-center"
-              style={{ background: `linear-gradient(${ACCENT_LT} 100%)` }}
-            >
+            <div className="bg-[hsl(var(--primary))] rounded-lg shadow-lg p-6 sm:p-8 md:p-12 text-white text-center">
               <h2 className="text-white text-xl sm:text-2xl md:text-[28px] font-bold mb-4 sm:mb-6">
                 恭喜！您已完成所有設定
               </h2>
@@ -241,24 +237,14 @@ const HowToEstablish = () => {
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center max-w-md mx-auto">
 
                 <button
-                  onClick={() => navigate("/add-server")}
+                  onClick={() => navigate("/bots/create")}
                   className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-[#383A45] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
                 >
                   立即建立 Bot
                 </button>
                 <button
                   onClick={() => setCurrentStep(1)}
-                  className="px-6 sm:px-8 py-3 sm:py-4 font-bold rounded-lg transition-all duration-200 text-base sm:text-lg border"
-                  style={{
-                    borderColor: "rgba(255,255,255,0.9)",
-                    color: "#ffffff",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(255,255,255,0.15)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
-                  }}
+                  className="px-6 sm:px-8 py-3 sm:py-4 bg-secondary text-foreground font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
                 >
                   重新查看教學
                 </button>

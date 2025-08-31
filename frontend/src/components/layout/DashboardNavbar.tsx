@@ -7,6 +7,7 @@ import "animate.css";
 import { API_CONFIG, getApiUrl } from "../../config/apiConfig";
 import { useUnifiedAuth } from "../../hooks/useUnifiedAuth";
 import { apiClient } from "../../services/UnifiedApiClient";
+import QuickActions from "@/components/common/QuickActions";
 
 // 定義 User 介面
 interface User {
@@ -81,14 +82,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      setIsScrolled(scrollTop > 0);
-      const backToTop = document.getElementById("backToTop");
-      if (backToTop) {
-        backToTop.style.display = scrollTop > 300 ? "flex" : "none";
-      }
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 0);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -122,16 +116,29 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
     }
   };
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle("dark");
+    const next = !isDarkMode;
+    setIsDarkMode(next);
+    const root = document.documentElement;
+    root.classList.toggle("dark", next);
+    try {
+      localStorage.setItem("theme", next ? "dark" : "light");
+    } catch {}
   };
+  // 初始化主題：localStorage 優先，否則尊重系統偏好
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("theme");
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const dark = saved ? saved === 'dark' : prefersDark;
+      setIsDarkMode(dark);
+      document.documentElement.classList.toggle('dark', dark);
+    } catch {
+      // 靜默失敗
+    }
+  }, []);
   const handleLogout = async () => {
     try {
       // 清除後端設置的 HTTP-only cookie
@@ -162,7 +169,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
           {/* 左側：漢堡選單和Logo */}
           <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
             <button
-              className="text-[#1a1a40] p-1 hover:bg-gray-100 rounded-md transition-colors"
+              className="text-foreground p-1 hover:bg-secondary rounded-md transition-colors"
               onClick={toggleMobileMenu}
               aria-label="開啟選單"
             >
@@ -178,7 +185,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                 alt="Logo"
                 className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain"
               />
-              <span className="block text-lg sm:text-xl md:text-[28px] font-bold text-[#1a1a40] tracking-wide leading-tight">
+              <h6 className="text-lg sm:text-xl md:text-[28px] font-bold text-foreground tracking-wide truncate">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
               </span>
@@ -190,7 +197,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
             <div className="hidden lg:block">
               <LanguageToggle />
             </div>
-            <Link to="/how to establish">
+            <Link to="/how-to-establish">
               <div className="circle-question p-2 hover:bg-gray-100 rounded-full transition-colors">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -202,7 +209,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               </div>
             </Link>
             <Link to="/bots/create">
-              <Button className="bg-[#F4CD41] text-[#1a1a40] font-bold rounded-[5px] text-sm lg:text-[16px] hover:bg-[#e6bc00] px-3 lg:px-4 h-8 lg:h-10">
+              <Button className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-[5px] text-sm lg:text-[16px] hover:bg-[hsl(var(--line-green-hover))] px-3 lg:px-4 h-8 lg:h-10">
                 建立設計
               </Button>
             </Link>
@@ -211,7 +218,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={toggleDropdown}
-                className="flex items-center justify-center h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-gray-200 overflow-hidden hover:ring-2 hover:ring-[#F4CD41] transition-all"
+                className="flex items-center justify-center h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-gray-200 overflow-hidden hover:ring-2 hover:ring-[hsl(var(--primary))] transition-all"
               >
                 {userImage ? (
                   <img
@@ -272,7 +279,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                     />
                   </div>
 
-                  <nav className="space-y-2 text-sm text-[#1a1a40]">
+                  <nav className="space-y-2 text-sm text-foreground">
                     <hr className="my-2 border-gray-300" />
                     <button
                       onClick={toggleTheme}
@@ -388,7 +395,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
             </li>
             <li>
               <Link
-                to="/how to establish"
+                to="/how-to-establish"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
               >
@@ -397,7 +404,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
             </li>
             <li>
               <Link
-                to="/add server"
+                to="/bots/create"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
               >
@@ -435,33 +442,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
         </div>
       </header>
 
-      <div
-        id="backToTop"
-        className="back-to-top fixed hidden right-5 bottom-20 w-12 h-12 bg-[#919191] text-center rounded-full cursor-pointer z-[1001] items-center justify-center hover:bg-[#575757] hover:scale-110"
-        onClick={scrollToTop}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 512 512"
-          className="w-6 h-6 fill-white"
-        >
-          <path d="M233.4 105.4c12.5-12.5 32.8-12.5 45.3 0l192 192c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L256 173.3 86.6 342.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l192-192z" />
-        </svg>
-      </div>
-
-      <a
-        href="https://line.me/ti/p/OQV3UIgmr7"
-        target="_blank"
-        className="fixed right-5 bottom-5 z-[1001]"
-      >
-        <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center hover:scale-110 transition">
-          <img
-            src="/images/line-logo.svg"
-            alt="Line icon"
-            className="w-full h-full object-cover"
-          />
-        </div>
-      </a>
+      <QuickActions />
     </>
   );
 };

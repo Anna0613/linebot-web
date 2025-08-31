@@ -47,7 +47,7 @@ const LoginError: React.FC = () => {
           <div className="flex flex-col space-y-2">
             <Button
               onClick={handleRetryLogin}
-              className="w-full bg-[#F4CD41] text-[#1a1a40] font-bold rounded-[5px] text-[16px] hover:bg-[#e6bc00] flex items-center justify-center space-x-2"
+              className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-[5px] text-[16px] hover:bg-[hsl(var(--line-green-hover))] flex items-center justify-center space-x-2"
             >
               <RefreshCw className="w-4 h-4" />
               <span>重試登入</span>
