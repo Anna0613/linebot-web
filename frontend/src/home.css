@@ -8,14 +8,18 @@
 @layer base {
   :root {
     /* LINE brand tokens */
-    --line-green: 145 92% 40%; /* #06C755 */
-    --line-green-hover: 145 85% 36%;
-    --line-green-soft: 145 60% 92%;
+    --line-green:       145 38% 28%;  /* #206B4B */
+    --line-green-hover: 145 40% 24%;  /* #1A5940 */
+    --line-green-soft:  145 30% 92%;  /* #EAF3EF */
+    --line-green-muted: 145 18% 52%;  /* #6F9E8B */
     --line-blue: 200 90% 55%;
     --warning: 38 92% 56%;
-    --background: 210 40% 98%;
+    --background: 0 0% 97%;
     --foreground: 222.2 84% 4.9%;
 
+    --danger:       0 62% 42%;
+    --danger-hover: 0 62% 36%;
+    
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
 

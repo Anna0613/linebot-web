@@ -63,7 +63,7 @@ const Navbar = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-full custom-signin hover:bg-secondary text-xs md:text-sm px-3 md:px-4 h-8 md:h-10"
+                className="rounded-full custom-signin hover:bg-[#A0A0A0] active:bg-[#A0A0A0] focus-visible:bg-[#A0A0A0]  text-xs md:text-sm px-3 md:px-4 h-8 md:h-10"
               >
                 登入
               </Button>
@@ -148,7 +148,8 @@ const Navbar = () => {
               <X />
             </button>
           </div>
-          <nav className="space-y-2">
+          <ul className="mt-8 space-y-4 text-[#1a1a40] text-lg">
+            <li>
             <Link
               to="/"
               onClick={toggleMobileMenu}
@@ -156,6 +157,8 @@ const Navbar = () => {
             >
               首頁
             </Link>
+            </li>
+            <li>
             <Link
               to="/about"
               onClick={toggleMobileMenu}
@@ -163,6 +166,8 @@ const Navbar = () => {
             >
               關於
             </Link>
+            </li>
+            <li>
             <Link
               to="/login"
               onClick={toggleMobileMenu}
@@ -170,6 +175,8 @@ const Navbar = () => {
             >
               登入
             </Link>
+            </li>
+            <li>
             <Link
               to="/register"
               onClick={toggleMobileMenu}
@@ -177,7 +184,8 @@ const Navbar = () => {
             >
               註冊
             </Link>
-          </nav>
+            </li>
+          </ul>
         </div>
       </header>
 

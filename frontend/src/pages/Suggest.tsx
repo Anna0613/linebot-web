@@ -1,4 +1,4 @@
-import Footer from "../components/layout/Footer";
+import DashboardFooter from "../components/layout/DashboardFooter";
 import DashboardNavbar from "@/components/layout/DashboardNavbar";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -98,6 +98,7 @@ const Suggest = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* 主要內容區域 */}
+      <DashboardNavbar user={user || authUser} />
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16">
@@ -238,7 +239,7 @@ const Suggest = () => {
         </div>
       </div>
 
-      <Footer />
+      <DashboardFooter />
     </div>
   );
 };

@@ -248,11 +248,11 @@ const Register = () => {
           />
           <Label htmlFor="terms" className="text-sm">
             我同意{" "}
-            <Link to="/terms" className="text-[hsl(var(--primary))] hover:underline">
+            <Link to="/terms" className="text-[hsl(var(--danger))] hover:underline">
               服務條款
             </Link>{" "}
             和{" "}
-            <Link to="/privacy" className="text-[hsl(var(--primary))] hover:underline">
+            <Link to="/privacy" className="text-[hsl(var(--danger))] hover:underline">
               隱私政策
             </Link>
           </Label>
@@ -279,7 +279,7 @@ const Register = () => {
 
       <p className="text-center text-sm text-muted-foreground mt-4">
         已經有帳號了？{" "}
-        <Link to="/login" className="text-[hsl(var(--primary))] hover:underline">
+        <Link to="/login" className="text-[hsl(var(--danger))] hover:underline">
           立即登入
         </Link>
       </p>

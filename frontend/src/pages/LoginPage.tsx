@@ -221,7 +221,7 @@ const LoginPage = () => {
           </div>
           <Link
             to="/forgetthepassword"
-            className="text-sm text-[hsl(var(--primary))] hover:underline"
+            className="text-sm text-[hsl(var(--danger))] hover:underline"
           >
             忘記密碼？
           </Link>
@@ -248,7 +248,7 @@ const LoginPage = () => {
 
       <p className="text-center text-sm text-muted-foreground mt-4">
         還沒有帳號？{" "}
-        <Link to="/register" className="text-[hsl(var(--primary))] hover:underline">
+        <Link to="/register" className="text-[hsl(var(--danger))] hover:underline">
           立即註冊
         </Link>
       </p>

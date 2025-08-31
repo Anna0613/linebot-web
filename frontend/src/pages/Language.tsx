@@ -1,4 +1,4 @@
-import Footer from "../components/layout/Footer";
+import DashboardFooter from "../components/layout/DashboardFooter";
 import DashboardNavbar from "@/components/layout/DashboardNavbar";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -98,19 +98,20 @@ const Language = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* 主要內容區域 */}
+      <DashboardNavbar user={user || authUser} />
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16">
-          <h1 className="text-foreground text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
+        <h1 className="text-foreground text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] font-bold mb-3 sm:mb-4 leading-tight tracking-wide px-2">
             語言設定
           </h1>
-          <p className="text-[#5A2C1D] max-w-4xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto px-4">
             選擇您偏好的語言介面
           </p>
         </div>
 
         {/* 語言選項區域 */}
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
           <div className="bg-white rounded-lg shadow-lg p-8 sm:p-12">
             <h2 className="text-[#383A45] text-[24px] font-bold mb-8 text-center">
               選擇語言
@@ -144,7 +145,7 @@ const Language = () => {
         </div>
       </div>
 
-      <Footer />
+      <DashboardFooter />
     </div>
   );
 };

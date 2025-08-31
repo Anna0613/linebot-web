@@ -30,7 +30,7 @@ const AddBotPage = () => {
     <div className="min-h-screen bg-background">
       <DashboardNavbar user={user} />
       <main className="flex-1">
-        <div className="pt-16 md:pt-20 pb-16 px-6">
+      <div className="pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
             <BotCreationForm />
           </div>

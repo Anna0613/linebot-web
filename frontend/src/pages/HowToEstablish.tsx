@@ -4,8 +4,7 @@ import StepTwo from "../components/HowToEstablish/StepTwo";
 import StepThree from "../components/HowToEstablish/StepThree";
 import StepFour from "../components/HowToEstablish/StepFour";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
-import Navbar from "../components/layout/Navbar";
-import Footer from "../components/layout/Footer";
+import DashboardFooter from "../components/layout/DashboardFooter";
 import { useNavigate } from "react-router-dom";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 type StepNavProps = { onNext?: () => void; onPrev?: () => void };
@@ -108,7 +107,7 @@ const HowToEstablish = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* 根據登入狀態顯示不同的導航欄 */}
-      {isAuthenticated ? <DashboardNavbar user={user} /> : <Navbar />}
+      <DashboardNavbar user={user} />
 
       {/* 主要內容區域 */}
       <div className="pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6">
@@ -263,7 +262,7 @@ const HowToEstablish = () => {
         )}
       </div>
 
-      <Footer />
+      <DashboardFooter />
     </div>
   );
 };

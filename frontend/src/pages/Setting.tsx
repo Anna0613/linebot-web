@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardNavbar from "@/components/layout/DashboardNavbar";
-import Footer from "@/components/layout/Footer";
+import DashboardFooter from "../components/layout/DashboardFooter";
 import UserProfileSection from "@/components/settings/UserProfileSection";
 import EmailManagementSection from "@/components/settings/EmailManagementSection";
 import SocialAccountSection from "@/components/settings/SocialAccountSection";
@@ -305,7 +305,7 @@ const Setting: React.FC = () => {
         </div>
       )}
 
-      <Footer />
+      <DashboardFooter />
     </div>
   );
 };

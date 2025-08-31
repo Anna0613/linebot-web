@@ -313,13 +313,13 @@ const AddServerPage = () => {
   }
 
   return (
-    <div className="space-y-12">
+    <div className="min-h-screen bg-background">
       {/* 標題區域 */}
-      <div className="text-center">
-        <h1 className="text-[#1a1a40] text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
+      <div className="text-center mb-8 sm:mb-12 fade-in-element">
+      <h1 className="text-foreground text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] font-bold mb-3 sm:mb-4 leading-tight tracking-wide px-2">
           建立新的 LINE Bot
         </h1>
-        <p className="text-[#5A2C1D] text-xl leading-relaxed">
+        <p className="text-muted-foreground text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto px-4">
           請輸入您的 LINE Bot 資訊
         </p>
       </div>
@@ -411,44 +411,63 @@ const AddServerPage = () => {
       </div>
 
       {/* 幫助資訊區域 */}
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-gradient-to-r from-[#FFF7E0] to-[#F9F7F3] rounded-lg p-8">
+      <div className="max-w-5xl mx-auto mt-12 sm:mt-16">
+        <div
+          className="rounded-lg p-8"
+          style={{
+            background: "linear-gradient(90deg, #EAF2F8 0%, #F6F9FC 100%)", // 淺淡到白的安全背景
+            border: "1px solid #E6EEF6"
+          }}
+        >
           <h2 className="text-[#383A45] text-[24px] font-bold text-center mb-8">
             如何取得這些資訊？
           </h2>
+
           <div className="grid md:grid-cols-3 gap-8">
+            {/* 卡片 1 */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-[#F4A261] rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold shadow-md"
+                style={{ backgroundColor: "#3D5A80" }} // ACCENT
+              >
                 1
               </div>
               <h3 className="text-[#383A45] font-bold text-lg mb-3">
                 前往 LINE Developers
               </h3>
-              <p className="text-[#5A2C1D] leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 登入 LINE Developers Console 並選擇您的頻道
               </p>
             </div>
 
+            {/* 卡片 2 */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-[#2A9D8F] rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-[#0F172A] text-2xl font-bold shadow-md"
+                style={{ backgroundColor: "#98C1D9" }} // ACCENT_LT
+              >
                 2
               </div>
               <h3 className="text-[#383A45] font-bold text-lg mb-3">
                 取得 Access Token
               </h3>
-              <p className="text-[#5A2C1D] leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 在 "Messaging API" 分頁中發行長期的 Channel Access Token
               </p>
             </div>
 
+            {/* 卡片 3 */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-[#8ECAE6] rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold shadow-md"
+                style={{ backgroundColor: "#3D5A80" }} // ACCENT
+              >
                 3
               </div>
               <h3 className="text-[#383A45] font-bold text-lg mb-3">
                 複製 Channel Secret
               </h3>
-              <p className="text-[#5A2C1D] leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 在 "Basic settings" 分頁中找到並複製 Channel Secret
               </p>
             </div>
@@ -457,20 +476,13 @@ const AddServerPage = () => {
           <div className="mt-8 text-center">
             <a
               href="/how-to-establish"
-              className="inline-flex items-center px-6 py-3 bg-[#CDB4DB] text-white font-bold rounded-lg shadow-lg hover:brightness-90 transition-all duration-200"
+              className="inline-flex items-center px-6 py-3 font-bold rounded-lg shadow-lg transition-all duration-200"
+              style={{ backgroundColor: "#3D5A80", color: "white" }} // ACCENT
+              onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#324B6A")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#3D5A80")}
             >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               查看詳細教學
             </a>
@@ -478,44 +490,26 @@ const AddServerPage = () => {
         </div>
       </div>
 
-      {/* 提交按鈕區域 */}
-      <div className="text-center">
+      {/* 提交按鈕區域（主色 = ACCENT，hover 稍微加深；disabled 保留原樣式） */}
+      <div className="text-center mt-8">
         <button
           onClick={handleSubmit}
-          disabled={
-            isLoading ||
-            !formData.name ||
-            !formData.accessToken ||
-            !formData.channelSecret
-          }
-          className="px-12 py-4 bg-[#A0D6B4] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+          disabled={isLoading || !formData.name || !formData.accessToken || !formData.channelSecret}
+          className="px-12 py-4 text-white font-bold rounded-lg shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+          style={{ backgroundColor: "#3D5A80" }} // ACCENT
+          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#324B6A")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#3D5A80")}
         >
           {isLoading ? (
-            <span className="flex items-center">
-              <svg
-                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
               建立中...
             </span>
           ) : (
-            "建立 Bot"
+            "立即建立 Bot"
           )}
         </button>
       </div>

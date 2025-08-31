@@ -269,7 +269,7 @@ const About = () => {
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <button
                 onClick={() => navigate("/how-to-establish")}
-                className="px-8 py-4 bg-[hsl(var(--primary))] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
+                className="px-8 py-4 bg-[#3D5A80] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
               >
                 查看建立教學
               </button>
