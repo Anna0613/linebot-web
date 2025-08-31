@@ -8,6 +8,12 @@ import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import { useNavigate } from "react-router-dom";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
+type StepNavProps = { onNext?: () => void; onPrev?: () => void };
+
+const StepOneC: React.FC<StepNavProps> = (p) => <StepOne {...(p as any)} />;
+const StepTwoC: React.FC<StepNavProps> = (p) => <StepTwo {...(p as any)} />;
+const StepThreeC: React.FC<StepNavProps> = (p) => <StepThree {...(p as any)} />;
+const StepFourC: React.FC<StepNavProps> = (p) => <StepFour {...(p as any)} />;
 
 const ACCENT = "#3D5A80";   
 const ACCENT_LT = "#98C1D9"; 
@@ -77,7 +83,7 @@ const HowToEstablish = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-[#5A2C1D] text-lg">
+        <div className="text-[#3D5A80] text-lg">
           載入中...
         </div>
       </div>
@@ -86,16 +92,16 @@ const HowToEstablish = () => {
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 1:
-        return <StepOne onNext={nextStep} />;
-      case 2:
-        return <StepTwo onNext={nextStep} onPrev={prevStep} />;
-      case 3:
-        return <StepThree onNext={nextStep} onPrev={prevStep} />;
-      case 4:
-        return <StepFour onPrev={prevStep} />;
+      case 1: 
+        return <StepOneC onNext={nextStep} />;
+      case 2: 
+        return <StepTwoC onNext={nextStep} onPrev={prevStep} />;
+      case 3: 
+        return <StepThreeC onNext={nextStep} onPrev={prevStep} />;
+      case 4: 
+        return <StepFourC onPrev={prevStep} />;   
       default:
-        return <StepOne onNext={nextStep} />;
+        return <StepOneC onNext={nextStep} />;
     }
   };
 
@@ -118,46 +124,48 @@ const HowToEstablish = () => {
 
         {/* 進度指示器 */}
         <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
-          <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border-l-4 border-[hsl(var(--primary))]">
+          <div
+            className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border-l-4"
+            style={{ borderLeftColor: ACCENT }}
+          >
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
-              <h2 className="text-[#383A45] text-lg sm:text-xl font-bold text-center sm:text-left">
-                教學進度
-              </h2>
-              <span className="text-muted-foreground font-medium text-sm sm:text-base text-center sm:text-right">
+              <h2 className="text-[#383A45] text-lg sm:text-xl font-bold">教學進度</h2>
+              <span className="text-muted-foreground font-medium text-sm sm:text-base">
                 第 {currentStep} 步，共 4 步
               </span>
             </div>
 
             {/* 桌面版進度指示器 */}
             <div className="hidden sm:grid sm:grid-cols-4 gap-3 md:gap-4">
-              {[1, 2, 3, 4].map((step) => (
-                <button
-                  key={step}
-                  onClick={() => goToStep(step)}
-                  className={`p-3 md:p-4 rounded-lg text-center transition-all duration-200 ${
-                    step === currentStep
-                      ? "bg-[hsl(var(--primary))] text-white shadow-lg transform scale-105"
-                      : step < currentStep
-                        ? "bg-[hsl(var(--line-green))]/30 text-foreground hover:shadow-md"
-                        : "bg-secondary text-muted-foreground hover:bg-gray-200"
-                  }`}
-                  style={
-                    step === currentStep
-                      ? { backgroundColor: ACCENT }
-                      : step < currentStep
-                      ? { backgroundColor: ACCENT_LT }
-                      : {}
-                  }
-                >
-                  <div className="font-bold text-base md:text-lg mb-1">步驟 {step}</div>
-                  <div className="text-xs md:text-sm">
-                    {step === 1 && "建立頻道"}
-                    {step === 2 && "設定 Webhook"}
-                    {step === 3 && "取得金鑰"}
-                    {step === 4 && "完成設定"}
-                  </div>
-                </button>
-              ))}
+              {[1, 2, 3, 4].map((step) => {
+                const state = step === currentStep ? "current" : step < currentStep ? "done" : "todo";
+                return (
+                  <button
+                    key={step}
+                    onClick={() => goToStep(step)}
+                    className={`p-3 md:p-4 rounded-lg text-center transition-all duration-200 ${
+                      state === "current"
+                        ? "text-white shadow-lg scale-105"
+                        : state === "done"
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:bg-gray-200"
+                    }`}
+                    style={{
+                      backgroundColor:
+                        state === "current" ? ACCENT :
+                        state === "done" ? ACCENT_LT : "#F3F4F6",
+                    }}
+                  >
+                    <div className="font-bold text-base md:text-lg mb-1">步驟 {step}</div>
+                    <div className="text-xs md:text-sm">
+                      {step === 1 && "建立頻道"}
+                      {step === 2 && "設定 Webhook"}
+                      {step === 3 && "取得金鑰"}
+                      {step === 4 && "完成設定"}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
             {/* 手機版進度指示器 */}
@@ -210,12 +218,10 @@ const HowToEstablish = () => {
             <div className="mt-4 sm:mt-6">
               <div className="bg-gray-200 rounded-full h-2 sm:h-3 overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all duration-500 ease-out"
-                  style={{
-                    width: `${(currentStep / 4) * 100}%`,
-                    background: `linear-gradient(90deg, ${ACCENT} 0%, ${ACCENT_LT} 100%)`,
-                  }}
-                ></div>
+                  className="h-full rounded-full transition-all duration-500 ease-out 
+                             bg-gradient-to-r from-[#3D5A80] to-[#98C1D9]"
+                  style={{ width: `${(currentStep / 4) * 100}%` }}
+                />
               </div>
             </div>
           </div>
@@ -227,24 +233,27 @@ const HowToEstablish = () => {
         {/* 行動呼籲區域 */}
         {currentStep === 4 && (
           <div className="max-w-4xl mx-auto mt-12 sm:mt-16">
-            <div className="bg-[hsl(var(--primary))] rounded-lg shadow-lg p-6 sm:p-8 md:p-12 text-white text-center">
-              <h2 className="text-white text-xl sm:text-2xl md:text-[28px] font-bold mb-4 sm:mb-6">
+            <div
+              className="rounded-lg shadow-lg p-6 sm:p-8 md:p-12 text-white text-center"
+              style={{ backgroundColor: ACCENT }}
+            >
+              <h2 className="text-xl sm:text-2xl md:text-[28px] font-bold mb-4 sm:mb-6">
                 恭喜！您已完成所有設定
               </h2>
-              <p className="text-white text-base sm:text-lg mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto">
+              <p className="text-base sm:text-lg mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto">
                 現在您可以開始建立您的第一個 LINE Bot 了
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center max-w-md mx-auto">
-
                 <button
                   onClick={() => navigate("/bots/create")}
-                  className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-[#383A45] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
+                  className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-[#383A45] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all"
                 >
                   立即建立 Bot
                 </button>
                 <button
                   onClick={() => setCurrentStep(1)}
-                  className="px-6 sm:px-8 py-3 sm:py-4 bg-secondary text-foreground font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
+                  className="px-6 sm:px-8 py-3 sm:py-4 font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all text-white"
+                  style={{ backgroundColor: ACCENT_LT }}
                 >
                   重新查看教學
                 </button>

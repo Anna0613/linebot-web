@@ -45,12 +45,12 @@ const Navbar = () => {
               <img
                 src="/images/logo.svg"
                 alt="Logo"
-                className="h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain"
+                className="block h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain"
               />
-              <h6 className="text-lg sm:text-xl md:text-[28px] font-bold text-foreground tracking-wide truncate">
+              <h6 className="m-0 leading-none text-lg sm:text-xl md:text-[28px] font-bold text-foreground tracking-wide truncate translate-y-[1px]">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
-              </span>
+              </h6>
             </Link>
           </div>
 
