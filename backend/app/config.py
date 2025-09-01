@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # JWT 設定
     JWT_SECRET: str = os.getenv("JWT_SECRET", "your-secret-key-here")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
-    JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "30"))
+    JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "120"))  # 調整為 120 分鐘
     # 記住我功能的長期 token 過期時間（7天）
     JWT_REMEMBER_EXPIRE_MINUTES: int = int(os.getenv("JWT_REMEMBER_EXPIRE_MINUTES", "10080"))  # 7 * 24 * 60 = 10080 分鐘
     

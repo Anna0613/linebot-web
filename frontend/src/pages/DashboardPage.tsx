@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import HomeBotfly from "../components/features/dashboard/HomeBotfly";
+import TokenExpiryWarning from "../components/auth/TokenExpiryWarning";
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 // import { API_CONFIG, getApiUrl } from "../config/apiConfig";
@@ -68,9 +69,21 @@ const DashboardPage = memo(() => {
       <DashboardNavbar user={user} />
       <div className="pt-24 md:pt-28 mb-20">
         <HomeBotfly user={user} />
-        
+
       </div>
       <DashboardFooter />
+
+      {/* Token 過期警告 */}
+      <TokenExpiryWarning
+        onExtendSession={() => {
+          // 會話延長成功後的處理
+          console.log('會話已延長');
+        }}
+        onLogout={() => {
+          // 登出處理
+          navigate('/login', { replace: true });
+        }}
+      />
     </div>
   );
 });

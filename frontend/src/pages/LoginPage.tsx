@@ -11,6 +11,7 @@ import EmailVerificationPrompt from "../components/forms/EmailVerificationPrompt
 import LINELoginButton from "../components/LINELogin/LINELoginButton";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 import { authManager } from "../services/UnifiedAuthManager";
+import { useToast } from "@/hooks/use-toast";
 import "@/components/ui/loader.css";
 import $ from "jquery";
 import "jquery-validation";
@@ -26,6 +27,7 @@ const LoginPage = () => {
     useState(false);
 
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { login, loading, error, clearError, handleLineLogin } = useUnifiedAuth({
     redirectTo: "/login"
   });
@@ -130,12 +132,56 @@ const LoginPage = () => {
     await handleLineLogin();
   };
 
-  const noopSubmit = (e: React.FormEvent) => {
+  const noopSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formRef.current) {
       // 交給 jQuery Validation 驗證與 submitHandler
-      (window as any).$ ? (window as any).$(formRef.current).submit()
-                       : (formRef.current as HTMLFormElement).dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      if ((window as any).$) {
+        (window as any).$(formRef.current).submit();
+      } else {
+        // 如果沒有 jQuery，使用原生表單處理
+        console.info('使用原生表單處理（jQuery 未載入）');
+
+        // 基本表單驗證
+        if (!username.trim()) {
+          toast({
+            variant: "destructive",
+            title: "驗證錯誤",
+            description: "請輸入帳號",
+          });
+          return;
+        }
+        if (!password.trim()) {
+          toast({
+            variant: "destructive",
+            title: "驗證錯誤",
+            description: "請輸入密碼",
+          });
+          return;
+        }
+
+        clearError();
+
+        try {
+          // 直接調用登入邏輯，避免無限遞迴
+          const success = await login(username, password, rememberMe);
+
+          if (success) {
+            // 檢查是否需要郵件驗證
+            if (error && error.includes("電子郵件")) {
+              setShowEmailVerificationPrompt(true);
+              return;
+            }
+
+            // 登入成功，顯示成功訊息並導航
+            console.info('登入成功，導航至 dashboard');
+            navigate("/dashboard", { replace: true });
+          }
+        } catch (loginError) {
+          console.error('登入過程發生錯誤:', loginError);
+          // 錯誤已經在 login 函數中處理，這裡不需要額外處理
+        }
+      }
     }
   };
 
