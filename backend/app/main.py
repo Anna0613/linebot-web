@@ -110,14 +110,7 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
 )
 
-# Gzip 壓縮中間件 (應該在其他中間件之前添加)
-app.add_middleware(
-    GZipMiddleware,
-    minimum_size=1000,  # 只壓縮大於 1KB 的響應
-    compresslevel=6     # 壓縮等級 1-9，6 是效能與壓縮率的平衡點
-)
-
-# CORS 中間件
+# CORS 中間件 - 必須在所有其他中間件之前
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -127,6 +120,25 @@ app.add_middleware(
     expose_headers=["Set-Cookie"],
     max_age=3600,  # 預檢請求緩存時間
 )
+
+# Gzip 壓縮中間件
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=1000,  # 只壓縮大於 1KB 的響應
+    compresslevel=6     # 壓縮等級 1-9，6 是效能與壓縮率的平衡點
+)
+
+# 請求日誌中間件
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """記錄所有請求"""
+    logger.info(f"收到請求: {request.method} {request.url}")
+    logger.info(f"請求標頭: {dict(request.headers)}")
+
+    response = await call_next(request)
+
+    logger.info(f"回應狀態: {response.status_code}")
+    return response
 
 # 信任主機中間件
 if settings.ENVIRONMENT == "production":

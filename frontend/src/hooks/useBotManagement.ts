@@ -2,6 +2,7 @@
  * Bot 管理相關的 React Query hooks
  * 提供高效能的資料獲取和狀態管理
  */
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/UnifiedApiClient';
 import { queryKeys, invalidateQueries, optimisticUpdates, batchCacheUpdate } from './useReactQuery';
@@ -201,7 +202,7 @@ export const useCreateBot = () => {
     },
     onSuccess: (data) => {
       // 使快取失效，重新獲取 Bot 列表
-      invalidateQueries.bots();
+      invalidateQueries.allBots();
       
       toast({
         title: "創建成功",
@@ -211,11 +212,7 @@ export const useCreateBot = () => {
       return data;
     },
     onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "創建失敗", 
-        description: error?.message || "無法創建 Bot",
-      });
+      // 錯誤處理交由 useBotManagement 統一處理
       throw error;
     }
   });
@@ -225,17 +222,26 @@ export const useCreateBot = () => {
 export const useBotManagement = () => {
   const { data: bots, isLoading, error, refetch } = useBots();
   const createBotMutation = useCreateBot();
-  
+  const [customError, setCustomError] = useState<string | null>(null);
+
   return {
     bots: bots?.data || [],
-    isLoading,
-    error,
+    isLoading: isLoading || createBotMutation.isPending,
+    error: customError || error?.message || createBotMutation.error?.message,
     fetchBots: refetch,
     createBot: async (botData: { name: string, channel_access_token: string, channel_secret: string }) => {
-      const result = await createBotMutation.mutateAsync(botData);
-      return result.data;
+      try {
+        setCustomError(null);
+        const result = await createBotMutation.mutateAsync(botData);
+        return result.data;
+      } catch (error: any) {
+        // 提取錯誤訊息
+        const errorMessage = error?.message || error?.error || '創建 Bot 失敗';
+        setCustomError(errorMessage);
+        throw error;
+      }
     },
-    setError: () => {}, // placeholder
-    clearError: () => {}, // placeholder
+    setError: setCustomError,
+    clearError: () => setCustomError(null),
   };
 };

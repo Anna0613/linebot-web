@@ -13,11 +13,13 @@ import { UnifiedBlock } from '../../types/block';
 interface PreviewControlPanelProps {
   blocks: UnifiedBlock[];
   flexBlocks: UnifiedBlock[];
+  onTestAction?: (action: 'new-user' | 'test-message' | 'preview-dialog') => void;
 }
 
 const PreviewControlPanel: React.FC<PreviewControlPanelProps> = ({
   blocks,
-  flexBlocks
+  flexBlocks,
+  onTestAction
 }) => {
 
   // 統計積木資訊
@@ -82,15 +84,30 @@ const PreviewControlPanel: React.FC<PreviewControlPanelProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button variant="outline" size="sm" className="w-full justify-start text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start text-xs"
+              onClick={() => onTestAction?.('new-user')}
+            >
               <User className="w-3 h-3 mr-2" />
               模擬新用戶
             </Button>
-            <Button variant="outline" size="sm" className="w-full justify-start text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start text-xs"
+              onClick={() => onTestAction?.('test-message')}
+            >
               <MessageSquare className="w-3 h-3 mr-2" />
               發送測試訊息
             </Button>
-            <Button variant="outline" size="sm" className="w-full justify-start text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start text-xs"
+              onClick={() => onTestAction?.('preview-dialog')}
+            >
               <Eye className="w-3 h-3 mr-2" />
               預覽完整對話
             </Button>

@@ -124,19 +124,24 @@ const AddServerPage = () => {
       channel_secret: formData.channelSecret,
     };
 
-    // 調用 hook 中的 createBot 方法
-    const createdBot = await createBot(botData);
+    try {
+      // 調用 hook 中的 createBot 方法
+      const createdBot = await createBot(botData);
 
-    if (createdBot) {
-      console.log("Bot 創建成功:", createdBot);
+      if (createdBot) {
+        console.log("Bot 創建成功:", createdBot);
 
-      // 顯示成功訊息
-      setSuccess(true);
+        // 顯示成功訊息
+        setSuccess(true);
 
-      // 2秒後跳轉到區塊設定頁面
-      setTimeout(() => {
-        navigate(`/bots/editor?botId=${createdBot.id}&botName=${encodeURIComponent(createdBot.name)}`);
-      }, 2000);
+        // 2秒後跳轉到區塊設定頁面
+        setTimeout(() => {
+          navigate(`/bots/editor?botId=${createdBot.id}&botName=${encodeURIComponent(createdBot.name)}`);
+        }, 2000);
+      }
+    } catch (error) {
+      // 錯誤已經在 useBotManagement 中處理，這裡不需要額外處理
+      console.error("創建 Bot 失敗:", error);
     }
   };
 

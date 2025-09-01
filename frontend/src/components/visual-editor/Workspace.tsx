@@ -67,6 +67,9 @@ const Workspace: React.FC<WorkspaceProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('logic');
   const [showAllBlocks, setShowAllBlocks] = useState(true);
+
+  // 測試動作處理
+  const [currentTestAction, setCurrentTestAction] = useState<'new-user' | 'test-message' | 'preview-dialog' | null>(null);
   const [workspaceValidation, setWorkspaceValidation] = useState<{ 
     logic: { isValid: boolean; errors: string[]; warnings: string[] };
     flex: { isValid: boolean; errors: string[]; warnings: string[] };
@@ -75,6 +78,18 @@ const Workspace: React.FC<WorkspaceProps> = ({
     flex: { isValid: true, errors: [], warnings: [] }
   });
   const { toast } = useToast();
+
+  // 處理測試動作
+  const handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
+    setCurrentTestAction(action);
+    // 清除動作狀態，讓下次同樣的動作也能觸發
+    setTimeout(() => setCurrentTestAction(null), 100);
+
+    toast({
+      title: "測試動作已執行",
+      description: `已執行${action === 'new-user' ? '新用戶模擬' : action === 'test-message' ? '測試訊息' : '對話預覽'}`,
+    });
+  }, [toast]);
 
   // 積木已是統一格式，無需轉換
   const normalizeBlocks = useCallback((blocks: UnifiedBlock[]): UnifiedBlock[] => {
@@ -170,17 +185,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
   }, [logicBlocks, flexBlocks, debouncedValidation]);
 
   const handleLogicDrop = useCallback((item: UnifiedDropItem) => {
-    let blockToAdd: UnifiedBlock;
-    
-    if ('category' in item) {
-      blockToAdd = {
-        ...(item as UnifiedDropItem),
-        id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        children: []
-      } as UnifiedBlock;
-    } else {
-      blockToAdd = item as UnifiedDropItem;
-    }
+    const blockToAdd: UnifiedBlock = {
+      ...item,
+      id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      children: []
+    };
     
     onLogicBlocksChange(prev => [...prev, blockToAdd]);
   }, [onLogicBlocksChange]);
@@ -194,17 +203,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
     });
     
     try {
-      let blockToAdd: UnifiedBlock;
-      
-      if ('category' in item) {
-        blockToAdd = {
-          ...(item as UnifiedDropItem),
-          id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          children: []
-        } as UnifiedBlock;
-      } else {
-        blockToAdd = item as UnifiedDropItem;
-      }
+      const blockToAdd: UnifiedBlock = {
+        ...item,
+        id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        children: []
+      };
       
       console.log('✅ 積木成功添加到 Flex 設計器:', blockToAdd);
       onFlexBlocksChange(prev => [...prev, blockToAdd]);
@@ -256,17 +259,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   // 新增：插入積木功能
   const insertLogicBlock = useCallback((index: number, item: UnifiedDropItem) => {
-    let blockToAdd: UnifiedBlock;
-    
-    if ('category' in item) {
-      blockToAdd = {
-        ...(item as UnifiedDropItem),
-        id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        children: []
-      } as UnifiedBlock;
-    } else {
-      blockToAdd = item as UnifiedDropItem;
-    }
+    const blockToAdd: UnifiedBlock = {
+      ...item,
+      id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      children: []
+    };
     
     onLogicBlocksChange(prev => {
       const newBlocks = [...prev];
@@ -364,6 +361,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           <PreviewControlPanel
             blocks={logicBlocks}
             flexBlocks={flexBlocks}
+            onTestAction={handleTestAction}
           />
         );
       case 'code':
@@ -435,19 +433,31 @@ const Workspace: React.FC<WorkspaceProps> = ({
               )}
               
               <div className="flex-1 p-4 overflow-auto">
-                <DropZone 
-                  title={currentLogicTemplateName ? 
-                    `邏輯編輯器 - ${currentLogicTemplateName}` : 
-                    "邏輯編輯器 - 請選擇邏輯模板"
-                  }
-                  context={WorkspaceContext.LOGIC}
-                  onDrop={handleLogicDrop}
-                  blocks={logicBlocks}
-                  onRemove={removeLogicBlock}
-                  onUpdate={updateLogicBlock}
-                  onMove={moveLogicBlock}
-                  onInsert={insertLogicBlock}
-                />
+                <div className="grid grid-cols-2 gap-4 h-full min-h-0">
+                  <div className="flex flex-col min-h-0">
+                    <DropZone 
+                      title={currentLogicTemplateName ? 
+                        `邏輯編輯器 - ${currentLogicTemplateName}` : 
+                        "邏輯編輯器 - 請選擇邏輯模板"
+                      }
+                      context={WorkspaceContext.LOGIC}
+                      onDrop={handleLogicDrop}
+                      blocks={logicBlocks}
+                      onRemove={removeLogicBlock}
+                      onUpdate={updateLogicBlock}
+                      onMove={moveLogicBlock}
+                      onInsert={insertLogicBlock}
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col min-h-0">
+                    <LineBotSimulator
+                      blocks={logicBlocks as Block[]}
+                      flexBlocks={flexBlocks as Block[]}
+                      testAction={currentTestAction}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </TabsContent>
@@ -491,7 +501,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
           
           <TabsContent value="preview" className="flex-1 overflow-hidden">
             <div className="h-full p-4 overflow-auto">
-              <LineBotSimulator blocks={logicBlocks} flexBlocks={flexBlocks} />
+              <LineBotSimulator
+                blocks={logicBlocks}
+                flexBlocks={flexBlocks}
+                testAction={currentTestAction}
+              />
             </div>
           </TabsContent>
           

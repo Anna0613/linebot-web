@@ -8,9 +8,7 @@ import { Loader } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
 import AuthFormLayout from "../components/forms/AuthFormLayout";
 import LINELoginButton from "../components/LINELogin/LINELoginButton";
-import { useAuthForm } from "../hooks/useAuthForm";
-import { useLineLogin } from "../hooks/useLineLogin";
-import { API_CONFIG, getApiUrl } from "../config/apiConfig";
+import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 import "@/components/ui/loader.css";
 import $ from "jquery";
 import "jquery-validation";
@@ -29,10 +27,7 @@ const Register = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   const navigate = useNavigate();
-  const { loading, handleSuccess, handleError, withLoading } = useAuthForm({
-    successRedirect: "/email-verification-pending",
-  });
-  const { handleLINELogin } = useLineLogin();
+  const { register, loading, error, clearError, handleLineLogin } = useUnifiedAuth();
 
   // jQuery Validation 初始化
   useEffect(() => {
@@ -108,43 +103,24 @@ const Register = () => {
       },
       submitHandler: async (form, evt) => {
         evt?.preventDefault();
-        await withLoading(async () => {
-          try {
-            const response = await fetch(
-              getApiUrl(
-                API_CONFIG.AUTH.BASE_URL,
-                API_CONFIG.AUTH.ENDPOINTS.REGISTER
-              ),
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password, email }),
-              }
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-              let errorMessage = "註冊失敗";
-              if (response.status === 422) {
-                errorMessage = data.detail || "資料驗證失敗";
-              } else if (response.status === 409) {
-                errorMessage = data.detail || "用戶名稱或郵箱已被註冊";
-              } else {
-                errorMessage =
-                  data.detail || data.message || data.error || "註冊失敗";
-              }
-              throw new Error(errorMessage);
-            }
-
-            handleSuccess("註冊成功！請檢查您的電子郵件以驗證帳號。");
-          } catch (error: unknown) {
-            handleError(error);
-          }
-        });
+        clearError();
+        
+        // 從表單直接獲取值，確保是最新的
+        const formData = new FormData(form);
+        const usernameValue = formData.get('username') as string || username;
+        const passwordValue = formData.get('password') as string || password;
+        const emailValue = formData.get('email') as string || email;
+        
+        console.log('表單提交資料:', { usernameValue, passwordValue, emailValue });
+        
+        const success = await register(usernameValue, passwordValue, emailValue);
+        
+        if (success) {
+          navigate("/email-verification-pending", { replace: true });
+        }
       },
     });
-  }, [withLoading, handleSuccess, handleError, username, password, email]);
+  }, [register, clearError, navigate, username, password, email]);
 
   const noopSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,7 +250,7 @@ const Register = () => {
       </div>
 
       <div className="flex justify-center">
-        <LINELoginButton onClick={handleLINELogin} disabled={loading} />
+        <LINELoginButton />
       </div>
 
       <p className="text-center text-sm text-muted-foreground mt-4">

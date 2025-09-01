@@ -127,7 +127,19 @@ export const VisualBotEditor: React.FC = () => {
       setIsLoadingData(true);
       try {
         const template = await VisualEditorApi.getLogicTemplate(templateId);
-        setLogicBlocks(template.logic_blocks || []);
+
+        // 處理 logic_blocks 可能是 JSON 字串的情況
+        let parsedLogicBlocks = template.logic_blocks || [];
+        if (typeof parsedLogicBlocks === 'string') {
+          try {
+            parsedLogicBlocks = JSON.parse(parsedLogicBlocks);
+          } catch (parseError) {
+            console.error('解析邏輯積木數據失敗:', parseError);
+            parsedLogicBlocks = [];
+          }
+        }
+
+        setLogicBlocks(parsedLogicBlocks);
         setCurrentLogicTemplateName(template.name);
         
         // 重置儲存狀態為已儲存（剛載入的數據）
@@ -137,9 +149,9 @@ export const VisualBotEditor: React.FC = () => {
         setLastSavedTime(new Date(template.updated_at));
         
         // 同步更新參考值，避免載入後被誤判為變更
-        previousBlocksRef.current = { 
-          logicBlocks: template.logic_blocks || [], 
-          flexBlocks: memoizedFlexBlocks 
+        previousBlocksRef.current = {
+          logicBlocks: parsedLogicBlocks,
+          flexBlocks: memoizedFlexBlocks
         };
         
         console.log(`已載入邏輯模板 ${template.name} 的數據`);

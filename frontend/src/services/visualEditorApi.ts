@@ -202,6 +202,25 @@ export class VisualEditorApi {
         throw new Error('載入回應格式錯誤');
       }
 
+      // 處理 logic_blocks 和 flex_blocks 可能是 JSON 字串的情況
+      if (response.data.logic_blocks && typeof response.data.logic_blocks === 'string') {
+        try {
+          response.data.logic_blocks = JSON.parse(response.data.logic_blocks as string);
+        } catch (parseError) {
+          console.error('解析邏輯積木數據失敗:', parseError);
+          response.data.logic_blocks = [];
+        }
+      }
+
+      if (response.data.flex_blocks && typeof response.data.flex_blocks === 'string') {
+        try {
+          response.data.flex_blocks = JSON.parse(response.data.flex_blocks as string);
+        } catch (parseError) {
+          console.error('解析 Flex 積木數據失敗:', parseError);
+          response.data.flex_blocks = [];
+        }
+      }
+
       return response.data;
     } catch (_error) {
       console.error("Error occurred:", _error);
@@ -358,6 +377,16 @@ export class VisualEditorApi {
 
       if (!response.data) {
         throw new Error('邏輯模板不存在');
+      }
+
+      // 處理 logic_blocks 可能是 JSON 字串的情況
+      if (response.data.logic_blocks && typeof response.data.logic_blocks === 'string') {
+        try {
+          response.data.logic_blocks = JSON.parse(response.data.logic_blocks as string);
+        } catch (parseError) {
+          console.error('解析邏輯積木數據失敗:', parseError);
+          response.data.logic_blocks = [];
+        }
       }
 
       // 儲存到快取

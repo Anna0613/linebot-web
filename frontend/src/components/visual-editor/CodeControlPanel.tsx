@@ -24,16 +24,10 @@ import LineBotCodeGenerator from '../../utils/codeGenerator';
 
 interface CodeControlPanelProps {
   blocks: UnifiedBlock[];
-  onExport?: (format: string) => void;
-  onCopy?: () => void;
-  onFormatChange?: (format: string) => void;
 }
 
 const CodeControlPanel: React.FC<CodeControlPanelProps> = ({
-  blocks,
-  onExport: _onExport,
-  onCopy: _onCopy,
-  onFormatChange
+  blocks
 }) => {
   const { toast } = useToast();
   const {
@@ -46,7 +40,6 @@ const CodeControlPanel: React.FC<CodeControlPanelProps> = ({
 
   const handleFormatChange = (format: 'python') => {
     setSelectedFormat(format);
-    onFormatChange?.(format);
   };
     const [generatedCode, setGeneratedCode] = useState('');
     const [codeGenerator] = useState(new LineBotCodeGenerator());

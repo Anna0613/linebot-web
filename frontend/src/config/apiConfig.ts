@@ -39,7 +39,7 @@ export const API_CONFIG = {
     },
   },
   AUTH: {
-    BASE_URL: `${LOGIN_API_URL}/api/v1/auth`,
+    BASE_URL: `${UNIFIED_API_URL}/api/v1/auth`,
     ENDPOINTS: {
       LOGIN: "/login",
       REGISTER: "/register",

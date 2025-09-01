@@ -219,6 +219,58 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
   }, [toast, onAuthChange]);
 
   /**
+   * 傳統註冊
+   */
+  const register = useCallback(async (username: string, password: string, email: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.REGISTER),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, email }),
+          credentials: 'include',
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        let errorMessage = "註冊失敗";
+        if (response.status === 422) {
+          errorMessage = data.detail || "資料驗證失敗";
+        } else if (response.status === 409) {
+          errorMessage = data.detail || "用戶名稱或郵箱已被註冊";
+        } else {
+          errorMessage = data.detail || data.message || data.error || "註冊失敗";
+        }
+        throw new Error(errorMessage);
+      }
+
+      toast({
+        title: '註冊成功',
+        description: data.message || '註冊成功，請檢查您的郵箱以驗證帳戶',
+      });
+
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '註冊失敗';
+      setError(errorMessage);
+      toast({
+        variant: 'destructive',
+        title: '註冊失敗',
+        description: errorMessage,
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  /**
    * LINE登錄處理
    */
   const handleLineLogin = useCallback(async (token: string, rememberMe = false) => {
@@ -353,6 +405,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
     
     // 方法
     login,
+    register,
     logout,
     handleLineLogin,
     checkAuthStatus,
