@@ -94,13 +94,9 @@ const LoginPage = () => {
         evt?.preventDefault();
         clearError();
 
-        // 從表單取值
-        const formData = new FormData(form as HTMLFormElement);
-        const u = String(formData.get("username") || "");
-        const p = String(formData.get("password") || "");
-        const r = !!formData.get("remember");
-
-        const success = await login(u, p, r);
+        // 直接使用 React state 中的值，而不是 FormData
+        // 因為受控組件的值由 React state 管理
+        const success = await login(username, password, rememberMe);
 
         if (success) {
           // 檢查是否需要郵件驗證
