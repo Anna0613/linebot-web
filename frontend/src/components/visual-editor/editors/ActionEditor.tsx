@@ -125,15 +125,15 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
           </div>
           <div className="space-y-1">
             <label className="text-xs text-white/80">輸入選項</label>
-            <Select 
-              value={value.inputOption || ''} 
-              onValueChange={(inputOption) => updateAction({ inputOption: inputOption as ActionData['inputOption'] })}
+            <Select
+              value={value.inputOption || 'none'}
+              onValueChange={(inputOption) => updateAction({ inputOption: inputOption === 'none' ? undefined : inputOption as ActionData['inputOption'] })}
             >
               <SelectTrigger className="text-black">
                 <SelectValue placeholder="選擇輸入選項（可選）" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">無特殊選項</SelectItem>
+                <SelectItem value="none">無特殊選項</SelectItem>
                 {inputOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
