@@ -7,6 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { X, Settings, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import { FlexMessageSummary } from '../../services/visualEditorApi';
 import { useFlexMessageCache } from '../../hooks/useFlexMessageCache';
+import { 
+  ActionEditor, 
+  ColorPicker,
+  SizeSelector,
+  AlignmentSelector,
+  MarginPaddingEditor,
+  type ActionData,
+  type MarginPaddingData,
+  type AlignType,
+  type GravityType
+} from './editors';
 
 interface BlockData {
   [key: string]: unknown;
@@ -352,6 +363,94 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                       rows={8}
                     />
                   </div>
+                ) : block.blockData.replyType === 'image' ? (
+                  <div className="space-y-2">
+                    <label className="text-xs text-white/80">圖片回覆設定：</label>
+                    <Input 
+                      placeholder="原始圖片URL (必填)"
+                      value={blockData.originalContentUrl || ''}
+                      onChange={(e) => setBlockData({...blockData, originalContentUrl: e.target.value})}
+                      className="text-black"
+                    />
+                    <Input 
+                      placeholder="預覽圖片URL (必填)"
+                      value={blockData.previewImageUrl || ''}
+                      onChange={(e) => setBlockData({...blockData, previewImageUrl: e.target.value})}
+                      className="text-black"
+                    />
+                    <div className="text-xs text-white/60">
+                      • 原始圖片: 用戶點擊時顯示的高解析度圖片<br/>
+                      • 預覽圖片: 聊天室中顯示的縮圖 (建議 240x240px)
+                    </div>
+                    {blockData.originalContentUrl && (
+                      <div className="bg-white/5 p-2 rounded">
+                        <div className="text-xs text-white/70 mb-1">圖片預覽:</div>
+                        <img 
+                          src={blockData.previewImageUrl || blockData.originalContentUrl} 
+                          alt="圖片預覽" 
+                          className="max-w-full max-h-32 rounded border"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjI0MCIgdmlld0JveD0iMCAwIDI0MCAyNDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI0MCIgaGVpZ2h0PSIyNDAiIGZpbGw9IiNGMEYwRjAiLz48dGV4dCB4PSIxMjAiIHk9IjEyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSI+5Zue55qE6KeJ5Zy5</text></svg>';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : block.blockData.replyType === 'sticker' ? (
+                  <div className="space-y-2">
+                    <label className="text-xs text-white/80">貼圖回覆設定：</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input 
+                        placeholder="貼圖包ID"
+                        value={blockData.packageId || ''}
+                        onChange={(e) => setBlockData({...blockData, packageId: e.target.value})}
+                        className="text-black"
+                      />
+                      <Input 
+                        placeholder="貼圖ID"
+                        value={blockData.stickerId || ''}
+                        onChange={(e) => setBlockData({...blockData, stickerId: e.target.value})}
+                        className="text-black"
+                      />
+                    </div>
+                    <div className="text-xs text-white/60">
+                      常用貼圖包：<br/>
+                      • 包ID 1: LINE 官方貼圖 (貼圖ID: 1-17)<br/>
+                      • 包ID 2: LINE 表情符號 (貼圖ID: 144-180)<br/>
+                      • 包ID 3: 熊大兔兔 (貼圖ID: 180-259)
+                    </div>
+                    {/* 快速選擇常用貼圖 */}
+                    <div className="bg-white/5 p-2 rounded">
+                      <div className="text-xs text-white/70 mb-1">快速選擇:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          {packageId: '1', stickerId: '1', name: '😊'},
+                          {packageId: '1', stickerId: '2', name: '😢'},
+                          {packageId: '1', stickerId: '3', name: '😍'},
+                          {packageId: '1', stickerId: '4', name: '😂'},
+                          {packageId: '1', stickerId: '5', name: '😡'},
+                          {packageId: '2', stickerId: '144', name: '👍'},
+                          {packageId: '2', stickerId: '145', name: '👎'},
+                          {packageId: '2', stickerId: '146', name: '❤️'}
+                        ].map((sticker, index) => (
+                          <Button
+                            key={index}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2 text-xs"
+                            onClick={() => setBlockData({
+                              ...blockData, 
+                              packageId: sticker.packageId, 
+                              stickerId: sticker.stickerId
+                            })}
+                          >
+                            {sticker.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     <label className="text-xs text-white/80">回覆文字內容：</label>
@@ -385,6 +484,27 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                   ) : (
                     <div className="text-orange-300">請設定 Flex 訊息內容</div>
                   )
+                ) : block.blockData.replyType === 'image' ? (
+                  // 顯示圖片回覆內容
+                  (block.blockData.originalContentUrl && block.blockData.previewImageUrl) ? (
+                    <div className="space-y-1">
+                      <div>圖片回覆: 已設定圖片</div>
+                      <div className="text-white/50 text-xs">
+                        預覽: {block.blockData.previewImageUrl.substring(0, 30)}...
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-orange-300">請設定圖片URL</div>
+                  )
+                ) : block.blockData.replyType === 'sticker' ? (
+                  // 顯示貼圖回覆內容
+                  (block.blockData.packageId && block.blockData.stickerId) ? (
+                    <div>
+                      貼圖回覆: 包{block.blockData.packageId} - 圖{block.blockData.stickerId}
+                    </div>
+                  ) : (
+                    <div className="text-orange-300">請設定貼圖ID</div>
+                  )
                 ) : (
                   // 顯示一般回覆內容
                   (block.blockData.text || block.blockData.content) ? (
@@ -404,26 +524,24 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
             {isEditing && (
               <div className="mt-2 space-y-2">
                 {block.blockData.contentType === 'text' && (
-                  <>
-                    <Input 
+                  <div className="space-y-3">
+                    {/* 文字內容 */}
+                    <Textarea 
                       placeholder="文字內容"
                       value={blockData.text || ''}
                       onChange={(e) => setBlockData({...blockData, text: e.target.value})}
                       className="text-black"
+                      rows={2}
                     />
+                    
+                    {/* 文字樣式 */}
                     <div className="grid grid-cols-2 gap-2">
-                      <Select value={blockData.size || 'md'} onValueChange={(value) => setBlockData({...blockData, size: value})}>
-                        <SelectTrigger className="text-black">
-                          <SelectValue placeholder="文字大小" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="xs">極小</SelectItem>
-                          <SelectItem value="sm">小</SelectItem>
-                          <SelectItem value="md">中</SelectItem>
-                          <SelectItem value="lg">大</SelectItem>
-                          <SelectItem value="xl">極大</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <SizeSelector
+                        type="text-size"
+                        value={blockData.size || 'md'}
+                        onChange={(size) => setBlockData({...blockData, size})}
+                        label="文字大小"
+                      />
                       <Select value={blockData.weight || 'regular'} onValueChange={(value) => setBlockData({...blockData, weight: value})}>
                         <SelectTrigger className="text-black">
                           <SelectValue placeholder="字重" />
@@ -434,29 +552,289 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                         </SelectContent>
                       </Select>
                     </div>
-                    <Input 
-                      placeholder="文字顏色 (例如: #000000)"
-                      value={blockData.color || ''}
-                      onChange={(e) => setBlockData({...blockData, color: e.target.value})}
-                      className="text-black"
+
+                    {/* 顏色和樣式 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <ColorPicker
+                        value={blockData.color || '#000000'}
+                        onChange={(color) => setBlockData({...blockData, color})}
+                        label="文字顏色"
+                      />
+                      <Select value={blockData.style || 'normal'} onValueChange={(value) => setBlockData({...blockData, style: value})}>
+                        <SelectTrigger className="text-black">
+                          <SelectValue placeholder="文字樣式" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">一般</SelectItem>
+                          <SelectItem value="italic">斜體</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* 對齊設定 */}
+                    <AlignmentSelector
+                      type="both"
+                      alignValue={blockData.align as AlignType}
+                      gravityValue={blockData.gravity as GravityType}
+                      onAlignChange={(align) => setBlockData({...blockData, align})}
+                      onGravityChange={(gravity) => setBlockData({...blockData, gravity})}
+                      label="對齊設定"
+                      showVisual={true}
                     />
-                  </>
+
+                    {/* 進階設定 */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-xs text-white/80">最大行數</label>
+                        <Input
+                          type="number"
+                          value={blockData.maxLines || '0'}
+                          onChange={(e) => setBlockData({...blockData, maxLines: parseInt(e.target.value) || 0})}
+                          className="text-black"
+                          min="0"
+                          max="20"
+                          placeholder="0=無限制"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs text-white/80">自動換行</label>
+                        <Select value={blockData.wrap ? 'true' : 'false'} onValueChange={(value) => setBlockData({...blockData, wrap: value === 'true'})}>
+                          <SelectTrigger className="text-black">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">開啟</SelectItem>
+                            <SelectItem value="false">關閉</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs text-white/80">彈性比例</label>
+                        <Input
+                          type="number"
+                          value={blockData.flex || '0'}
+                          onChange={(e) => setBlockData({...blockData, flex: parseInt(e.target.value) || 0})}
+                          className="text-black"
+                          min="0"
+                          max="10"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 邊距設定 */}
+                    <MarginPaddingEditor
+                      type="margin"
+                      value={
+                        blockData.margin ? 
+                        { all: blockData.margin } : 
+                        {}
+                      }
+                      onChange={(margin) => setBlockData({...blockData, margin: margin.all || 'none'})}
+                      label="外邊距"
+                      showUnifiedMode={true}
+                    />
+                  </div>
                 )}
                 {block.blockData.contentType === 'image' && (
-                  <Input 
-                    placeholder="圖片 URL"
-                    value={blockData.url || ''}
-                    onChange={(e) => setBlockData({...blockData, url: e.target.value})}
-                    className="text-black"
-                  />
+                  <div className="space-y-3">
+                    {/* 圖片URL */}
+                    <div className="space-y-2">
+                      <Input 
+                        placeholder="圖片 URL"
+                        value={blockData.url || ''}
+                        onChange={(e) => setBlockData({...blockData, url: e.target.value})}
+                        className="text-black"
+                      />
+                      {blockData.url && (
+                        <div className="bg-white/5 p-2 rounded">
+                          <div className="text-xs text-white/70 mb-1">圖片預覽:</div>
+                          <img 
+                            src={blockData.url} 
+                            alt="圖片預覽" 
+                            className="max-w-full max-h-32 rounded border"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjI0MCIgdmlld0JveD0iMCAwIDI0MCAyNDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI0MCIgaGVpZ2h0PSIyNDAiIGZpbGw9IiNGMEYwRjAiLz48dGV4dCB4PSIxMjAiIHk9IjEyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSI+5Zue55qE6KeJ5Zy5</text></svg>';
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 圖片尺寸和比例 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <SizeSelector
+                        type="image-size"
+                        value={blockData.size || 'full'}
+                        onChange={(size) => setBlockData({...blockData, size})}
+                        label="圖片尺寸"
+                      />
+                      <Select value={blockData.aspectRatio || '20:13'} onValueChange={(value) => setBlockData({...blockData, aspectRatio: value})}>
+                        <SelectTrigger className="text-black">
+                          <SelectValue placeholder="寬高比" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1:1">正方形 (1:1)</SelectItem>
+                          <SelectItem value="1.51:1">照片 (1.51:1)</SelectItem>
+                          <SelectItem value="20:13">預設 (20:13)</SelectItem>
+                          <SelectItem value="16:9">寬螢幕 (16:9)</SelectItem>
+                          <SelectItem value="4:3">標準 (4:3)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* 顯示模式 */}
+                    <Select value={blockData.aspectMode || 'cover'} onValueChange={(value) => setBlockData({...blockData, aspectMode: value})}>
+                      <SelectTrigger className="text-black">
+                        <SelectValue placeholder="顯示模式" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cover">填滿 (可能裁切)</SelectItem>
+                        <SelectItem value="fit">完整顯示 (可能有空白)</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* 對齊和背景色 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <AlignmentSelector
+                        type="align"
+                        alignValue={blockData.align as AlignType}
+                        onAlignChange={(align) => setBlockData({...blockData, align})}
+                        label="水平對齊"
+                        showVisual={false}
+                      />
+                      <AlignmentSelector
+                        type="gravity"
+                        gravityValue={blockData.gravity as GravityType}
+                        onGravityChange={(gravity) => setBlockData({...blockData, gravity})}
+                        label="垂直對齊"
+                        showVisual={false}
+                      />
+                    </div>
+
+                    {/* 背景色和邊距 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <ColorPicker
+                        value={blockData.backgroundColor || 'transparent'}
+                        onChange={(backgroundColor) => setBlockData({...blockData, backgroundColor})}
+                        label="背景顏色"
+                      />
+                      <div className="space-y-1">
+                        <label className="text-xs text-white/80">彈性比例</label>
+                        <Input
+                          type="number"
+                          value={blockData.flex || '0'}
+                          onChange={(e) => setBlockData({...blockData, flex: parseInt(e.target.value) || 0})}
+                          className="text-black"
+                          min="0"
+                          max="10"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 邊距設定 */}
+                    <MarginPaddingEditor
+                      type="margin"
+                      value={
+                        blockData.margin ? 
+                        { all: blockData.margin } : 
+                        {}
+                      }
+                      onChange={(margin) => setBlockData({...blockData, margin: margin.all || 'none'})}
+                      label="外邊距"
+                      showUnifiedMode={true}
+                    />
+
+                    {/* 點擊動作（可選） */}
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="enableImageAction"
+                          checked={!!blockData.action}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setBlockData({...blockData, action: { type: 'uri', label: '圖片', uri: '' }});
+                            } else {
+                              const newData = { ...blockData };
+                              delete newData.action;
+                              setBlockData(newData);
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <label htmlFor="enableImageAction" className="text-xs text-white/80">
+                          設定點擊動作
+                        </label>
+                      </div>
+                      {blockData.action && (
+                        <ActionEditor
+                          value={blockData.action as ActionData}
+                          onChange={(action) => setBlockData({...blockData, action})}
+                          label="點擊動作"
+                          showLabel={false}
+                        />
+                      )}
+                    </div>
+                  </div>
                 )}
                 {block.blockData.contentType === 'button' && (
-                  <Input 
-                    placeholder="按鈕文字"
-                    value={blockData.text || ''}
-                    onChange={(e) => setBlockData({...blockData, text: e.target.value})}
-                    className="text-black"
-                  />
+                  <div className="space-y-2">
+                    <ActionEditor
+                      value={(blockData.action as ActionData) || { type: 'postback', label: '' }}
+                      onChange={(action) => setBlockData({...blockData, action})}
+                      label="按鈕動作設定"
+                      showLabel={true}
+                    />
+                    {/* 按鈕樣式設定 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Select value={blockData.height || 'sm'} onValueChange={(value) => setBlockData({...blockData, height: value})}>
+                        <SelectTrigger className="text-black">
+                          <SelectValue placeholder="按鈕高度" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sm">小按鈕</SelectItem>
+                          <SelectItem value="md">中按鈕</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={blockData.style || 'primary'} onValueChange={(value) => setBlockData({...blockData, style: value})}>
+                        <SelectTrigger className="text-black">
+                          <SelectValue placeholder="按鈕樣式" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="primary">主要按鈕</SelectItem>
+                          <SelectItem value="secondary">次要按鈕</SelectItem>
+                          <SelectItem value="link">連結樣式</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+                
+                {block.blockData.contentType === 'separator' && (
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-white/90">分隔線設定</label>
+                    
+                    {/* 邊距設定 */}
+                    <MarginPaddingEditor
+                      type="margin"
+                      value={blockData.margin ? (typeof blockData.margin === 'string' ? { all: blockData.margin } : blockData.margin) : {}}
+                      onChange={(margin) => setBlockData({...blockData, margin})}
+                      label="邊距設定"
+                      showUnifiedMode={true}
+                    />
+                    
+                    {/* 顏色設定 */}
+                    <ColorPicker
+                      label="分隔線顏色"
+                      value={blockData.color}
+                      onChange={(color) => setBlockData({...blockData, color})}
+                      showPresets={true}
+                    />
+                    
+                    <div className="text-xs text-white/60 bg-white/5 p-2 rounded">
+                      分隔線用於在Flex訊息中創建視覺分割效果
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -466,29 +844,148 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
         return (
           <div>
             <div className="font-medium">{block.blockData.title}</div>
-            {isEditing && block.blockData.containerType === 'box' && (
-              <div className="mt-2 space-y-2">
-                <Select value={blockData.layout || 'vertical'} onValueChange={(value) => setBlockData({...blockData, layout: value})}>
-                  <SelectTrigger className="text-black">
-                    <SelectValue placeholder="佈局方向" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="vertical">垂直</SelectItem>
-                    <SelectItem value="horizontal">水平</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={blockData.spacing || 'md'} onValueChange={(value) => setBlockData({...blockData, spacing: value})}>
-                  <SelectTrigger className="text-black">
-                    <SelectValue placeholder="間距" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="xs">極小</SelectItem>
-                    <SelectItem value="sm">小</SelectItem>
-                    <SelectItem value="md">中</SelectItem>
-                    <SelectItem value="lg">大</SelectItem>
-                    <SelectItem value="xl">極大</SelectItem>
-                  </SelectContent>
-                </Select>
+            {isEditing && (
+              <div className="mt-2 space-y-3">
+                {block.blockData.containerType === 'box' && (
+                  <>
+                    {/* 基本佈局設定 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Select value={blockData.layout || 'vertical'} onValueChange={(value) => setBlockData({...blockData, layout: value})}>
+                        <SelectTrigger className="text-black">
+                          <SelectValue placeholder="佈局方向" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="vertical">垂直</SelectItem>
+                          <SelectItem value="horizontal">水平</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <SizeSelector
+                        type="spacing"
+                        value={blockData.spacing || 'md'}
+                        onChange={(spacing) => setBlockData({...blockData, spacing})}
+                        label="內容間距"
+                      />
+                    </div>
+
+                    {/* 邊距設定 */}
+                    <MarginPaddingEditor
+                      type="margin"
+                      value={
+                        blockData.margin ? 
+                        { all: blockData.margin } : 
+                        {}
+                      }
+                      onChange={(margin) => setBlockData({...blockData, margin: margin.all || 'none'})}
+                      label="外邊距"
+                      showUnifiedMode={true}
+                    />
+
+                    {/* 內邊距設定 */}
+                    <MarginPaddingEditor
+                      type="padding"
+                      value={{
+                        all: blockData.paddingAll,
+                        top: blockData.paddingTop,
+                        right: blockData.paddingEnd,
+                        bottom: blockData.paddingBottom,
+                        left: blockData.paddingStart
+                      }}
+                      onChange={(padding) => setBlockData({
+                        ...blockData,
+                        paddingAll: padding.all,
+                        paddingTop: padding.top,
+                        paddingBottom: padding.bottom,
+                        paddingStart: padding.left,
+                        paddingEnd: padding.right
+                      })}
+                      label="內邊距"
+                      showUnifiedMode={true}
+                    />
+
+                    {/* 顏色和邊框 */}
+                    <div className="space-y-2">
+                      <ColorPicker
+                        value={blockData.backgroundColor || 'transparent'}
+                        onChange={(backgroundColor) => setBlockData({...blockData, backgroundColor})}
+                        label="背景顏色"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <ColorPicker
+                          value={blockData.borderColor || 'transparent'}
+                          onChange={(borderColor) => setBlockData({...blockData, borderColor})}
+                          label="邊框顏色"
+                        />
+                        <SizeSelector
+                          type="border-width"
+                          value={blockData.borderWidth || 'none'}
+                          onChange={(borderWidth) => setBlockData({...blockData, borderWidth})}
+                          label="邊框寬度"
+                        />
+                      </div>
+                      <SizeSelector
+                        type="corner-radius"
+                        value={blockData.cornerRadius || 'none'}
+                        onChange={(cornerRadius) => setBlockData({...blockData, cornerRadius})}
+                        label="圓角"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {block.blockData.containerType === 'bubble' && (
+                  <div className="space-y-2">
+                    <Select value={blockData.size || 'mega'} onValueChange={(value) => setBlockData({...blockData, size: value})}>
+                      <SelectTrigger className="text-black">
+                        <SelectValue placeholder="Bubble 尺寸" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nano">極小 (Nano)</SelectItem>
+                        <SelectItem value="micro">小 (Micro)</SelectItem>
+                        <SelectItem value="deca">中 (Deca)</SelectItem>
+                        <SelectItem value="hecto">大 (Hecto)</SelectItem>
+                        <SelectItem value="kilo">極大 (Kilo)</SelectItem>
+                        <SelectItem value="mega">超大 (Mega)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={blockData.direction || 'ltr'} onValueChange={(value) => setBlockData({...blockData, direction: value})}>
+                      <SelectTrigger className="text-black">
+                        <SelectValue placeholder="文字方向" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ltr">左到右</SelectItem>
+                        <SelectItem value="rtl">右到左</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {block.blockData.containerType === 'carousel' && (
+                  <div className="text-xs text-white/70">
+                    Carousel 容器會自動管理其內容的佈局
+                  </div>
+                )}
+              </div>
+            )}
+            {/* 顯示當前設定的參數（非編輯模式） */}
+            {!isEditing && (
+              <div className="text-xs text-white/70 mt-1">
+                {block.blockData.containerType === 'box' && (
+                  <div>
+                    佈局: {blockData.layout === 'horizontal' ? '水平' : '垂直'} | 
+                    間距: {blockData.spacing || 'md'}
+                    {blockData.backgroundColor && blockData.backgroundColor !== 'transparent' && (
+                      <div>背景: {blockData.backgroundColor}</div>
+                    )}
+                  </div>
+                )}
+                {block.blockData.containerType === 'bubble' && (
+                  <div>
+                    尺寸: {blockData.size || 'mega'} | 方向: {blockData.direction === 'rtl' ? '右到左' : '左到右'}
+                  </div>
+                )}
+                {block.blockData.containerType === 'carousel' && (
+                  <div>輪播容器</div>
+                )}
               </div>
             )}
           </div>
@@ -497,20 +994,279 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
         return (
           <div>
             <div className="font-medium">{block.blockData.title}</div>
-            {isEditing && block.blockData.layoutType === 'spacer' && (
+            {isEditing && (
+              <div className="mt-2 space-y-3">
+                {block.blockData.layoutType === 'spacer' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/90">間距設定</label>
+                    <SizeSelector
+                      type="spacer"
+                      value={blockData.size}
+                      onChange={(size) => setBlockData({...blockData, size})}
+                      label="間距大小"
+                      showVisual={false}
+                    />
+                  </div>
+                )}
+                
+                {block.blockData.layoutType === 'filler' && (
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-white/90">填充設定</label>
+                    
+                    {/* Flex 比例設定 */}
+                    <div className="space-y-2">
+                      <label className="text-xs text-white/80">Flex 比例</label>
+                      <SizeSelector
+                        type="flex"
+                        value={blockData.flex}
+                        onChange={(flex) => setBlockData({...blockData, flex})}
+                        label=""
+                        showVisual={false}
+                      />
+                      <div className="text-xs text-white/60 bg-white/5 p-2 rounded">
+                        設定填充區域的彈性比例，數值越大佔用空間越多
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {block.blockData.layoutType === 'align' && (
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-white/90">對齊設定</label>
+                    
+                    {/* 對齊控制 */}
+                    <AlignmentSelector
+                      type="both"
+                      alignValue={blockData.align}
+                      gravityValue={blockData.gravity}
+                      onAlignChange={(align) => setBlockData({...blockData, align})}
+                      onGravityChange={(gravity) => setBlockData({...blockData, gravity})}
+                      label=""
+                      showVisual={true}
+                    />
+                    
+                    <div className="text-xs text-white/60 bg-white/5 p-2 rounded">
+                      設定容器中子元素的對齊方式
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      case 'control':
+        return (
+          <div>
+            <div className="font-medium">{block.blockData.title}</div>
+            {isEditing && (
               <div className="mt-2 space-y-2">
-                <Select value={blockData.size || 'md'} onValueChange={(value) => setBlockData({...blockData, size: value})}>
-                  <SelectTrigger className="text-black">
-                    <SelectValue placeholder="間距大小" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="xs">極小</SelectItem>
-                    <SelectItem value="sm">小</SelectItem>
-                    <SelectItem value="md">中</SelectItem>
-                    <SelectItem value="lg">大</SelectItem>
-                    <SelectItem value="xl">極大</SelectItem>
-                  </SelectContent>
-                </Select>
+                {block.blockData.controlType === 'if' && (
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="判斷條件 (例如: user_message == '你好')"
+                      value={blockData.condition || ''}
+                      onChange={(e) => setBlockData({...blockData, condition: e.target.value})}
+                      className="text-black"
+                    />
+                    <div className="text-xs text-white/60">
+                      支援的條件格式: user_message == '文字', user_id == '用戶ID', contains('關鍵字')
+                    </div>
+                  </div>
+                )}
+                {block.blockData.controlType === 'loop' && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Select value={blockData.loopType || 'count'} onValueChange={(value) => setBlockData({...blockData, loopType: value})}>
+                        <SelectTrigger className="text-black">
+                          <SelectValue placeholder="迴圈類型" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="count">指定次數</SelectItem>
+                          <SelectItem value="while">條件迴圈</SelectItem>
+                          <SelectItem value="foreach">遍歷清單</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {blockData.loopType === 'count' ? (
+                        <Input 
+                          type="number"
+                          placeholder="次數"
+                          value={blockData.loopCount || '1'}
+                          onChange={(e) => setBlockData({...blockData, loopCount: parseInt(e.target.value) || 1})}
+                          className="text-black"
+                          min="1"
+                          max="100"
+                        />
+                      ) : blockData.loopType === 'while' ? (
+                        <Input 
+                          placeholder="條件"
+                          value={blockData.condition || ''}
+                          onChange={(e) => setBlockData({...blockData, condition: e.target.value})}
+                          className="text-black"
+                        />
+                      ) : (
+                        <Input 
+                          placeholder="清單變數"
+                          value={blockData.listVariable || ''}
+                          onChange={(e) => setBlockData({...blockData, listVariable: e.target.value})}
+                          className="text-black"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+                {block.blockData.controlType === 'wait' && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input 
+                        type="number"
+                        placeholder="等待時間"
+                        value={blockData.duration || '1000'}
+                        onChange={(e) => setBlockData({...blockData, duration: parseInt(e.target.value) || 1000})}
+                        className="text-black"
+                        min="100"
+                        max="60000"
+                      />
+                      <Select value={blockData.unit || 'milliseconds'} onValueChange={(value) => setBlockData({...blockData, unit: value})}>
+                        <SelectTrigger className="text-black">
+                          <SelectValue placeholder="時間單位" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="milliseconds">毫秒</SelectItem>
+                          <SelectItem value="seconds">秒</SelectItem>
+                          <SelectItem value="minutes">分鐘</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {/* 顯示當前設定的參數（非編輯模式） */}
+            {!isEditing && (
+              <div className="text-xs text-white/70 mt-1">
+                {block.blockData.controlType === 'if' && block.blockData.condition && (
+                  <div>條件: {block.blockData.condition}</div>
+                )}
+                {block.blockData.controlType === 'loop' && (
+                  <div>
+                    {blockData.loopType === 'count' && `重複 ${blockData.loopCount || 1} 次`}
+                    {blockData.loopType === 'while' && `當 ${blockData.condition || '條件'} 時`}
+                    {blockData.loopType === 'foreach' && `遍歷 ${blockData.listVariable || '清單'}`}
+                  </div>
+                )}
+                {block.blockData.controlType === 'wait' && (
+                  <div>
+                    等待 {blockData.duration || 1000} {
+                      blockData.unit === 'seconds' ? '秒' :
+                      blockData.unit === 'minutes' ? '分鐘' : '毫秒'
+                    }
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      case 'setting':
+        return (
+          <div>
+            <div className="font-medium">{block.blockData.title}</div>
+            {isEditing && (
+              <div className="mt-2 space-y-2">
+                {block.blockData.settingType === 'setVariable' && (
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="變數名稱"
+                      value={blockData.variableName || ''}
+                      onChange={(e) => setBlockData({...blockData, variableName: e.target.value})}
+                      className="text-black"
+                    />
+                    <Input 
+                      placeholder="變數值"
+                      value={blockData.variableValue || ''}
+                      onChange={(e) => setBlockData({...blockData, variableValue: e.target.value})}
+                      className="text-black"
+                    />
+                    <Select value={blockData.variableType || 'string'} onValueChange={(value) => setBlockData({...blockData, variableType: value})}>
+                      <SelectTrigger className="text-black">
+                        <SelectValue placeholder="變數類型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="string">文字</SelectItem>
+                        <SelectItem value="number">數字</SelectItem>
+                        <SelectItem value="boolean">布林值</SelectItem>
+                        <SelectItem value="array">陣列</SelectItem>
+                        <SelectItem value="object">物件</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {block.blockData.settingType === 'getVariable' && (
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="變數名稱"
+                      value={blockData.variableName || ''}
+                      onChange={(e) => setBlockData({...blockData, variableName: e.target.value})}
+                      className="text-black"
+                    />
+                    <Input 
+                      placeholder="預設值（可選）"
+                      value={blockData.defaultValue || ''}
+                      onChange={(e) => setBlockData({...blockData, defaultValue: e.target.value})}
+                      className="text-black"
+                    />
+                  </div>
+                )}
+                {block.blockData.settingType === 'saveUserData' && (
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="資料鍵名"
+                      value={blockData.dataKey || ''}
+                      onChange={(e) => setBlockData({...blockData, dataKey: e.target.value})}
+                      className="text-black"
+                    />
+                    <Input 
+                      placeholder="資料值"
+                      value={blockData.dataValue || ''}
+                      onChange={(e) => setBlockData({...blockData, dataValue: e.target.value})}
+                      className="text-black"
+                    />
+                    <Input 
+                      placeholder="用戶ID（可選，預設為當前用戶）"
+                      value={blockData.userId || ''}
+                      onChange={(e) => setBlockData({...blockData, userId: e.target.value})}
+                      className="text-black"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+            {/* 顯示當前設定的參數（非編輯模式） */}
+            {!isEditing && (
+              <div className="text-xs text-white/70 mt-1">
+                {block.blockData.settingType === 'setVariable' && (
+                  <div>
+                    設定變數: {blockData.variableName || '未設定'} = {blockData.variableValue || '未設定'}
+                    {blockData.variableType && blockData.variableType !== 'string' && (
+                      <span className="ml-1">({blockData.variableType})</span>
+                    )}
+                  </div>
+                )}
+                {block.blockData.settingType === 'getVariable' && (
+                  <div>
+                    取得變數: {blockData.variableName || '未設定'}
+                    {blockData.defaultValue && (
+                      <span className="ml-1">預設值: {blockData.defaultValue}</span>
+                    )}
+                  </div>
+                )}
+                {block.blockData.settingType === 'saveUserData' && (
+                  <div>
+                    儲存資料: {blockData.dataKey || '未設定'} = {blockData.dataValue || '未設定'}
+                    {blockData.userId && (
+                      <div>目標用戶: {blockData.userId}</div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
