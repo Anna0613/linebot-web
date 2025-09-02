@@ -179,62 +179,32 @@ export const VisualBotEditor: React.FC = () => {
         const messages = await VisualEditorApi.getUserFlexMessages(false); // 強制跳過快取
         const message = messages.find(m => m.id === messageId);
         
-        // 🔍 詳細調試 FlexMessage 數據結構
-        console.log('🔍 FlexMessage 數據結構調試:', {
-          messageId: messageId,
-          message: message,
-          messageContent: message?.content,
-          contentKeys: message?.content ? Object.keys(message.content) : [],
-          contentBlocks: message?.content?.blocks,
-          contentBlocksType: typeof message?.content?.blocks,
-          contentBlocksLength: Array.isArray(message?.content?.blocks) ? message.content.blocks.length : 'not array'
-        });
-        
         if (message) {
-          // 嘗試從不同的可能路徑提取 blocks
           let blocks = [];
           
           try {
-            // 首先嘗試解析 content（如果它是 JSON 字符串）
+            // 解析 content（如果它是 JSON 字符串）
             let parsedContent = message.content;
             if (typeof message.content === 'string') {
               parsedContent = JSON.parse(message.content);
-              console.log('✅ 成功解析 JSON 字符串 content');
             }
             
             if (parsedContent && Array.isArray(parsedContent.blocks)) {
               blocks = parsedContent.blocks;
-              console.log('✅ 從解析後的 content.blocks 提取到積木');
             } else if (Array.isArray(parsedContent)) {
               blocks = parsedContent;
-              console.log('✅ 解析後的 content 本身就是積木陣列');
             } else if (Array.isArray(message.blocks)) {
               blocks = message.blocks;
-              console.log('✅ 從 message.blocks 提取到積木');
-            } else {
-              console.warn('⚠️ 無法從任何路徑提取積木數據');
-              blocks = [];
             }
           } catch (parseError) {
-            console.error('❌ JSON 解析失敗:', parseError);
             // 嘗試其他路徑
             if (Array.isArray(message.blocks)) {
               blocks = message.blocks;
-              console.log('✅ JSON 解析失敗，從 message.blocks 提取到積木');
-            } else {
-              console.warn('⚠️ JSON 解析失敗且無法從其他路徑提取積木數據');
-              blocks = [];
             }
           }
           
           setFlexBlocks(blocks);
           setCurrentFlexMessageName(message.name);
-          
-          console.log(`📦 載入 FlexMessage "${message.name}" - 積木數量: ${blocks.length}`, {
-            blocks: blocks,
-            messageId: messageId,
-            extractionSuccess: blocks.length > 0
-          });
           
           // 重置儲存狀態為已儲存（剛載入的數據）
           setSaveStatus(SaveStatus.SAVED);
