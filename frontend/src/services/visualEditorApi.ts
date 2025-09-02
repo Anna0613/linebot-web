@@ -202,24 +202,7 @@ export class VisualEditorApi {
         throw new Error('載入回應格式錯誤');
       }
 
-      // 處理 logic_blocks 和 flex_blocks 可能是 JSON 字串的情況
-      if (response.data.logic_blocks && typeof response.data.logic_blocks === 'string') {
-        try {
-          response.data.logic_blocks = JSON.parse(response.data.logic_blocks as string);
-        } catch (parseError) {
-          console.error('解析邏輯積木數據失敗:', parseError);
-          response.data.logic_blocks = [];
-        }
-      }
-
-      if (response.data.flex_blocks && typeof response.data.flex_blocks === 'string') {
-        try {
-          response.data.flex_blocks = JSON.parse(response.data.flex_blocks as string);
-        } catch (parseError) {
-          console.error('解析 Flex 積木數據失敗:', parseError);
-          response.data.flex_blocks = [];
-        }
-      }
+      // 後端已修復雙重序列化問題，直接使用積木數據
 
       return response.data;
     } catch (_error) {
@@ -369,6 +352,8 @@ export class VisualEditorApi {
 
     try {
       const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/logic-templates/${templateId}`;
+      console.log(`🌐 ${useCache ? '使用快取' : '強制重新載入'} 邏輯模板:`, templateId);
+      
       const response = await this.apiClient.get<LogicTemplate>(endpoint);
 
       if (!response.success) {
@@ -379,15 +364,9 @@ export class VisualEditorApi {
         throw new Error('邏輯模板不存在');
       }
 
-      // 處理 logic_blocks 可能是 JSON 字串的情況
-      if (response.data.logic_blocks && typeof response.data.logic_blocks === 'string') {
-        try {
-          response.data.logic_blocks = JSON.parse(response.data.logic_blocks as string);
-        } catch (parseError) {
-          console.error('解析邏輯積木數據失敗:', parseError);
-          response.data.logic_blocks = [];
-        }
-      }
+      // 後端已修復雙重序列化問題，直接使用邏輯積木數據
+      const blockCount = response.data.logic_blocks ? response.data.logic_blocks.length : 0;
+      console.log(`📦 API 回傳邏輯模板 "${response.data.name}" - 積木數量: ${blockCount}`);
 
       // 儲存到快取
       if (useCache) {
@@ -477,6 +456,8 @@ export class VisualEditorApi {
    * 整合快取機制避免重複請求
    */
   static async getUserFlexMessages(useCache: boolean = true): Promise<FlexMessage[]> {
+    console.log(`🌐 ${useCache ? '使用快取' : '強制重新載入'} FlexMessage 列表`);
+    
     // 嘗試從快取獲取數據
     if (useCache) {
       const cachedData = await this.cacheService.get<FlexMessage[]>(CACHE_KEYS.FLEX_MESSAGES);
@@ -499,6 +480,7 @@ export class VisualEditorApi {
       }
 
       const data = response.data || [];
+      console.log(`📦 API 回傳 ${data.length} 個 FlexMessage`);
       
       // 儲存到快取
       if (useCache && data.length > 0) {

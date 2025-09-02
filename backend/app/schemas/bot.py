@@ -80,8 +80,9 @@ class FlexMessageCreate(FlexMessageBase):
         
     @validator('content')
     def validate_content(cls, v):
+        """驗證內容格式（不修改數據本身）"""
         try:
-            # 確保內容可以序列化為 JSON
+            # 確保內容可以序列化為 JSON，但不實際序列化
             if isinstance(v, dict):
                 json.dumps(v)
             elif isinstance(v, str):
@@ -90,6 +91,7 @@ class FlexMessageCreate(FlexMessageBase):
                 raise ValueError('內容必須是有效的 JSON 格式')
         except (json.JSONDecodeError, TypeError):
             raise ValueError('內容必須是有效的 JSON 格式')
+        # 關鍵：返回原始數據
         return v
 
 class FlexMessageUpdate(BaseModel):
@@ -108,16 +110,20 @@ class FlexMessageUpdate(BaseModel):
     
     @validator('content')
     def validate_content(cls, v):
+        """驗證內容格式（不修改數據本身）"""
         if v is not None:
             try:
                 if isinstance(v, dict):
+                    # 只測試是否可以序列化，不實際序列化
                     json.dumps(v)
                 elif isinstance(v, str):
+                    # 只測試是否可以反序列化，不實際反序列化
                     json.loads(v)
                 else:
                     raise ValueError('內容必須是有效的 JSON 格式')
             except (json.JSONDecodeError, TypeError):
                 raise ValueError('內容必須是有效的 JSON 格式')
+        # 關鍵：返回原始數據
         return v
 
 class FlexMessageResponse(BaseModel):
@@ -213,28 +219,36 @@ class VisualEditorData(BaseModel):
     
     @validator('logic_blocks')
     def validate_logic_blocks(cls, v):
+        """驗證邏輯積木數據格式（不修改數據本身）"""
         try:
             if isinstance(v, dict) or isinstance(v, list):
+                # 只測試是否可以序列化，不實際執行序列化
                 json.dumps(v)
             elif isinstance(v, str):
+                # 只測試是否可以反序列化，不實際執行反序列化
                 json.loads(v)
             else:
                 raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
         except (json.JSONDecodeError, TypeError):
             raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
+        # 關鍵：返回原始數據，不返回序列化結果
         return v
     
     @validator('flex_blocks')
     def validate_flex_blocks(cls, v):
+        """驗證Flex積木數據格式（不修改數據本身）"""
         try:
             if isinstance(v, dict) or isinstance(v, list):
+                # 只測試是否可以序列化，不實際執行序列化
                 json.dumps(v)
             elif isinstance(v, str):
+                # 只測試是否可以反序列化，不實際執行反序列化
                 json.loads(v)
             else:
                 raise ValueError('Flex積木數據必須是有效的 JSON 格式')
         except (json.JSONDecodeError, TypeError):
             raise ValueError('Flex積木數據必須是有效的 JSON 格式')
+        # 關鍵：返回原始數據，不返回序列化結果
         return v
 
 class VisualEditorResponse(BaseModel):
@@ -278,15 +292,19 @@ class LogicTemplateCreate(LogicTemplateBase):
     
     @validator('logic_blocks')
     def validate_logic_blocks(cls, v):
+        """驗證邏輯積木數據格式（不修改數據本身）"""
         try:
             if isinstance(v, dict) or isinstance(v, list):
+                # 只測試是否可以序列化，不實際執行序列化
                 json.dumps(v)
             elif isinstance(v, str):
+                # 只測試是否可以反序列化，不實際執行反序列化
                 json.loads(v)
             else:
                 raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
         except (json.JSONDecodeError, TypeError):
             raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
+        # 關鍵：返回原始數據，不返回序列化結果
         return v
 
 class LogicTemplateUpdate(BaseModel):
@@ -308,16 +326,20 @@ class LogicTemplateUpdate(BaseModel):
     
     @validator('logic_blocks')
     def validate_logic_blocks(cls, v):
+        """驗證邏輯積木數據格式（不修改數據本身）"""
         if v is not None:
             try:
                 if isinstance(v, dict) or isinstance(v, list):
+                    # 只測試是否可以序列化，不實際執行序列化
                     json.dumps(v)
                 elif isinstance(v, str):
+                    # 只測試是否可以反序列化，不實際執行反序列化
                     json.loads(v)
                 else:
                     raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
             except (json.JSONDecodeError, TypeError):
                 raise ValueError('邏輯積木數據必須是有效的 JSON 格式')
+        # 關鍵：返回原始數據，不返回序列化結果
         return v
 
 class LogicTemplateResponse(BaseModel):

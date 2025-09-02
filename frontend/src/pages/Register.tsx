@@ -138,6 +138,7 @@ const Register = () => {
             id="username"
             name="username"
             type="text"
+            autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="請輸入使用者名稱（3-50個字元）"
@@ -151,6 +152,7 @@ const Register = () => {
             id="email"
             name="email"
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="請輸入您的電子郵件"
@@ -165,6 +167,7 @@ const Register = () => {
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="請輸入密碼（至少 8 個字元）"
@@ -193,6 +196,7 @@ const Register = () => {
               id="confirmPassword"
               name="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="請再次輸入密碼"

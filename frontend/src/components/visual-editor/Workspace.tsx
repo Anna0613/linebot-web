@@ -79,6 +79,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
   });
   const { toast } = useToast();
 
+  // 調試：監視 logicBlocks 的變化
+  React.useEffect(() => {
+    console.log(`📱 Workspace 接收到 ${logicBlocks?.length || 0} 個邏輯積木`);
+  }, [logicBlocks]);
+
   // 處理測試動作
   const handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
     setCurrentTestAction(action);

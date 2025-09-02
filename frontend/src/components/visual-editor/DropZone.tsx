@@ -42,6 +42,11 @@ const DropZone: React.FC<DropZoneProps> = ({
   // 積木已經是統一格式
   const normalizedBlocks: UnifiedBlock[] = blocks;
 
+  // 調試：監視 blocks props 的變化
+  React.useEffect(() => {
+    console.log(`🎲 DropZone "${title}" 接收到 ${blocks?.length || 0} 個積木`);
+  }, [blocks, title]);
+
   const [{ isOver, canDrop: _canDrop }, drop] = useDrop(() => ({
     accept: ['block', 'dropped-block'],
     hover: (item: UnifiedDropItem | { index?: number; block?: UnifiedBlock; id?: string }) => {

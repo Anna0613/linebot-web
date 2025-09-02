@@ -204,8 +204,9 @@ const LoginPage = () => {
           <Label htmlFor="username">帳號</Label>
           <Input
             id="username"
-            name="username"     
+            name="username"
             type="text"
+            autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="請輸入您的帳號"

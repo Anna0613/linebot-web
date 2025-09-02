@@ -256,13 +256,11 @@ class BotService:
                 detail="已存在同名的 Flex 訊息"
             )
         
-        # 將內容轉換為 JSON 字串
-        content_str = json.dumps(message_data.content) if isinstance(message_data.content, dict) else message_data.content
-        
+        # JSONB 欄位會自動處理內容的序列化
         db_message = FlexMessage(
             user_id=user_id,
             name=message_data.name,
-            content=content_str
+            content=message_data.content
         )
         
         db.add(db_message)
@@ -272,7 +270,7 @@ class BotService:
         return FlexMessageResponse(
             id=str(db_message.id),
             name=db_message.name,
-            content=json.loads(db_message.content),
+            content=db_message.content,
             user_id=str(db_message.user_id),
             created_at=db_message.created_at,
             updated_at=db_message.updated_at
@@ -287,11 +285,8 @@ class BotService:
             
             for msg in messages:
                 try:
-                    # 安全處理 content 字段 - 可能是字串或已經是字典
-                    if isinstance(msg.content, str):
-                        content = json.loads(msg.content)
-                    else:
-                        content = msg.content
+                    # JSONB 欄位會自動解析內容
+                    content = msg.content
                     
                     result.append(FlexMessageResponse(
                         id=str(msg.id),
@@ -331,7 +326,7 @@ class BotService:
         return FlexMessageResponse(
             id=str(message.id),
             name=message.name,
-            content=json.loads(message.content),
+            content=message.content,
             user_id=str(message.user_id),
             created_at=message.created_at,
             updated_at=message.updated_at
@@ -423,9 +418,9 @@ class BotService:
             )
         
         try:
-            # 序列化積木數據
-            logic_blocks_json = json.dumps(editor_data.logic_blocks) if isinstance(editor_data.logic_blocks, (dict, list)) else editor_data.logic_blocks
-            flex_blocks_json = json.dumps(editor_data.flex_blocks) if isinstance(editor_data.flex_blocks, (dict, list)) else editor_data.flex_blocks
+            # JSONB 欄位會自動處理積木數據的序列化
+            logic_blocks_data = editor_data.logic_blocks
+            flex_blocks_data = editor_data.flex_blocks
             
             # 更新或創建 BotCode 記錄（儲存生成的程式碼）
             existing_code = db.query(BotCode).filter(BotCode.bot_id == bot_uuid).first()
@@ -455,14 +450,14 @@ class BotService:
                 ).first()
                 
                 if existing_flex:
-                    existing_flex.content = flex_blocks_json
+                    existing_flex.content = flex_blocks_data
                     db.commit()
                     db.refresh(existing_flex)
                 else:
                     new_flex = FlexMessage(
                         user_id=user_id,
                         name=flex_message_name,
-                        content=flex_blocks_json
+                        content=flex_blocks_data
                     )
                     db.add(new_flex)
                     db.commit()
@@ -470,8 +465,8 @@ class BotService:
             
             return VisualEditorResponse(
                 bot_id=str(bot_uuid),
-                logic_blocks=json.loads(logic_blocks_json) if isinstance(logic_blocks_json, str) else logic_blocks_json,
-                flex_blocks=json.loads(flex_blocks_json) if isinstance(flex_blocks_json, str) else flex_blocks_json,
+                logic_blocks=logic_blocks_data,
+                flex_blocks=flex_blocks_data,
                 generated_code=editor_data.generated_code,
                 created_at=bot.created_at,
                 updated_at=bot.updated_at
@@ -526,11 +521,8 @@ class BotService:
         flex_blocks = []
         
         if flex_message:
-            try:
-                flex_blocks = json.loads(flex_message.content) if isinstance(flex_message.content, str) else flex_message.content
-            except json.JSONDecodeError:
-                logger.warning(f"無法解析 Flex 訊息內容: {flex_message.id}")
-                flex_blocks = []
+            # JSONB 欄位會自動解析內容
+            flex_blocks = flex_message.content if flex_message.content else []
         
         return VisualEditorResponse(
             bot_id=str(bot_uuid),
@@ -580,16 +572,13 @@ class BotService:
                 detail="該Bot已存在同名的邏輯模板"
             )
         
-        # 序列化邏輯積木數據
-        logic_blocks_json = json.dumps(template_data.logic_blocks) if isinstance(template_data.logic_blocks, (dict, list)) else template_data.logic_blocks
-        
-        # 創建邏輯模板
+        # 創建邏輯模板（JSONB 欄位會自動處理序列化）
         db_template = LogicTemplate(
             user_id=user_id,
             bot_id=bot_uuid,
             name=template_data.name,
             description=template_data.description,
-            logic_blocks=logic_blocks_json,
+            logic_blocks=template_data.logic_blocks,
             is_active=template_data.is_active
         )
         
@@ -601,7 +590,7 @@ class BotService:
             id=str(db_template.id),
             name=db_template.name,
             description=db_template.description,
-            logic_blocks=json.loads(db_template.logic_blocks) if isinstance(db_template.logic_blocks, str) else db_template.logic_blocks,
+            logic_blocks=db_template.logic_blocks,
             is_active=db_template.is_active,
             bot_id=str(db_template.bot_id),
             user_id=str(db_template.user_id),
@@ -644,7 +633,7 @@ class BotService:
                 id=str(template.id),
                 name=template.name,
                 description=template.description,
-                logic_blocks=json.loads(template.logic_blocks) if isinstance(template.logic_blocks, str) else template.logic_blocks,
+                logic_blocks=template.logic_blocks,
                 is_active=template.is_active,
                 bot_id=str(template.bot_id),
                 user_id=str(template.user_id),
@@ -723,7 +712,7 @@ class BotService:
             id=str(template.id),
             name=template.name,
             description=template.description,
-            logic_blocks=json.loads(template.logic_blocks) if isinstance(template.logic_blocks, str) else template.logic_blocks,
+            logic_blocks=template.logic_blocks,
             is_active=template.is_active,
             bot_id=str(template.bot_id),
             user_id=str(template.user_id),
@@ -769,12 +758,8 @@ class BotService:
                     detail="該Bot已存在同名的邏輯模板"
                 )
         
-        # 更新邏輯模板資料
+        # 更新邏輯模板資料（JSONB 欄位會自動處理序列化）
         update_data = template_data.dict(exclude_unset=True)
-        
-        # 特殊處理 logic_blocks 字段
-        if 'logic_blocks' in update_data and update_data['logic_blocks'] is not None:
-            update_data['logic_blocks'] = json.dumps(update_data['logic_blocks']) if isinstance(update_data['logic_blocks'], (dict, list)) else update_data['logic_blocks']
         
         for field, value in update_data.items():
             setattr(template, field, value)
@@ -786,7 +771,7 @@ class BotService:
             id=str(template.id),
             name=template.name,
             description=template.description,
-            logic_blocks=json.loads(template.logic_blocks) if isinstance(template.logic_blocks, str) else template.logic_blocks,
+            logic_blocks=template.logic_blocks,
             is_active=template.is_active,
             bot_id=str(template.bot_id),
             user_id=str(template.user_id),
@@ -955,9 +940,7 @@ class BotService:
         # 更新 Flex 訊息資料
         update_data = message_data.dict(exclude_unset=True)
         
-        # 特殊處理 content 字段
-        if 'content' in update_data and update_data['content'] is not None:
-            update_data['content'] = json.dumps(update_data['content']) if isinstance(update_data['content'], dict) else update_data['content']
+        # JSONB 欄位會自動處理 content 字段的序列化
         
         for field, value in update_data.items():
             setattr(message, field, value)
@@ -968,7 +951,7 @@ class BotService:
         return FlexMessageResponse(
             id=str(message.id),
             name=message.name,
-            content=json.loads(message.content) if isinstance(message.content, str) else message.content,
+            content=message.content,
             user_id=str(message.user_id),
             created_at=message.created_at,
             updated_at=message.updated_at
