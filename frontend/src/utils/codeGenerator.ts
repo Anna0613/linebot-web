@@ -10,6 +10,8 @@ interface BlockData {
   settingType?: string;
   variableName?: string;
   value?: string;
+  loopCount?: number;
+  waitTime?: number;
 }
 
 interface Block {
@@ -34,6 +36,11 @@ interface Action {
   packageId?: string;
   stickerId?: string;
   controlType?: string;
+  condition?: string;
+  loopCount?: number;
+  waitTime?: number;
+  variableName?: string;
+  value?: string;
 }
 
 export class LineBotCodeGenerator {
@@ -88,14 +95,14 @@ export class LineBotCodeGenerator {
   }
 
   private processEventBlock(block: Block): void {
-    const { eventType, condition } = block.blockData;
+    const { eventType, condition, pattern } = block.blockData;
     
     switch (eventType) {
       case 'message.text':
         this.eventHandlers.push({
           type: 'message',
           messageType: 'text',
-          condition: condition || '',
+          condition: condition || pattern || '',
           actions: []
         });
         break;
@@ -104,7 +111,7 @@ export class LineBotCodeGenerator {
         this.eventHandlers.push({
           type: 'message',
           messageType: 'image',
-          condition: condition || '',
+          condition: condition || pattern || '',
           actions: []
         });
         break;
@@ -119,7 +126,7 @@ export class LineBotCodeGenerator {
         this.imports.add("from linebot.models import PostbackEvent");
         this.eventHandlers.push({
           type: 'postback',
-          condition: condition || '',
+          condition: condition || pattern || '',
           actions: []
         });
         break;
@@ -127,7 +134,7 @@ export class LineBotCodeGenerator {
   }
 
   private processReplyBlock(block: Block): void {
-    const { replyType, content } = block.blockData;
+    const { replyType, content, text } = block.blockData;
     
     // 將回覆動作加入到最後一個事件處理器
     if (this.eventHandlers.length > 0) {
@@ -137,15 +144,15 @@ export class LineBotCodeGenerator {
         case 'text':
           lastHandler.actions.push({
             type: 'reply_text',
-            content: content || '預設回覆訊息'
+            content: content || text || '預設回覆訊息'
           });
           break;
         case 'image':
           this.imports.add("from linebot.models import ImageSendMessage");
           lastHandler.actions.push({
             type: 'reply_image',
-            originalContentUrl: content || 'https://example.com/image.jpg',
-            previewImageUrl: content || 'https://example.com/image.jpg'
+            originalContentUrl: content || text || 'https://example.com/image.jpg',
+            previewImageUrl: content || text || 'https://example.com/image.jpg'
           });
           break;
         case 'flex':
@@ -153,7 +160,7 @@ export class LineBotCodeGenerator {
           lastHandler.actions.push({
             type: 'reply_flex',
             altText: 'Flex Message',
-            contents: content || {}
+            contents: content || text || {}
           });
           break;
         case 'sticker':
@@ -169,31 +176,68 @@ export class LineBotCodeGenerator {
   }
 
   private processControlBlock(block: Block): void {
-    const { controlType } = block.blockData;
+    const { controlType, condition, loopCount, waitTime } = block.blockData;
     
-    // 控制邏輯的處理（簡化版本）
+    // 控制邏輯的處理
     if (this.eventHandlers.length > 0) {
       const lastHandler = this.eventHandlers[this.eventHandlers.length - 1];
-      lastHandler.actions.push({
-        type: 'control',
-        controlType: controlType
-      });
+      
+      switch (controlType) {
+        case 'if':
+          lastHandler.actions.push({
+            type: 'control_if',
+            controlType: 'if',
+            condition: condition || 'True'
+          });
+          break;
+        case 'loop':
+          lastHandler.actions.push({
+            type: 'control_loop',
+            controlType: 'loop',
+            loopCount: loopCount || 5
+          });
+          break;
+        case 'wait':
+          lastHandler.actions.push({
+            type: 'control_wait',
+            controlType: 'wait',
+            waitTime: waitTime || 1000
+          });
+          break;
+      }
     }
   }
 
   private processSettingBlock(block: Block): void {
     const { settingType, variableName, value } = block.blockData;
     
-    switch (settingType) {
-      case 'setVariable':
-        this.variables.set(variableName || 'variable', value || '');
-        break;
-      case 'getVariable':
-        // 變數取得邏輯
-        break;
-      case 'saveUserData':
-        // 用戶資料儲存邏輯
-        break;
+    // 將設定動作加入到最後一個事件處理器
+    if (this.eventHandlers.length > 0) {
+      const lastHandler = this.eventHandlers[this.eventHandlers.length - 1];
+      
+      switch (settingType) {
+        case 'setVariable':
+          this.variables.set(variableName || 'variable', value || '');
+          lastHandler.actions.push({
+            type: 'set_variable',
+            variableName: variableName || 'variable',
+            value: value || ''
+          });
+          break;
+        case 'getVariable':
+          lastHandler.actions.push({
+            type: 'get_variable',
+            variableName: variableName || 'variable'
+          });
+          break;
+        case 'saveUserData':
+          lastHandler.actions.push({
+            type: 'save_user_data',
+            variableName: variableName || 'userData',
+            value: value || ''
+          });
+          break;
+      }
     }
   }
 
@@ -332,6 +376,57 @@ def handle_postback(event):
             sticker_id="${action.stickerId}"
         )
     )
+`;
+        break;
+      
+      case 'control_if':
+        code += `
+    # 條件判斷
+    if ${action.condition}:
+        # 在這裡加入條件為真時的邏輯
+        pass
+    else:
+        # 在這裡加入條件為假時的邏輯
+        pass
+`;
+        break;
+      
+      case 'control_loop':
+        code += `
+    # 迴圈執行
+    for i in range(${action.loopCount}):
+        # 在這裡加入要重複執行的邏輯
+        pass
+`;
+        break;
+      
+      case 'control_wait':
+        this.imports.add("import time");
+        code += `
+    # 等待 ${(action.waitTime || 1000) / 1000} 秒
+    time.sleep(${(action.waitTime || 1000) / 1000})
+`;
+        break;
+        
+      case 'set_variable':
+        code += `
+    # 設定變數
+    ${action.variableName} = "${action.value}"
+`;
+        break;
+        
+      case 'get_variable':
+        code += `
+    # 取得變數值
+    value = ${action.variableName}
+`;
+        break;
+        
+      case 'save_user_data':
+        code += `
+    # 儲存用戶資料 (此處需要實作資料庫邏輯)
+    # user_data[user_id] = {"${action.variableName}": "${action.value}"}
+    pass
 `;
         break;
     }

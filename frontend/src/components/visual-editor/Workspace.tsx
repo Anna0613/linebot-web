@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import DropZone from './DropZone';
 import CodePreview from './CodePreview';
 import LineBotSimulator from './LineBotSimulator';
+import EnhancedLineBotSimulator from './EnhancedLineBotSimulator';
 import FlexMessagePreview from './FlexMessagePreview';
 import { BlockPalette } from './BlockPalette';
 import LogicTemplateSelector from './LogicTemplateSelector';
@@ -67,6 +68,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('logic');
   const [showAllBlocks, setShowAllBlocks] = useState(true);
+  const [useEnhancedSimulator, setUseEnhancedSimulator] = useState(true);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
 
   // 測試動作處理
   const [currentTestAction, setCurrentTestAction] = useState<'new-user' | 'test-message' | 'preview-dialog' | null>(null);
@@ -506,11 +509,45 @@ const Workspace: React.FC<WorkspaceProps> = ({
           
           <TabsContent value="preview" className="flex-1 overflow-hidden">
             <div className="h-full p-4 overflow-auto">
-              <LineBotSimulator
-                blocks={logicBlocks}
-                flexBlocks={flexBlocks}
-                testAction={currentTestAction}
-              />
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={useEnhancedSimulator}
+                      onChange={(e) => setUseEnhancedSimulator(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700">使用增強版模擬器</span>
+                  </label>
+                  {useEnhancedSimulator && (
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={showDebugInfo}
+                        onChange={(e) => setShowDebugInfo(e.target.checked)}
+                        className="rounded"
+                      />
+                      <span className="text-sm text-gray-700">顯示調試資訊</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+              
+              {useEnhancedSimulator ? (
+                <EnhancedLineBotSimulator
+                  blocks={logicBlocks}
+                  flexBlocks={flexBlocks}
+                  testAction={currentTestAction}
+                  showDebugInfo={showDebugInfo}
+                />
+              ) : (
+                <LineBotSimulator
+                  blocks={logicBlocks}
+                  flexBlocks={flexBlocks}
+                  testAction={currentTestAction}
+                />
+              )}
             </div>
           </TabsContent>
           

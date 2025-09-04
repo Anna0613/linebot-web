@@ -47,8 +47,9 @@ const blockDefinitions = {
   ],
   flexLayout: [
     { blockType: 'flex-layout', name: '間距', data: { title: '間距', layoutType: 'spacer' } },
-    { blockType: 'flex-layout', name: '填充', data: { title: '填充', layoutType: 'filler' } },
-    { blockType: 'flex-layout', name: '對齊', data: { title: '對齊', layoutType: 'align' } }
+    { blockType: 'flex-layout', name: '填充', data: { title: '填充', layoutType: 'filler' } }
+    // 移除 '對齊' 積木，因為它不是標準 LINE Flex 組件
+    // 對齊應該通過容器的 align 屬性來設定，而不是單獨的積木
   ]
 };
 
