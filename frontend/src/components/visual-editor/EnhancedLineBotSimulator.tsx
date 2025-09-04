@@ -19,8 +19,10 @@ interface BlockData {
   [key: string]: unknown;
   eventType?: string;
   condition?: string;
+  pattern?: string;
   replyType?: string;
   content?: string;
+  text?: string;
   flexMessageId?: string;
   flexMessageName?: string;
   controlType?: string;
@@ -328,7 +330,8 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
         const eventBlocks = blocks.filter(b => 
           b.blockType === 'event' && 
           b.blockData.eventType === 'message.text' &&
-          !b.blockData.condition
+          !b.blockData.condition && 
+          !b.blockData.pattern
         );
         
         if (eventBlocks.length > 0) {
@@ -453,7 +456,7 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
 
     switch (replyType) {
       case 'text':
-        const content = block.blockData.content as string || '空的回覆內容';
+        const content = (block.blockData.content || block.blockData.text) as string || '空的回覆內容';
         debugInfo.push(`📝 文字回覆: "${content}"`);
         return {
           type: 'bot',
@@ -464,6 +467,12 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
 
       case 'flex':
         debugInfo.push('🎨 處理 Flex 回覆');
+        debugInfo.push(`📋 積木資料: ${JSON.stringify({
+          content: block.blockData.content,
+          text: block.blockData.text,
+          flexMessageName: block.blockData.flexMessageName,
+          flexMessageId: block.blockData.flexMessageId
+        })}`);
         
         // 優先使用當前 Flex 設計器內容
         if (flexBlocks && flexBlocks.length > 0) {
@@ -484,12 +493,162 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
         
         if (stored) {
           debugInfo.push(`📦 使用儲存的 Flex: ${stored.name}`);
-          // 這裡需要實現 convertStoredFlexMessage 函數
+          debugInfo.push(`📄 Flex 內容結構: ${JSON.stringify(stored.content).substring(0, 200)}...`);
+          
+          // 檢查儲存的 Flex 結構
+          let flexMessage;
+          debugInfo.push(`🔍 儲存內容類型: ${typeof stored.content}`);
+          
+          // 如果是字符串，嘗試解析為 JSON
+          let contentObj = stored.content;
+          if (typeof stored.content === 'string') {
+            try {
+              contentObj = JSON.parse(stored.content);
+              debugInfo.push('🔄 解析 JSON 字符串成功');
+            } catch (error) {
+              debugInfo.push('❌ JSON 解析失敗');
+              contentObj = null;
+            }
+          }
+          
+          debugInfo.push(`🔍 解析後內容類型: ${typeof contentObj}`);
+          debugInfo.push(`🔍 是否為物件: ${contentObj && typeof contentObj === 'object'}`);
+          debugInfo.push(`🔍 有 blocks 屬性: ${contentObj && contentObj.blocks !== undefined}`);
+          debugInfo.push(`🔍 blocks 是陣列: ${contentObj && Array.isArray(contentObj.blocks)}`);
+          
+          if (contentObj && typeof contentObj === 'object') {
+            // 檢查是否是我們系統的積木格式
+            if (contentObj.blocks && Array.isArray(contentObj.blocks)) {
+              // 是我們系統的積木格式，需要轉換
+              debugInfo.push('🔧 轉換系統積木格式到 LINE Flex Message');
+              try {
+                const flexBlocks = contentObj.blocks as Block[];
+                flexMessage = convertFlexBlocksToFlexMessage(flexBlocks);
+                debugInfo.push(`✅ 成功轉換 ${flexBlocks.length} 個 Flex 積木`);
+              } catch (error) {
+                debugInfo.push(`❌ 積木轉換失敗: ${error}`);
+                flexMessage = {
+                  type: 'flex',
+                  altText: 'Flex 訊息轉換錯誤',
+                  contents: {
+                    type: 'bubble',
+                    body: {
+                      type: 'box',
+                      layout: 'vertical',
+                      contents: [{
+                        type: 'text',
+                        text: '儲存的 Flex 積木轉換失敗'
+                      }]
+                    }
+                  }
+                };
+              }
+            } else if (contentObj.type === 'flex' && contentObj.contents) {
+              // 已經是完整的 Flex Message
+              flexMessage = contentObj;
+              debugInfo.push('✅ 儲存的是完整 Flex Message');
+            } else if (contentObj.type === 'bubble' || contentObj.type === 'carousel') {
+              // 是 contents 部分
+              flexMessage = {
+                type: 'flex',
+                altText: stored.name || 'Flex 訊息',
+                contents: contentObj
+              };
+              debugInfo.push('🔧 包裝儲存的 Flex contents');
+            } else {
+              // 可能是其他結構，嘗試作為 bubble body
+              flexMessage = {
+                type: 'flex',
+                altText: stored.name || 'Flex 訊息',
+                contents: {
+                  type: 'bubble',
+                  body: contentObj
+                }
+              };
+              debugInfo.push('🛠️ 作為 bubble body 包裝');
+            }
+          } else {
+            debugInfo.push('❌ 儲存的 Flex 內容無效');
+            flexMessage = {
+              type: 'flex',
+              altText: 'Flex 訊息錯誤',
+              contents: {
+                type: 'bubble',
+                body: {
+                  type: 'box',
+                  layout: 'vertical',
+                  contents: [{
+                    type: 'text',
+                    text: '儲存的 Flex 訊息格式錯誤'
+                  }]
+                }
+              }
+            };
+          }
+          
           return {
             type: 'bot',
             content: stored.name || 'Flex 訊息',
             messageType: 'flex',
-            flexMessage: { type: 'flex', contents: stored.content },
+            flexMessage,
+            timestamp: Date.now()
+          };
+        }
+
+        // 檢查是否有直接的 Flex 內容或文字內容
+        const flexContent = block.blockData.content || block.blockData.text;
+        if (flexContent) {
+          // 嘗試解析為 JSON
+          try {
+            const parsedFlex = typeof flexContent === 'string' ? JSON.parse(flexContent) : flexContent;
+            if (parsedFlex && typeof parsedFlex === 'object') {
+              debugInfo.push('📄 使用積木中的 Flex 內容');
+              
+              // 檢查是否已經是完整的 Flex Message 結構
+              let flexMessage;
+              if (parsedFlex.type === 'flex' && parsedFlex.contents) {
+                // 已經是完整的 Flex Message
+                flexMessage = parsedFlex;
+                debugInfo.push('✅ 完整的 Flex Message 結構');
+              } else if (parsedFlex.type === 'bubble' || parsedFlex.type === 'carousel') {
+                // 只是 contents 部分，需要包裝
+                flexMessage = { 
+                  type: 'flex', 
+                  altText: 'Flex 訊息',
+                  contents: parsedFlex 
+                };
+                debugInfo.push('🔧 包裝 Flex contents');
+              } else {
+                // 嘗試作為 bubble 的 body 內容
+                flexMessage = {
+                  type: 'flex',
+                  altText: 'Flex 訊息',
+                  contents: {
+                    type: 'bubble',
+                    body: parsedFlex
+                  }
+                };
+                debugInfo.push('🛠️ 作為 bubble body 處理');
+              }
+              
+              return {
+                type: 'bot',
+                content: 'Flex 訊息',
+                messageType: 'flex',
+                flexMessage,
+                timestamp: Date.now()
+              };
+            }
+          } catch (error) {
+            debugInfo.push('⚠️ Flex 內容格式錯誤，作為文字處理');
+          }
+          
+          // 如果不是有效的 JSON，作為文字回覆處理
+          debugInfo.push('📝 Flex 積木內容作為文字回覆');
+          return {
+            type: 'bot',
+            content: flexContent as string,
+            messageType: 'text',
             timestamp: Date.now()
           };
         }
