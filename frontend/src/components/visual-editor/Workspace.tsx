@@ -156,7 +156,9 @@ const Workspace: React.FC<WorkspaceProps> = ({
       // 同時以 ID 和名稱作為 key，方便查找
       messages.forEach((m) => {
         if (m && m.id) map.set(m.id, m);
-        if (m && (m as any).name) map.set((m as any).name, m);
+        if (m && typeof (m as Record<string, unknown>).name === 'string') {
+          map.set((m as Record<string, string>).name, m);
+        }
       });
       setSavedFlexMessages(map);
       console.log(`📦 載入了 ${messages.length} 個儲存的 Flex 訊息`);

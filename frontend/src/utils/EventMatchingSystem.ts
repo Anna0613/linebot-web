@@ -65,6 +65,13 @@ export class EnhancedEventMatcher {
   }
 
   /**
+   * 透過 ID 取得事件模式（唯讀存取）
+   */
+  public getPatternById(patternId: string): EventPattern | undefined {
+    return this.patterns.get(patternId);
+  }
+
+  /**
    * 添加事件模式
    */
   addPattern(pattern: EventPattern): void {

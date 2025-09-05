@@ -1,27 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Block, Message } from '../../types/index';
-import { EnhancedEventMatcher, EventContext, MatchResult, MatchType } from '../../utils/EventMatchingSystem';
-import { ControlFlowProcessor } from '../../utils/ControlFlowProcessor';
+import { EnhancedEventMatcher, MatchType } from '../../utils/EventMatchingSystem';
 import { BlockConnectionManager } from '../../utils/BlockConnectionManager';
-import { UnifiedBlock, ExecutionContext } from '../../types/block';
+import { ExecutionContext } from '../../types/block';
 import { FlexMessage } from '../../types/linebot';
 import FlexMessagePreview from '../Panels/FlexMessagePreview';
-
-// 輔助類型
-interface ReplyBlockData {
-  replyType?: string;
-  content?: string;
-  text?: string;
-  flexMessageName?: string;
-  flexMessageId?: string;
-  imageUrl?: string;
-  stickerId?: string;
-}
-
-interface ControlBlockData {
-  controlType?: string;
-  condition?: string;
-}
 
 interface SavedFlexMessage {
   name: string;
@@ -52,23 +35,9 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
 
   // 初始化系統
   const eventMatcher = useMemo(() => new EnhancedEventMatcher(), []);
-  const controlFlowProcessor = useMemo(() => new ControlFlowProcessor(), []);
   const connectionManager = useMemo(() => new BlockConnectionManager(), []);
 
-  // 將 Flex 積木轉換為 Bubble
-  const convertFlexBlocksToFlexMessage_Internal = useCallback((blocks: Block[]): FlexMessage => {
-    // 簡化的轉換邏輯
-    const bubble = {
-      type: 'box' as const,
-      layout: 'vertical' as const,
-      contents: []
-    };
-
-    return {
-      type: 'bubble',
-      body: bubble
-    };
-  }, []);
+  // 已移除未使用的內部 Flex 轉換函數
 
   // 處理回覆積木
   const handleReplyBlock = useCallback(async (
@@ -331,7 +300,7 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
       
       if (matchResult.matched) {
         for (const patternId of matchResult.matchedPatterns) {
-          const pattern = (eventMatcher as any).patterns.get(patternId);
+          const pattern = eventMatcher.getPatternById(patternId);
           const blockId = pattern?.metadata?.blockId;
           if (blockId) {
             matchedEventBlock = blocks.find(b => b.id === blockId) || null;

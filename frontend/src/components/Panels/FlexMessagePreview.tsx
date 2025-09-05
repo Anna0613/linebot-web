@@ -259,11 +259,22 @@ const renderContent = (component: FlexComponent, index: React.Key) => {
 };
 
 interface FlexMessagePreviewProps {
-  json: FlexMessage | null | undefined;
+  json: unknown;
+}
+
+function isFlexMessage(json: unknown): json is FlexMessage {
+  if (!json || typeof json !== "object") return false;
+  const obj = json as { type?: unknown; contents?: unknown };
+  if (obj.type !== "flex") return false;
+  // contents must be an object with type 'bubble' or 'carousel'
+  const contents = obj.contents as { type?: unknown; contents?: unknown } | undefined;
+  if (!contents || typeof contents !== "object") return false;
+  if (contents.type !== "bubble" && contents.type !== "carousel") return false;
+  return true;
 }
 
 const FlexMessagePreview: React.FC<FlexMessagePreviewProps> = ({ json }) => {
-  if (!json || !json.contents || json.type !== "flex") {
+  if (!isFlexMessage(json)) {
     return <p className="text-red-500">Flex Message 格式錯誤</p>;
   }
 

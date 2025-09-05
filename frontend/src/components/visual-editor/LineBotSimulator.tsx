@@ -59,57 +59,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
   ]);
   const [inputMessage, setInputMessage] = useState('');
 
-  // 處理測試動作
-  const handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
-    switch (action) {
-      case 'new-user':
-        // 模擬新用戶加入
-        setChatMessages([
-          {
-            type: 'bot',
-            content: '歡迎使用 LINE Bot 模擬器！我是您的智能助手。',
-            messageType: 'text'
-          }
-        ]);
-        break;
-      case 'test-message':
-        // 發送預設測試訊息
-        const testMessages = ['你好', 'hello', '幫助', '功能'];
-        const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
-        simulateUserMessage(randomMessage);
-        break;
-      case 'preview-dialog':
-        // 預覽完整對話流程
-        setChatMessages([
-          { type: 'bot', content: '歡迎使用 LINE Bot！', messageType: 'text' },
-          { type: 'user', content: '你好', messageType: 'text' },
-          { type: 'bot', content: '您好！我可以為您做什麼嗎？', messageType: 'text' },
-          { type: 'user', content: '幫助', messageType: 'text' },
-          { type: 'bot', content: '這裡是幫助訊息...', messageType: 'text' }
-        ]);
-        break;
-    }
-  }, []);
-
-  // 模擬用戶發送訊息
-  const simulateUserMessage = useCallback((message: string) => {
-    const newMsgs = [
-      ...chatMessages,
-      { type: 'user', content: message, messageType: 'text' }
-    ];
-
-    const botResp = botSimulator(message);
-    newMsgs.push(botResp);
-
-    setChatMessages(newMsgs);
-  }, [chatMessages]);
-
-  // 處理來自父組件的測試動作
-  useEffect(() => {
-    if (testAction) {
-      handleTestAction(testAction);
-    }
-  }, [testAction, handleTestAction]);
+  // 先定義其他函式，稍後定義 simulateUserMessage 與 handleTestAction
 
   const [savedFlexMessages, setSavedFlexMessages] = useState<Map<string, StoredFlexMessage>>(
     new Map()
@@ -270,9 +220,9 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
   }, []);
 
   // 將後端儲存格式轉為前端可用的 LocalFlexMessage
-  const convertStoredFlexMessage = (stored: StoredFlexMessage): FlexMessage => {
+  const convertStoredFlexMessage = useCallback((stored: StoredFlexMessage): FlexMessage => {
     // stored.content 可能是空字串、JSON 字串、或已為物件。
-    let contents: any = stored.content;
+    let contents: unknown = stored.content;
 
     // 處理字串形式的 content
     if (typeof contents === 'string') {
@@ -297,14 +247,19 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
 
       try {
         contents = JSON.parse(raw);
-      } catch (err) {
+      } catch (_err) {
         // 無法 parse，保留原始字串，之後會作為文字包入 bubble
       }
     }
 
     // 如果是設計器格式（含 blocks） -> 轉換成 preview 可用的 flex message
-    if (contents && typeof contents === 'object' && Array.isArray((contents as any).blocks)) {
-      const blocks = (contents as any).blocks as Block[];
+    if (
+      contents &&
+      typeof contents === 'object' &&
+      'blocks' in (contents as Record<string, unknown>) &&
+      Array.isArray((contents as { blocks?: unknown }).blocks)
+    ) {
+      const blocks = (contents as { blocks: Block[] }).blocks;
       const fm = convertFlexBlocksToFlexMessage(blocks);
       return {
         type: 'flex',
@@ -316,7 +271,12 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
     // 如果 contents 本身就是 bubble / flex 結構，直接回傳
     if (contents && typeof contents === 'object') {
       // 偵測常見 flex structure
-      if ((contents as any).type === 'bubble' || (contents as any).body || (contents as any).contents) {
+      const obj = contents as Record<string, unknown>;
+      if (
+        obj.type === 'bubble' ||
+        typeof obj.body === 'object' ||
+        typeof obj.contents === 'object'
+      ) {
         return {
           type: 'flex',
           altText: stored.name || 'Flex Message',
@@ -341,7 +301,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
         }
       }
     };
-  };
+  }, [convertFlexBlocksToFlexMessage]);
 
   // 尋找與事件積木連接的回覆積木
   const findConnectedReplyBlock = useCallback((eventBlock: Block, allReplyBlocks: Block[]): Block | undefined => {
@@ -486,7 +446,56 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
     }
 
     return botResponse;
-  }, [blocks, flexBlocks, savedFlexMessages, findConnectedReplyBlock, isMessageMatched]);
+  }, [blocks, flexBlocks, savedFlexMessages, findConnectedReplyBlock, isMessageMatched, convertFlexBlocksToFlexMessage, convertStoredFlexMessage]);
+
+  // 模擬用戶發送訊息（依賴 botSimulator）
+  const simulateUserMessage = useCallback((message: string) => {
+    setChatMessages(prev => {
+      const userMsg = { type: 'user', content: message, messageType: 'text' } as const;
+      const botResp = botSimulator(message);
+      return [...prev, userMsg, botResp];
+    });
+  }, [botSimulator]);
+
+  // 處理測試動作（依賴 simulateUserMessage）
+  const handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
+    switch (action) {
+      case 'new-user':
+        // 模擬新用戶加入
+        setChatMessages([
+          {
+            type: 'bot',
+            content: '歡迎使用 LINE Bot 模擬器！我是您的智能助手。',
+            messageType: 'text'
+          }
+        ]);
+        break;
+      case 'test-message': {
+        // 發送預設測試訊息
+        const testMessages = ['你好', 'hello', '幫助', '功能'];
+        const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
+        simulateUserMessage(randomMessage);
+        break;
+      }
+      case 'preview-dialog':
+        // 預覽完整對話流程
+        setChatMessages([
+          { type: 'bot', content: '歡迎使用 LINE Bot！', messageType: 'text' },
+          { type: 'user', content: '你好', messageType: 'text' },
+          { type: 'bot', content: '您好！我可以為您做什麼嗎？', messageType: 'text' },
+          { type: 'user', content: '幫助', messageType: 'text' },
+          { type: 'bot', content: '這裡是幫助訊息...', messageType: 'text' }
+        ]);
+        break;
+    }
+  }, [simulateUserMessage]);
+
+  // 處理來自父組件的測試動作（依賴 handleTestAction）
+  useEffect(() => {
+    if (testAction) {
+      handleTestAction(testAction);
+    }
+  }, [testAction, handleTestAction]);
 
   // 發送訊息並顯示模擬回覆
   const sendMessage = () => {
@@ -535,7 +544,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
                   {m.messageType === 'flex' && m.flexMessage ? (
                     // FLEX 訊息渲染
                     <div className="bg-white border rounded p-2 max-w-xl">
-                      <FlexMessagePreview json={m.flexMessage as any} />
+                      <FlexMessagePreview json={m.flexMessage} />
                     </div>
                   ) : (
                     <div className="bg-white border rounded px-3 py-2 max-w-xs text-sm">{m.content}</div>

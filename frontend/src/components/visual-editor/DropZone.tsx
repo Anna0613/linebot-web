@@ -17,7 +17,6 @@ interface DropZoneProps {
   onMove?: (dragIndex: number, hoverIndex: number) => void;
   onInsert?: (index: number, item: UnifiedDropItem) => void;
   showCompatibilityInfo?: boolean;
-  useLazyLoading?: boolean;
 }
 
 const DropZone: React.FC<DropZoneProps> = ({ 
@@ -30,7 +29,6 @@ const DropZone: React.FC<DropZoneProps> = ({
   onMove,
   onInsert,
   showCompatibilityInfo = true,
-  useLazyLoading = true 
 }) => {
   const [dragValidation, setDragValidation] = useState<BlockValidationResult | null>(null);
   const [hoveredItem, setHoveredItem] = useState<UnifiedDropItem | null>(null);
