@@ -13,6 +13,17 @@ export default defineConfig(({ mode }) => ({
       allow: ['..']
     }
   },
+  preview: {
+    host: "0.0.0.0",
+    port: 3000,
+    strictPort: false,
+    allowedHosts: [
+      "linebot.jkl921102.org",
+      "localhost",
+      "10.1.1.184",
+      "172.22.0.3"
+    ]
+  },
   publicDir: '../assets',
   plugins: [
     react(),

@@ -1,33 +1,27 @@
-# Multi-stage build for frontend
-FROM node:18-alpine AS builder
+# 使用 Node.js 作為基礎映像
+FROM node:18-alpine
 
 # 設定工作目錄
 WORKDIR /app
+
+# 安裝 pnpm
+RUN npm install -g pnpm
 
 # 複製 package files
 COPY package*.json ./
 COPY pnpm-lock.yaml* ./
 
 # 安裝依賴
-RUN npm ci --only=production
+RUN pnpm install --frozen-lockfile
 
 # 複製源代碼
 COPY . .
 
 # 構建應用
-RUN npm run build
-
-# Production stage
-FROM nginx:alpine AS production
-
-# 複製 nginx 配置
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# 複製構建產物
-COPY --from=builder /app/dist /usr/share/nginx/html
+RUN pnpm run build
 
 # 暴露端口
-EXPOSE 80
+EXPOSE 3000
 
-# 啟動 nginx
-CMD ["nginx", "-g", "daemon off;"]
+# 啟動 Vite 預覽服務器
+CMD ["pnpm", "run", "preview", "--host", "0.0.0.0", "--port", "3000"]
