@@ -9,10 +9,10 @@ import { useNavigate } from "react-router-dom";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 type StepNavProps = { onNext?: () => void; onPrev?: () => void };
 
-const StepOneC: React.FC<StepNavProps> = (p) => <StepOne {...(p as any)} />;
-const StepTwoC: React.FC<StepNavProps> = (p) => <StepTwo {...(p as any)} />;
-const StepThreeC: React.FC<StepNavProps> = (p) => <StepThree {...(p as any)} />;
-const StepFourC: React.FC<StepNavProps> = (p) => <StepFour {...(p as any)} />;
+const StepOneC: React.FC<StepNavProps> = (p) => <StepOne {...p} />;
+const StepTwoC: React.FC<StepNavProps> = (p) => <StepTwo {...p} />;
+const StepThreeC: React.FC<StepNavProps> = (p) => <StepThree {...p} />;
+const StepFourC: React.FC<StepNavProps> = (p) => <StepFour {...p} />;
 
 const ACCENT = "#3D5A80";   
 const ACCENT_LT = "#98C1D9"; 
@@ -22,7 +22,7 @@ const HowToEstablish = () => {
   const [currentStep, setCurrentStep] = useState(1);
 
   // 使用統一身份驗證Hook - 不強制要求登入
-  const { user, loading, isAuthenticated } = useUnifiedAuth({
+  const { user, loading } = useUnifiedAuth({
     requireAuth: false, // 允許未登入用戶訪問
   });
 

@@ -568,7 +568,7 @@ export class IntelligentValidationSystem {
    */
   private generateBestPracticeSuggestions(
     blocks: UnifiedBlock[], 
-    connections: BlockConnection[]
+    _connections: BlockConnection[]
   ): ValidationSuggestion[] {
     const suggestions: ValidationSuggestion[] = [];
 

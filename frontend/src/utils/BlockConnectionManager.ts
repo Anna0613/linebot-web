@@ -8,8 +8,6 @@ import {
   ConnectionType,
   IBlockConnectionManager,
   ConnectionValidationResult,
-  ExecutionContext,
-  BlockExecutionResult
 } from '../types/blockConnection';
 import { UnifiedBlock } from '../types/block';
 
@@ -427,9 +425,8 @@ export class BlockConnectionManager implements IBlockConnectionManager {
   /**
    * 推斷連接類型
    */
-  private inferConnectionType(sourceBlock: UnifiedBlock, targetBlock: UnifiedBlock): ConnectionType {
+  private inferConnectionType(sourceBlock: UnifiedBlock, _targetBlock: UnifiedBlock): ConnectionType {
     const sourceType = sourceBlock.blockType;
-    const targetType = targetBlock.blockType;
 
     // 控制積木通常使用條件連接
     if (sourceType === 'control') {

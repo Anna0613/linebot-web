@@ -251,7 +251,7 @@ export class EnhancedEventMatcher {
         confidence = matched ? 0.9 : 0.0;
         break;
 
-      case MatchType.REGEX:
+      case MatchType.REGEX: {
         const regexResult = this.matchRegex(targetMessage, pattern.pattern, pattern.caseSensitive);
         matched = regexResult.matched;
         confidence = regexResult.confidence;
@@ -259,20 +259,21 @@ export class EnhancedEventMatcher {
           extractedValues.set(key, value);
         });
         break;
-
-      case MatchType.CUSTOM:
+      }
+      case MatchType.CUSTOM: {
         const customMatcher = this.customMatchers.get(pattern.pattern);
         if (customMatcher) {
           matched = customMatcher(message, context);
           confidence = matched ? 0.7 : 0.0;
         }
         break;
-
-      case MatchType.FUZZY:
+      }
+      case MatchType.FUZZY: {
         const fuzzyResult = this.fuzzyMatch(targetMessage, targetPattern);
         matched = fuzzyResult >= this.fuzzyThreshold;
         confidence = fuzzyResult;
         break;
+      }
     }
 
     return {
@@ -440,7 +441,7 @@ export class EnhancedEventMatcher {
     });
 
     // 時間敏感匹配器
-    this.registerCustomMatcher('time_sensitive', (message: string, context: EventContext) => {
+    this.registerCustomMatcher('time_sensitive', (message: string, _context: EventContext) => {
       const now = new Date();
       const hour = now.getHours();
       

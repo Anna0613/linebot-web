@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, Plus, Settings, FileText, Edit, Trash2, Eye } from "lucide-react";
 import { useBotManagement } from "@/hooks/useBotManagement";
-import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/services/UnifiedApiClient";
 import { Bot as BotType } from "@/types/bot";

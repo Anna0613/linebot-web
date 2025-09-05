@@ -263,7 +263,7 @@ export class ControlFlowProcessor {
           await new Promise(resolve => setTimeout(resolve, waitTime));
           break;
 
-        case 'condition':
+        case 'condition': {
           const condition = block.blockData.waitCondition as string;
           const timeout = Math.min(
             (block.blockData.timeout as number) || 5000,
@@ -282,6 +282,7 @@ export class ControlFlowProcessor {
             };
           }
           break;
+        }
 
         case 'user_input':
           console.log('⏳ 等待用戶輸入');
@@ -319,7 +320,6 @@ export class ControlFlowProcessor {
 
     const tryBlockIds = block.blockData.tryBlocks as string[] || [];
     const catchBlockIds = block.blockData.catchBlocks as string[] || [];
-    const finallyBlockIds = block.blockData.finallyBlocks as string[] || [];
 
     try {
       // 在實際應用中，這需要與執行引擎整合
@@ -484,8 +484,8 @@ export class DefaultConditionEvaluator implements ConditionEvaluator {
         .replace(/\bnot\b/g, '!');
 
       // 在實際應用中，這裡應該使用更安全的評估方式
-      // eslint-disable-next-line no-eval
-      return Boolean(eval(evaluatedCondition));
+      // 使用 Function 構造函數替代 eval，相對更安全
+      return Boolean(new Function('context', `return ${evaluatedCondition}`)(context));
     } catch (error) {
       console.warn(`條件評估失敗: ${condition}`, error);
       return false;

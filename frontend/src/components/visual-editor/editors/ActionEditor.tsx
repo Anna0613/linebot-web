@@ -7,7 +7,6 @@ import React from 'react';
 import { Input } from '../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Textarea } from '../../ui/textarea';
-import { Switch } from '../../ui/switch';
 
 export interface ActionData {
   type: 'postback' | 'uri' | 'message' | 'datetimepicker' | 'camera' | 'cameraRoll' | 'location';

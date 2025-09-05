@@ -125,7 +125,9 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
     root.classList.toggle("dark", next);
     try {
       localStorage.setItem("theme", next ? "dark" : "light");
-    } catch {}
+    } catch {
+      // Ignore localStorage errors
+    }
   };
   // 初始化主題：localStorage 優先，否則尊重系統偏好
   useEffect(() => {

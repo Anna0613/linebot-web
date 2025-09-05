@@ -59,115 +59,22 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
   ]);
   const [inputMessage, setInputMessage] = useState('');
 
-  // 改進的積木連接邏輯 - 移到前面定義
-  const findConnectedReplyBlock = useCallback((eventBlock: Block, allReplyBlocks: Block[]): Block | undefined => {
-    const eventId = eventBlock.blockData.id || eventBlock.id;
-    
-    console.log('🔍 尋找連接的回覆積木:', {
-      eventId,
-      eventBlock: eventBlock.blockData,
-      replyBlocksCount: allReplyBlocks.length
-    });
-
-    // 策略1：尋找明確標記為連接的積木
-    let replyBlock = allReplyBlocks.find(b => {
-      const isConnected = (
-        b.blockData.connectedTo === eventId ||
-        b.blockData.parentId === eventId ||
-        b.parentId === eventId ||
-        b.blockData.sourceBlockId === eventId ||
-        b.blockData.targetBlockId === eventId
-      );
-      
-      if (isConnected) {
-        console.log('✅ 找到明確連接的回覆積木:', b.blockData);
-      }
-      
-      return isConnected;
-    });
-
-    // 策略2：根據條件匹配找到最合適的回覆積木
-    if (!replyBlock) {
-      const eventCondition = (eventBlock.blockData.condition || eventBlock.blockData.pattern) as string;
-      
-      if (eventCondition) {
-        // 尋找有相同或相關條件的回覆積木
-        replyBlock = allReplyBlocks.find(b => {
-          const replyCondition = b.blockData.condition as string;
-          return replyCondition && replyCondition.includes(eventCondition);
-        });
-        
-        if (replyBlock) {
-          console.log('✅ 根據條件匹配找到回覆積木:', replyBlock.blockData);
-        }
-      }
-    }
-
-    // 策略3：按照積木在陣列中的順序進行配對
-    if (!replyBlock && allReplyBlocks.length > 0) {
-      const eventBlocks = blocks.filter(b => b.blockType === 'event');
-      const eventIndex = eventBlocks.findIndex(b => 
-        (b.blockData.id || b.id) === eventId
-      );
-      
-      // 如果找到事件積木的索引，用相同索引的回覆積木
-      if (eventIndex >= 0 && eventIndex < allReplyBlocks.length) {
-        replyBlock = allReplyBlocks[eventIndex];
-        console.log('✅ 根據順序配對找到回覆積木:', replyBlock.blockData);
-      } else {
-        // 否則使用第一個可用的回覆積木
-        replyBlock = allReplyBlocks[0];
-        console.log('⚠️ 使用第一個可用的回覆積木:', replyBlock.blockData);
-      }
-    }
-
-    if (!replyBlock) {
-      console.log('❌ 沒有找到任何連接的回覆積木');
-    }
-
-    return replyBlock;
-  }, [blocks]);
-
   // 處理測試動作
   const handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
     switch (action) {
       case 'new-user':
-        // 模擬新用戶加入 - 觸發 follow 事件
-        const followBlocks = blocks.filter(b => b.blockType === 'event' && b.blockData.eventType === 'follow');
-        const followReplyBlocks = blocks.filter(b => b.blockType === 'reply');
-        
-        if (followBlocks.length > 0 && followReplyBlocks.length > 0) {
-          const followReply = findConnectedReplyBlock(followBlocks[0], followReplyBlocks);
-          if (followReply && (followReply.blockData.content || followReply.blockData.text)) {
-            setChatMessages([
-              {
-                type: 'bot',
-                content: (followReply.blockData.content || followReply.blockData.text) as string,
-                messageType: 'text'
-              }
-            ]);
-          } else {
-            setChatMessages([
-              {
-                type: 'bot',
-                content: '歡迎加入！',
-                messageType: 'text'
-              }
-            ]);
+        // 模擬新用戶加入
+        setChatMessages([
+          {
+            type: 'bot',
+            content: '歡迎使用 LINE Bot 模擬器！我是您的智能助手。',
+            messageType: 'text'
           }
-        } else {
-          setChatMessages([
-            {
-              type: 'bot',
-              content: '歡迎使用 LINE Bot 模擬器！我是您的智能助手。',
-              messageType: 'text'
-            }
-          ]);
-        }
+        ]);
         break;
       case 'test-message':
         // 發送預設測試訊息
-        const testMessages = ['你好', 'hello', '幫助', '功能', '圖片', 'image'];
+        const testMessages = ['你好', 'hello', '幫助', '功能'];
         const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
         simulateUserMessage(randomMessage);
         break;
@@ -182,7 +89,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
         ]);
         break;
     }
-  }, [blocks, findConnectedReplyBlock]);
+  }, []);
 
   // 模擬用戶發送訊息
   const simulateUserMessage = useCallback((message: string) => {
@@ -231,126 +138,13 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
     loadSavedFlexMessages();
   }, [loadSavedFlexMessages]);
 
-  // 將積木轉換為 Carousel 格式
-  const convertBlocksToCarousel = useCallback((blocks: Block[]) => {
-    // 過濾出非容器積木
-    const contentBlocks = blocks.filter(block => block.blockType !== 'flex-container');
-    
-    // 簡單實作：將內容積木分成多個 Bubble
-    // 每 3 個積木組成一個 Bubble
-    const bubbles: Record<string, unknown>[] = [];
-    const itemsPerBubble = 3;
-    
-    for (let i = 0; i < contentBlocks.length; i += itemsPerBubble) {
-      const bubbleBlocks = contentBlocks.slice(i, i + itemsPerBubble);
-      const bubbleContents: Record<string, unknown>[] = [];
-      
-      bubbleBlocks.forEach(block => {
-        if (block.blockType === 'flex-content') {
-          switch (block.blockData.contentType) {
-            case 'text':
-              bubbleContents.push({
-                type: 'text',
-                text: block.blockData.text || `卡片 ${Math.floor(i / itemsPerBubble) + 1} 文字`,
-                size: 'md',
-                wrap: true
-              });
-              break;
-            case 'image':
-              bubbleContents.push({
-                type: 'image',
-                url: block.blockData.url || 'https://via.placeholder.com/300x200',
-                aspectRatio: '20:13',
-                aspectMode: 'cover',
-                size: 'full'
-              });
-              break;
-            case 'button':
-              bubbleContents.push({
-                type: 'button',
-                action: {
-                  type: 'message',
-                  label: block.blockData.label || `按鈕 ${Math.floor(i / itemsPerBubble) + 1}`,
-                  text: block.blockData.text || block.blockData.label || `按鈕 ${Math.floor(i / itemsPerBubble) + 1}`
-                },
-                style: 'primary'
-              });
-              break;
-          }
-        }
-      });
-      
-      // 如果沒有內容，添加預設內容
-      if (bubbleContents.length === 0) {
-        bubbleContents.push({
-          type: 'text',
-          text: `輪播卡片 ${bubbles.length + 1}`,
-          size: 'md',
-          align: 'center'
-        });
-      }
-      
-      bubbles.push({
-        type: 'bubble',
-        body: {
-          type: 'box',
-          layout: 'vertical',
-          contents: bubbleContents
-        }
-      });
-    }
-    
-    // 如果沒有任何 Bubble，創建預設的
-    if (bubbles.length === 0) {
-      for (let i = 0; i < 2; i++) {
-        bubbles.push({
-          type: 'bubble',
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            contents: [
-              {
-                type: 'text',
-                text: `輪播卡片 ${i + 1}`,
-                size: 'md',
-                align: 'center'
-              }
-            ]
-          }
-        });
-      }
-    }
-    
-    return {
-      type: 'flex',
-      contents: {
-        type: 'carousel',
-        contents: bubbles
-      }
-    };
-  }, []);
-
   const convertFlexBlocksToFlexMessage = useCallback((blocks: Block[]) => {
-    // 檢查是否有 Carousel 容器
-    const carouselContainer = blocks.find(block => 
-      block.blockType === 'flex-container' && block.blockData.containerType === 'carousel'
-    );
-    
-    if (carouselContainer) {
-      // 處理 Carousel 容器 - 需要將其他積木分組為多個 Bubble
-      return convertBlocksToCarousel(blocks);
-    }
-    
-    // 否則按照原來的 Bubble 邏輯處理
     // 分類積木到不同的區域
     const headerBlocks: Record<string, unknown>[] = [];
     const bodyBlocks: Record<string, unknown>[] = [];
     const footerBlocks: Record<string, unknown>[] = [];
 
     blocks.forEach(block => {
-      // 跳過容器積木本身
-      if (block.blockType === 'flex-container') return;
-      
       let targetArray = bodyBlocks; // 預設放到 body
 
       // 根據積木的區域設定決定放置位置
@@ -413,12 +207,6 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
             targetArray.push({
               type: 'spacer',
               size: block.blockData.size || 'md'
-            });
-            break;
-          }
-          case 'filler': {
-            targetArray.push({
-              type: 'filler'
             });
             break;
           }
@@ -555,6 +343,25 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
     };
   };
 
+  // 尋找與事件積木連接的回覆積木
+  const findConnectedReplyBlock = useCallback((eventBlock: Block, allReplyBlocks: Block[]): Block | undefined => {
+    // 簡化的連接邏輯：在視覺化編輯器中，通常是按順序配對
+    const eventId = eventBlock.blockData.id || eventBlock.id;
+
+    // 首先嘗試找到明確連接的回覆積木
+    let replyBlock = allReplyBlocks.find(b =>
+      b.blockData.connectedTo === eventId ||
+      b.blockData.parentId === eventId ||
+      b.parentId === eventId
+    );
+
+    // 如果沒有找到明確連接的，使用第一個可用的回覆積木
+    if (!replyBlock && allReplyBlocks.length > 0) {
+      replyBlock = allReplyBlocks[0];
+    }
+
+    return replyBlock;
+  }, []);
 
   // 檢查訊息是否匹配條件
   const isMessageMatched = useCallback((userMessage: string, condition?: string): boolean => {
@@ -625,36 +432,13 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
       const replyBlock = findConnectedReplyBlock(matchedEventBlock, replyBlocks);
 
       if (replyBlock) {
-        if (replyBlock.blockData.replyType === 'text' && (replyBlock.blockData.content || replyBlock.blockData.text)) {
-          // 文字回覆
+        if (replyBlock.blockData.replyType === 'text') {
+          // 文字回覆 - 檢查 content 或 text 欄位
+          const content = (replyBlock.blockData.content || replyBlock.blockData.text) as string || '空的回覆內容';
           botResponse = {
             type: 'bot',
-            content: (replyBlock.blockData.content || replyBlock.blockData.text) as string,
+            content,
             messageType: 'text'
-          };
-        } else if (replyBlock.blockData.replyType === 'image') {
-          // 圖片回覆
-          botResponse = {
-            type: 'bot',
-            content: '圖片訊息',
-            messageType: 'image',
-            flexMessage: {
-              type: 'image',
-              contents: {
-                type: 'image',
-                url: replyBlock.blockData.content as string || 'https://via.placeholder.com/300x200?text=圖片',
-                aspectRatio: '20:13',
-                aspectMode: 'cover',
-                size: 'full'
-              }
-            }
-          };
-        } else if (replyBlock.blockData.replyType === 'sticker') {
-          // 貼圖回覆
-          botResponse = {
-            type: 'bot',
-            content: '貼圖訊息 🎉',
-            messageType: 'sticker'
           };
         } else if (replyBlock.blockData.replyType === 'flex') {
           // FLEX訊息回覆 - 使用 Flex 設計器中的內容
@@ -752,24 +536,6 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
                     // FLEX 訊息渲染
                     <div className="bg-white border rounded p-2 max-w-xl">
                       <FlexMessagePreview json={m.flexMessage as any} />
-                    </div>
-                  ) : m.messageType === 'image' && m.flexMessage ? (
-                    // 圖片訊息渲染
-                    <div className="bg-white border rounded p-2">
-                      <img 
-                        src={(m.flexMessage as any)?.contents?.url || 'https://via.placeholder.com/300x200?text=圖片'} 
-                        alt="Bot 回覆圖片"
-                        className="max-w-xs rounded"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=圖片載入失敗';
-                        }}
-                      />
-                    </div>
-                  ) : m.messageType === 'sticker' ? (
-                    // 貼圖訊息渲染
-                    <div className="bg-white border rounded px-3 py-2 max-w-xs text-sm">
-                      <div className="text-2xl mb-1">🎉</div>
-                      <div className="text-xs text-gray-500">貼圖訊息</div>
                     </div>
                   ) : (
                     <div className="bg-white border rounded px-3 py-2 max-w-xs text-sm">{m.content}</div>

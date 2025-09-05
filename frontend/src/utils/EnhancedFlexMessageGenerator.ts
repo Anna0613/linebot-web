@@ -441,7 +441,7 @@ export class EnhancedFlexMessageGenerator {
               align: this.parseAlign(blockData.align as string),
               wrap: blockData.wrap !== false,
               maxLines: blockData.maxLines as number,
-              decoration: blockData.decoration as any
+              decoration: blockData.decoration as 'none' | 'underline' | 'line-through' | undefined
             }
           );
 

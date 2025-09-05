@@ -7,6 +7,7 @@ import { useUserProfile } from "../hooks/useUserProfile";
 import { useEmailManagement } from "../hooks/useEmailManagement";
 import { useToast } from "@/hooks/use-toast";
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const Suggest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();

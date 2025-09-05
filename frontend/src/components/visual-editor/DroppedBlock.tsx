@@ -14,7 +14,6 @@ import {
   AlignmentSelector,
   MarginPaddingEditor,
   type ActionData,
-  type MarginPaddingData,
   type AlignType,
   type GravityType
 } from './editors';

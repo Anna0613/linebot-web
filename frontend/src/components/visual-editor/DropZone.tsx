@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useDrop } from 'react-dnd';
-import DroppedBlock from './DroppedBlock';
 import LazyDroppedBlock from './LazyDroppedBlock';
 import { UnifiedBlock, UnifiedDropItem, WorkspaceContext, BlockValidationResult } from '../../types/block';
 import { isBlockCompatible } from '../../utils/blockCompatibility';
@@ -319,7 +318,7 @@ const DropZone: React.FC<DropZoneProps> = ({
         ) : (
           blocks.map((block, index) => {
             // 選擇使用延遲載入或傳統載入
-            const BlockComponent = useLazyLoading ? LazyDroppedBlock : DroppedBlock;
+            const BlockComponent = LazyDroppedBlock;
             
             return (
               <BlockComponent 

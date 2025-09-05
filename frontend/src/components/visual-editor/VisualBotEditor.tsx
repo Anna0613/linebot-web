@@ -196,7 +196,7 @@ export const VisualBotEditor: React.FC = () => {
             } else if (Array.isArray(message.blocks)) {
               blocks = message.blocks;
             }
-          } catch (parseError) {
+          } catch (_parseError) {
             // 嘗試其他路徑
             if (Array.isArray(message.blocks)) {
               blocks = message.blocks;

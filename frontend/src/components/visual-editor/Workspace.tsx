@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import DropZone from './DropZone';
 import CodePreview from './CodePreview';
@@ -19,6 +19,61 @@ import {
 import { validateWorkspace } from '../../utils/blockCompatibility';
 import { useToast } from '../../hooks/use-toast';
 import { AlertTriangle } from 'lucide-react';
+import VisualEditorApi, { FlexMessage as StoredFlexMessage } from '../../services/visualEditorApi';
+
+// 簡化的 Flex Message 生成器
+class FlexMessageGenerator {
+  generateFlexMessage(blocks: Block[]): Record<string, unknown> {
+    const bubble = {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: []
+      }
+    };
+
+    blocks.forEach(block => {
+      if (block.blockType === 'flex-content') {
+        switch (block.blockData.contentType) {
+          case 'text':
+            bubble.body.contents.push({
+              type: "text",
+              text: block.blockData.text || "示例文字",
+              size: block.blockData.size || "md",
+              weight: block.blockData.weight || "regular",
+              color: block.blockData.color || "#000000"
+            });
+            break;
+          case 'image':
+            bubble.body.contents.push({
+              type: "image",
+              url: block.blockData.url || "https://via.placeholder.com/300x200"
+            });
+            break;
+          case 'button':
+            bubble.body.contents.push({
+              type: "button",
+              action: {
+                type: "message",
+                label: block.blockData.text || "按鈕",
+                text: block.blockData.text || "按鈕被點擊"
+              }
+            });
+            break;
+          case 'separator':
+            bubble.body.contents.push({
+              type: "separator",
+              margin: "md"
+            });
+            break;
+        }
+      }
+    });
+
+    return bubble;
+  }
+}
 
 interface BlockData {
   [key: string]: unknown;
@@ -73,7 +128,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   // 測試動作處理
   const [currentTestAction, setCurrentTestAction] = useState<'new-user' | 'test-message' | 'preview-dialog' | null>(null);
-  const [workspaceValidation, setWorkspaceValidation] = useState<{ 
+  const [workspaceValidation, setWorkspaceValidation] = useState<{
     logic: { isValid: boolean; errors: string[]; warnings: string[] };
     flex: { isValid: boolean; errors: string[]; warnings: string[] };
   }>({
@@ -81,6 +136,38 @@ const Workspace: React.FC<WorkspaceProps> = ({
     flex: { isValid: true, errors: [], warnings: [] }
   });
   const { toast } = useToast();
+
+  // Flex 訊息資料
+  const [savedFlexMessages, setSavedFlexMessages] = useState<Map<string, StoredFlexMessage>>(new Map());
+
+  // Flex 訊息生成器
+  const flexMessageGenerator = useMemo(() => new FlexMessageGenerator(), []);
+
+  // 轉換函數
+  const convertFlexBlocksToFlexMessage = useCallback((blocks: Block[]) => {
+    return flexMessageGenerator.generateFlexMessage(blocks);
+  }, [flexMessageGenerator]);
+
+  // 載入儲存的 Flex 訊息
+  const loadSavedFlexMessages = useCallback(async () => {
+    try {
+      const messages = await VisualEditorApi.getUserFlexMessages();
+      const map = new Map<string, StoredFlexMessage>();
+      // 同時以 ID 和名稱作為 key，方便查找
+      messages.forEach((m) => {
+        if (m && m.id) map.set(m.id, m);
+        if (m && (m as any).name) map.set((m as any).name, m);
+      });
+      setSavedFlexMessages(map);
+      console.log(`📦 載入了 ${messages.length} 個儲存的 Flex 訊息`);
+    } catch (err) {
+      console.error('載入已儲存 Flex 範本失敗', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSavedFlexMessages();
+  }, [loadSavedFlexMessages]);
 
   // 調試：監視 logicBlocks 的變化
   React.useEffect(() => {
@@ -537,9 +624,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
               {useEnhancedSimulator ? (
                 <EnhancedLineBotSimulator
                   blocks={logicBlocks}
+                  savedFlexMessages={savedFlexMessages}
                   flexBlocks={flexBlocks}
                   testAction={currentTestAction}
                   showDebugInfo={showDebugInfo}
+                  convertFlexBlocksToFlexMessage={convertFlexBlocksToFlexMessage}
                 />
               ) : (
                 <LineBotSimulator

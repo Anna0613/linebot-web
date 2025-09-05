@@ -27,7 +27,7 @@ const Register = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   const navigate = useNavigate();
-  const { register, loading, error, clearError, handleLineLogin } = useUnifiedAuth();
+  const { register, loading, clearError } = useUnifiedAuth();
 
   // jQuery Validation 初始化
   useEffect(() => {

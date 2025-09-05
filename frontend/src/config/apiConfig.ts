@@ -12,7 +12,6 @@ const WEBHOOK_DOMAIN =
 // 向後相容：保留原有環境變數支持
 const LINE_LOGIN_API_URL =
   import.meta.env.VITE_LINE_LOGIN_API_URL || UNIFIED_API_URL;
-const LOGIN_API_URL = import.meta.env.VITE_LOGIN_API_URL || UNIFIED_API_URL;
 const PUZZLE_API_URL = import.meta.env.VITE_PUZZLE_API_URL || UNIFIED_API_URL;
 const SETTING_API_URL = import.meta.env.VITE_SETTING_API_URL || UNIFIED_API_URL;
 

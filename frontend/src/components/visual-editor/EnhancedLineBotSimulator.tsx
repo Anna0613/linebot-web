@@ -1,279 +1,291 @@
-/**
- * 增強版 LINE Bot 模擬器
- * 使用新的積木連接管理系統和事件匹配系統
- */
-
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import { Bot, User, Send, Play, RefreshCw, Settings, AlertTriangle } from 'lucide-react';
-import FlexMessagePreview from '../Panels/FlexMessagePreview';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Block, Message } from '../../types/index';
+import { EnhancedEventMatcher, EventContext, MatchResult, MatchType } from '../../utils/EventMatchingSystem';
+import { ControlFlowProcessor } from '../../utils/ControlFlowProcessor';
 import { BlockConnectionManager } from '../../utils/BlockConnectionManager';
-import { EnhancedEventMatcher, EventPattern, MatchType } from '../../utils/EventMatchingSystem';
-import { ControlFlowProcessor, ControlFlowType } from '../../utils/ControlFlowProcessor';
-import { ExecutionContext } from '../../types/blockConnection';
-import { UnifiedBlock } from '../../types/block';
-import VisualEditorApi, { FlexMessage as StoredFlexMessage } from '../../services/visualEditorApi';
+import { UnifiedBlock, ExecutionContext } from '../../types/block';
+import { FlexMessage } from '../../types/linebot';
+import FlexMessagePreview from '../Panels/FlexMessagePreview';
 
-interface BlockData {
-  [key: string]: unknown;
-  eventType?: string;
-  condition?: string;
-  pattern?: string;
+// 輔助類型
+interface ReplyBlockData {
   replyType?: string;
   content?: string;
   text?: string;
-  flexMessageId?: string;
   flexMessageName?: string;
+  flexMessageId?: string;
+  imageUrl?: string;
+  stickerId?: string;
+}
+
+interface ControlBlockData {
   controlType?: string;
+  condition?: string;
 }
 
-interface Block {
-  blockType: string;
-  blockData: BlockData;
-  id?: string;
-  parentId?: string;
+interface SavedFlexMessage {
+  name: string;
+  content: FlexMessage;
 }
 
-interface FlexMessage {
-  type: string;
-  altText?: string;
-  contents?: Record<string, unknown>;
-}
-
-interface Message {
-  type: 'user' | 'bot' | string;
-  content: string;
-  messageType?: 'text' | 'flex' | string;
-  flexMessage?: FlexMessage;
-  timestamp?: number;
-  executionInfo?: {
-    matchedPatterns: string[];
-    executionPath: string[];
-    processingTime: number;
-  };
-}
-
-interface SimulatorProps {
-  blocks: Block[];
+interface EnhancedLineBotSimulatorProps {
+  blocks?: Block[];
+  savedFlexMessages?: Map<string, SavedFlexMessage>;
   flexBlocks?: Block[];
+  convertFlexBlocksToFlexMessage?: (blocks: Block[]) => FlexMessage;
   testAction?: 'new-user' | 'test-message' | 'preview-dialog' | null;
   showDebugInfo?: boolean;
 }
 
-const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({ 
-  blocks, 
-  flexBlocks = [], 
+const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
+  blocks = [],
+  savedFlexMessages = new Map(),
+  flexBlocks = [],
+  convertFlexBlocksToFlexMessage = () => ({ type: 'bubble', body: { type: 'box', layout: 'vertical', contents: [] } }),
   testAction,
-  showDebugInfo = false 
+  showDebugInfo = false
 }) => {
-  // 狀態管理
-  const [chatMessages, setChatMessages] = useState<Message[]>([
-    {
-      type: 'bot',
-      content: '🤖 歡迎使用增強版 LINE Bot 模擬器！我已經準備好回應您的訊息。',
-      messageType: 'text',
-      timestamp: Date.now()
-    }
-  ]);
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
-  // 核心系統實例
-  const connectionManager = useMemo(() => new BlockConnectionManager(blocks as UnifiedBlock[]), [blocks]);
+  // 初始化系統
   const eventMatcher = useMemo(() => new EnhancedEventMatcher(), []);
   const controlFlowProcessor = useMemo(() => new ControlFlowProcessor(), []);
+  const connectionManager = useMemo(() => new BlockConnectionManager(), []);
 
-  // Flex Message 資料
-  const [savedFlexMessages, setSavedFlexMessages] = useState<Map<string, StoredFlexMessage>>(new Map());
-
-  // 初始化系統
-  useEffect(() => {
-    console.log('🚀 初始化增強版模擬器');
-    
-    // 更新積木資料
-    connectionManager.updateBlocks(blocks as UnifiedBlock[]);
-    
-    // 自動建立連接
-    connectionManager.autoConnectBlocks();
-    
-    // 初始化事件模式
-    initializeEventPatterns();
-    
-    // 載入 Flex Messages
-    loadSavedFlexMessages();
-    
-    const stats = connectionManager.getConnectionGraph();
-    console.log('📊 連接統計:', stats);
-  }, [blocks, connectionManager]);
-
-  // 初始化事件模式
-  const initializeEventPatterns = useCallback(() => {
-    // 清空現有模式
-    eventMatcher.getMatchingStats();
-
-    // 從積木中提取事件模式
-    blocks.forEach((block, index) => {
-      if (block.blockType === 'event' && block.blockData.eventType === 'message.text') {
-        const condition = block.blockData.condition || block.blockData.pattern || '';
-        
-        if (condition) {
-          const pattern: EventPattern = {
-            id: `block_${block.id || index}`,
-            type: MatchType.CONTAINS,
-            pattern: condition as string,
-            caseSensitive: false,
-            weight: 1.0,
-            enabled: true,
-            metadata: {
-              blockId: block.id,
-              blockType: block.blockType
-            }
-          };
-          
-          // 檢查是否為正則表達式
-          if (condition.toString().startsWith('/') && condition.toString().endsWith('/')) {
-            pattern.type = MatchType.REGEX;
-            pattern.pattern = condition.toString().slice(1, -1); // 移除 / /
-          }
-          
-          eventMatcher.addPattern(pattern);
-          console.log('📝 添加事件模式:', pattern);
-        }
-      }
-    });
-
-    // 添加預設模式
-    eventMatcher.addPattern({
-      id: 'greeting',
-      type: MatchType.CUSTOM,
-      pattern: 'greeting',
-      caseSensitive: false,
-      weight: 0.8,
-      enabled: true,
-      metadata: { type: 'builtin' }
-    });
-
-    const stats = eventMatcher.getMatchingStats();
-    console.log('🎯 事件匹配統計:', stats);
-  }, [blocks, eventMatcher]);
-
-  // 載入已儲存的 Flex Messages
-  const loadSavedFlexMessages = useCallback(async () => {
-    try {
-      const messages = await VisualEditorApi.getUserFlexMessages();
-      const map = new Map<string, StoredFlexMessage>();
-      
-      messages.forEach((m) => {
-        if (m && m.id) map.set(m.id, m);
-        if ((m as any).name) map.set((m as any).name, m);
-      });
-      
-      setSavedFlexMessages(map);
-      console.log('📦 載入 Flex Messages:', map.size);
-    } catch (err) {
-      console.error('❌ 載入 Flex Messages 失敗:', err);
-    }
-  }, []);
-
-  // 轉換 Flex 積木為 Flex Message
-  const convertFlexBlocksToFlexMessage = useCallback((blocks: Block[]) => {
-    const headerBlocks: Record<string, unknown>[] = [];
-    const bodyBlocks: Record<string, unknown>[] = [];
-    const footerBlocks: Record<string, unknown>[] = [];
-
-    blocks.forEach(block => {
-      let targetArray = bodyBlocks;
-
-      if (block.blockData.area === 'header') {
-        targetArray = headerBlocks;
-      } else if (block.blockData.area === 'footer') {
-        targetArray = footerBlocks;
-      }
-
-      if (block.blockType === 'flex-content') {
-        switch (block.blockData.contentType) {
-          case 'text':
-            targetArray.push({
-              type: 'text',
-              text: block.blockData.text || '文字內容',
-              color: block.blockData.color || '#000000',
-              size: block.blockData.size || 'md',
-              weight: block.blockData.weight || 'regular',
-              align: block.blockData.align || 'start',
-              wrap: block.blockData.wrap !== false
-            });
-            break;
-          case 'image':
-            targetArray.push({
-              type: 'image',
-              url: block.blockData.url || 'https://via.placeholder.com/300x200',
-              aspectRatio: block.blockData.aspectRatio || '20:13',
-              aspectMode: block.blockData.aspectMode || 'cover',
-              size: block.blockData.size || 'full'
-            });
-            break;
-          case 'button':
-            targetArray.push({
-              type: 'button',
-              action: {
-                type: block.blockData.actionType || 'message',
-                label: block.blockData.label || '按鈕',
-                text: block.blockData.text || block.blockData.label || '按鈕'
-              },
-              style: block.blockData.style || 'primary',
-              color: block.blockData.color || undefined
-            });
-            break;
-          case 'separator':
-            targetArray.push({
-              type: 'separator',
-              margin: block.blockData.margin || 'md',
-              color: block.blockData.color || '#E0E0E0'
-            });
-            break;
-        }
-      }
-    });
-
-    const bubble: Record<string, unknown> = {
-      type: 'bubble'
+  // 將 Flex 積木轉換為 Bubble
+  const convertFlexBlocksToFlexMessage_Internal = useCallback((blocks: Block[]): FlexMessage => {
+    // 簡化的轉換邏輯
+    const bubble = {
+      type: 'box' as const,
+      layout: 'vertical' as const,
+      contents: []
     };
-
-    if (headerBlocks.length > 0) {
-      bubble.header = {
-        type: 'box',
-        layout: 'vertical',
-        contents: headerBlocks
-      };
-    }
-
-    bubble.body = {
-      type: 'box',
-      layout: 'vertical',
-      contents: bodyBlocks.length > 0 ? bodyBlocks : [
-        {
-          type: 'text',
-          text: '請在 Flex 設計器中添加內容',
-          color: '#999999',
-          align: 'center'
-        }
-      ]
-    };
-
-    if (footerBlocks.length > 0) {
-      bubble.footer = {
-        type: 'box',
-        layout: 'vertical',
-        contents: footerBlocks
-      };
-    }
 
     return {
-      type: 'flex',
-      contents: bubble
+      type: 'bubble',
+      body: bubble
     };
+  }, []);
+
+  // 處理回覆積木
+  const handleReplyBlock = useCallback(async (
+    block: Block, 
+    context: ExecutionContext, 
+    debugInfo: string[]
+  ): Promise<Message> => {
+    const replyType = block.blockData.replyType as string;
+    
+    debugInfo.push(`💬 處理回覆積木: ${replyType}`);
+
+    switch (replyType) {
+      case 'text': {
+        const content = (block.blockData.content || block.blockData.text) as string || '空的回覆內容';
+        debugInfo.push(`📝 文字回覆: "${content}"`);
+        return {
+          type: 'bot',
+          content,
+          messageType: 'text',
+          timestamp: Date.now()
+        };
+      }
+
+      case 'flex':
+        debugInfo.push('🎨 處理 Flex 回覆');
+        debugInfo.push(`📋 積木資料: ${JSON.stringify({
+          content: block.blockData.content,
+          text: block.blockData.text,
+          flexMessageName: block.blockData.flexMessageName,
+          flexMessageId: block.blockData.flexMessageId
+        })}`);
+        
+        // 優先使用當前 Flex 設計器內容
+        if (flexBlocks && flexBlocks.length > 0) {
+          const currentFlexMessage = convertFlexBlocksToFlexMessage(flexBlocks);
+          debugInfo.push(`✅ 使用當前 Flex 設計 (${flexBlocks.length} 個組件)`);
+          return {
+            type: 'bot',
+            content: 'Flex 訊息',
+            messageType: 'flex',
+            flexMessage: currentFlexMessage,
+            timestamp: Date.now()
+          };
+        }
+
+        {
+        // 使用儲存的 Flex Message
+        const storedKey = block.blockData.flexMessageName || block.blockData.flexMessageId;
+        const stored = storedKey ? savedFlexMessages.get(storedKey as string) : undefined;
+        
+        if (stored) {
+          debugInfo.push(`📦 使用儲存的 Flex: ${stored.name}`);
+          debugInfo.push(`📄 Flex 內容結構: ${JSON.stringify(stored.content).substring(0, 200)}...`);
+          
+          // 檢查儲存的 Flex 結構
+          let flexMessage;
+          debugInfo.push(`🔍 儲存內容類型: ${typeof stored.content}`);
+
+          let parsedContent = stored.content;
+
+          // 如果是字串，嘗試解析為 JSON
+          if (typeof stored.content === 'string') {
+            try {
+              parsedContent = JSON.parse(stored.content);
+              debugInfo.push(`🔄 成功解析 JSON 字串`);
+            } catch (e) {
+              debugInfo.push(`❌ JSON 解析失敗: ${e.message}`);
+              parsedContent = null;
+            }
+          }
+
+          if (Array.isArray(parsedContent)) {
+            debugInfo.push(`📦 內容是陣列，長度: ${parsedContent.length}`);
+            if (parsedContent.length > 0) {
+              flexMessage = parsedContent[0];
+              debugInfo.push(`✅ 使用陣列第一個元素作為 Flex Message`);
+            }
+          } else if (parsedContent && typeof parsedContent === 'object') {
+            // 檢查是否是我們系統的積木格式
+            if (parsedContent.blocks && Array.isArray(parsedContent.blocks)) {
+              debugInfo.push(`🔧 轉換系統積木格式到 LINE Flex Message (${parsedContent.blocks.length} 個積木)`);
+              try {
+                const flexBlocks = parsedContent.blocks as Block[];
+                const convertedFlexMessage = convertFlexBlocksToFlexMessage(flexBlocks);
+                flexMessage = {
+                  type: 'flex',
+                  altText: stored.name || 'Flex 訊息',
+                  contents: convertedFlexMessage
+                };
+                debugInfo.push(`✅ 成功轉換 ${flexBlocks.length} 個 Flex 積木`);
+              } catch (error) {
+                debugInfo.push(`❌ 積木轉換失敗: ${error}`);
+                flexMessage = null;
+              }
+            } else {
+              flexMessage = parsedContent;
+              debugInfo.push(`✅ 直接使用物件作為 Flex Message`);
+            }
+          }
+          
+          if (flexMessage) {
+            return {
+              type: 'bot',
+              content: stored.name || 'Flex 訊息',
+              messageType: 'flex',
+              flexMessage,
+              timestamp: Date.now()
+            };
+          }
+        }
+        }
+
+        // 預設 Flex 回覆
+        debugInfo.push('⚠️ 無可用的 Flex 內容，使用預設 Flex 回覆');
+        return {
+          type: 'bot',
+          content: 'Flex 訊息',
+          messageType: 'flex',
+          flexMessage: {
+            type: 'flex',
+            altText: 'Flex 訊息',
+            contents: {
+              type: 'bubble',
+              body: {
+                type: 'box',
+                layout: 'vertical',
+                contents: [{
+                  type: 'text',
+                  text: '請在 Flex 設計器中添加內容來設計 Flex 訊息',
+                  color: '#999999',
+                  align: 'center',
+                  wrap: true
+                }]
+              }
+            }
+          },
+          timestamp: Date.now()
+        };
+
+      case 'image': {
+        const imageUrl = block.blockData.imageUrl as string || 'https://via.placeholder.com/300x200';
+        debugInfo.push(`🖼️ 圖片回覆: ${imageUrl}`);
+        return {
+          type: 'bot',
+          content: imageUrl,
+          messageType: 'image',
+          timestamp: Date.now()
+        };
+      }
+
+      case 'sticker': {
+        const stickerId = block.blockData.stickerId as string || '1';
+        debugInfo.push(`😊 貼圖回覆: ${stickerId}`);
+        return {
+          type: 'bot',
+          content: `貼圖 ${stickerId}`,
+          messageType: 'sticker',
+          timestamp: Date.now()
+        };
+      }
+
+      default:
+        debugInfo.push(`⚠️ 未知的回覆類型: ${replyType}`);
+        return {
+          type: 'bot',
+          content: '未知的回覆類型',
+          messageType: 'text',
+          timestamp: Date.now()
+        };
+    }
+  }, [flexBlocks, savedFlexMessages, convertFlexBlocksToFlexMessage]);
+
+  // 處理控制積木
+  const handleControlBlock = useCallback(async (
+    block: Block, 
+    context: ExecutionContext, 
+    debugInfo: string[]
+  ): Promise<Message> => {
+    const controlType = block.blockData.controlType as string;
+    
+    debugInfo.push(`🎛️ 處理控制積木: ${controlType}`);
+
+    switch (controlType) {
+      case 'condition': {
+        const condition = block.blockData.condition as string;
+        const conditionResult = Math.random() > 0.5; // 簡化的條件判斷
+        debugInfo.push(`🎯 條件判斷: ${condition} → ${conditionResult ? '成立' : '不成立'}`);
+        
+        return {
+          type: 'bot',
+          content: `條件判斷結果: ${conditionResult ? '條件成立' : '條件不成立'}`,
+          messageType: 'text',
+          timestamp: Date.now()
+        };
+      }
+
+      case 'delay': {
+        const delayTime = (block.blockData.delay as number) || 1000;
+        debugInfo.push(`⏰ 延遲 ${delayTime}ms`);
+        
+        return {
+          type: 'bot',
+          content: `延遲 ${delayTime}ms 後執行`,
+          messageType: 'text',
+          timestamp: Date.now()
+        };
+      }
+
+      default:
+        debugInfo.push(`⚠️ 未知的控制類型: ${controlType}`);
+        return {
+          type: 'bot',
+          content: '未知的控制類型',
+          messageType: 'text',
+          timestamp: Date.now()
+        };
+    }
   }, []);
 
   // 增強的 Bot 模擬器
@@ -300,7 +312,12 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
       // 使用增強事件匹配
       const matchResult = eventMatcher.match(userMessage, {
         userMessage,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        userId: context.userId,
+        sessionId: context.sessionId,
+        previousMessages: [],
+        userProfile: {},
+        customData: {}
       });
 
       newDebugInfo.push(`🎯 事件匹配結果: ${matchResult.matched ? '成功' : '失敗'}`);
@@ -314,7 +331,8 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
       
       if (matchResult.matched) {
         for (const patternId of matchResult.matchedPatterns) {
-          const blockId = eventMatcher['patterns'].get(patternId)?.metadata?.blockId;
+          const pattern = (eventMatcher as any).patterns.get(patternId);
+          const blockId = pattern?.metadata?.blockId;
           if (blockId) {
             matchedEventBlock = blocks.find(b => b.id === blockId) || null;
             if (matchedEventBlock) {
@@ -355,31 +373,32 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
         };
       }
 
-      // 使用連接管理器找到下一個積木
-      const nextBlockIds = connectionManager.getNextBlocks(matchedEventBlock.id!, context);
-      newDebugInfo.push(`🔗 下一個積木: [${nextBlockIds.join(', ')}]`);
+      // 找到下一個要執行的積木
+      const connections = connectionManager.getOutgoingConnections(matchedEventBlock.id);
 
-      if (nextBlockIds.length === 0) {
-        newDebugInfo.push('⚠️ 沒有連接的積木');
-        return {
-          type: 'bot',
-          content: '事件已觸發，但沒有設定回應動作。',
-          messageType: 'text',
-          timestamp: Date.now(),
-          executionInfo: {
-            matchedPatterns: matchResult.matchedPatterns,
-            executionPath: [matchedEventBlock.id || ''],
-            processingTime: performance.now() - startTime
-          }
-        };
+      newDebugInfo.push(`🔍 查找連接: 事件積木 ${matchedEventBlock.id} -> ${connections.length} 個連接`);
+
+      let nextBlock: Block | undefined;
+
+      if (connections.length > 0) {
+        const connection = connections[0];
+        nextBlock = blocks.find(block => block.id === connection.targetBlockId);
+        newDebugInfo.push(`🔗 使用連接找到積木: ${nextBlock?.id}`);
+      } else {
+        // 如果沒有明確的連接，嘗試找到緊鄰的回覆積木（簡化邏輯）
+        const eventIndex = blocks.findIndex(b => b.id === matchedEventBlock.id);
+        if (eventIndex !== -1 && eventIndex + 1 < blocks.length) {
+          nextBlock = blocks[eventIndex + 1];
+          newDebugInfo.push(`🔄 使用順序邏輯找到下一個積木: ${nextBlock.id}`);
+        } else {
+          // 找第一個回覆積木
+          nextBlock = blocks.find(block => block.blockType === 'reply');
+          newDebugInfo.push(`🔄 使用第一個回覆積木: ${nextBlock?.id}`);
+        }
       }
 
-      // 執行第一個連接的積木
-      const firstNextBlockId = nextBlockIds[0];
-      const nextBlock = blocks.find(b => b.id === firstNextBlockId);
-      
       if (!nextBlock) {
-        newDebugInfo.push(`❌ 找不到積木: ${firstNextBlockId}`);
+        newDebugInfo.push('⚠️ 找不到目標積木');
         return {
           type: 'bot',
           content: '積木執行錯誤：找不到目標積木。',
@@ -414,7 +433,7 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
 
       // 添加執行資訊
       botResponse.executionInfo = {
-        matchedPatterns: matchResult.matchedPatterns,
+        matchedPatterns: matchResult.matched ? matchResult.matchedPatterns : [],
         executionPath: [matchedEventBlock.id || '', nextBlock.id || ''],
         processingTime: performance.now() - startTime
       };
@@ -442,333 +461,7 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
         setDebugInfo(prev => [...prev, ...newDebugInfo, '---']);
       }
     }
-  }, [blocks, eventMatcher, connectionManager, showDebugInfo]);
-
-  // 處理回覆積木
-  const handleReplyBlock = async (
-    block: Block, 
-    context: ExecutionContext, 
-    debugInfo: string[]
-  ): Promise<Message> => {
-    const replyType = block.blockData.replyType as string;
-    
-    debugInfo.push(`💬 處理回覆積木: ${replyType}`);
-
-    switch (replyType) {
-      case 'text':
-        const content = (block.blockData.content || block.blockData.text) as string || '空的回覆內容';
-        debugInfo.push(`📝 文字回覆: "${content}"`);
-        return {
-          type: 'bot',
-          content,
-          messageType: 'text',
-          timestamp: Date.now()
-        };
-
-      case 'flex':
-        debugInfo.push('🎨 處理 Flex 回覆');
-        debugInfo.push(`📋 積木資料: ${JSON.stringify({
-          content: block.blockData.content,
-          text: block.blockData.text,
-          flexMessageName: block.blockData.flexMessageName,
-          flexMessageId: block.blockData.flexMessageId
-        })}`);
-        
-        // 優先使用當前 Flex 設計器內容
-        if (flexBlocks && flexBlocks.length > 0) {
-          const currentFlexMessage = convertFlexBlocksToFlexMessage(flexBlocks);
-          debugInfo.push(`✅ 使用當前 Flex 設計 (${flexBlocks.length} 個組件)`);
-          return {
-            type: 'bot',
-            content: 'Flex 訊息',
-            messageType: 'flex',
-            flexMessage: currentFlexMessage,
-            timestamp: Date.now()
-          };
-        }
-
-        // 使用儲存的 Flex Message
-        const storedKey = block.blockData.flexMessageName || block.blockData.flexMessageId;
-        const stored = storedKey ? savedFlexMessages.get(storedKey as string) : undefined;
-        
-        if (stored) {
-          debugInfo.push(`📦 使用儲存的 Flex: ${stored.name}`);
-          debugInfo.push(`📄 Flex 內容結構: ${JSON.stringify(stored.content).substring(0, 200)}...`);
-          
-          // 檢查儲存的 Flex 結構
-          let flexMessage;
-          debugInfo.push(`🔍 儲存內容類型: ${typeof stored.content}`);
-          
-          // 如果是字符串，嘗試解析為 JSON
-          let contentObj = stored.content;
-          if (typeof stored.content === 'string') {
-            try {
-              contentObj = JSON.parse(stored.content);
-              debugInfo.push('🔄 解析 JSON 字符串成功');
-            } catch (error) {
-              debugInfo.push('❌ JSON 解析失敗');
-              contentObj = null;
-            }
-          }
-          
-          debugInfo.push(`🔍 解析後內容類型: ${typeof contentObj}`);
-          debugInfo.push(`🔍 是否為物件: ${contentObj && typeof contentObj === 'object'}`);
-          debugInfo.push(`🔍 有 blocks 屬性: ${contentObj && contentObj.blocks !== undefined}`);
-          debugInfo.push(`🔍 blocks 是陣列: ${contentObj && Array.isArray(contentObj.blocks)}`);
-          
-          if (contentObj && typeof contentObj === 'object') {
-            // 檢查是否是我們系統的積木格式
-            if (contentObj.blocks && Array.isArray(contentObj.blocks)) {
-              // 是我們系統的積木格式，需要轉換
-              debugInfo.push('🔧 轉換系統積木格式到 LINE Flex Message');
-              try {
-                const flexBlocks = contentObj.blocks as Block[];
-                flexMessage = convertFlexBlocksToFlexMessage(flexBlocks);
-                debugInfo.push(`✅ 成功轉換 ${flexBlocks.length} 個 Flex 積木`);
-              } catch (error) {
-                debugInfo.push(`❌ 積木轉換失敗: ${error}`);
-                flexMessage = {
-                  type: 'flex',
-                  altText: 'Flex 訊息轉換錯誤',
-                  contents: {
-                    type: 'bubble',
-                    body: {
-                      type: 'box',
-                      layout: 'vertical',
-                      contents: [{
-                        type: 'text',
-                        text: '儲存的 Flex 積木轉換失敗'
-                      }]
-                    }
-                  }
-                };
-              }
-            } else if (contentObj.type === 'flex' && contentObj.contents) {
-              // 已經是完整的 Flex Message
-              flexMessage = contentObj;
-              debugInfo.push('✅ 儲存的是完整 Flex Message');
-            } else if (contentObj.type === 'bubble' || contentObj.type === 'carousel') {
-              // 是 contents 部分
-              flexMessage = {
-                type: 'flex',
-                altText: stored.name || 'Flex 訊息',
-                contents: contentObj
-              };
-              debugInfo.push('🔧 包裝儲存的 Flex contents');
-            } else {
-              // 可能是其他結構，嘗試作為 bubble body
-              flexMessage = {
-                type: 'flex',
-                altText: stored.name || 'Flex 訊息',
-                contents: {
-                  type: 'bubble',
-                  body: contentObj
-                }
-              };
-              debugInfo.push('🛠️ 作為 bubble body 包裝');
-            }
-          } else {
-            debugInfo.push('❌ 儲存的 Flex 內容無效');
-            flexMessage = {
-              type: 'flex',
-              altText: 'Flex 訊息錯誤',
-              contents: {
-                type: 'bubble',
-                body: {
-                  type: 'box',
-                  layout: 'vertical',
-                  contents: [{
-                    type: 'text',
-                    text: '儲存的 Flex 訊息格式錯誤'
-                  }]
-                }
-              }
-            };
-          }
-          
-          return {
-            type: 'bot',
-            content: stored.name || 'Flex 訊息',
-            messageType: 'flex',
-            flexMessage,
-            timestamp: Date.now()
-          };
-        }
-
-        // 檢查是否有直接的 Flex 內容或文字內容
-        const flexContent = block.blockData.content || block.blockData.text;
-        if (flexContent) {
-          // 嘗試解析為 JSON
-          try {
-            const parsedFlex = typeof flexContent === 'string' ? JSON.parse(flexContent) : flexContent;
-            if (parsedFlex && typeof parsedFlex === 'object') {
-              debugInfo.push('📄 使用積木中的 Flex 內容');
-              
-              // 檢查是否已經是完整的 Flex Message 結構
-              let flexMessage;
-              if (parsedFlex.type === 'flex' && parsedFlex.contents) {
-                // 已經是完整的 Flex Message
-                flexMessage = parsedFlex;
-                debugInfo.push('✅ 完整的 Flex Message 結構');
-              } else if (parsedFlex.type === 'bubble' || parsedFlex.type === 'carousel') {
-                // 只是 contents 部分，需要包裝
-                flexMessage = { 
-                  type: 'flex', 
-                  altText: 'Flex 訊息',
-                  contents: parsedFlex 
-                };
-                debugInfo.push('🔧 包裝 Flex contents');
-              } else {
-                // 嘗試作為 bubble 的 body 內容
-                flexMessage = {
-                  type: 'flex',
-                  altText: 'Flex 訊息',
-                  contents: {
-                    type: 'bubble',
-                    body: parsedFlex
-                  }
-                };
-                debugInfo.push('🛠️ 作為 bubble body 處理');
-              }
-              
-              return {
-                type: 'bot',
-                content: 'Flex 訊息',
-                messageType: 'flex',
-                flexMessage,
-                timestamp: Date.now()
-              };
-            }
-          } catch (error) {
-            debugInfo.push('⚠️ Flex 內容格式錯誤，作為文字處理');
-          }
-          
-          // 如果不是有效的 JSON，作為文字回覆處理
-          debugInfo.push('📝 Flex 積木內容作為文字回覆');
-          return {
-            type: 'bot',
-            content: flexContent as string,
-            messageType: 'text',
-            timestamp: Date.now()
-          };
-        }
-
-        debugInfo.push('⚠️ 沒有可用的 Flex 內容');
-        return {
-          type: 'bot',
-          content: '請在 Flex 設計器中設計 Flex 訊息內容',
-          messageType: 'text',
-          timestamp: Date.now()
-        };
-
-      default:
-        debugInfo.push(`⚠️ 不支援的回覆類型: ${replyType}`);
-        return {
-          type: 'bot',
-          content: `不支援的回覆類型: ${replyType}`,
-          messageType: 'text',
-          timestamp: Date.now()
-        };
-    }
-  };
-
-  // 處理控制積木
-  const handleControlBlock = async (
-    block: Block, 
-    context: ExecutionContext, 
-    debugInfo: string[]
-  ): Promise<Message> => {
-    const controlType = block.blockData.controlType as string;
-    
-    debugInfo.push(`🎛️ 處理控制積木: ${controlType}`);
-
-    try {
-      let result;
-      
-      switch (controlType) {
-        case 'if':
-        case 'if_then':
-          result = controlFlowProcessor.processIfBlock(block as UnifiedBlock, context);
-          break;
-        case 'wait':
-          result = await controlFlowProcessor.processWaitBlock(block as UnifiedBlock, context);
-          break;
-        default:
-          debugInfo.push(`⚠️ 不支援的控制類型: ${controlType}`);
-          return {
-            type: 'bot',
-            content: `不支援的控制類型: ${controlType}`,
-            messageType: 'text',
-            timestamp: Date.now()
-          };
-      }
-
-      if (result.success) {
-        debugInfo.push(`✅ 控制積木執行成功`);
-        
-        // 如果有下一個積木，繼續執行
-        if (result.nextBlocks.length > 0) {
-          const nextBlock = blocks.find(b => b.id === result.nextBlocks[0]);
-          if (nextBlock) {
-            return await handleReplyBlock(nextBlock, result.context, debugInfo);
-          }
-        }
-        
-        return {
-          type: 'bot',
-          content: `控制流程執行完成`,
-          messageType: 'text',
-          timestamp: Date.now()
-        };
-      } else {
-        debugInfo.push(`❌ 控制積木執行失敗: ${result.error?.message}`);
-        return {
-          type: 'bot',
-          content: `控制流程執行錯誤: ${result.error?.message}`,
-          messageType: 'text',
-          timestamp: Date.now()
-        };
-      }
-    } catch (error) {
-      debugInfo.push(`❌ 控制積木異常: ${error}`);
-      return {
-        type: 'bot',
-        content: `控制積木執行異常`,
-        messageType: 'text',
-        timestamp: Date.now()
-      };
-    }
-  };
-
-  // 處理測試動作
-  const handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
-    switch (action) {
-      case 'new-user':
-        setChatMessages([
-          {
-            type: 'bot',
-            content: '🎉 歡迎新用戶！我是您的智能助手。',
-            messageType: 'text',
-            timestamp: Date.now()
-          }
-        ]);
-        break;
-      case 'test-message':
-        const testMessages = ['你好', 'hello', '幫助', '功能', '測試'];
-        const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
-        simulateUserMessage(randomMessage);
-        break;
-      case 'preview-dialog':
-        setChatMessages([
-          { type: 'bot', content: '歡迎使用 LINE Bot！', messageType: 'text', timestamp: Date.now() },
-          { type: 'user', content: '你好', messageType: 'text', timestamp: Date.now() + 1 },
-          { type: 'bot', content: '您好！我可以為您做什麼嗎？', messageType: 'text', timestamp: Date.now() + 2 },
-          { type: 'user', content: '幫助', messageType: 'text', timestamp: Date.now() + 3 },
-          { type: 'bot', content: '這裡是幫助訊息...', messageType: 'text', timestamp: Date.now() + 4 }
-        ]);
-        break;
-    }
-  }, []);
+  }, [blocks, eventMatcher, connectionManager, showDebugInfo, handleReplyBlock, handleControlBlock]);
 
   // 模擬用戶發送訊息
   const simulateUserMessage = useCallback(async (message: string) => {
@@ -785,12 +478,124 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
     setChatMessages(prev => [...prev, botResponse]);
   }, [enhancedBotSimulator]);
 
+  // 處理測試動作
+  const handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
+    switch (action) {
+      case 'new-user':
+        setChatMessages([
+          {
+            type: 'bot',
+            content: '🎉 歡迎新用戶！我是您的智能助手。',
+            messageType: 'text',
+            timestamp: Date.now()
+          }
+        ]);
+        break;
+      case 'test-message': {
+        const testMessages = ['你好', 'hello', '幫助', '功能', '測試'];
+        const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
+        simulateUserMessage(randomMessage);
+        break;
+      }
+      case 'preview-dialog':
+        setChatMessages([
+          { type: 'bot', content: '歡迎使用 LINE Bot！', messageType: 'text', timestamp: Date.now() },
+          { type: 'user', content: '你好', messageType: 'text', timestamp: Date.now() + 1 },
+          { type: 'bot', content: '您好！我可以為您做什麼嗎？', messageType: 'text', timestamp: Date.now() + 2 },
+          { type: 'user', content: '幫助', messageType: 'text', timestamp: Date.now() + 3 },
+          { type: 'bot', content: '這裡是幫助訊息...', messageType: 'text', timestamp: Date.now() + 4 }
+        ]);
+        break;
+    }
+  }, [simulateUserMessage]);
+
   // 處理來自父組件的測試動作
   useEffect(() => {
     if (testAction) {
       handleTestAction(testAction);
     }
   }, [testAction, handleTestAction]);
+
+  // 註冊事件積木的匹配模式
+  useEffect(() => {
+    console.log('🔄 重新註冊事件模式，積木數量:', blocks?.length || 0);
+    
+    // 先獲取現有模式並清除
+    const stats = eventMatcher.getMatchingStats();
+    console.log('🔍 清除前的模式統計:', stats);
+    
+    // 移除所有現有模式（使用已知的模式名稱格式）
+    for (let i = 0; i < 100; i++) {  // 假設最多不會超過100個積木
+      eventMatcher.removePattern(`event_block-${i}`);
+      eventMatcher.removePattern(`event_${i}`);
+    }
+    
+    if (blocks && blocks.length > 0) {
+      console.log('🔍 所有積木資料:', blocks.map(b => ({ 
+        id: b.id, 
+        type: b.blockType, 
+        data: b.blockData 
+      })));
+      
+      blocks.forEach(block => {
+        console.log(`🧩 檢查積木 ${block.id} (${block.blockType}):`, {
+          blockData: block.blockData,
+          hasEventType: 'eventType' in (block.blockData || {}),
+          hasContent: 'content' in (block.blockData || {}),
+          hasText: 'text' in (block.blockData || {}),
+          hasTrigger: 'trigger' in (block.blockData || {})
+        });
+        
+        if (block.blockType === 'event') {
+          const eventType = block.blockData?.eventType as string;
+          const trigger = (block.blockData?.trigger || block.blockData?.pattern || block.blockData?.content || block.blockData?.text) as string;
+          
+          console.log(`📝 事件積木 ${block.id}:`, { 
+            eventType, 
+            trigger, 
+            originalData: block.blockData 
+          });
+          
+          if (trigger) {
+            // 根據事件類型決定匹配模式
+            let matchType = MatchType.CONTAINS; // 預設使用包含匹配
+            
+            if (eventType === 'text_exact') {
+              matchType = MatchType.EXACT;
+            } else if (eventType === 'text_starts') {
+              matchType = MatchType.STARTS_WITH;
+            } else if (eventType === 'text_contains') {
+              matchType = MatchType.CONTAINS;
+            }
+            
+            // 創建事件模式
+            const eventPattern = {
+              id: `event_${block.id}`,
+              type: matchType,
+              pattern: trigger,
+              caseSensitive: false,
+              weight: 1.0,
+              enabled: true,
+              metadata: {
+                blockId: block.id,
+                eventType,
+                originalTrigger: trigger
+              }
+            };
+            
+            console.log('➕ 註冊事件模式:', eventPattern);
+            eventMatcher.addPattern(eventPattern);
+          } else {
+            console.log(`⚠️ 事件積木 ${block.id} 缺少觸發條件`);
+          }
+        }
+      });
+      
+      // 顯示註冊統計
+      const stats = eventMatcher.getMatchingStats();
+      console.log('📊 事件匹配統計:', stats);
+    }
+  }, [blocks, eventMatcher]);
 
   // 發送訊息
   const sendMessage = async () => {
@@ -810,125 +615,113 @@ const EnhancedLineBotSimulator: React.FC<SimulatorProps> = ({
     <div className="h-full flex flex-col bg-white rounded border border-gray-200">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-t">
-        <div className="flex items-center">
-          <Bot className="w-5 h-5 mr-2" />
-          <div className="font-medium">增強版 LINE Bot 模擬器</div>
-        </div>
         <div className="flex items-center space-x-2">
-          {isProcessing && (
-            <RefreshCw className="w-4 h-4 animate-spin" />
-          )}
-          {showDebugInfo && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDebugInfo([])}
-              className="text-white hover:bg-white/10"
-            >
-              清除調試
-            </Button>
-          )}
+          <div className="w-3 h-3 bg-white rounded-full"></div>
+          <span className="font-medium">LINE Bot 模擬器</span>
+        </div>
+        <div className="text-sm opacity-80">
+          增強版 | {blocks.length} 個積木
         </div>
       </div>
 
-      {/* 訊息區域 */}
-      <div className="flex-1 overflow-auto p-4 space-y-3 bg-gray-50">
-        {chatMessages.map((m, i) => (
-          <div
-            key={i}
-            className={`flex ${m.type === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            {/* 機器人訊息 */}
-            {m.type === 'bot' && (
-              <div className="flex items-start space-x-2 max-w-4xl">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white flex-shrink-0">
-                  <Bot className="w-4 h-4" />
-                </div>
-                <div className="flex-1">
-                  {m.messageType === 'flex' && m.flexMessage ? (
-                    <div className="bg-white border rounded p-2 max-w-xl">
-                      <FlexMessagePreview json={m.flexMessage as any} />
-                    </div>
-                  ) : (
-                    <div className="bg-white border rounded px-3 py-2 text-sm">{m.content}</div>
-                  )}
-                  
-                  {/* 執行資訊 */}
-                  {showDebugInfo && m.executionInfo && (
-                    <div className="mt-1 text-xs text-gray-500 bg-gray-100 rounded p-2">
-                      <div>匹配模式: {m.executionInfo.matchedPatterns.join(', ') || '無'}</div>
-                      <div>執行路徑: {m.executionInfo.executionPath.join(' → ') || '無'}</div>
-                      <div>處理時間: {m.executionInfo.processingTime.toFixed(2)}ms</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+      {/* Chat Area */}
+      <div className="flex-1 p-4 overflow-y-auto max-h-96 bg-gray-50">
+        {chatMessages.length === 0 ? (
+          <div className="text-center text-gray-500 py-8">
+            <div className="mb-2">🤖</div>
+            <div>開始對話吧！</div>
+            <div className="text-xs mt-1">輸入訊息來測試您的 Bot 邏輯</div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {chatMessages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${
+                  message.type === 'user' ? 'justify-end' : 'justify-start'
+                }`}
+              >
+                {message.messageType === 'flex' && message.flexMessage ? (
+                  <div className="max-w-xl">
+                    <FlexMessagePreview json={message.flexMessage} />
+                  </div>
+                ) : (
+                  <div
+                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                      message.type === 'user'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white border border-gray-200'
+                    }`}
+                  >
+                      {message.messageType === 'image' ? (
+                        <div className="text-sm">
+                          <div className="mb-1">📷 圖片訊息</div>
+                          <div className="text-xs opacity-70">{message.content}</div>
+                        </div>
+                      ) : (
+                        <div className="text-sm">{message.content}</div>
+                      )}
 
-            {/* 使用者訊息 */}
-            {m.type === 'user' && (
-              <div className="flex items-start space-x-2">
-                <div>
-                  <div className="bg-blue-500 text-white px-3 py-2 rounded-lg max-w-xs text-sm">
-                    {m.content}
+                      {message.executionInfo && showDebugInfo && (
+                        <div className="text-xs mt-2 pt-2 border-t border-gray-300 opacity-70">
+                          <div>處理時間: {message.executionInfo.processingTime.toFixed(1)}ms</div>
+                          {message.executionInfo.matchedPatterns && message.executionInfo.matchedPatterns.length > 0 && (
+                            <div>匹配: {message.executionInfo.matchedPatterns.join(', ')}</div>
+                          )}
+                        </div>
+                      )}
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {isProcessing && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-gray-200 rounded-lg px-4 py-2">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-75"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150"></div>
                   </div>
                 </div>
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white flex-shrink-0">
-                  <User className="w-4 h-4" />
-                </div>
               </div>
             )}
-          </div>
-        ))}
-        
-        {/* 處理中指示 */}
-        {isProcessing && (
-          <div className="flex justify-start">
-            <div className="flex items-center space-x-2 text-gray-500">
-              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              </div>
-              <div className="bg-gray-200 rounded px-3 py-2 text-sm">
-                正在處理中...
-              </div>
-            </div>
           </div>
         )}
       </div>
 
-      {/* 調試資訊區域 */}
+      {/* Debug Info */}
       {showDebugInfo && debugInfo.length > 0 && (
-        <div className="border-t bg-gray-50 p-2 max-h-32 overflow-y-auto">
-          <div className="text-xs font-mono space-y-1">
-            {debugInfo.map((info, i) => (
-              <div key={i} className="text-gray-600">{info}</div>
+        <div className="border-t border-gray-200 p-4 max-h-32 overflow-y-auto bg-gray-100">
+          <div className="text-xs font-mono text-gray-600">
+            <div className="font-bold mb-2">除錯資訊:</div>
+            {debugInfo.map((info, index) => (
+              <div key={index} className="mb-1">{info}</div>
             ))}
           </div>
         </div>
       )}
 
-      {/* 輸入區域 */}
-      <div className="p-3 bg-white border-t flex items-center space-x-2 rounded-b">
-        <Input
-          placeholder="輸入訊息測試您的 Bot..."
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isProcessing}
-          className="flex-1"
-        />
-        <Button 
-          onClick={sendMessage} 
-          disabled={!inputMessage.trim() || isProcessing}
-          size="sm"
-        >
-          {isProcessing ? (
-            <RefreshCw className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4 mr-2" />
-          )}
-          {isProcessing ? '處理中' : '送出'}
-        </Button>
+      {/* Input Area */}
+      <div className="border-t border-gray-200 p-4">
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="輸入訊息..."
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+            disabled={isProcessing}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!inputMessage.trim() || isProcessing}
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            發送
+          </button>
+        </div>
       </div>
     </div>
   );

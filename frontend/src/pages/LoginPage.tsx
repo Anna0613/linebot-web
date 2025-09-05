@@ -118,9 +118,11 @@ const LoginPage = () => {
         if (v) {
           v.destroy?.();
         }
-      } catch {}
+      } catch {
+        // Ignore cleanup errors
+      }
     };
-  }, [clearError, error, login, navigate]);
+  }, [clearError, error, login, navigate, password, rememberMe, username]);
 
   // 保留在 LINE 登入前先存 remember 狀態
   const handleLINELoginWithRememberMe = async () => {
@@ -136,8 +138,8 @@ const LoginPage = () => {
     e.preventDefault();
     if (formRef.current) {
       // 交給 jQuery Validation 驗證與 submitHandler
-      if ((window as any).$) {
-        (window as any).$(formRef.current).submit();
+      if ((window as { $?: unknown }).$) {
+        ((window as { $: (element: HTMLElement) => { submit: () => void } }).$)(formRef.current).submit();
       } else {
         // 如果沒有 jQuery，使用原生表單處理
         console.info('使用原生表單處理（jQuery 未載入）');

@@ -193,7 +193,7 @@ async function findBotIdFromTemplate(templateId: string, queryClient: unknown): 
 
 // 創建 Bot mutation
 export const useCreateBot = () => {
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
@@ -211,7 +211,7 @@ export const useCreateBot = () => {
       
       return data;
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       // 錯誤處理交由 useBotManagement 統一處理
       throw error;
     }
@@ -234,9 +234,9 @@ export const useBotManagement = () => {
         setCustomError(null);
         const result = await createBotMutation.mutateAsync(botData);
         return result.data;
-      } catch (error: any) {
+      } catch (error: unknown) {
         // 提取錯誤訊息
-        const errorMessage = error?.message || error?.error || '創建 Bot 失敗';
+        const errorMessage = (error as Error)?.message || (error as { error?: string })?.error || '創建 Bot 失敗';
         setCustomError(errorMessage);
         throw error;
       }

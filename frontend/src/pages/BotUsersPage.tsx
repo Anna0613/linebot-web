@@ -5,17 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Users, 
-  MessageSquare, 
   ArrowLeft, 
   Search,
   Send,
-  Eye,
   Hash,
   User,
   ChevronLeft,
@@ -89,17 +84,17 @@ const BotUsersPage: React.FC = () => {
     has_prev: false
   });
   const [selectedUser, setSelectedUser] = useState<LineUser | null>(null);
-  const [userInteractions, setUserInteractions] = useState<UserInteraction[]>([]);
+  const [_userInteractions, _setUserInteractions] = useState<UserInteraction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [interactionsLoading, setInteractionsLoading] = useState(false);
+  const [_interactionsLoading, _setInteractionsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastLoading, setBroadcastLoading] = useState(false);
-  const [isDetailedMode, setIsDetailedMode] = useState(false);  // 基本/詳細模式切換
+  const [_isDetailedMode, _setIsDetailedMode] = useState(false);  // 基本/詳細模式切換
 
   // 新增功能狀態
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
-  const [showChatPanel, setShowChatPanel] = useState(false);
+  const [_showChatPanel, _setShowChatPanel] = useState(false);
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [currentChatUser, setCurrentChatUser] = useState<LineUser | null>(null);
   const [selectiveBroadcastLoading, setSelectiveBroadcastLoading] = useState(false);
@@ -145,7 +140,7 @@ const BotUsersPage: React.FC = () => {
   }, [botId, mediaUrls]);
 
   // 事件類型文本映射
-  const getEventTypeText = (eventType: string) => {
+  const _getEventTypeText = (eventType: string) => {
     const eventMap: Record<string, string> = {
       follow: "用戶關注",
       unfollow: "用戶取消關注",
@@ -158,7 +153,7 @@ const BotUsersPage: React.FC = () => {
   };
 
   // 渲染訊息內容（支持媒體文件）
-  const renderMessageContent = (interaction: UserInteraction, isDetailed: boolean) => {
+  const _renderMessageContent = (interaction: UserInteraction, isDetailed: boolean) => {
     if (!interaction.message_content) {
       return <span className="text-sm">無內容</span>;
     }

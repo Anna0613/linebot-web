@@ -175,6 +175,7 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
     redirectTo,
     allowLineLogin,
     checkLoginStatus,
+    authManager,
   ]);
 
   const verifyLineToken = async (token: string): Promise<User | null> => {

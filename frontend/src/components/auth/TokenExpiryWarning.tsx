@@ -89,7 +89,7 @@ export const TokenExpiryWarning: React.FC<TokenExpiryWarningProps> = ({
       } else {
         throw new Error('無法刷新 token');
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: "destructive",
         title: "延長會話失敗",

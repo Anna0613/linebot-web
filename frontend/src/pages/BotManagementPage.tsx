@@ -102,7 +102,7 @@ interface BackendActivityData {
   user_id?: string;
   username?: string;
   display_name?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // 資料轉換函式：將後端資料轉換為前端 ActivityItem 格式
@@ -355,13 +355,14 @@ const BotManagementPage: React.FC = () => {
       if (activitiesRes.data && !activitiesRes.error) {
         console.log('Activities API 原始響應:', activitiesRes.data);
         
-        let activitiesData: any = activitiesRes.data;
+        let activitiesData: unknown = activitiesRes.data;
         
         // 嘗試從不同的可能結構中提取資料
-        if (activitiesData.activities && Array.isArray(activitiesData.activities)) {
-          activitiesData = activitiesData.activities;
-        } else if (activitiesData.data && Array.isArray(activitiesData.data)) {
-          activitiesData = activitiesData.data;
+        const dataObj = activitiesData as { activities?: unknown; data?: unknown };
+        if (dataObj.activities && Array.isArray(dataObj.activities)) {
+          activitiesData = dataObj.activities;
+        } else if (dataObj.data && Array.isArray(dataObj.data)) {
+          activitiesData = dataObj.data;
         } else if (!Array.isArray(activitiesData)) {
           console.warn('活動數據結構異常，嘗試轉換為陣列:', activitiesData);
           activitiesData = []; // 設為空陣列
@@ -403,9 +404,9 @@ const BotManagementPage: React.FC = () => {
         // 不顯示 toast，避免影響用戶體驗，數據會在後續的刷新或 WebSocket 更新中修復
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 如果是中止錯誤，不顯示錯誤訊息
-      if (error?.name === 'AbortError' || abortSignal?.aborted) {
+      if ((error as Error)?.name === 'AbortError' || abortSignal?.aborted) {
         console.log("分析數據請求被中止");
         return;
       }
@@ -582,13 +583,14 @@ const BotManagementPage: React.FC = () => {
       if (response.data && !response.error) {
         console.log('手動刷新 - 原始響應數據:', response.data);
         
-        let activitiesData: any = response.data;
+        let activitiesData: unknown = response.data;
         
         // 嘗試從不同的可能結構中提取資料
-        if (activitiesData.activities && Array.isArray(activitiesData.activities)) {
-          activitiesData = activitiesData.activities;
-        } else if (activitiesData.data && Array.isArray(activitiesData.data)) {
-          activitiesData = activitiesData.data;
+        const dataObj = activitiesData as { activities?: unknown; data?: unknown };
+        if (dataObj.activities && Array.isArray(dataObj.activities)) {
+          activitiesData = dataObj.activities;
+        } else if (dataObj.data && Array.isArray(dataObj.data)) {
+          activitiesData = dataObj.data;
         } else if (!Array.isArray(activitiesData)) {
           console.warn('手動刷新：活動數據結構異常:', activitiesData);
           activitiesData = []; // 設為空陣列
@@ -719,13 +721,13 @@ const BotManagementPage: React.FC = () => {
     };
 
     initializeData();
-  }, [user, fetchBots]); // 移除 selectedBotId 依賴，避免循環
+  }, [user, fetchBots, selectedBotId, toast]); // 加入缺少的依賴項
 
   // 當選擇的 Bot 變化時獲取相關數據
   useEffect(() => {
     const abortController = new AbortController();
     let isMounted = true;
-    let isInitialLoad = true;
+    const isInitialLoad = true;
 
     const fetchBotData = async () => {
       if (selectedBotId && isMounted) {
@@ -743,8 +745,8 @@ const BotManagementPage: React.FC = () => {
             await new Promise(resolve => setTimeout(resolve, 100));
             await fetchAnalytics(selectedBotId, abortController.signal, isInitialLoad);
           }
-        } catch (error: any) {
-          if (isMounted && error.name !== 'AbortError') {
+        } catch (error: unknown) {
+          if (isMounted && (error as Error).name !== 'AbortError') {
             console.error('獲取 Bot 數據失敗:', error);
           }
         }
@@ -763,7 +765,7 @@ const BotManagementPage: React.FC = () => {
         }
       }, 500);
     };
-  }, [selectedBotId, fetchLogicTemplates, fetchAnalytics, fetchWebhookStatus]);
+  }, [selectedBotId, fetchLogicTemplates, fetchAnalytics, fetchWebhookStatus, toast]);
 
   // 處理 WebSocket 即時更新消息
   useEffect(() => {
@@ -842,13 +844,14 @@ const BotManagementPage: React.FC = () => {
             if (response.data && !response.error) {
               console.log('WebSocket - 原始響應數據:', response.data);
               
-              let activitiesData: any = response.data;
+              let activitiesData: unknown = response.data;
               
               // 嘗試從不同的可能結構中提取資料
-              if (activitiesData.activities && Array.isArray(activitiesData.activities)) {
-                activitiesData = activitiesData.activities;
-              } else if (activitiesData.data && Array.isArray(activitiesData.data)) {
-                activitiesData = activitiesData.data;
+              const dataObj = activitiesData as { activities?: unknown; data?: unknown };
+              if (dataObj.activities && Array.isArray(dataObj.activities)) {
+                activitiesData = dataObj.activities;
+              } else if (dataObj.data && Array.isArray(dataObj.data)) {
+                activitiesData = dataObj.data;
               } else if (!Array.isArray(activitiesData)) {
                 console.warn('WebSocket：活動數據結構異常:', activitiesData);
                 activitiesData = []; // 設為空陣列

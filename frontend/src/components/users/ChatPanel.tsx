@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +34,7 @@ interface ChatMessage {
   id: string;
   event_type: string;
   message_type: string;
-  message_content: any;
+  message_content: string | object;
   sender_type: "user" | "admin";
   timestamp: string;
   media_url?: string;
@@ -73,7 +73,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   };
 
   // 獲取聊天記錄
-  const fetchChatHistory = async () => {
+  const fetchChatHistory = useCallback(async () => {
     if (!selectedUser || !botId) return;
 
     setLoading(true);
@@ -101,7 +101,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedUser, botId, toast]);
 
   // 發送訊息
   const handleSendMessage = async () => {
@@ -198,7 +198,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     } else {
       setChatHistory([]);
     }
-  }, [selectedUser, botId]);
+  }, [selectedUser, botId, fetchChatHistory]);
 
   // 當聊天記錄更新時滾動到底部
   useEffect(() => {
@@ -212,7 +212,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       
       // 檢查是否是當前用戶的新訊息
       if (lastMessage.type === 'new_user_message') {
-        const messageData = lastMessage.data as any;
+        const messageData = lastMessage.data as { line_user_id: string; [key: string]: unknown };
         
         // 確保這是當前選中用戶的訊息
         if (messageData && messageData.line_user_id === selectedUser.line_user_id) {
@@ -227,7 +227,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       
       // 處理活動更新（也可能包含訊息事件）
       if (lastMessage.type === 'activity_update') {
-        const activityData = lastMessage.data as any;
+        const activityData = lastMessage.data as { event_type: string; line_user_id: string; [key: string]: unknown };
         
         // 如果是訊息事件且來自當前用戶，也觸發更新
         if (activityData && 
@@ -241,7 +241,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         }
       }
     }
-  }, [lastMessage, selectedUser]);
+  }, [lastMessage, selectedUser, fetchChatHistory]);
 
   // 處理 Enter 鍵發送
   const handleKeyPress = (e: React.KeyboardEvent) => {
