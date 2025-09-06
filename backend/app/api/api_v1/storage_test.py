@@ -5,6 +5,7 @@ MinIO 測試路由
 import io
 import uuid
 import time
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
@@ -12,6 +13,8 @@ from fastapi.responses import JSONResponse
 
 from app.services.minio_service import get_minio_service, init_minio_service, get_minio_last_error
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -150,3 +153,127 @@ async def minio_test_download(object_path: str = Query(..., description="MinIO �
         raise HTTPException(status_code=404, detail="物件不存在或無法產生連結")
 
     return {"bucket": minio_service.bucket_name, "object_path": object_path, "presigned_url": url}
+
+
+@router.post("/minio/refresh-all-urls")
+async def refresh_all_media_urls():
+    """
+    批量更新所有媒體檔案的 URL 為新的代理 URL
+    """
+    from app.database import get_db
+    from app.models.line_user import LineBotUserInteraction
+    from sqlalchemy.orm import Session
+
+    minio_service = get_minio_service()
+    if not minio_service:
+        raise HTTPException(status_code=500, detail="MinIO 服務未初始化")
+
+    # 獲取資料庫連接
+    db_gen = get_db()
+    db: Session = next(db_gen)
+
+    try:
+        # 查找所有有 media_path 的媒體記錄
+        media_records = db.query(LineBotUserInteraction).filter(
+            LineBotUserInteraction.message_type.in_(['image', 'video', 'audio']),
+            LineBotUserInteraction.media_path.isnot(None)
+        ).all()
+
+        if not media_records:
+            return {"message": "沒有需要更新的媒體檔案", "updated": 0}
+
+        updated_count = 0
+        failed_count = 0
+
+        for interaction in media_records:
+            try:
+                # 重新生成代理 URL
+                new_url = minio_service.get_presigned_url(interaction.media_path)
+                if new_url:
+                    interaction.media_url = new_url
+                    updated_count += 1
+                    logger.info(f"更新媒體 URL 成功: {interaction.id}")
+                else:
+                    failed_count += 1
+                    logger.error(f"生成代理 URL 失敗: {interaction.id}")
+            except Exception as e:
+                failed_count += 1
+                logger.error(f"更新媒體 URL 異常: {interaction.id}, 錯誤: {e}")
+
+        # 批量提交更新
+        db.commit()
+
+        return {
+            "message": f"媒體 URL 更新完成",
+            "total": len(media_records),
+            "updated": updated_count,
+            "failed": failed_count
+        }
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"批量更新媒體 URL 失敗: {e}")
+        raise HTTPException(status_code=500, detail=f"更新失敗: {str(e)}")
+    finally:
+        db.close()
+
+
+@router.get("/minio/proxy")
+async def get_minio_file_proxy(object_path: str = Query(..., description="MinIO 物件路徑")):
+    """
+    直接從 MinIO 獲取文件內容（代理訪問）
+    避免預簽名 URL 的簽名問題
+    """
+    from fastapi.responses import StreamingResponse
+    import io
+
+    minio_service = get_minio_service()
+    if not minio_service:
+        raise HTTPException(status_code=500, detail="MinIO 服務未初始化")
+
+    try:
+        # 檢查對象是否存在
+        if not minio_service.object_exists(object_path):
+            raise HTTPException(status_code=404, detail="文件不存在")
+
+        # 直接從 MinIO 獲取對象
+        response = minio_service.client.get_object(
+            bucket_name=minio_service.bucket_name,
+            object_name=object_path
+        )
+
+        # 讀取文件內容
+        file_data = response.read()
+
+        # 根據文件擴展名設置 content_type
+        content_type = "application/octet-stream"
+        if object_path.lower().endswith(('.jpg', '.jpeg')):
+            content_type = "image/jpeg"
+        elif object_path.lower().endswith('.png'):
+            content_type = "image/png"
+        elif object_path.lower().endswith('.gif'):
+            content_type = "image/gif"
+        elif object_path.lower().endswith('.webp'):
+            content_type = "image/webp"
+        elif object_path.lower().endswith(('.mp4', '.mov')):
+            content_type = "video/mp4"
+        elif object_path.lower().endswith(('.mp3', '.wav')):
+            content_type = "audio/mpeg"
+
+        # 返回文件流
+        return StreamingResponse(
+            io.BytesIO(file_data),
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=3600",
+                "Content-Length": str(len(file_data))
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"獲取 MinIO 文件失敗: {object_path}, 錯誤: {e}")
+        raise HTTPException(status_code=500, detail=f"獲取文件失敗: {str(e)}")
+    finally:
+        if 'response' in locals():
+            response.close()
+            response.release_conn()

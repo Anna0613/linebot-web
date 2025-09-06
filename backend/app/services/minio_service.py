@@ -196,15 +196,11 @@ class MinIOService:
                 content_type=content_type
             )
 
-            # 生成預簽名 URL (7天有效期)
-            presigned_url = self.client.presigned_get_object(
-                bucket_name=self.bucket_name,
-                object_name=object_path,
-                expires=timedelta(days=7)
-            )
+            # 生成代理訪問 URL
+            proxy_url = self.get_presigned_url(object_path)
 
             logger.info(f"媒體文件上傳成功: {object_path}")
-            return object_path, presigned_url
+            return object_path, proxy_url
             
         except Exception as e:
             logger.error(f"上傳媒體文件到 MinIO 失敗: {e}")
@@ -212,38 +208,38 @@ class MinIOService:
     
     def get_presigned_url(self, object_path: str, expires: timedelta = timedelta(days=7)) -> Optional[str]:
         """
-        獲取對象的預簽名 URL
-        
+        獲取對象的訪問 URL
+
+        由於 Cloudflare tunnel 的簽名問題，改用代理 API 方式
+
         Args:
             object_path: MinIO 對象路徑
-            expires: URL 有效期，默認 7 天
-            
+            expires: URL 有效期（此參數保留兼容性，實際不使用）
+
         Returns:
-            預簽名 URL，失敗則返回 None
+            代理訪問 URL，失敗則返回 None
         """
         try:
-            presigned_url = self.client.presigned_get_object(
-                bucket_name=self.bucket_name,
-                object_name=object_path,
-                expires=expires
-            )
-            # 如設定了對外可見的 Public URL，將簽名連結改寫為對外主機/協議
-            try:
-                from urllib.parse import urlparse, urlunparse
-                if settings.MINIO_PUBLIC_URL:
-                    pub = settings.MINIO_PUBLIC_URL
-                    # 確保有 scheme
-                    if not pub.startswith(('http://', 'https://')):
-                        pub = ('https://' if settings.MINIO_SECURE else 'http://') + pub
-                    p_pub = urlparse(pub)
-                    p_pre = urlparse(presigned_url)
-                    # 只替換 scheme/netloc，保留 path/query
-                    presigned_url = urlunparse((p_pub.scheme, p_pub.netloc, p_pre.path, p_pre.params, p_pre.query, p_pre.fragment))
-            except Exception as e:
-                logger.warning(f"重寫 Public URL 失敗，使用預設簽名連結: {e}")
-            return presigned_url
-        except S3Error as e:
-            logger.error(f"生成預簽名 URL 失敗: {e}")
+            # 使用代理 API 生成 URL，避免預簽名 URL 的簽名問題
+            from urllib.parse import quote
+
+            # 對 object_path 進行 URL 編碼
+            encoded_path = quote(object_path, safe='/')
+
+            # 生成代理 URL
+            if settings.MINIO_PUBLIC_URL:
+                # 使用外部域名的 API 代理
+                base_url = settings.MINIO_PUBLIC_URL.replace('minio.', 'api.')
+                proxy_url = f"{base_url}/api/v1/minio/proxy?object_path={encoded_path}"
+            else:
+                # 回退到內部地址
+                proxy_url = f"http://localhost:8005/api/v1/minio/proxy?object_path={encoded_path}"
+
+            logger.debug(f"生成代理 URL: {object_path} -> {proxy_url}")
+            return proxy_url
+
+        except Exception as e:
+            logger.error(f"生成代理 URL 失敗: {object_path}, 錯誤: {e}")
             return None
     
     def delete_object(self, object_path: str) -> bool:
@@ -339,15 +335,11 @@ class MinIOService:
                 content_type=content_type
             )
 
-            # 生成預簽名 URL (7天有效期)
-            presigned_url = self.client.presigned_get_object(
-                bucket_name=self.bucket_name,
-                object_name=object_path,
-                expires=timedelta(days=7)
-            )
+            # 生成代理訪問 URL
+            proxy_url = self.get_presigned_url(object_path)
 
             logger.info(f"HTTP 方式媒體文件上傳成功: {object_path}")
-            return object_path, presigned_url
+            return object_path, proxy_url
 
         except Exception as e:
             logger.error(f"HTTP 方式下載媒體失敗: {e}")
