@@ -132,41 +132,40 @@ class LazyLoader:
         )
     
     @staticmethod
-    def paginate_interactions(
-        db: Session,
+    async def paginate_interactions(
         bot_id: str,
         page: int = 1,
         limit: int = 50,
         event_type: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        分頁獲取互動記錄
-        
+        分頁獲取互動記錄（使用 MongoDB）
+
         Args:
-            db: 資料庫會話
             bot_id: Bot ID
             page: 頁碼
             limit: 每頁項目數
             event_type: 事件類型過濾
         """
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
-        
-        query = db.query(LineBotUserInteraction).join(LineBotUser).filter(
-            LineBotUser.bot_id == bot_id
-        )
-        
-        # 應用事件類型過濾
+        from app.services.conversation_service import ConversationService
+
+        offset = (page - 1) * limit
+
+        # 使用 ConversationService 獲取活動記錄
+        activities = await ConversationService.get_bot_activities(bot_id, limit, offset)
+
+        # 如果需要事件類型過濾，在這裡進行
         if event_type:
-            query = query.filter(LineBotUserInteraction.event_type == event_type)
-        
-        return LazyLoader.paginate_query(
-            db=db,
-            query=query,
-            page=page,
-            limit=limit,
-            sort_column=LineBotUserInteraction.timestamp,
-            sort_order="desc"
-        )
+            activities = [activity for activity in activities if activity.get("metadata", {}).get("eventType") == event_type]
+
+        return {
+            "items": activities,
+            "total": len(activities),  # 這是一個簡化的實現
+            "page": page,
+            "limit": limit,
+            "has_next": len(activities) == limit,
+            "has_prev": page > 1
+        }
     
     @staticmethod
     def paginate_logic_templates(
@@ -208,7 +207,8 @@ class LazyLoader:
         獲取概要統計資料（不分頁）
         快速載入關鍵指標
         """
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
+        from app.models.line_user import LineBotUser
+        # TODO: LineBotUserInteraction 已遷移到 MongoDB
         from app.models.bot import LogicTemplate
         from datetime import datetime, timedelta
         

@@ -13,53 +13,38 @@ class QueryOptimizer:
     """資料庫查詢優化器"""
     
     @staticmethod
-    def batch_bot_analytics(db: Session, bot_ids: List[str]) -> Dict[str, Dict]:
-        """批次獲取多個 Bot 的分析資料"""
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
+    async def batch_bot_analytics(bot_ids: List[str]) -> Dict[str, Dict]:
+        """批次獲取多個 Bot 的分析資料（使用 MongoDB）"""
+        from app.services.conversation_service import ConversationService
         from datetime import datetime, timedelta
-        
+
         if not bot_ids:
             return {}
-        
-        # 批次查詢所有相關資料
+
+        # 計算時間範圍
         end_date = datetime.now()
         start_date = end_date - timedelta(days=7)
-        
-        # 使用原生 SQL 進行高效能批次查詢
-        query = text("""
-            WITH bot_stats AS (
-                SELECT 
-                    lbu.bot_id,
-                    COUNT(DISTINCT lbu.id) as total_users,
-                    COUNT(DISTINCT CASE WHEN lbui.timestamp >= :start_date THEN lbu.id END) as active_users,
-                    COUNT(lbui.id) as total_interactions
-                FROM line_bot_users lbu
-                LEFT JOIN line_bot_user_interactions lbui ON lbu.id = lbui.line_user_id
-                WHERE lbu.bot_id = ANY(:bot_ids)
-                GROUP BY lbu.bot_id
-            )
-            SELECT * FROM bot_stats;
-        """)
-        
-        try:
-            result = db.execute(query, {
-                "start_date": start_date,
-                "bot_ids": bot_ids
-            })
-            
-            analytics_data = {}
-            for row in result:
-                analytics_data[str(row.bot_id)] = {
-                    "total_users": row.total_users or 0,
-                    "active_users": row.active_users or 0,
-                    "total_interactions": row.total_interactions or 0
+
+        analytics_data = {}
+
+        # 為每個 Bot 獲取分析數據
+        for bot_id in bot_ids:
+            try:
+                bot_analytics = await ConversationService.get_bot_analytics(bot_id, start_date, end_date)
+                analytics_data[bot_id] = {
+                    "total_users": bot_analytics.get("totalUsers", 0),
+                    "active_users": bot_analytics.get("activeUsers", 0),
+                    "total_interactions": bot_analytics.get("totalMessages", 0)
                 }
-            
-            return analytics_data
-            
-        except Exception as e:
-            logger.error(f"批次查詢分析資料失敗: {e}")
-            return {}
+            except Exception as e:
+                logger.error(f"獲取 Bot {bot_id} 分析數據失敗: {e}")
+                analytics_data[bot_id] = {
+                    "total_users": 0,
+                    "active_users": 0,
+                    "total_interactions": 0
+                }
+
+        return analytics_data
     
     @staticmethod
     def prefetch_bot_data(db: Session, bot_ids: List[str]) -> Dict[str, Any]:
@@ -92,48 +77,26 @@ class QueryOptimizer:
         }
     
     @staticmethod
-    def optimize_interaction_queries(db: Session, bot_id: str, time_ranges: List[Dict]) -> Dict[str, int]:
-        """優化互動查詢 - 一次查詢獲取多個時間範圍的統計"""
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
-        
-        # 構建動態 SQL 查詢以一次性獲取所有時間範圍的統計
-        time_conditions = []
-        params = {"bot_id": bot_id}
-        
+    async def optimize_interaction_queries(bot_id: str, time_ranges: List[Dict]) -> Dict[str, int]:
+        """優化互動查詢 - 使用 MongoDB 獲取多個時間範圍的統計"""
+        from app.services.conversation_service import ConversationService
+
+        result = {}
+
+        # 為每個時間範圍獲取統計數據
         for i, time_range in enumerate(time_ranges):
-            start_key = f"start_{i}"
-            end_key = f"end_{i}"
             alias = time_range.get("alias", f"range_{i}")
-            
-            time_conditions.append(f"""
-                COUNT(CASE WHEN lbui.timestamp >= :{start_key} 
-                          AND lbui.timestamp < :{end_key} 
-                     THEN 1 END) as {alias}
-            """)
-            
-            params[start_key] = time_range["start"]
-            params[end_key] = time_range["end"]
-        
-        query_sql = f"""
-            SELECT 
-                {', '.join(time_conditions)}
-            FROM line_bot_users lbu
-            LEFT JOIN line_bot_user_interactions lbui ON lbu.id = lbui.line_user_id
-            WHERE lbu.bot_id = :bot_id
-        """
-        
-        try:
-            result = db.execute(text(query_sql), params).fetchone()
-            
-            # 轉換結果為字典
-            return {
-                time_range.get("alias", f"range_{i}"): getattr(result, time_range.get("alias", f"range_{i}"), 0)
-                for i, time_range in enumerate(time_ranges)
-            }
-            
-        except Exception as e:
-            logger.error(f"優化互動查詢失敗: {e}")
-            return {}
+            start_date = time_range["start"]
+            end_date = time_range["end"]
+
+            try:
+                analytics = await ConversationService.get_bot_analytics(bot_id, start_date, end_date)
+                result[alias] = analytics.get("totalMessages", 0)
+            except Exception as e:
+                logger.error(f"獲取時間範圍 {alias} 統計失敗: {e}")
+                result[alias] = 0
+
+        return result
     
     @staticmethod
     def get_activity_distribution_optimized(db: Session, bot_id: str) -> List[Dict]:

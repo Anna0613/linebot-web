@@ -27,7 +27,6 @@ class LineBotUser(Base):
     
     # 關聯關係
     bot = relationship("Bot", backref="line_bot_users")
-    interactions = relationship("LineBotUserInteraction", back_populates="line_bot_user", cascade="all, delete-orphan")
     
     # 表級約束和索引 - 優化查詢效能
     __table_args__ = (
@@ -41,39 +40,6 @@ class LineBotUser(Base):
     def __repr__(self):
         return f"<LineBotUser(line_user_id={self.line_user_id}, display_name={self.display_name})>"
 
-class LineBotUserInteraction(Base):
-    """LINE Bot 用戶互動記錄模型"""
-    __tablename__ = "line_bot_user_interactions"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
-    line_user_id = Column(UUID(as_uuid=True), ForeignKey("line_bot_users.id", ondelete="CASCADE"), nullable=False)
-    event_type = Column(String(50), nullable=False)  # message, follow, unfollow, postback, etc.
-    message_type = Column(String(50))  # text, image, audio, video, file, location, sticker
-    message_content = Column(JSONB)  # 訊息內容的 JSON
-    media_path = Column(String(500))  # MinIO 媒體檔案路徑
-    media_url = Column(String(500))   # 媒體檔案公開訪問 URL
-    sender_type = Column(String(20), default="user")  # user, admin - 用來區分是用戶發送還是管理者發送
-    admin_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # 如果是管理者發送，記錄管理者ID
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # 關聯關係
-    line_bot_user = relationship("LineBotUser", back_populates="interactions")
-    admin_user = relationship("User", backref="sent_interactions")  # 管理者發送的互動記錄
-    
-    # 表級約束和索引 - 優化分析查詢效能
-    __table_args__ = (
-        Index('idx_interaction_user_timestamp', 'line_user_id', 'timestamp'),
-        Index('idx_interaction_event_type', 'event_type'),
-        Index('idx_interaction_timestamp', 'timestamp'),
-        Index('idx_interaction_timestamp_event', 'timestamp', 'event_type'),  # 複合索引用於時間範圍和事件類型查詢
-        Index('idx_interaction_time_extract', 'timestamp'),  # 針對時間擷取函數的索引
-        Index('idx_interaction_sender_type', 'sender_type'),  # 新增：發送者類型索引
-        Index('idx_interaction_admin_user', 'admin_user_id'),  # 新增：管理者用戶索引
-        Index('idx_interaction_user_sender', 'line_user_id', 'sender_type', 'timestamp'),  # 新增：複合索引用於聊天記錄查詢
-    )
-    
-    def __repr__(self):
-        return f"<LineBotUserInteraction(event_type={self.event_type}, timestamp={self.timestamp})>"
 
 class RichMenu(Base):
     """Rich Menu 模型"""

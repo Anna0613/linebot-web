@@ -418,10 +418,49 @@ async def generate_performance_report():
     try:
         optimizer = PerformanceOptimizer()
         report = optimizer.get_optimization_report()
-        
+
         # 這裡可以將報告儲存到檔案或發送通知
         logger.info("效能報告生成完成")
         logger.debug(f"效能報告: {json.dumps(report, indent=2, ensure_ascii=False)}")
-        
+
     except Exception as e:
         logger.error(f"效能報告生成失敗: {e}")
+
+async def record_user_message_to_mongodb(task_data: Dict[str, Any]):
+    """記錄用戶訊息到 MongoDB（後台任務）"""
+    try:
+        from app.services.conversation_service import ConversationService
+
+        bot_id = task_data.get('bot_id')
+        line_user_id = task_data.get('line_user_id')
+        event_type = task_data.get('event_type')
+        message_type = task_data.get('message_type')
+        message_content = task_data.get('message_content')
+        line_message_id = task_data.get('line_message_id')
+
+        logger.info(f"🔄 開始記錄用戶訊息到 MongoDB: bot_id={bot_id}, user_id={line_user_id}")
+
+        # 準備訊息內容，添加 LINE message ID
+        if message_content and line_message_id:
+            enhanced_content = message_content.copy()
+            enhanced_content['line_message_id'] = line_message_id
+        else:
+            enhanced_content = message_content or {}
+
+        # 記錄到 MongoDB
+        message = await ConversationService.add_user_message(
+            bot_id=bot_id,
+            line_user_id=line_user_id,
+            event_type=event_type,
+            message_type=message_type,
+            message_content=enhanced_content
+        )
+
+        logger.info(f"✅ 用戶訊息成功記錄到 MongoDB: message_id={message.id}, user_id={line_user_id}")
+        return str(message.id)
+
+    except Exception as e:
+        logger.error(f"❌ 記錄用戶訊息到 MongoDB 失敗: {e}")
+        import traceback
+        logger.error(f"詳細錯誤信息: {traceback.format_exc()}")
+        raise

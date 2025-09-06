@@ -25,6 +25,7 @@ settings = config_module.settings
 
 from app.database import init_database
 from app.database_enhanced import init_database_enhanced
+from app.database_mongo import init_mongodb, close_mongodb
 from app.api.api_v1.api import api_router
 from app.config.redis_config import init_redis, close_redis
 from app.services.background_tasks import get_task_manager, PerformanceOptimizer
@@ -56,6 +57,14 @@ async def lifespan(app: FastAPI):
         # 初始化 Redis 連接
         await init_redis()
         logger.info("Redis 初始化完成")
+        
+        # 初始化 MongoDB 連接
+        try:
+            await init_mongodb()
+            logger.info("MongoDB 初始化完成")
+        except Exception as e:
+            logger.error(f"MongoDB 初始化失敗: {e}")
+            logger.warning("繼續啟動服務器，但 MongoDB 功能將不可用")
         
         # 初始化多層快取
         cache = get_cache()
@@ -97,6 +106,12 @@ async def lifespan(app: FastAPI):
         
         await close_redis()
         logger.info("Redis 連接已關閉")
+        
+        try:
+            await close_mongodb()
+            logger.info("MongoDB 連接已關閉")
+        except Exception as e:
+            logger.error(f"MongoDB 關閉失敗: {e}")
     except Exception as e:
         logger.error(f"關閉服務失敗: {e}")
 

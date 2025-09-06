@@ -107,8 +107,30 @@ async def handle_webhook_event(
         
         # 處理 Webhook 事件
         logger.info(f"🔄 開始處理 Webhook 事件...")
-        result = line_bot_service.handle_webhook_event(body, db, bot_id)
+
+        # 記錄詳細的 webhook 內容
+        try:
+            webhook_data = json.loads(body.decode('utf-8'))
+            events = webhook_data.get('events', [])
+            logger.info(f"📋 收到 {len(events)} 個事件")
+
+            for i, event in enumerate(events):
+                logger.info(f"🔍 事件 {i+1}: type={event.get('type')}, source={event.get('source', {}).get('type')}")
+                if event.get('message'):
+                    msg = event.get('message')
+                    logger.info(f"💬 訊息: type={msg.get('type')}, text={msg.get('text', 'N/A')[:50]}")
+        except Exception as e:
+            logger.error(f"❌ 解析 webhook 內容失敗: {e}")
+
+        result = await line_bot_service.handle_webhook_event(body, db, bot_id)
         logger.info(f"✅ Webhook 事件處理完成，結果數量: {len(result) if result else 0}")
+
+        # 記錄處理結果
+        if result:
+            for i, res in enumerate(result):
+                logger.info(f"📝 事件 {i+1} 處理結果: {res}")
+        else:
+            logger.warning("⚠️ 沒有處理任何事件")
 
         # 發送即時活動更新到 WebSocket
         try:

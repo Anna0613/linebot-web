@@ -79,6 +79,26 @@ class Settings(BaseSettings):
     MINIO_BUCKET_NAME: str = os.getenv("MINIO_BUCKET_NAME", "message-store")
     MINIO_PUBLIC_URL: str = os.getenv("MINIO_PUBLIC_URL", "http://localhost:9000")
     
+    # MongoDB 設定
+    MONGODB_HOST: str = os.getenv("MONGODB_HOST", "localhost")
+    MONGODB_PORT: int = int(os.getenv("MONGODB_PORT", "27017"))
+    MONGODB_USERNAME: Optional[str] = os.getenv("MONGODB_USERNAME")
+    MONGODB_PASSWORD: Optional[str] = os.getenv("MONGODB_PASSWORD")
+    MONGODB_DATABASE: str = os.getenv("MONGODB_DATABASE", "linebot_conversations")
+    MONGODB_AUTH_DATABASE: str = os.getenv("MONGODB_AUTH_DATABASE", "admin")
+    MONGODB_SSL: bool = os.getenv("MONGODB_SSL", "False").lower() == "true"
+    
+    @property
+    def MONGODB_URL(self) -> str:
+        """MongoDB 連線 URL"""
+        if self.MONGODB_USERNAME and self.MONGODB_PASSWORD:
+            auth_part = f"{self.MONGODB_USERNAME}:{self.MONGODB_PASSWORD}@"
+        else:
+            auth_part = ""
+        
+        ssl_param = "?ssl=true" if self.MONGODB_SSL else ""
+        return f"mongodb://{auth_part}{self.MONGODB_HOST}:{self.MONGODB_PORT}/{self.MONGODB_DATABASE}{ssl_param}"
+    
     # CORS 設定 - 預設允許的來源
     @property
     def ALLOWED_ORIGINS(self) -> List[str]:

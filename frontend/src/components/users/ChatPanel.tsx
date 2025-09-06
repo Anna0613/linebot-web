@@ -34,7 +34,7 @@ interface ChatMessage {
   id: string;
   event_type: string;
   message_type: string;
-  message_content: string | object;
+  message_content: any; // 可能是字符串、對象或嵌套對象
   sender_type: "user" | "admin";
   timestamp: string;
   media_url?: string;
@@ -141,15 +141,38 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   // 渲染訊息內容
   const renderMessageContent = (message: ChatMessage) => {
     const content = message.message_content;
-    
-    if (message.message_type === "text" && content?.text) {
-      return <div className="break-words">{content.text}</div>;
+
+    // 安全地提取文字內容
+    const getTextContent = (content: any): string => {
+      if (typeof content === 'string') {
+        return content;
+      }
+      if (content && typeof content === 'object') {
+        // 處理 {text: "..."} 格式
+        if (content.text) {
+          // 如果 content.text 也是對象，繼續提取
+          if (typeof content.text === 'object' && content.text.text) {
+            return String(content.text.text);
+          }
+          return String(content.text);
+        }
+        // 處理其他可能的格式
+        if (content.content) {
+          return String(content.content);
+        }
+      }
+      return String(content || '');
+    };
+
+    if (message.message_type === "text") {
+      const textContent = getTextContent(content);
+      return <div className="break-words">{textContent}</div>;
     } else if (message.message_type === "image") {
       return (
         <div>
           {message.media_url ? (
-            <img 
-              src={message.media_url} 
+            <img
+              src={message.media_url}
               alt="用戶發送的圖片"
               className="max-w-xs rounded-lg"
               onError={(e) => {
@@ -166,7 +189,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     } else if (message.message_type === "location") {
       return <div className="text-gray-600">📍 位置訊息</div>;
     }
-    
+
     return <div className="text-gray-500">{message.message_type}</div>;
   };
 

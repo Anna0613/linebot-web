@@ -94,7 +94,7 @@ const BotUsersPage: React.FC = () => {
 
   // 新增功能狀態
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
-  const [_showChatPanel, _setShowChatPanel] = useState(false);
+  const [showChatPanel, setShowChatPanel] = useState(false);
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [currentChatUser, setCurrentChatUser] = useState<LineUser | null>(null);
   const [selectiveBroadcastLoading, setSelectiveBroadcastLoading] = useState(false);
@@ -152,6 +152,28 @@ const BotUsersPage: React.FC = () => {
     return eventMap[eventType] || eventType;
   };
 
+  // 安全地提取文字內容
+  const getTextContent = (content: any): string => {
+    if (typeof content === 'string') {
+      return content;
+    }
+    if (content && typeof content === 'object') {
+      // 處理 {text: "..."} 格式
+      if (content.text) {
+        // 如果 content.text 也是對象，繼續提取
+        if (typeof content.text === 'object' && content.text.text) {
+          return String(content.text.text);
+        }
+        return String(content.text);
+      }
+      // 處理其他可能的格式
+      if (content.content) {
+        return String(content.content);
+      }
+    }
+    return String(content || '');
+  };
+
   // 渲染訊息內容（支持媒體文件）
   const _renderMessageContent = (interaction: UserInteraction, isDetailed: boolean) => {
     if (!interaction.message_content) {
@@ -162,8 +184,9 @@ const BotUsersPage: React.FC = () => {
     
     // 基本模式：只顯示簡化的訊息
     if (!isDetailed) {
-      if (interaction.message_type === "text" && content.text) {
-        return <span className="text-sm">{content.text}</span>;
+      if (interaction.message_type === "text") {
+        const textContent = getTextContent(content);
+        return <span className="text-sm">{textContent}</span>;
       } else if (interaction.message_type === "image") {
         return <span className="text-sm">📷 圖片</span>;
       } else if (interaction.message_type === "video") {
@@ -181,10 +204,11 @@ const BotUsersPage: React.FC = () => {
     }
 
     // 詳細模式：顯示完整內容和媒體
-    if (interaction.message_type === "text" && content.text) {
+    if (interaction.message_type === "text") {
+      const textContent = getTextContent(content);
       return (
         <div>
-          <div className="text-sm mb-1">{content.text}</div>
+          <div className="text-sm mb-1">{textContent}</div>
           <div className="text-xs opacity-75">文字訊息</div>
         </div>
       );
@@ -864,12 +888,15 @@ const BotUsersPage: React.FC = () => {
             </div>
 
             {/* 聊天面板區域 */}
-            <div className="space-y-6">
-              <ChatPanel 
-                botId={botId || ""} 
-                selectedUser={currentChatUser}
-              />
-            </div>
+            {showChatPanel && currentChatUser && (
+              <div className="space-y-6">
+                <ChatPanel
+                  botId={botId || ""}
+                  selectedUser={currentChatUser}
+                  onClose={() => setShowChatPanel(false)}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

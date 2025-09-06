@@ -13,7 +13,8 @@ import logging
 sys.path.insert(0, str(Path(__file__).parent))
 
 from app.database import SessionLocal
-from app.models.line_user import LineBotUser, LineBotUserInteraction
+from app.models.line_user import LineBotUser
+# TODO: LineBotUserInteraction 已遷移到 MongoDB
 from app.models.bot import Bot
 from app.services.line_bot_service import LineBotService
 

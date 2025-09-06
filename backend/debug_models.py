@@ -10,7 +10,8 @@ def test_model_imports():
     print("=== 測試模型導入 ===")
     
     try:
-        from app.models.line_user import LineBotUser, LineBotUserInteraction, AdminMessage
+        from app.models.line_user import LineBotUser
+        # TODO: LineBotUserInteraction 和 AdminMessage 已遷移到 MongoDB
         print("✅ 模型導入成功")
         
         # 檢查模型屬性
@@ -61,7 +62,8 @@ def test_specific_query():
     print("\n=== 測試具體查詢 ===")
     
     try:
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
+        from app.models.line_user import LineBotUser
+        # TODO: LineBotUserInteraction 已遷移到 MongoDB
         from app.database import get_db
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker

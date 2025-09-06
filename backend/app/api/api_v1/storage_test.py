@@ -158,64 +158,12 @@ async def minio_test_download(object_path: str = Query(..., description="MinIO �
 @router.post("/minio/refresh-all-urls")
 async def refresh_all_media_urls():
     """
-    批量更新所有媒體檔案的 URL 為新的代理 URL
+    此端點已停用 - 媒體檔案已遷移到 MongoDB
     """
-    from app.database import get_db
-    from app.models.line_user import LineBotUserInteraction
-    from sqlalchemy.orm import Session
-
-    minio_service = get_minio_service()
-    if not minio_service:
-        raise HTTPException(status_code=500, detail="MinIO 服務未初始化")
-
-    # 獲取資料庫連接
-    db_gen = get_db()
-    db: Session = next(db_gen)
-
-    try:
-        # 查找所有有 media_path 的媒體記錄
-        media_records = db.query(LineBotUserInteraction).filter(
-            LineBotUserInteraction.message_type.in_(['image', 'video', 'audio']),
-            LineBotUserInteraction.media_path.isnot(None)
-        ).all()
-
-        if not media_records:
-            return {"message": "沒有需要更新的媒體檔案", "updated": 0}
-
-        updated_count = 0
-        failed_count = 0
-
-        for interaction in media_records:
-            try:
-                # 重新生成代理 URL
-                new_url = minio_service.get_presigned_url(interaction.media_path)
-                if new_url:
-                    interaction.media_url = new_url
-                    updated_count += 1
-                    logger.info(f"更新媒體 URL 成功: {interaction.id}")
-                else:
-                    failed_count += 1
-                    logger.error(f"生成代理 URL 失敗: {interaction.id}")
-            except Exception as e:
-                failed_count += 1
-                logger.error(f"更新媒體 URL 異常: {interaction.id}, 錯誤: {e}")
-
-        # 批量提交更新
-        db.commit()
-
-        return {
-            "message": f"媒體 URL 更新完成",
-            "total": len(media_records),
-            "updated": updated_count,
-            "failed": failed_count
-        }
-
-    except Exception as e:
-        db.rollback()
-        logger.error(f"批量更新媒體 URL 失敗: {e}")
-        raise HTTPException(status_code=500, detail=f"更新失敗: {str(e)}")
-    finally:
-        db.close()
+    raise HTTPException(
+        status_code=410,
+        detail="此功能已停用，媒體檔案管理已遷移到 MongoDB。請使用新的 ConversationService API。"
+    )
 
 
 @router.get("/minio/proxy")
