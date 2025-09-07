@@ -30,11 +30,26 @@ interface LineUser {
   interaction_count: string;
 }
 
+// 訊息內容類型定義
+type MessageContent =
+  | string
+  | {
+      text?: string | { text: string };
+      content?: string;
+      stickerId?: string;
+      packageId?: string;
+      title?: string;
+      address?: string;
+      latitude?: number;
+      longitude?: number;
+      [key: string]: unknown;
+    };
+
 interface ChatMessage {
   id: string;
   event_type: string;
   message_type: string;
-  message_content: any; // 可能是字符串、對象或嵌套對象
+  message_content: MessageContent;
   sender_type: "user" | "admin";
   timestamp: string;
   media_url?: string;
@@ -143,7 +158,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     const content = message.message_content;
 
     // 安全地提取文字內容
-    const getTextContent = (content: any): string => {
+    const getTextContent = (content: MessageContent): string => {
       if (typeof content === 'string') {
         return content;
       }

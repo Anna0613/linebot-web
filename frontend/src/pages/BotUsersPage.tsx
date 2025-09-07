@@ -32,6 +32,21 @@ import ChatPanel from "../components/users/ChatPanel";
 import UserDetailsModal from "../components/users/UserDetailsModal";
 
 // 類型定義
+// 訊息內容類型定義
+type MessageContent =
+  | string
+  | {
+      text?: string | { text: string };
+      content?: string;
+      stickerId?: string;
+      packageId?: string;
+      title?: string;
+      address?: string;
+      latitude?: number;
+      longitude?: number;
+      [key: string]: unknown;
+    };
+
 interface LineUser {
   id: string;
   line_user_id: string;
@@ -48,7 +63,7 @@ interface UserInteraction {
   id: string;
   event_type: string;
   message_type: string;
-  message_content: unknown;
+  message_content: MessageContent;
   media_url?: string;
   media_path?: string;
   timestamp: string;
@@ -153,7 +168,7 @@ const BotUsersPage: React.FC = () => {
   };
 
   // 安全地提取文字內容
-  const getTextContent = (content: any): string => {
+  const getTextContent = (content: MessageContent): string => {
     if (typeof content === 'string') {
       return content;
     }
