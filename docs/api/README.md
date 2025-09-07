@@ -66,16 +66,14 @@ const loginResponse = await fetch('http://localhost:8000/api/v1/auth/login', {
   credentials: 'include'
 });
 
-const { access_token } = await loginResponse.json();
+const data = await loginResponse.json();
 
-// 2. 儲存 Token
-localStorage.setItem('token', access_token);
+// 2. 認證資料自動處理
+// 後端會自動設定 HTTP-only cookies，前端不需要手動處理 token
 
-// 3. 使用 Token 調用 API
+// 3. 使用認證調用 API（自動包含 HTTP-only cookies）
 const response = await fetch('http://localhost:8000/api/v1/users/profile', {
-  headers: {
-    'Authorization': `Bearer ${access_token}`
-  }
+  credentials: 'include' // 重要：包含 HTTP-only cookies
 });
 ```
 
@@ -210,9 +208,11 @@ const allowedOrigins = [
 **解決方案**：實作 Token 刷新機制
 
 ```javascript
+import { authManager } from '../services/UnifiedAuthManager';
+
 if (response.status === 401) {
-  localStorage.removeItem('token');
-  window.location.href = '/login';
+  // 使用統一認證管理器處理認證錯誤
+  authManager.handleAuthError({ status: 401 }, true);
 }
 ```
 

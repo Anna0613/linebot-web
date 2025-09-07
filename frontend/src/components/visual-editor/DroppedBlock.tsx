@@ -309,7 +309,7 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                       </SelectTrigger>
                       <SelectContent>
                         {flexMessages.length === 0 && !loadingFlexMessages ? (
-                          <SelectItem value="" disabled>
+                          <SelectItem value="no-templates" disabled>
                             沒有可用的FLEX訊息模板
                           </SelectItem>
                         ) : (

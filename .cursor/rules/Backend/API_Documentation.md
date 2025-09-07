@@ -198,10 +198,10 @@ const loginUser = async (username, password) => {
     }
 
     const data = await response.json();
-    
-    // 儲存 token 到 localStorage (可選)
-    localStorage.setItem('token', data.access_token);
-    
+
+    // 使用統一認證管理器處理認證資料（自動使用 HTTP-only cookies）
+    // 不需要手動儲存 token，後端會自動設定 HTTP-only cookies
+
     return data;
   } catch (error) {
     console.error('登入錯誤:', error);
@@ -667,7 +667,6 @@ interface AuthState {
 export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
-    token: localStorage.getItem('token'),
     isAuthenticated: false,
     isLoading: true
   });
@@ -677,52 +676,44 @@ export const useAuth = () => {
   }, []);
 
   const checkAuthStatus = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setAuthState(prev => ({ ...prev, isLoading: false }));
-      return;
-    }
-
     try {
-      const response = await fetch('http://localhost:8000/api/v1/auth/check-login', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      });
+      // 使用統一認證管理器檢查認證狀態（自動處理 HTTP-only cookies）
+      const isAuthenticated = await authManager.isAuthenticated();
 
-      if (response.ok) {
-        const data = await response.json();
+      if (isAuthenticated) {
+        const userInfo = authManager.getUserInfo();
         setAuthState({
-          user: data.user,
-          token,
-          isAuthenticated: data.authenticated,
+          user: userInfo,
+          isAuthenticated: true,
           isLoading: false
         });
       } else {
-        localStorage.removeItem('token');
         setAuthState({
           user: null,
-          token: null,
           isAuthenticated: false,
           isLoading: false
         });
       }
     } catch (error) {
       console.error('認證檢查失敗:', error);
-      setAuthState(prev => ({ ...prev, isLoading: false }));
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false
+      });
     }
   };
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string, rememberMe = false) => {
     const formData = new FormData();
     formData.append('username', username);
     formData.append('password', password);
+    formData.append('remember_me', rememberMe);
 
     const response = await fetch('http://localhost:8000/api/v1/auth/login', {
       method: 'POST',
       body: formData,
-      credentials: 'include'
+      credentials: 'include' // 重要：處理 HTTP-only cookies
     });
 
     if (!response.ok) {
@@ -731,11 +722,10 @@ export const useAuth = () => {
     }
 
     const data = await response.json();
-    localStorage.setItem('token', data.access_token);
-    
+
+    // 後端會自動設定 HTTP-only cookies，前端不需要手動處理 token
     setAuthState({
       user: data.user,
-      token: data.access_token,
       isAuthenticated: true,
       isLoading: false
     });
@@ -749,17 +739,20 @@ export const useAuth = () => {
         method: 'POST',
         credentials: 'include'
       });
+
+      // 使用統一認證管理器清除本地認證資料
+      authManager.clearAuth('logout');
     } catch (error) {
       console.error('登出請求失敗:', error);
+      // 即使後端請求失敗，也要清除本地認證資料
+      authManager.clearAuth('logout');
+    } finally {
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false
+      });
     }
-
-    localStorage.removeItem('token');
-    setAuthState({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false
-    });
   };
 
   return {
@@ -785,50 +778,41 @@ interface User {
 
 export const useAuth = () => {
   const user = ref<User | null>(null);
-  const token = ref<string | null>(localStorage.getItem('token'));
   const isAuthenticated = ref(false);
   const isLoading = ref(true);
 
   const checkAuthStatus = async () => {
-    if (!token.value) {
-      isLoading.value = false;
-      return;
-    }
-
     try {
-      const response = await fetch('http://localhost:8000/api/v1/auth/check-login', {
-        headers: {
-          'Authorization': `Bearer ${token.value}`
-        },
-        credentials: 'include'
-      });
+      // 使用統一認證管理器檢查認證狀態（自動處理 HTTP-only cookies）
+      const isAuth = await authManager.isAuthenticated();
 
-      if (response.ok) {
-        const data = await response.json();
-        user.value = data.user;
-        isAuthenticated.value = data.authenticated;
+      if (isAuth) {
+        const userInfo = authManager.getUserInfo();
+        user.value = userInfo;
+        isAuthenticated.value = true;
       } else {
-        localStorage.removeItem('token');
-        token.value = null;
         user.value = null;
         isAuthenticated.value = false;
       }
     } catch (error) {
       console.error('認證檢查失敗:', error);
+      user.value = null;
+      isAuthenticated.value = false;
     } finally {
       isLoading.value = false;
     }
   };
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string, rememberMe = false) => {
     const formData = new FormData();
     formData.append('username', username);
     formData.append('password', password);
+    formData.append('remember_me', rememberMe);
 
     const response = await fetch('http://localhost:8000/api/v1/auth/login', {
       method: 'POST',
       body: formData,
-      credentials: 'include'
+      credentials: 'include' // 重要：處理 HTTP-only cookies
     });
 
     if (!response.ok) {
@@ -837,9 +821,8 @@ export const useAuth = () => {
     }
 
     const data = await response.json();
-    localStorage.setItem('token', data.access_token);
-    
-    token.value = data.access_token;
+
+    // 後端會自動設定 HTTP-only cookies，前端不需要手動處理 token
     user.value = data.user;
     isAuthenticated.value = true;
 
@@ -852,14 +835,17 @@ export const useAuth = () => {
         method: 'POST',
         credentials: 'include'
       });
+
+      // 使用統一認證管理器清除本地認證資料
+      authManager.clearAuth('logout');
     } catch (error) {
       console.error('登出請求失敗:', error);
+      // 即使後端請求失敗，也要清除本地認證資料
+      authManager.clearAuth('logout');
+    } finally {
+      user.value = null;
+      isAuthenticated.value = false;
     }
-
-    localStorage.removeItem('token');
-    token.value = null;
-    user.value = null;
-    isAuthenticated.value = false;
   };
 
   return {
@@ -884,18 +870,11 @@ class ApiClient {
 
   constructor(baseURL: string = 'http://localhost:8000') {
     this.baseURL = baseURL;
-    this.token = localStorage.getItem('token');
+    // 不再需要手動管理 token，使用 HTTP-only cookies
   }
 
-  setToken(token: string) {
-    this.token = token;
-    localStorage.setItem('token', token);
-  }
-
-  clearToken() {
-    this.token = null;
-    localStorage.removeItem('token');
-  }
+  // 不再需要這些方法，認證由 HTTP-only cookies 自動處理
+  // setToken 和 clearToken 方法已移除
 
   private async request<T>(
     endpoint: string,
@@ -1085,9 +1064,8 @@ export const useErrorHandler = () => {
     // 根據不同錯誤類型進行處理
     switch (apiError.status) {
       case 401:
-        // 清除 token，重導向到登入頁面
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        // 使用統一認證管理器處理認證錯誤
+        authManager.handleAuthError(apiError, true);
         break;
       case 403:
         // 顯示權限不足信息
@@ -1236,9 +1214,10 @@ const getBotsBatch = async (botIds: string[], token: string) => {
 
 ### Token 安全性
 
-1. **儲存安全**: 考慮使用 httpOnly Cookie 而非 localStorage
-2. **自動刷新**: 實作 Token 自動刷新機制
+1. **儲存安全**: ✅ 已使用 HTTP-only Cookie 取代 localStorage，提供更好的 XSS 防護
+2. **自動刷新**: ✅ 已實作統一認證管理器的自動 Token 刷新機制
 3. **HTTPS**: 生產環境必須使用 HTTPS
+4. **統一管理**: ✅ 使用 UnifiedAuthManager 統一處理所有認證相關操作
 
 ### 資料驗證
 

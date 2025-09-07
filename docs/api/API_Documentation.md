@@ -198,10 +198,10 @@ const loginUser = async (username, password) => {
     }
 
     const data = await response.json();
-    
-    // 儲存 token 到 localStorage (可選)
-    localStorage.setItem('token', data.access_token);
-    
+
+    // 使用統一認證管理器處理認證資料（自動使用 HTTP-only cookies）
+    // 不需要手動儲存 token，後端會自動設定 HTTP-only cookies
+
     return data;
   } catch (error) {
     console.error('登入錯誤:', error);
@@ -650,16 +650,18 @@ interface BotResponse {
 ```typescript
 // hooks/useAuth.ts
 import { useState, useEffect } from 'react';
+import { authManager } from '../services/UnifiedAuthManager';
 
 interface User {
   id: string;
   username: string;
-  email: string;
+  email?: string;
+  display_name: string;
+  login_type: 'traditional' | 'line' | 'oauth';
 }
 
 interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -667,7 +669,6 @@ interface AuthState {
 export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
-    token: localStorage.getItem('token'),
     isAuthenticated: false,
     isLoading: true
   });
@@ -677,66 +678,88 @@ export const useAuth = () => {
   }, []);
 
   const checkAuthStatus = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setAuthState(prev => ({ ...prev, isLoading: false }));
-      return;
-    }
-
     try {
-      const response = await fetch('http://localhost:8000/api/v1/auth/check-login', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
-      });
+      // Use unified auth manager to check authentication status (automatically handles HTTP-only cookies)
+      const isAuthenticated = await authManager.isAuthenticated();
 
-      if (response.ok) {
-        const data = await response.json();
+      if (isAuthenticated) {
+        const userInfo = authManager.getUserInfo();
         setAuthState({
-          user: data.user,
-          token,
-          isAuthenticated: data.authenticated,
+          user: userInfo,
+          isAuthenticated: true,
           isLoading: false
         });
       } else {
-        localStorage.removeItem('token');
         setAuthState({
           user: null,
-          token: null,
           isAuthenticated: false,
           isLoading: false
         });
       }
     } catch (error) {
-      console.error('認證檢查失敗:', error);
-      setAuthState(prev => ({ ...prev, isLoading: false }));
+      console.error('Authentication check failed:', error);
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false
+      });
     }
   };
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string, rememberMe = false) => {
     const formData = new FormData();
     formData.append('username', username);
     formData.append('password', password);
+    formData.append('remember_me', rememberMe);
 
     const response = await fetch('http://localhost:8000/api/v1/auth/login', {
       method: 'POST',
       body: formData,
-      credentials: 'include'
+      credentials: 'include' // Important: handle HTTP-only cookies
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || '登入失敗');
+      throw new Error(error.detail || 'Login failed');
     }
 
     const data = await response.json();
-    localStorage.setItem('token', data.access_token);
-    
+
+    // Backend automatically sets HTTP-only cookies, frontend doesn't need to handle tokens manually
+    // Update local state
     setAuthState({
       user: data.user,
-      token: data.access_token,
       isAuthenticated: true,
       isLoading: false
     });
+
+    return data;
+  };
+
+  const logout = async () => {
+    try {
+      // Call backend logout API (clears HTTP-only cookies)
+      await fetch('http://localhost:8000/api/v1/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      // Use unified auth manager to clear local authentication data
+      authManager.clearAuth('logout');
+    } catch (error) {
+      console.error('Logout request failed:', error);
+      // Even if backend request fails, clear local authentication data
+      authManager.clearAuth('logout');
+    } finally {
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false
+      });
+    }
+  };
+
+  return { ...authState, login, logout, checkAuthStatus };
+};
+```
 
