@@ -214,10 +214,40 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         return <div className="text-gray-500">Flex 訊息</div>;
       }
     } else if (message.message_type === "sticker") {
-      // 無法直接渲染 LINE 貼圖，給提示樣式
+      // 嘗試以 LINE 官方貼圖圖檔顯示（以 stickerId 組 URL）
       const pkg = (content as any)?.packageId || '';
       const sid = (content as any)?.stickerId || '';
-      return <div className="text-gray-600">😊 貼圖（{pkg}-{sid}）</div>;
+      if (!sid) {
+        return <div className="text-gray-600">😊 貼圖</div>;
+      }
+      const androidUrl = `https://stickershop.line-scdn.net/stickershop/v1/sticker/${sid}/android/sticker.png`;
+      const iphoneUrl = `https://stickershop.line-scdn.net/stickershop/v1/sticker/${sid}/iPhone/sticker.png`;
+      return (
+        <div className="flex items-center justify-center">
+          <img
+            src={androidUrl}
+            alt={`sticker ${pkg}-${sid}`}
+            className="max-w-[160px] max-h-[160px] object-contain"
+            onError={(e) => {
+              const el = e.currentTarget as HTMLImageElement;
+              // 嘗試 iPhone 路徑作為備援
+              if (el.src !== iphoneUrl) {
+                el.src = iphoneUrl;
+              } else {
+                // 兩者皆失敗則顯示替代文字
+                el.style.display = 'none';
+                const parent = el.parentElement;
+                if (parent) {
+                  const fallback = document.createElement('div');
+                  fallback.className = 'text-gray-600';
+                  fallback.innerText = `😊 貼圖（${pkg}-${sid})`;
+                  parent.appendChild(fallback);
+                }
+              }
+            }}
+          />
+        </div>
+      );
     } else if (message.message_type === "location") {
       return <div className="text-gray-600">📍 位置訊息</div>;
     }

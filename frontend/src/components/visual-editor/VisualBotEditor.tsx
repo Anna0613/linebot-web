@@ -180,40 +180,48 @@ export const VisualBotEditor: React.FC = () => {
         const message = messages.find(m => m.id === messageId);
         
         if (message) {
-          let blocks = [];
+          let blocks: any[] = [];
 
           console.log('🔍 載入 FlexMessage 詳細資訊:', {
             id: message.id,
             name: message.name,
             contentType: typeof message.content,
             content: message.content,
-            hasBlocks: !!message.blocks
+            hasBlocks: !!(message as any).blocks,
+            designBlocks: (message as any).design_blocks
           });
 
-          try {
-            // 解析 content（如果它是 JSON 字符串）
-            let parsedContent = message.content;
-            if (typeof message.content === 'string') {
-              parsedContent = JSON.parse(message.content);
-              console.log('🔄 解析 JSON 字串成功:', parsedContent);
-            }
+          // 優先使用後端提供的 design_blocks（編輯器 blocks）
+          const designBlocks = (message as any).design_blocks;
+          if (Array.isArray(designBlocks)) {
+            blocks = designBlocks;
+            console.log('✅ 使用 design_blocks:', blocks.length, '個積木');
+          } else {
+            try {
+              // 解析 content（如果它是 JSON 字符串）
+              let parsedContent: any = message.content;
+              if (typeof message.content === 'string') {
+                parsedContent = JSON.parse(message.content);
+                console.log('🔄 解析 JSON 字串成功:', parsedContent);
+              }
 
-            if (parsedContent && Array.isArray(parsedContent.blocks)) {
-              blocks = parsedContent.blocks;
-              console.log('✅ 使用 parsedContent.blocks:', blocks.length, '個積木');
-            } else if (Array.isArray(parsedContent)) {
-              blocks = parsedContent;
-              console.log('✅ 使用 parsedContent 陣列:', blocks.length, '個積木');
-            } else if (Array.isArray(message.blocks)) {
-              blocks = message.blocks;
-              console.log('✅ 使用 message.blocks:', blocks.length, '個積木');
-            }
-          } catch (_parseError) {
-            console.log('❌ JSON 解析失敗:', _parseError);
-            // 嘗試其他路徑
-            if (Array.isArray(message.blocks)) {
-              blocks = message.blocks;
-              console.log('✅ 使用備用 message.blocks:', blocks.length, '個積木');
+              if (parsedContent && Array.isArray(parsedContent.blocks)) {
+                blocks = parsedContent.blocks;
+                console.log('✅ 使用 parsedContent.blocks:', blocks.length, '個積木');
+              } else if (Array.isArray(parsedContent)) {
+                blocks = parsedContent;
+                console.log('✅ 使用 parsedContent 陣列:', blocks.length, '個積木');
+              } else if (Array.isArray((message as any).blocks)) {
+                blocks = (message as any).blocks as any[];
+                console.log('✅ 使用 message.blocks:', blocks.length, '個積木');
+              }
+            } catch (_parseError) {
+              console.log('❌ JSON 解析失敗:', _parseError);
+              // 嘗試備援路徑
+              if (Array.isArray((message as any).blocks)) {
+                blocks = (message as any).blocks as any[];
+                console.log('✅ 使用備用 message.blocks:', blocks.length, '個積木');
+              }
             }
           }
 

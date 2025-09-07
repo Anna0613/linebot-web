@@ -76,6 +76,7 @@ export interface FlexMessage {
   id: string;
   name: string;
   content: Record<string, unknown>;
+  design_blocks?: unknown; // 新增：編輯器 blocks（可選）
   user_id: string;
   created_at: string;
   updated_at: string;

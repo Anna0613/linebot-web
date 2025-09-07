@@ -255,12 +255,29 @@ class BotService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="已存在同名的 Flex 訊息"
             )
-        
-        # JSONB 欄位會自動處理內容的序列化
+        # 解析/編譯 content 與 design_blocks（雙軌儲存）
+        compiled_contents = None
+        design_blocks = None
+        try:
+            from app.services.logic_engine_service import LogicEngineService
+            # 若有顯式 design_blocks 優先保存
+            if getattr(message_data, 'design_blocks', None) is not None:
+                design_blocks = message_data.design_blocks
+            # 嘗試從 content 中萃取 blocks
+            if design_blocks is None and isinstance(message_data.content, dict) and isinstance(message_data.content.get('blocks'), list):
+                design_blocks = message_data.content.get('blocks')
+            # 編譯最終 contents（bubble/carousel）
+            compiled_contents = LogicEngineService._to_flex_contents(message_data.content)
+        except Exception as e:
+            logger.warning(f"編譯 Flex 內容失敗，將原樣保存 content：{e}")
+            compiled_contents = message_data.content
+
+        # JSONB 欄位會自動處理序列化
         db_message = FlexMessage(
             user_id=user_id,
             name=message_data.name,
-            content=message_data.content
+            content=compiled_contents,
+            design_blocks=design_blocks
         )
         
         db.add(db_message)
@@ -271,6 +288,7 @@ class BotService:
             id=str(db_message.id),
             name=db_message.name,
             content=db_message.content,
+            design_blocks=db_message.design_blocks,
             user_id=str(db_message.user_id),
             created_at=db_message.created_at,
             updated_at=db_message.updated_at
@@ -292,6 +310,7 @@ class BotService:
                         id=str(msg.id),
                         name=msg.name,
                         content=content,
+                        design_blocks=msg.design_blocks,
                         user_id=str(msg.user_id),
                         created_at=msg.created_at,
                         updated_at=msg.updated_at
@@ -327,6 +346,7 @@ class BotService:
             id=str(message.id),
             name=message.name,
             content=message.content,
+            design_blocks=message.design_blocks,
             user_id=str(message.user_id),
             created_at=message.created_at,
             updated_at=message.updated_at
@@ -937,14 +957,34 @@ class BotService:
                     detail="已存在同名的 Flex 訊息"
                 )
         
-        # 更新 Flex 訊息資料
+        # 更新 Flex 訊息資料（雙軌）
         update_data = message_data.dict(exclude_unset=True)
-        
-        # JSONB 欄位會自動處理 content 字段的序列化
-        
-        for field, value in update_data.items():
-            setattr(message, field, value)
-        
+        name_changed = 'name' in update_data
+        content_changed = 'content' in update_data
+        design_blocks_changed = 'design_blocks' in update_data
+
+        if name_changed:
+            message.name = update_data['name']
+
+        # 如果提供了 design_blocks，直接存；並以 content（若有）或 design_blocks 編譯最終 contents
+        compiled_contents = None
+        if design_blocks_changed:
+            message.design_blocks = update_data['design_blocks']
+
+        if content_changed or design_blocks_changed:
+            try:
+                from app.services.logic_engine_service import LogicEngineService
+                src = update_data.get('content', None)
+                if src is None and message.design_blocks is not None:
+                    # 只有 blocks，組成設計器格式以便編譯
+                    src = {'blocks': message.design_blocks}
+                compiled_contents = LogicEngineService._to_flex_contents(src)
+                message.content = compiled_contents
+            except Exception as e:
+                logger.warning(f"編譯更新後 Flex 內容失敗，保留原 content：{e}")
+                if content_changed:
+                    message.content = update_data['content']
+
         db.commit()
         db.refresh(message)
         
@@ -952,6 +992,7 @@ class BotService:
             id=str(message.id),
             name=message.name,
             content=message.content,
+            design_blocks=message.design_blocks,
             user_id=str(message.user_id),
             created_at=message.created_at,
             updated_at=message.updated_at
