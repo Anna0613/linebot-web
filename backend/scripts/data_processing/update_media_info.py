@@ -7,7 +7,10 @@ import sys
 import os
 
 # 添加項目根目錄到 Python 路徑
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+scripts_dir = os.path.dirname(current_dir)
+backend_dir = os.path.dirname(scripts_dir)
+sys.path.append(backend_dir)
 
 async def update_media_info():
     """手動更新媒體信息"""

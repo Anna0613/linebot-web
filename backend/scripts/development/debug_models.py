@@ -4,7 +4,11 @@
 """
 import sys
 import os
-sys.path.append(os.path.dirname(__file__))
+# 添加專案根目錄到 Python 路徑
+current_dir = os.path.dirname(__file__)
+scripts_dir = os.path.dirname(current_dir)
+backend_dir = os.path.dirname(scripts_dir)
+sys.path.append(backend_dir)
 
 def test_model_imports():
     print("=== 測試模型導入 ===")
