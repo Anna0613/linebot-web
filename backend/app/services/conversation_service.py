@@ -283,7 +283,7 @@ class ConversationService:
         media_url: Optional[str] = None,
         media_path: Optional[str] = None,
         line_message_id: Optional[str] = None
-    ) -> MessageDocument:
+    ) -> tuple[MessageDocument, bool]:
         """
         添加用戶訊息（含重複檢查）
 
@@ -298,7 +298,7 @@ class ConversationService:
             line_message_id: LINE 原始訊息 ID
 
         Returns:
-            MessageDocument: 新增的訊息文檔
+            tuple[MessageDocument, bool]: (訊息文檔, 是否為新訊息)
         """
         try:
             # 如果有 line_message_id，先檢查是否已存在
@@ -316,7 +316,7 @@ class ConversationService:
                     )
                     if existing_message:
                         logger.warning(f"訊息已存在，跳過重複記錄: {line_message_id}")
-                        return existing_message
+                        return existing_message, False  # 返回現有訊息，標記為非新訊息
 
             # 獲取或創建對話
             conversation = await ConversationService.get_or_create_conversation(bot_id, line_user_id)
@@ -337,7 +337,7 @@ class ConversationService:
             message = await conversation.add_message(message_data)
 
             logger.info(f"用戶訊息已添加: bot_id={bot_id}, line_user_id={line_user_id}, message_id={message.id}, line_message_id={line_message_id}")
-            return message
+            return message, True  # 返回新訊息，標記為新訊息
             
         except Exception as e:
             logger.error(f"添加用戶訊息失敗: {e}")

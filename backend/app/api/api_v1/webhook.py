@@ -370,7 +370,7 @@ async def process_single_event(
             return None
 
         # 檢查是否已處理過此訊息
-        existing_message = await ConversationService.add_user_message(
+        message, is_new = await ConversationService.add_user_message(
             bot_id=bot_id,
             line_user_id=user_id,
             event_type=event_type,
@@ -379,19 +379,23 @@ async def process_single_event(
             line_message_id=line_message_id
         )
 
+        # 如果是重複訊息，直接跳過
+        if not is_new:
+            logger.info(f"跳過重複訊息: {line_message_id}")
+            return None
+
         # 如果是新訊息，處理媒體檔案
-        if existing_message and existing_message.line_message_id == line_message_id:
-            if message_type in ['image', 'video', 'audio']:
-                # 異步處理媒體檔案
-                asyncio.create_task(
-                    process_media_async(
-                        bot_id=bot_id,
-                        user_id=user_id,
-                        message_type=message_type,
-                        line_message_id=line_message_id,
-                        line_bot_service=line_bot_service
-                    )
+        if message_type in ['image', 'video', 'audio']:
+            # 異步處理媒體檔案
+            asyncio.create_task(
+                process_media_async(
+                    bot_id=bot_id,
+                    user_id=user_id,
+                    message_type=message_type,
+                    line_message_id=line_message_id,
+                    line_bot_service=line_bot_service
                 )
+            )
 
         return {
             'event_type': event_type,
@@ -399,7 +403,8 @@ async def process_single_event(
             'user_id': user_id,
             'line_message_id': line_message_id,
             'timestamp': event.get('timestamp'),
-            'processed': True
+            'processed': True,
+            'is_new': True
         }
 
     except Exception as e:

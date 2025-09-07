@@ -878,7 +878,7 @@ class LineBotService:
                 enhanced_content = message_content or {}
 
             # 記錄到 MongoDB
-            message = await ConversationService.add_user_message(
+            message, is_new = await ConversationService.add_user_message(
                 bot_id=bot_id,
                 line_user_id=user_id,
                 event_type=event_type,
@@ -886,7 +886,7 @@ class LineBotService:
                 message_content=enhanced_content
             )
 
-            logger.info(f"✅ 成功記錄互動到 MongoDB: ID={message.id}, User={user_id}, Type={message_type}")
+            logger.info(f"✅ 成功記錄互動到 MongoDB: ID={message.id}, User={user_id}, Type={message_type}, IsNew={is_new}")
             return str(message.id)
 
         except Exception as e:

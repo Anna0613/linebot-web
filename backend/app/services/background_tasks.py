@@ -448,7 +448,7 @@ async def record_user_message_to_mongodb(task_data: Dict[str, Any]):
             enhanced_content = message_content or {}
 
         # 記錄到 MongoDB
-        message = await ConversationService.add_user_message(
+        message, is_new = await ConversationService.add_user_message(
             bot_id=bot_id,
             line_user_id=line_user_id,
             event_type=event_type,
@@ -456,7 +456,7 @@ async def record_user_message_to_mongodb(task_data: Dict[str, Any]):
             message_content=enhanced_content
         )
 
-        logger.info(f"✅ 用戶訊息成功記錄到 MongoDB: message_id={message.id}, user_id={line_user_id}")
+        logger.info(f"✅ 用戶訊息成功記錄到 MongoDB: message_id={message.id}, user_id={line_user_id}, is_new={is_new}")
         return str(message.id)
 
     except Exception as e:
