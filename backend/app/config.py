@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     DESCRIPTION: str = "統一的 LINE Bot 管理 API"
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    SHOW_DOCS: bool = os.getenv("SHOW_DOCS", "False").lower() == "true"
     
     # 資料庫設定
     DB_HOST: str = os.getenv("DB_HOST", "sql.jkl921102.org")

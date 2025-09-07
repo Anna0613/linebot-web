@@ -121,8 +121,8 @@ app = FastAPI(
     description=settings.DESCRIPTION,
     version=settings.VERSION,
     lifespan=lifespan,
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
+    docs_url="/docs" if settings.SHOW_DOCS else None,
+    redoc_url="/redoc" if settings.SHOW_DOCS else None,
 )
 
 # CORS 中間件 - 必須在所有其他中間件之前
@@ -233,7 +233,7 @@ async def root():
     return {
         "message": f"歡迎使用 {settings.PROJECT_NAME}",
         "version": settings.VERSION,
-        "docs": "/docs" if settings.DEBUG else "文檔在生產環境中已禁用"
+        "docs": "/docs" if settings.SHOW_DOCS else "文檔已禁用"
     }
 
 @app.get("/health")
