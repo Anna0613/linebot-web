@@ -14,7 +14,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.bot import Bot, LogicTemplate
-from app.models.line_user import LineBotUser, LineBotUserInteraction
+from app.models.line_user import LineBotUser
 from app.services.line_bot_service import LineBotService
 from app.config.redis_config import (
     CacheService, 
@@ -446,11 +446,9 @@ async def get_bot_dashboard_light(
     # 優化查詢：使用子查詢避免 JOIN
     bot_user_ids = db.query(LineBotUser.id).filter(LineBotUser.bot_id == bot_id).subquery()
     
-    today_interactions = db.query(LineBotUserInteraction).filter(
-        LineBotUserInteraction.line_user_id.in_(db.query(bot_user_ids.c.id)),
-        LineBotUserInteraction.timestamp >= today_start,
-        LineBotUserInteraction.timestamp < today_end
-    ).count()
+    # 使用 MongoDB 獲取今日訊息數量
+    from app.services.conversation_service import ConversationService
+    today_interactions = await ConversationService.get_today_message_count(bot_id)
     
     return {
         "bot_info": {
@@ -720,19 +718,14 @@ async def get_bot_analytics_incremental(
         since = datetime.now() - timedelta(hours=1)
 
     try:
-        # 只查詢增量數據
-        incremental_data = db.query(LineBotUserInteraction).join(
-            LineBotUser
-        ).filter(
-            LineBotUser.bot_id == bot_id,
-            LineBotUserInteraction.timestamp >= since
-        ).order_by(
-            LineBotUserInteraction.timestamp.desc()
-        ).limit(100).all()
+        # 使用 MongoDB 查詢增量數據
+        from app.services.conversation_service import ConversationService
+        incremental_data = await ConversationService.get_recent_messages(bot_id, since, limit=100)
 
         # 計算基本統計
         total_interactions = len(incremental_data)
-        unique_users = len(set(interaction.line_user_id for interaction in incremental_data))
+        # 從對話中獲取唯一用戶數
+        unique_users = 0  # TODO: 實現從 MongoDB 計算唯一用戶數
 
         return {
             "bot_id": bot_id,
@@ -794,20 +787,15 @@ async def get_bot_status_quick(
             "checked_at": datetime.now().isoformat()
         }
 
-        # 快速查詢最後活動時間
-        last_interaction = db.query(LineBotUserInteraction).join(
-            LineBotUser
-        ).filter(
-            LineBotUser.bot_id == bot_id
-        ).order_by(
-            LineBotUserInteraction.timestamp.desc()
-        ).first()
+        # 使用 MongoDB 查詢最後活動時間
+        from app.services.conversation_service import ConversationService
+        last_message = await ConversationService.get_last_message(bot_id)
 
-        if last_interaction:
-            status["last_activity"] = last_interaction.timestamp.isoformat()
+        if last_message:
+            status["last_activity"] = last_message.timestamp.isoformat()
 
             # 根據最後活動時間判斷狀態
-            time_diff = datetime.now() - last_interaction.timestamp
+            time_diff = datetime.now() - last_message.timestamp
             if time_diff.total_seconds() < 3600:  # 1 小時內
                 status["status"] = "active"
             elif time_diff.total_seconds() < 86400:  # 24 小時內

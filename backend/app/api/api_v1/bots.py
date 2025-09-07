@@ -235,8 +235,7 @@ async def get_message_content(
     current_user: User = Depends(get_current_user)
 ):
     """取得 LINE 消息的媒體內容"""
-    from app.models.line_user import LineBotUser, LineBotUserInteraction
-    from uuid import UUID as PyUUID
+    from app.services.conversation_service import ConversationService
     
     try:
         # 驗證 Bot 所有權
@@ -244,43 +243,38 @@ async def get_message_content(
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
         
-        # 獲取互動記錄以確定用戶ID和消息類型
-        interaction_uuid = PyUUID(interaction_id)
-        interaction = db.query(LineBotUserInteraction).filter(
-            LineBotUserInteraction.id == interaction_uuid
-        ).first()
+        # 從 MongoDB 中查找消息和對話
+        message = await ConversationService.get_message_by_id(interaction_id)
         
-        if not interaction:
-            raise HTTPException(status_code=404, detail="互動記錄不存在")
+        if not message:
+            raise HTTPException(status_code=404, detail="訊息記錄不存在")
         
-        # 獲取 LINE 用戶信息
-        line_user = db.query(LineBotUser).filter(
-            LineBotUser.id == interaction.line_user_id
-        ).first()
+        # 獲取包含此訊息的對話
+        conversation = await ConversationService.get_conversation_by_message_id(interaction_id)
         
-        if not line_user:
-            raise HTTPException(status_code=404, detail="用戶記錄不存在")
+        if not conversation:
+            raise HTTPException(status_code=404, detail="對話記錄不存在")
         
         # 檢查是否為媒體類型消息
-        if interaction.message_type not in ['image', 'video', 'audio']:
+        if message.message_type not in ['image', 'video', 'audio']:
             raise HTTPException(status_code=400, detail="非媒體類型消息")
         
         # 檢查是否已有媒體 URL
-        if interaction.media_url:
+        if message.media_url:
             return {
                 "success": True,
-                "content_url": interaction.media_url,
+                "content_url": message.media_url,
                 "interaction_id": interaction_id,
-                "message_type": interaction.message_type
+                "message_type": message.message_type
             }
         
         # 檢查是否有 LINE message ID 用於下載
         line_message_id = None
-        if interaction.message_content and isinstance(interaction.message_content, dict):
+        if message.content and isinstance(message.content, dict):
             line_message_id = (
-                interaction.message_content.get('line_message_id') or 
-                interaction.message_content.get('id') or
-                interaction.message_content.get('messageId')
+                message.content.get('line_message_id') or 
+                message.content.get('id') or
+                message.content.get('messageId')
             )
         
         if not line_message_id:
@@ -302,17 +296,19 @@ async def get_message_content(
             
             # 使用 MinIO 服務下載並上傳媒體
             media_path, media_url = await minio_service.upload_media_from_line(
-                line_user_id=line_user.line_user_id,
-                message_type=interaction.message_type,
+                line_user_id=conversation.line_user_id,
+                message_type=message.message_type,
                 channel_token=bot.channel_token,
                 line_message_id=line_message_id
             )
             
             if media_path and media_url:
-                # 更新資料庫記錄
-                interaction.media_path = media_path
-                interaction.media_url = media_url
-                db.commit()
+                # 更新 MongoDB 中的訊息記錄
+                await ConversationService.update_message_media(
+                    message_id=interaction_id,
+                    media_path=media_path,
+                    media_url=media_url
+                )
                 
                 return {
                     "success": True,
@@ -362,11 +358,7 @@ async def process_pending_media(
             raise HTTPException(status_code=404, detail="Bot 不存在")
 
         # 查找沒有媒體 URL 的媒體記錄
-        pending_media = db.query(LineBotUserInteraction).filter(
-            LineBotUserInteraction.message_type.in_(['image', 'video', 'audio']),
-            LineBotUserInteraction.media_url.is_(None),
-            LineBotUserInteraction.message_content.isnot(None)
-        ).limit(10).all()
+        pending_media = await ConversationService.get_pending_media_messages(bot_id, limit=10)
 
         if not pending_media:
             return {"message": "沒有待處理的媒體檔案", "processed": 0}
@@ -380,40 +372,46 @@ async def process_pending_media(
         if not minio_service:
             raise HTTPException(status_code=500, detail="MinIO 服務未初始化")
 
-        for interaction in pending_media:
+        for conversation, message in pending_media:
             try:
-                message_content = interaction.message_content
-                line_message_id = message_content.get('id') if message_content else None
+                message_content = message.content
+                line_message_id = (
+                    message_content.get('line_message_id') or 
+                    message_content.get('id') or
+                    message_content.get('messageId')
+                ) if message_content else None
 
                 if not line_message_id:
-                    logger.warning(f"互動記錄 {interaction.id} 沒有 LINE message ID")
+                    logger.warning(f"訊息記錄 {message.id} 沒有 LINE message ID")
                     failed_count += 1
                     continue
 
                 # 下載並上傳媒體
                 media_path, media_url = await minio_service.upload_media_from_line(
-                    line_user_id=interaction.line_user_id,
-                    message_type=interaction.message_type,
+                    line_user_id=conversation.line_user_id,
+                    message_type=message.message_type,
                     channel_token=bot.channel_token,
                     line_message_id=line_message_id
                 )
 
                 if media_path and media_url:
-                    # 更新資料庫記錄
-                    interaction.media_path = media_path
-                    interaction.media_url = media_url
+                    # 更新 MongoDB 中的訊息記錄
+                    await ConversationService.update_message_media(
+                        message_id=message.id,
+                        media_path=media_path,
+                        media_url=media_url
+                    )
                     processed_count += 1
-                    logger.info(f"成功處理媒體檔案: {interaction.id}")
+                    logger.info(f"成功處理媒體檔案: {message.id}")
                 else:
                     failed_count += 1
-                    logger.error(f"處理媒體檔案失敗: {interaction.id}")
+                    logger.error(f"處理媒體檔案失敗: {message.id}")
 
             except Exception as e:
                 failed_count += 1
-                logger.error(f"處理互動記錄 {interaction.id} 時發生錯誤: {e}")
+                logger.error(f"處理訊息記錄 {message.id} 時發生錯誤: {e}")
 
-        # 提交所有更改
-        db.commit()
+        # MongoDB 的更改已在上面自動保存
 
         return {
             "message": f"媒體處理完成",

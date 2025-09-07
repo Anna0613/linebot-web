@@ -646,76 +646,76 @@ class LineBotService:
             logger.error(f"發送訊息失敗: {e}")
             raise Exception(f"發送失敗: {str(e)}")
     
-    def handle_webhook_event(self, body: bytes, db_session, bot_id: str) -> List[Dict]:
+    async def handle_webhook_event(self, body: bytes, db_session, bot_id: str) -> List[Dict]:
         """
         處理 Webhook 事件
-        
+
         Args:
             body: 請求內容 (bytes)
             db_session: 數據庫會話
             bot_id: Bot ID
-            
+
         Returns:
             List[Dict]: 處理結果
         """
         if not self.is_configured():
             raise ValueError("LINE Bot 未正確配置")
-        
+
         try:
             # 解析 JSON
             body_str = body.decode('utf-8')
             events = json.loads(body_str).get('events', [])
             results = []
-            
+
             for event in events:
-                result = self.process_event(event, db_session, bot_id)
+                result = await self.process_event(event, db_session, bot_id)
                 if result:
                     results.append(result)
-            
+
             return results
         except Exception as e:
             logger.error(f"處理 Webhook 事件失敗: {e}")
             raise Exception(f"事件處理失敗: {str(e)}")
     
-    def process_event(self, event_data: Dict, db_session, bot_id: str) -> Optional[Dict]:
+    async def process_event(self, event_data: Dict, db_session, bot_id: str) -> Optional[Dict]:
         """
         處理單個事件
-        
+
         Args:
             event_data: 事件資料
             db_session: 數據庫會話
             bot_id: Bot ID
-            
+
         Returns:
             Dict: 處理結果
         """
         try:
             event_type = event_data.get('type')
-            
+
             if event_type == 'message':
-                return self.handle_message_event(event_data, db_session, bot_id)
+                return await self.handle_message_event(event_data, db_session, bot_id)
             elif event_type == 'follow':
-                return self.handle_follow_event(event_data, db_session, bot_id)
+                return await self.handle_follow_event(event_data, db_session, bot_id)
             elif event_type == 'unfollow':
-                return self.handle_unfollow_event(event_data, db_session, bot_id)
+                return await self.handle_unfollow_event(event_data, db_session, bot_id)
             else:
                 logger.info(f"未處理的事件類型: {event_type}")
                 return None
-                
+
         except Exception as e:
             logger.error(f"處理事件失敗: {e}")
             return None
     
-    def handle_message_event(self, event_data: Dict, db_session, bot_id: str) -> Dict:
+    async def handle_message_event(self, event_data: Dict, db_session, bot_id: str) -> Dict:
         """處理訊息事件"""
         user_id = event_data.get('source', {}).get('userId')
         message_data = event_data.get('message', {})
         message_type = message_data.get('type')
         line_message_id = message_data.get('id')  # 獲取 LINE 原始 message ID
         
-        # 記錄用戶互動到數據庫
+        # 記錄用戶互動到數據庫（直接調用異步方法）
         try:
-            interaction_id = self.record_user_interaction(
+            interaction_id = await self.record_user_interaction(
                 db_session=db_session,
                 bot_id=bot_id,
                 user_id=user_id,
@@ -728,6 +728,8 @@ class LineBotService:
                 logger.error(f"無法創建互動記錄，跳過媒體處理")
         except Exception as e:
             logger.error(f"處理訊息事件時出錯: {e}")
+            import traceback
+            logger.error(f"詳細錯誤信息: {traceback.format_exc()}")
             interaction_id = None
         
         # 如果是媒體訊息，使用背景任務處理媒體檔案上傳
@@ -742,15 +744,14 @@ class LineBotService:
                 # 創建媒體處理任務 ID
                 task_id = f"media_upload_{interaction_id}_{line_message_id}"
                 
-                # 使用 asyncio.ensure_future 來確保任務被正確排程
+                # 直接創建異步任務來處理媒體檔案
                 loop = asyncio.get_event_loop()
-                loop.create_task(task_manager.add_task(
-                    task_id=task_id,
-                    name=f"媒體上傳 - {message_type}",
-                    func=self._process_media_background,
-                    args=(str(interaction_id), user_id, message_type, line_message_id),
-                    priority=TaskPriority.NORMAL,
-                    max_retries=3
+                loop.create_task(self._process_media_async(
+                    interaction_id=str(interaction_id),
+                    line_user_id=user_id,
+                    message_type=message_type,
+                    line_message_id=line_message_id,
+                    db_session=db_session
                 ))
                 
                 logger.info(f"媒體處理任務已排程: {task_id} ({message_type})")
@@ -776,61 +777,67 @@ class LineBotService:
             "processed_at": datetime.now().isoformat()
         }
     
-    def handle_follow_event(self, event_data: Dict, db_session, bot_id: str) -> Dict:
+    async def handle_follow_event(self, event_data: Dict, db_session, bot_id: str) -> Dict:
         """處理關注事件"""
         user_id = event_data.get('source', {}).get('userId')
-        
+
         # 記錄用戶互動到數據庫
-        self.record_user_interaction(
-            db_session=db_session,
-            bot_id=bot_id,
-            user_id=user_id,
-            event_type="follow"
-        )
-        
+        try:
+            await self.record_user_interaction(
+                db_session=db_session,
+                bot_id=bot_id,
+                user_id=user_id,
+                event_type="follow"
+            )
+        except Exception as e:
+            logger.error(f"記錄關注事件失敗: {e}")
+
         return {
             "event_type": "follow",
             "user_id": user_id,
             "processed_at": datetime.now().isoformat()
         }
     
-    def handle_unfollow_event(self, event_data: Dict, db_session, bot_id: str) -> Dict:
+    async def handle_unfollow_event(self, event_data: Dict, db_session, bot_id: str) -> Dict:
         """處理取消關注事件"""
         user_id = event_data.get('source', {}).get('userId')
-        
+
         # 記錄用戶互動到數據庫
-        self.record_user_interaction(
-            db_session=db_session,
-            bot_id=bot_id,
-            user_id=user_id,
-            event_type="unfollow"
-        )
-        
+        try:
+            await self.record_user_interaction(
+                db_session=db_session,
+                bot_id=bot_id,
+                user_id=user_id,
+                event_type="unfollow"
+            )
+        except Exception as e:
+            logger.error(f"記錄取消關注事件失敗: {e}")
+
         return {
             "event_type": "unfollow",
             "user_id": user_id,
             "processed_at": datetime.now().isoformat()
         }
     
-    def record_user_interaction(self, db_session, bot_id: str, user_id: str, event_type: str, 
+    async def record_user_interaction(self, db_session, bot_id: str, user_id: str, event_type: str,
                                message_type: str = None, message_content: Dict = None, line_message_id: str = None):
-        """記錄用戶互動到資料庫"""
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
+        """記錄用戶互動到 MongoDB（替代舊的 PostgreSQL 方法）"""
+        from app.models.line_user import LineBotUser
         from uuid import UUID as PyUUID
-        
+
         try:
             bot_uuid = PyUUID(bot_id)
-            
-            # 查找或創建用戶記錄
+
+            # 查找或創建用戶記錄（PostgreSQL 部分保留）
             line_user = db_session.query(LineBotUser).filter(
                 LineBotUser.bot_id == bot_uuid,
                 LineBotUser.line_user_id == user_id
             ).first()
-            
+
             if not line_user:
                 # 獲取用戶資料
                 user_profile = self.get_user_profile(user_id)
-                
+
                 line_user = LineBotUser(
                     bot_id=bot_uuid,
                     line_user_id=user_id,
@@ -852,42 +859,36 @@ class LineBotService:
                     line_user.interaction_count = str(current_count + 1)
                 except (ValueError, TypeError):
                     line_user.interaction_count = "1"
-                
+
                 if event_type == "follow":
                     line_user.is_followed = True
                 elif event_type == "unfollow":
                     line_user.is_followed = False
-            
+
+            db_session.commit()
+
+            # 使用 ConversationService 記錄到 MongoDB
+            from app.services.conversation_service import ConversationService
+
             # 準備訊息內容，添加 LINE message ID
             if message_content and line_message_id:
                 enhanced_content = message_content.copy()
                 enhanced_content['line_message_id'] = line_message_id
             else:
-                enhanced_content = message_content
-            
-            # 記錄互動（安全創建，避免新欄位問題）
-            interaction_data = {
-                'line_user_id': line_user.id,
-                'event_type': event_type,
-                'message_type': message_type,
-                'message_content': enhanced_content
-            }
-            
-            # 安全地添加新欄位（如果 ORM 模型支持）
-            if hasattr(LineBotUserInteraction, 'media_path'):
-                interaction_data['media_path'] = None
-            if hasattr(LineBotUserInteraction, 'media_url'):
-                interaction_data['media_url'] = None
-                
-            interaction = LineBotUserInteraction(**interaction_data)
-            db_session.add(interaction)
-            db_session.flush()  # 獲取 ID
-            interaction_id = interaction.id
-            db_session.commit()
-            
-            logger.info(f"✅ 成功記錄互動: ID={interaction_id}, User={user_id}, Type={message_type}")
-            return interaction_id
-            
+                enhanced_content = message_content or {}
+
+            # 記錄到 MongoDB
+            message, is_new = await ConversationService.add_user_message(
+                bot_id=bot_id,
+                line_user_id=user_id,
+                event_type=event_type,
+                message_type=message_type,
+                message_content=enhanced_content
+            )
+
+            logger.info(f"✅ 成功記錄互動到 MongoDB: ID={message.id}, User={user_id}, Type={message_type}, IsNew={is_new}")
+            return str(message.id)
+
         except Exception as e:
             logger.error(f"記錄用戶互動失敗: {e}")
             logger.error(f"Bot ID: {bot_id}, User ID: {user_id}, Event Type: {event_type}")
@@ -904,7 +905,7 @@ class LineBotService:
                                   line_message_id: str):
         """背景任務處理媒體檔案上傳到 MinIO（同步版本）"""
         from app.services.minio_service import get_minio_service
-        from app.models.line_user import LineBotUserInteraction
+        # TODO: LineBotUserInteraction 已遷移到 MongoDB
         from uuid import UUID as PyUUID
         from app.database import SessionLocal
         import asyncio
@@ -927,19 +928,20 @@ class LineBotService:
             except:
                 pass
     
-    async def _process_media_async(self, interaction_id: str, line_user_id: str, message_type: str, 
+    async def _process_media_async(self, interaction_id: str, line_user_id: str, message_type: str,
                                   line_message_id: str, db_session):
         """異步處理媒體檔案上傳到 MinIO"""
         from app.services.minio_service import get_minio_service
-        from app.models.line_user import LineBotUserInteraction
-        from uuid import UUID as PyUUID
-        
+        from app.services.conversation_service import ConversationService
+
         try:
+            logger.info(f"🔄 開始處理媒體檔案: message_id={line_message_id}, type={message_type}")
+
             minio_service = get_minio_service()
             if not minio_service:
                 logger.warning("MinIO 服務未初始化，跳過媒體檔案處理")
                 return
-            
+
             # 上傳媒體檔案到 MinIO
             media_path, media_url = await minio_service.upload_media_from_line(
                 line_user_id=line_user_id,
@@ -947,29 +949,35 @@ class LineBotService:
                 channel_token=self.channel_token,
                 line_message_id=line_message_id
             )
-            
+
             if media_path and media_url:
-                # 更新資料庫記錄
-                interaction_uuid = PyUUID(interaction_id)
-                interaction = db_session.query(LineBotUserInteraction).filter(
-                    LineBotUserInteraction.id == interaction_uuid
-                ).first()
-                
-                if interaction:
-                    # 安全地設置新欄位（如果存在）
-                    if hasattr(interaction, 'media_path'):
-                        interaction.media_path = media_path
-                    if hasattr(interaction, 'media_url'):
-                        interaction.media_url = media_url
-                    db_session.commit()
-                    logger.info(f"媒體檔案處理成功: {media_path}")
-                else:
-                    logger.error(f"找不到互動記錄: {interaction_id}")
+                logger.info(f"✅ 媒體檔案上傳成功: path={media_path}, url={media_url}")
+
+                # 更新 MongoDB 中的訊息記錄
+                try:
+                    # 根據 interaction_id 找到對應的訊息並更新
+                    success = await ConversationService.update_message_media(
+                        message_id=interaction_id,
+                        media_path=media_path,
+                        media_url=media_url
+                    )
+
+                    if success:
+                        logger.info(f"✅ MongoDB 訊息媒體信息更新成功: message_id={interaction_id}")
+                    else:
+                        logger.error(f"❌ MongoDB 訊息媒體信息更新失敗: message_id={interaction_id}")
+
+                except Exception as update_error:
+                    logger.error(f"❌ 更新 MongoDB 訊息媒體信息時出錯: {update_error}")
+                    import traceback
+                    logger.error(f"詳細錯誤: {traceback.format_exc()}")
             else:
-                logger.error(f"媒體檔案上傳失敗: interaction_id={interaction_id}")
-                
+                logger.error(f"❌ 媒體檔案上傳失敗: interaction_id={interaction_id}")
+
         except Exception as e:
-            logger.error(f"異步處理媒體檔案失敗: {e}")
+            logger.error(f"❌ 異步處理媒體檔案失敗: {e}")
+            import traceback
+            logger.error(f"詳細錯誤: {traceback.format_exc()}")
     
     def get_bot_followers(self, db_session, bot_id: str, limit: int = 50, offset: int = 0) -> Dict:
         """獲取 Bot 的關注者列表"""
@@ -1026,83 +1034,25 @@ class LineBotService:
                 }
             }
     
-    def get_user_interaction_history(self, db_session, bot_id: str, line_user_id: str, 
+    async def get_user_interaction_history(self, db_session, bot_id: str, line_user_id: str,
                                    limit: int = 20) -> List[Dict]:
-        """獲取用戶的互動歷史"""
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
-        from uuid import UUID as PyUUID
-        
+        """獲取用戶的互動歷史（使用 MongoDB）"""
         try:
-            bot_uuid = PyUUID(bot_id)
-            
-            # 查找用戶
-            line_user = db_session.query(LineBotUser).filter(
-                LineBotUser.bot_id == bot_uuid,
-                LineBotUser.line_user_id == line_user_id
-            ).first()
-            
-            if not line_user:
-                return []
-            
-            # 使用原始 SQL 查詢來避免 ORM 欄位問題
-            from sqlalchemy import text
-            
-            # 先嘗試完整查詢，如果失敗則使用基本查詢
-            try:
-                sql = text("""
-                    SELECT id, line_user_id, event_type, message_type, message_content, 
-                           media_path, media_url, timestamp
-                    FROM line_bot_user_interactions 
-                    WHERE line_user_id = :line_user_id 
-                    ORDER BY timestamp DESC 
-                    LIMIT :limit_val
-                """)
-                result = db_session.execute(sql, {
-                    'line_user_id': line_user.id, 
-                    'limit_val': limit
-                })
-                interactions = result.fetchall()
-            except Exception as e:
-                if "does not exist" in str(e):
-                    # 回滾失敗的事務
-                    db_session.rollback()
-                    
-                    # 如果新欄位不存在，使用基本查詢
-                    sql = text("""
-                        SELECT id, line_user_id, event_type, message_type, message_content, 
-                               NULL as media_path, NULL as media_url, timestamp
-                        FROM line_bot_user_interactions 
-                        WHERE line_user_id = :line_user_id 
-                        ORDER BY timestamp DESC 
-                        LIMIT :limit_val
-                    """)
-                    result = db_session.execute(sql, {
-                        'line_user_id': line_user.id, 
-                        'limit_val': limit
-                    })
-                    interactions = result.fetchall()
-                else:
-                    raise e
-            
-            history = []
-            for row in interactions:
-                # 處理原始 SQL 查詢結果
-                interaction_data = {
-                    "id": str(row[0]),  # id
-                    "event_type": row[2],  # event_type
-                    "message_type": row[3],  # message_type
-                    "message_content": row[4],  # message_content
-                    "media_path": row[5],  # media_path (可能是 None)
-                    "media_url": row[6],  # media_url (可能是 None)
-                    "timestamp": row[7].isoformat() if row[7] else None  # timestamp
-                }
-                history.append(interaction_data)
-            
-            return history
-            
+            # 使用 ConversationService 從 MongoDB 獲取聊天記錄
+            from app.services.conversation_service import ConversationService
+
+            chat_history, total_count = await ConversationService.get_chat_history(
+                bot_id=bot_id,
+                line_user_id=line_user_id,
+                limit=limit,
+                offset=0
+            )
+
+            return chat_history
+
         except Exception as e:
             logger.error(f"獲取用戶互動歷史失敗: {e}")
-            # 確保回滾事務
+            return []
             try:
                 db_session.rollback()
             except:
@@ -1302,303 +1252,15 @@ class LineBotService:
             db_session.rollback()
             return False
     
-    def get_bot_analytics_real(self, db_session, bot_id: str, start_date: datetime, end_date: datetime) -> Dict:
-        """從數據庫獲取真實的 Bot 分析數據"""
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
-        from uuid import UUID as PyUUID
-        from sqlalchemy import func, distinct
-        
-        try:
-            bot_uuid = PyUUID(bot_id)
-            
-            # 獲取總用戶數
-            total_users = db_session.query(func.count(LineBotUser.id)).filter(
-                LineBotUser.bot_id == bot_uuid
-            ).scalar() or 0
-            
-            # 獲取活躍用戶數（有互動記錄的）
-            active_users = db_session.query(func.count(distinct(LineBotUser.id))).join(
-                LineBotUserInteraction, LineBotUser.id == LineBotUserInteraction.line_user_id
-            ).filter(
-                LineBotUser.bot_id == bot_uuid,
-                LineBotUserInteraction.timestamp >= start_date,
-                LineBotUserInteraction.timestamp <= end_date
-            ).scalar() or 0
-            
-            # 獲取總訊息數
-            total_messages = db_session.query(func.count(LineBotUserInteraction.id)).join(
-                LineBotUser, LineBotUser.id == LineBotUserInteraction.line_user_id
-            ).filter(
-                LineBotUser.bot_id == bot_uuid,
-                LineBotUserInteraction.timestamp >= start_date,
-                LineBotUserInteraction.timestamp <= end_date
-            ).scalar() or 0
-            
-            # 獲取今天的訊息數
-            from datetime import date, timedelta
-            today_start = datetime.combine(date.today(), datetime.min.time())
-            today_end = datetime.combine(date.today(), datetime.max.time())
-            
-            today_messages = db_session.query(func.count(LineBotUserInteraction.id)).join(
-                LineBotUser, LineBotUser.id == LineBotUserInteraction.line_user_id
-            ).filter(
-                LineBotUser.bot_id == bot_uuid,
-                LineBotUserInteraction.timestamp >= today_start,
-                LineBotUserInteraction.timestamp <= today_end
-            ).scalar() or 0
-            
-            # 獲取本週訊息數
-            week_start = today_start - timedelta(days=7)
-            week_messages = db_session.query(func.count(LineBotUserInteraction.id)).join(
-                LineBotUser, LineBotUser.id == LineBotUserInteraction.line_user_id
-            ).filter(
-                LineBotUser.bot_id == bot_uuid,
-                LineBotUserInteraction.timestamp >= week_start,
-                LineBotUserInteraction.timestamp <= today_end
-            ).scalar() or 0
-            
-            # 獲取本月訊息數
-            month_start = today_start - timedelta(days=30)
-            month_messages = db_session.query(func.count(LineBotUserInteraction.id)).join(
-                LineBotUser, LineBotUser.id == LineBotUserInteraction.line_user_id
-            ).filter(
-                LineBotUser.bot_id == bot_uuid,
-                LineBotUserInteraction.timestamp >= month_start,
-                LineBotUserInteraction.timestamp <= today_end
-            ).scalar() or 0
-            
-            return {
-                "totalMessages": total_messages,
-                "activeUsers": active_users,
-                "responseTime": 0.5,  # 預設響應時間
-                "successRate": 99.0,  # 預設成功率
-                "todayMessages": today_messages,
-                "weekMessages": week_messages,
-                "monthMessages": month_messages,
-                "totalUsers": total_users
-            }
-            
-        except Exception as e:
-            logger.error(f"獲取分析數據失敗: {e}")
-            return {
-                "totalMessages": 0,
-                "activeUsers": 0,
-                "responseTime": 0.0,
-                "successRate": 0.0,
-                "todayMessages": 0,
-                "weekMessages": 0,
-                "monthMessages": 0,
-                "totalUsers": 0
-            }
+    # 此方法已移除，請使用 ConversationService.get_bot_analytics() 替代
     
-    def get_message_stats_real(self, db_session, bot_id: str, days: int) -> List[Dict]:
-        """從數據庫獲取真實的訊息統計數據"""
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
-        from uuid import UUID as PyUUID
-        from sqlalchemy import func, text
-        from datetime import timedelta
-        
-        try:
-            bot_uuid = PyUUID(bot_id)
-            stats = []
-            
-            for i in range(days):
-                date = datetime.now() - timedelta(days=days-1-i)
-                day_start = datetime.combine(date.date(), datetime.min.time())
-                day_end = datetime.combine(date.date(), datetime.max.time())
-                
-                # 獲取當天的消息數（假設所有互動都是接收到的消息）
-                received_count = db_session.query(func.count(LineBotUserInteraction.id)).join(
-                    LineBotUser, LineBotUser.id == LineBotUserInteraction.line_user_id
-                ).filter(
-                    LineBotUser.bot_id == bot_uuid,
-                    LineBotUserInteraction.timestamp >= day_start,
-                    LineBotUserInteraction.timestamp <= day_end
-                ).scalar() or 0
-                
-                # 發送數據（這裡需要從其他地方獲取，暫時使用接收數據的估算）
-                sent_count = max(0, received_count - 5)  # 簡單估算
-                
-                stats.append({
-                    "date": date.strftime("%m/%d"),
-                    "sent": sent_count,
-                    "received": received_count
-                })
-            
-            return stats
-            
-        except Exception as e:
-            logger.error(f"獲取訊息統計失敗: {e}")
-            return []
+    # 此方法已移除，請使用 ConversationService.get_message_stats() 替代
     
-    def get_user_activity_real(self, db_session, bot_id: str) -> List[Dict]:
-        """從數據庫獲取真實的用戶活躍度數據"""
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
-        from uuid import UUID as PyUUID
-        from sqlalchemy import func, text
-        
-        try:
-            bot_uuid = PyUUID(bot_id)
-            activity = []
-            
-            # 24小時數據，每3小時一個點
-            for hour in [0, 6, 9, 12, 15, 18, 21, 23]:
-                hour_start = datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)
-                hour_end = hour_start.replace(hour=(hour+3) % 24 if hour != 23 else 23, minute=59, second=59)
-                
-                # 獲取這個時間段的活躍用戶數
-                active_users = db_session.query(func.count(func.distinct(LineBotUser.id))).join(
-                    LineBotUserInteraction, LineBotUser.id == LineBotUserInteraction.line_user_id
-                ).filter(
-                    LineBotUser.bot_id == bot_uuid,
-                    func.extract('hour', LineBotUserInteraction.timestamp) >= hour,
-                    func.extract('hour', LineBotUserInteraction.timestamp) < (hour + 3) if hour != 21 else func.extract('hour', LineBotUserInteraction.timestamp) >= hour
-                ).scalar() or 0
-                
-                activity.append({
-                    "hour": f"{hour:02d}",
-                    "activeUsers": active_users
-                })
-            
-            return activity
-            
-        except Exception as e:
-            logger.error(f"獲取用戶活躍度失敗: {e}")
-            return []
+    # 此方法已移除，請使用 ConversationService.get_user_activity() 替代
     
-    def get_usage_stats_real(self, db_session, bot_id: str) -> List[Dict]:
-        """從數據庫獲取真實的功能使用統計"""
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
-        from uuid import UUID as PyUUID
-        from sqlalchemy import func
-        
-        try:
-            bot_uuid = PyUUID(bot_id)
-            
-            # 獲取不同訊息類型的統計
-            message_types = db_session.query(
-                LineBotUserInteraction.message_type,
-                func.count(LineBotUserInteraction.id).label('count')
-            ).join(
-                LineBotUser, LineBotUser.id == LineBotUserInteraction.line_user_id
-            ).filter(
-                LineBotUser.bot_id == bot_uuid,
-                LineBotUserInteraction.message_type.isnot(None)
-            ).group_by(LineBotUserInteraction.message_type).all()
-            
-            total_count = sum(item.count for item in message_types)
-            
-            if total_count == 0:
-                return [
-                    {"feature": "文字訊息", "usage": 100.0, "color": "#3b82f6"},
-                    {"feature": "Flex 訊息", "usage": 0.0, "color": "#ef4444"},
-                    {"feature": "圖片訊息", "usage": 0.0, "color": "#f59e0b"},
-                    {"feature": "其他", "usage": 0.0, "color": "#10b981"}
-                ]
-            
-            # 映射訊息類型
-            type_mapping = {
-                'text': {"feature": "文字訊息", "color": "#3b82f6"},
-                'flex': {"feature": "Flex 訊息", "color": "#ef4444"},
-                'image': {"feature": "圖片訊息", "color": "#f59e0b"}
-            }
-            
-            usage_stats = []
-            other_count = 0
-            
-            for item in message_types:
-                if item.message_type in type_mapping:
-                    usage_stats.append({
-                        **type_mapping[item.message_type],
-                        "usage": round(item.count / total_count * 100, 1)
-                    })
-                else:
-                    other_count += item.count
-            
-            if other_count > 0:
-                usage_stats.append({
-                    "feature": "其他",
-                    "usage": round(other_count / total_count * 100, 1),
-                    "color": "#10b981"
-                })
-            
-            return usage_stats
-            
-        except Exception as e:
-            logger.error(f"獲取使用統計失敗: {e}")
-            return []
+    # 此方法已移除，請使用 ConversationService.get_usage_stats() 替代
     
-    def get_bot_activities_real(self, db_session, bot_id: str, limit: int = 20, offset: int = 0) -> List[Dict]:
-        """從數據庫獲取真實的 Bot 活動記錄"""
-        from app.models.line_user import LineBotUser, LineBotUserInteraction
-        from uuid import UUID as PyUUID
-        from sqlalchemy import desc
-        
-        try:
-            bot_uuid = PyUUID(bot_id)
-            
-            # 獲取用戶互動記錄
-            interactions = db_session.query(LineBotUserInteraction).join(
-                LineBotUser, LineBotUser.id == LineBotUserInteraction.line_user_id
-            ).filter(
-                LineBotUser.bot_id == bot_uuid
-            ).order_by(
-                desc(LineBotUserInteraction.timestamp)
-            ).limit(limit).offset(offset).all()
-            
-            activities = []
-            for interaction in interactions:
-                # 根據互動類型決定活動類型
-                activity_type = "message"
-                title = "收到新訊息"
-                description = "用戶發送了一條訊息"
-                
-                if interaction.message_type:
-                    if interaction.message_type == "text":
-                        activity_type = "message"
-                        title = "收到文字訊息"
-                        if interaction.message_content:
-                            content_preview = str(interaction.message_content)[:30]
-                            description = f"用戶發送了文字訊息: {content_preview}..." if len(str(interaction.message_content)) > 30 else f"用戶發送了文字訊息: {interaction.message_content}"
-                        else:
-                            description = "用戶發送了文字訊息"
-                    elif interaction.message_type == "image":
-                        activity_type = "success" 
-                        title = "收到圖片訊息"
-                        description = "用戶發送了圖片"
-                    elif interaction.message_type == "postback":
-                        activity_type = "info"
-                        title = "用戶操作"
-                        description = "用戶點擊了按鈕或選單"
-                    else:
-                        activity_type = "info"
-                        title = "收到其他類型訊息"
-                        description = f"用戶發送了 {interaction.message_type} 類型訊息"
-                
-                # 獲取用戶資訊
-                user = db_session.query(LineBotUser).filter(
-                    LineBotUser.id == interaction.line_user_id
-                ).first()
-                
-                activities.append({
-                    "id": str(interaction.id),
-                    "type": activity_type,
-                    "title": title,
-                    "description": description,
-                    "timestamp": interaction.timestamp.isoformat(),
-                    "metadata": {
-                        "userId": user.line_user_id if user else "unknown",
-                        "userName": user.display_name or f"用戶 {user.line_user_id[:8]}" if user else "未知用戶",
-                        "messageType": interaction.message_type,
-                        "interactionId": str(interaction.id)  # 使用 interaction 的 id 替代不存在的 message_id
-                    }
-                })
-            
-            return activities
-            
-        except Exception as e:
-            logger.error(f"獲取活動記錄失敗: {e}")
-            return []
+    # 此方法已移除，請使用 ConversationService.get_bot_activities() 替代
     
     @staticmethod
     async def get_message_content_url(
@@ -1621,7 +1283,7 @@ class LineBotService:
         Returns:
             媒體檔案的公開訪問 URL
         """
-        from app.models.line_user import LineBotUserInteraction
+        # TODO: LineBotUserInteraction 已遷移到 MongoDB
         from app.services.minio_service import get_minio_service
         from uuid import UUID as PyUUID
         

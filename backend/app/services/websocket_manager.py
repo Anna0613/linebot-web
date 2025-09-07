@@ -23,6 +23,9 @@ class WebSocketManager:
         self.analytics_subscribers: Dict[str, Set[WebSocket]] = {}
         self.activity_subscribers: Dict[str, Set[WebSocket]] = {}
         self.webhook_subscribers: Dict[str, Set[WebSocket]] = {}
+        # 消息去重管理
+        self.sent_messages: Dict[str, Set[str]] = {}  # bot_id -> set of line_message_ids
+        self.message_cache_size = 1000  # 每個 Bot 最多快取 1000 個訊息 ID
         
     async def connect(self, bot_id: str, websocket: WebSocket):
         """註冊 Bot WebSocket 連接"""
@@ -135,7 +138,29 @@ class WebSocketManager:
         await self._send_to_subscribers(bot_id, self.webhook_subscribers, message)
     
     async def send_new_user_message(self, bot_id: str, line_user_id: str, message_data: dict):
-        """發送新用戶訊息通知（用於即時聊天更新）"""
+        """發送新用戶訊息通知（含去重機制）"""
+        line_message_id = message_data.get('line_message_id')
+
+        # 如果有 line_message_id，檢查是否已發送過
+        if line_message_id:
+            if bot_id not in self.sent_messages:
+                self.sent_messages[bot_id] = set()
+
+            if line_message_id in self.sent_messages[bot_id]:
+                logger.debug(f"WebSocket 消息已發送過，跳過: {line_message_id}")
+                return
+
+            # 記錄已發送的消息 ID
+            self.sent_messages[bot_id].add(line_message_id)
+
+            # 限制快取大小，移除最舊的記錄
+            if len(self.sent_messages[bot_id]) > self.message_cache_size:
+                # 移除一半的舊記錄
+                old_messages = list(self.sent_messages[bot_id])[:self.message_cache_size // 2]
+                for old_msg_id in old_messages:
+                    self.sent_messages[bot_id].discard(old_msg_id)
+                logger.debug(f"清理 Bot {bot_id} 的舊消息快取，移除 {len(old_messages)} 條記錄")
+
         message = {
             'type': 'new_user_message',
             'bot_id': bot_id,
@@ -147,12 +172,14 @@ class WebSocketManager:
             },
             'timestamp': datetime.now().isoformat()
         }
-        
+
         # 發送到所有該 Bot 的連接
         await self._send_to_bot_connections(bot_id, message)
-        
+
         # 也發送到活動訂閱者
         await self._send_to_subscribers(bot_id, self.activity_subscribers, message)
+
+        logger.info(f"WebSocket 新用戶訊息已發送: Bot {bot_id}, User {line_user_id}, Message ID {line_message_id}")
     
     async def _send_to_bot_connections(self, bot_id: str, message: dict):
         """發送消息到 Bot 的所有連接"""
@@ -250,7 +277,29 @@ class WebSocketManager:
             'total_dashboard_connections': sum(len(connections) for connections in self.dashboard_connections.values()),
             'analytics_subscribers': {bot_id: len(subs) for bot_id, subs in self.analytics_subscribers.items()},
             'activity_subscribers': {bot_id: len(subs) for bot_id, subs in self.activity_subscribers.items()},
-            'webhook_subscribers': {bot_id: len(subs) for bot_id, subs in self.webhook_subscribers.items()}
+            'webhook_subscribers': {bot_id: len(subs) for bot_id, subs in self.webhook_subscribers.items()},
+            'message_cache': {bot_id: len(msgs) for bot_id, msgs in self.sent_messages.items()}
+        }
+
+    def clear_message_cache(self, bot_id: str = None):
+        """清理消息快取"""
+        if bot_id:
+            if bot_id in self.sent_messages:
+                cleared_count = len(self.sent_messages[bot_id])
+                del self.sent_messages[bot_id]
+                logger.info(f"已清理 Bot {bot_id} 的消息快取，移除 {cleared_count} 條記錄")
+        else:
+            total_cleared = sum(len(msgs) for msgs in self.sent_messages.values())
+            self.sent_messages.clear()
+            logger.info(f"已清理所有消息快取，移除 {total_cleared} 條記錄")
+
+    def get_cache_stats(self) -> dict:
+        """獲取快取統計信息"""
+        return {
+            'total_bots': len(self.sent_messages),
+            'total_cached_messages': sum(len(msgs) for msgs in self.sent_messages.values()),
+            'cache_by_bot': {bot_id: len(msgs) for bot_id, msgs in self.sent_messages.items()},
+            'cache_size_limit': self.message_cache_size
         }
 
 # 全局實例

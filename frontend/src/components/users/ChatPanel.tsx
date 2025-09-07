@@ -30,11 +30,26 @@ interface LineUser {
   interaction_count: string;
 }
 
+// 訊息內容類型定義
+type MessageContent =
+  | string
+  | {
+      text?: string | { text: string };
+      content?: string;
+      stickerId?: string;
+      packageId?: string;
+      title?: string;
+      address?: string;
+      latitude?: number;
+      longitude?: number;
+      [key: string]: unknown;
+    };
+
 interface ChatMessage {
   id: string;
   event_type: string;
   message_type: string;
-  message_content: string | object;
+  message_content: MessageContent;
   sender_type: "user" | "admin";
   timestamp: string;
   media_url?: string;
@@ -79,9 +94,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     setLoading(true);
     try {
       const response = await apiClient.getChatHistory(botId, selectedUser.line_user_id);
-      
+
       if (response.data && response.data.success) {
-        setChatHistory(response.data.chat_history || []);
+        const chatHistory = response.data.chat_history || [];
+        setChatHistory(chatHistory);
         // 延遲滾動以確保內容已渲染
         setTimeout(scrollToBottom, 100);
       } else {
@@ -141,15 +157,38 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   // 渲染訊息內容
   const renderMessageContent = (message: ChatMessage) => {
     const content = message.message_content;
-    
-    if (message.message_type === "text" && content?.text) {
-      return <div className="break-words">{content.text}</div>;
+
+    // 安全地提取文字內容
+    const getTextContent = (content: MessageContent): string => {
+      if (typeof content === 'string') {
+        return content;
+      }
+      if (content && typeof content === 'object') {
+        // 處理 {text: "..."} 格式
+        if (content.text) {
+          // 如果 content.text 也是對象，繼續提取
+          if (typeof content.text === 'object' && content.text.text) {
+            return String(content.text.text);
+          }
+          return String(content.text);
+        }
+        // 處理其他可能的格式
+        if (content.content) {
+          return String(content.content);
+        }
+      }
+      return String(content || '');
+    };
+
+    if (message.message_type === "text") {
+      const textContent = getTextContent(content);
+      return <div className="break-words">{textContent}</div>;
     } else if (message.message_type === "image") {
       return (
         <div>
           {message.media_url ? (
-            <img 
-              src={message.media_url} 
+            <img
+              src={message.media_url}
               alt="用戶發送的圖片"
               className="max-w-xs rounded-lg"
               onError={(e) => {
@@ -166,7 +205,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     } else if (message.message_type === "location") {
       return <div className="text-gray-600">📍 位置訊息</div>;
     }
-    
+
     return <div className="text-gray-500">{message.message_type}</div>;
   };
 
@@ -208,33 +247,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   // 處理 WebSocket 消息，實現即時更新
   useEffect(() => {
     if (lastMessage && selectedUser) {
-      console.log("收到 WebSocket 消息:", lastMessage);
-      
       // 檢查是否是當前用戶的新訊息
       if (lastMessage.type === 'new_user_message') {
         const messageData = lastMessage.data as { line_user_id: string; [key: string]: unknown };
-        
+
         // 確保這是當前選中用戶的訊息
         if (messageData && messageData.line_user_id === selectedUser.line_user_id) {
-          console.log("檢測到當前用戶的新訊息，重新載入聊天記錄");
-          
           // 延遲一下確保資料庫已經保存完成，然後重新獲取聊天記錄
           setTimeout(() => {
             fetchChatHistory();
           }, 500);
         }
       }
-      
+
       // 處理活動更新（也可能包含訊息事件）
       if (lastMessage.type === 'activity_update') {
         const activityData = lastMessage.data as { event_type: string; line_user_id: string; [key: string]: unknown };
-        
+
         // 如果是訊息事件且來自當前用戶，也觸發更新
-        if (activityData && 
-            activityData.event_type === 'message' && 
+        if (activityData &&
+            activityData.event_type === 'message' &&
             activityData.user_id === selectedUser.line_user_id) {
-          console.log("檢測到當前用戶的活動更新，重新載入聊天記錄");
-          
           setTimeout(() => {
             fetchChatHistory();
           }, 500);

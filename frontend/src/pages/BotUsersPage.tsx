@@ -32,6 +32,21 @@ import ChatPanel from "../components/users/ChatPanel";
 import UserDetailsModal from "../components/users/UserDetailsModal";
 
 // 類型定義
+// 訊息內容類型定義
+type MessageContent =
+  | string
+  | {
+      text?: string | { text: string };
+      content?: string;
+      stickerId?: string;
+      packageId?: string;
+      title?: string;
+      address?: string;
+      latitude?: number;
+      longitude?: number;
+      [key: string]: unknown;
+    };
+
 interface LineUser {
   id: string;
   line_user_id: string;
@@ -48,7 +63,7 @@ interface UserInteraction {
   id: string;
   event_type: string;
   message_type: string;
-  message_content: unknown;
+  message_content: MessageContent;
   media_url?: string;
   media_path?: string;
   timestamp: string;
@@ -94,7 +109,7 @@ const BotUsersPage: React.FC = () => {
 
   // 新增功能狀態
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
-  const [_showChatPanel, _setShowChatPanel] = useState(false);
+  const [showChatPanel, setShowChatPanel] = useState(false);
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [currentChatUser, setCurrentChatUser] = useState<LineUser | null>(null);
   const [selectiveBroadcastLoading, setSelectiveBroadcastLoading] = useState(false);
@@ -152,6 +167,28 @@ const BotUsersPage: React.FC = () => {
     return eventMap[eventType] || eventType;
   };
 
+  // 安全地提取文字內容
+  const getTextContent = (content: MessageContent): string => {
+    if (typeof content === 'string') {
+      return content;
+    }
+    if (content && typeof content === 'object') {
+      // 處理 {text: "..."} 格式
+      if (content.text) {
+        // 如果 content.text 也是對象，繼續提取
+        if (typeof content.text === 'object' && content.text.text) {
+          return String(content.text.text);
+        }
+        return String(content.text);
+      }
+      // 處理其他可能的格式
+      if (content.content) {
+        return String(content.content);
+      }
+    }
+    return String(content || '');
+  };
+
   // 渲染訊息內容（支持媒體文件）
   const _renderMessageContent = (interaction: UserInteraction, isDetailed: boolean) => {
     if (!interaction.message_content) {
@@ -162,8 +199,9 @@ const BotUsersPage: React.FC = () => {
     
     // 基本模式：只顯示簡化的訊息
     if (!isDetailed) {
-      if (interaction.message_type === "text" && content.text) {
-        return <span className="text-sm">{content.text}</span>;
+      if (interaction.message_type === "text") {
+        const textContent = getTextContent(content);
+        return <span className="text-sm">{textContent}</span>;
       } else if (interaction.message_type === "image") {
         return <span className="text-sm">📷 圖片</span>;
       } else if (interaction.message_type === "video") {
@@ -181,10 +219,11 @@ const BotUsersPage: React.FC = () => {
     }
 
     // 詳細模式：顯示完整內容和媒體
-    if (interaction.message_type === "text" && content.text) {
+    if (interaction.message_type === "text") {
+      const textContent = getTextContent(content);
       return (
         <div>
-          <div className="text-sm mb-1">{content.text}</div>
+          <div className="text-sm mb-1">{textContent}</div>
           <div className="text-xs opacity-75">文字訊息</div>
         </div>
       );
@@ -354,9 +393,10 @@ const BotUsersPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await apiClient.getBotUsers(botId, limit, offset);
-      
+
       if (response.data) {
-        setUsers(response.data.users || []);
+        const users = response.data.users || [];
+        setUsers(users);
         setTotalCount(response.data.total_count || 0);
         setPagination(response.data.pagination || {
           limit,
@@ -405,12 +445,13 @@ const BotUsersPage: React.FC = () => {
   const fetchUserInteractions = useCallback(async (lineUserId: string) => {
     if (!botId) return;
 
-    setInteractionsLoading(true);
+    _setInteractionsLoading(true);
     try {
       const response = await apiClient.getUserInteractions(botId, lineUserId);
-      
+
       if (response.data) {
-        setUserInteractions(response.data.interactions || []);
+        const interactions = response.data.interactions || [];
+        _setUserInteractions(interactions);
       }
     } catch (error) {
       console.error("獲取用戶互動失敗:", error);
@@ -420,7 +461,7 @@ const BotUsersPage: React.FC = () => {
         description: "無法載入用戶互動歷史",
       });
     } finally {
-      setInteractionsLoading(false);
+      _setInteractionsLoading(false);
     }
   }, [botId, toast]);
 
@@ -432,7 +473,7 @@ const BotUsersPage: React.FC = () => {
       const response = await apiClient.getUserInteractions(botId, lineUserId);
       
       if (response.data && !response.error) {
-        setUserInteractions(response.data.interactions || []);
+        _setUserInteractions(response.data.interactions || []);
       }
     } catch (error) {
       console.error("靜默更新用戶互動記錄失敗:", error);
@@ -578,17 +619,37 @@ const BotUsersPage: React.FC = () => {
     }
     
     switch (lastMessage.type) {
+      case 'new_user_message':
+        // 收到新用戶訊息時更新用戶列表和對話記錄
+        if (lastMessage.data && lastMessage.line_user_id) {
+          // 靜默更新用戶列表以更新互動次數和最後互動時間
+          fetchUsersSilently(pagination.limit, pagination.offset);
+
+          // 如果當前選中的用戶就是發送訊息的用戶，更新其互動記錄
+          if (selectedUser && selectedUser.line_user_id === lastMessage.line_user_id) {
+            fetchUserInteractionsSilently(selectedUser.line_user_id);
+          }
+
+          // 顯示新訊息通知
+          toast({
+            title: "收到新訊息",
+            description: "用戶發送了新訊息",
+            duration: 2000,
+          });
+        }
+        break;
+
       case 'activity_update':
         // 有新活動時靜默更新用戶列表和選中用戶的互動記錄
         if (lastMessage.data) {
           // 靜默更新用戶列表以更新互動次數和最後互動時間，不顯示 loading
           fetchUsersSilently(pagination.limit, pagination.offset);
-          
+
           // 如果有選中的用戶，靜默更新其互動記錄
           if (selectedUser) {
             fetchUserInteractionsSilently(selectedUser.line_user_id);
           }
-          
+
           toast({
             title: "新用戶活動",
             description: "檢測到新的用戶互動",
@@ -596,14 +657,15 @@ const BotUsersPage: React.FC = () => {
           });
         }
         break;
-        
+
       case 'analytics_update':
         // 分析數據更新時，靜默重新獲取用戶列表以更新統計
         fetchUsersSilently(pagination.limit, pagination.offset);
         break;
-        
+
       default:
         // 未處理的消息類型
+        console.debug(`未處理的 WebSocket 訊息類型: ${lastMessage.type}`);
     }
   }, [lastMessage, botId, pagination.limit, pagination.offset, selectedUser, fetchUsersSilently, fetchUserInteractionsSilently, toast]);
 
@@ -864,12 +926,15 @@ const BotUsersPage: React.FC = () => {
             </div>
 
             {/* 聊天面板區域 */}
-            <div className="space-y-6">
-              <ChatPanel 
-                botId={botId || ""} 
-                selectedUser={currentChatUser}
-              />
-            </div>
+            {showChatPanel && currentChatUser && (
+              <div className="space-y-6">
+                <ChatPanel
+                  botId={botId || ""}
+                  selectedUser={currentChatUser}
+                  onClose={() => setShowChatPanel(false)}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

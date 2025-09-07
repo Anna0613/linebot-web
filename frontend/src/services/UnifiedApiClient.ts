@@ -485,9 +485,11 @@ export class UnifiedApiClient {
   }
 
   // 重新發送電子郵件驗證
-  public async resendEmailVerification(): Promise<ApiResponse> {
+  public async resendEmailVerification(email: string): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.RESEND_EMAIL_VERIFICATION)
+      getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.RESEND_VERIFICATION),
+      { email },
+      { skipAuth: true }
     );
   }
 

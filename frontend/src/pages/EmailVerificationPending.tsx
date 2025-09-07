@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
 import { Mail, CheckCircle, RefreshCw } from "lucide-react";
@@ -9,20 +9,30 @@ import { UnifiedApiClient } from "@/services/UnifiedApiClient";
 import "@/components/ui/loader.css";
 const EmailVerificationPending = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [resendMessage, setResendMessage] = useState("");
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
+  // 從 location state 獲取 email
+  const email = location.state?.email;
+
   const handleResendEmail = async () => {
+    if (!email) {
+      setResendSuccess(false);
+      setResendMessage("無法獲取郵箱地址，請重新註冊。");
+      return;
+    }
+
     setIsResending(true);
     setResendMessage("");
     setResendSuccess(false);
-    
+
     try {
       const apiClient = new UnifiedApiClient();
-      const response = await apiClient.resendEmailVerification();
-      
-      if (response.success) {
+      const response = await apiClient.resendEmailVerification(email);
+
+      if (response.success || response.status === 200) {
         setResendSuccess(true);
         setResendMessage("驗證郵件已重新發送！請檢查您的郵箱。");
       } else {
