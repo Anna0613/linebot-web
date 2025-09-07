@@ -19,6 +19,112 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+async def sync_users_from_line_api(db: Session, bot: Bot, line_user_ids: List[str], conversations: List[Dict]) -> List:
+    """
+    從 LINE API 獲取用戶資料並同步到 PostgreSQL
+
+    Args:
+        db: 資料庫會話
+        bot: Bot 實例
+        line_user_ids: 需要同步的用戶 ID 列表
+        conversations: MongoDB 中的對話記錄
+
+    Returns:
+        List: 同步後的用戶記錄列表
+    """
+    from app.models.line_user import LineBotUser
+    from linebot.v3.messaging import Configuration, ApiClient, MessagingApi
+    from linebot.v3.exceptions import InvalidSignatureError
+    import uuid
+
+    synced_users = []
+
+    try:
+        # 創建 LINE Bot API 客戶端
+        configuration = Configuration(access_token=bot.channel_token)
+
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+
+            # 為每個用戶獲取資料並同步
+            for line_user_id in line_user_ids:
+                try:
+                    # 從 LINE API 獲取用戶資料
+                    profile = line_bot_api.get_profile(line_user_id)
+
+                    # 從對話記錄中獲取互動統計
+                    user_conversation = next(
+                        (conv for conv in conversations if conv['line_user_id'] == line_user_id),
+                        None
+                    )
+
+                    if user_conversation:
+                        message_count = user_conversation.get('message_count', 0)
+                        created_at = user_conversation.get('created_at')
+                        updated_at = user_conversation.get('updated_at')
+
+                        # 轉換時間格式
+                        if isinstance(created_at, datetime):
+                            first_interaction = created_at.replace(tzinfo=None)
+                        elif isinstance(created_at, str):
+                            try:
+                                first_interaction = datetime.fromisoformat(created_at.replace('Z', '+00:00')).replace(tzinfo=None)
+                            except:
+                                first_interaction = datetime.utcnow()
+                        else:
+                            first_interaction = datetime.utcnow()
+
+                        if isinstance(updated_at, datetime):
+                            last_interaction = updated_at.replace(tzinfo=None)
+                        elif isinstance(updated_at, str):
+                            try:
+                                last_interaction = datetime.fromisoformat(updated_at.replace('Z', '+00:00')).replace(tzinfo=None)
+                            except:
+                                last_interaction = datetime.utcnow()
+                        else:
+                            last_interaction = datetime.utcnow()
+                    else:
+                        message_count = 0
+                        first_interaction = datetime.utcnow()
+                        last_interaction = datetime.utcnow()
+
+                    # 創建用戶記錄
+                    user_record = LineBotUser(
+                        id=uuid.uuid4(),
+                        bot_id=bot.id,
+                        line_user_id=line_user_id,
+                        display_name=profile.display_name,
+                        picture_url=profile.picture_url or "",
+                        status_message=profile.status_message or "",
+                        language=profile.language or "zh-TW",
+                        is_followed=True,  # 有對話記錄假設為關注者
+                        interaction_count=message_count,
+                        first_interaction=first_interaction,
+                        last_interaction=last_interaction,
+                        created_at=datetime.utcnow(),
+                        updated_at=datetime.utcnow()
+                    )
+
+                    # 保存到資料庫
+                    db.add(user_record)
+                    db.commit()
+                    db.refresh(user_record)
+
+                    synced_users.append(user_record)
+
+                except Exception as e:
+                    logger.error(f"同步用戶 {line_user_id} 失敗: {e}")
+                    db.rollback()
+                    continue
+
+    except Exception as e:
+        logger.error(f"LINE API 初始化失敗: {e}")
+        db.rollback()
+        raise
+
+    return synced_users
+
 @router.get("/{bot_id}/analytics")
 async def get_bot_analytics(
     bot_id: str,
@@ -300,32 +406,111 @@ async def get_bot_users(
         from app.models.line_user import LineBotUser
         from app.services.conversation_service import ConversationService
 
-        # 從 PostgreSQL 獲取用戶基本信息
-        users_query = db.query(LineBotUser).filter(
-            LineBotUser.bot_id == bot_id
-        ).order_by(LineBotUser.last_interaction.desc())
+        # 首先從 MongoDB 獲取有對話記錄的用戶
+        conversations, total_conversations = await ConversationService.get_bot_conversations(
+            bot_id=bot_id,
+            limit=1000,  # 獲取所有對話
+            offset=0
+        )
 
-        total_count = users_query.count()
-        users = users_query.offset(offset).limit(limit).all()
+        # 提取所有有對話的用戶 ID
+        line_user_ids = [conv["line_user_id"] for conv in conversations]
+
+        if not line_user_ids:
+            # 如果 MongoDB 中沒有對話記錄，回退到 PostgreSQL
+            users_query = db.query(LineBotUser).filter(
+                LineBotUser.bot_id == bot_id
+            ).order_by(LineBotUser.last_interaction.desc())
+
+            total_count = users_query.count()
+            users = users_query.offset(offset).limit(limit).all()
+            use_mongodb_data = False
+        else:
+            # 從 PostgreSQL 獲取這些用戶的基本信息
+            users_query = db.query(LineBotUser).filter(
+                LineBotUser.bot_id == bot_id,
+                LineBotUser.line_user_id.in_(line_user_ids)
+            ).order_by(LineBotUser.last_interaction.desc())
+
+            total_count = users_query.count()
+            users = users_query.offset(offset).limit(limit).all()
+
+            # 如果 PostgreSQL 中沒有對應的用戶記錄，從 LINE API 獲取並同步
+            if len(users) == 0 and len(line_user_ids) > 0:
+                # 獲取 Bot 的 LINE 配置
+                bot = db.query(Bot).filter(Bot.id == bot_id).first()
+                if bot and bot.channel_token:
+                    try:
+                        # 同步用戶資料到 PostgreSQL
+                        synced_users = await sync_users_from_line_api(
+                            db, bot, line_user_ids, conversations
+                        )
+                        logger.info(f"成功同步 {len(synced_users)} 個用戶到 PostgreSQL")
+
+                        # 重新查詢同步後的用戶
+                        users = synced_users
+                        total_count = len(users)
+                        use_mongodb_data = False
+                    except Exception as e:
+                        logger.error(f"同步用戶資料失敗: {e}")
+                        # 同步失敗時回退到 MongoDB 資料
+                        use_mongodb_data = True
+                        total_count = len(conversations)
+                else:
+                    logger.warning("Bot 沒有配置 LINE Channel Token，無法同步用戶資料")
+                    use_mongodb_data = True
+                    total_count = len(conversations)
+            else:
+                use_mongodb_data = False
 
         # 轉換為前端需要的格式
         user_list = []
-        for user in users:
-            user_data = {
-                "id": str(user.id),
-                "line_user_id": user.line_user_id,
-                "display_name": user.display_name or "未設定名稱",
-                "picture_url": user.picture_url or "",
-                "status_message": user.status_message or "",
-                "language": user.language or "",
-                "first_interaction": user.created_at.isoformat() if user.created_at else "",
-                "last_interaction": user.last_interaction.isoformat() if user.last_interaction else "",
-                "interaction_count": user.interaction_count or "0",
-                "is_followed": user.is_followed
-            }
-            user_list.append(user_data)
 
-        return {
+        if use_mongodb_data:
+            # 直接從 MongoDB 對話記錄創建用戶列表
+
+            for i, conv in enumerate(conversations):
+                if i >= offset and len(user_list) < limit:
+                    # 獲取最後一條訊息的時間作為最後互動時間
+                    last_message_time = conv.get('updated_at', conv.get('created_at', ''))
+                    if isinstance(last_message_time, str):
+                        last_interaction = last_message_time
+                    else:
+                        last_interaction = last_message_time.isoformat() if last_message_time else ""
+
+                    user_data = {
+                        "id": f"mongo_{conv['line_user_id']}",  # 臨時 ID
+                        "line_user_id": conv['line_user_id'],
+                        "display_name": "未設定名稱",  # MongoDB 中沒有顯示名稱
+                        "picture_url": "",
+                        "status_message": "",
+                        "language": "",
+                        "first_interaction": conv.get('created_at', ''),
+                        "last_interaction": last_interaction,
+                        "interaction_count": str(conv.get('message_count', 0)),
+                        "is_followed": True  # 假設有對話記錄就是關注者
+                    }
+                    user_list.append(user_data)
+        else:
+            # 從 PostgreSQL 用戶記錄創建用戶列表
+            for user in users:
+                user_data = {
+                    "id": str(user.id),
+                    "line_user_id": user.line_user_id,
+                    "display_name": user.display_name or "未設定名稱",
+                    "picture_url": user.picture_url or "",
+                    "status_message": user.status_message or "",
+                    "language": user.language or "",
+                    "first_interaction": user.created_at.isoformat() if user.created_at else "",
+                    "last_interaction": user.last_interaction.isoformat() if user.last_interaction else "",
+                    "interaction_count": user.interaction_count or "0",
+                    "is_followed": user.is_followed
+                }
+                user_list.append(user_data)
+
+
+
+        result = {
             "bot_id": bot_id,
             "users": user_list,
             "total_count": total_count,
@@ -336,6 +521,8 @@ async def get_bot_users(
                 "total": total_count
             }
         }
+
+        return result
 
     except Exception as e:
         logger.error(f"獲取用戶列表失敗: {str(e)}")
@@ -573,8 +760,6 @@ async def get_chat_history(
     try:
         from app.services.conversation_service import ConversationService
         
-        logger.info(f"獲取聊天記錄: bot_id={bot_id}, line_user_id={line_user_id}, limit={limit}, offset={offset}")
-        
         # 使用 ConversationService 獲取聊天記錄
         chat_history, total_count = await ConversationService.get_chat_history(
             bot_id=bot_id,
@@ -583,8 +768,8 @@ async def get_chat_history(
             offset=offset,
             sender_type=sender_type
         )
-        
-        return {
+
+        result = {
             "success": True,
             "chat_history": chat_history,
             "total_count": total_count,
@@ -595,6 +780,8 @@ async def get_chat_history(
                 "total": total_count
             }
         }
+
+        return result
         
     except Exception as e:
         import traceback

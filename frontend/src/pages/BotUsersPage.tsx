@@ -393,9 +393,10 @@ const BotUsersPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await apiClient.getBotUsers(botId, limit, offset);
-      
+
       if (response.data) {
-        setUsers(response.data.users || []);
+        const users = response.data.users || [];
+        setUsers(users);
         setTotalCount(response.data.total_count || 0);
         setPagination(response.data.pagination || {
           limit,
@@ -444,12 +445,13 @@ const BotUsersPage: React.FC = () => {
   const fetchUserInteractions = useCallback(async (lineUserId: string) => {
     if (!botId) return;
 
-    setInteractionsLoading(true);
+    _setInteractionsLoading(true);
     try {
       const response = await apiClient.getUserInteractions(botId, lineUserId);
-      
+
       if (response.data) {
-        setUserInteractions(response.data.interactions || []);
+        const interactions = response.data.interactions || [];
+        _setUserInteractions(interactions);
       }
     } catch (error) {
       console.error("獲取用戶互動失敗:", error);
@@ -459,7 +461,7 @@ const BotUsersPage: React.FC = () => {
         description: "無法載入用戶互動歷史",
       });
     } finally {
-      setInteractionsLoading(false);
+      _setInteractionsLoading(false);
     }
   }, [botId, toast]);
 
@@ -471,7 +473,7 @@ const BotUsersPage: React.FC = () => {
       const response = await apiClient.getUserInteractions(botId, lineUserId);
       
       if (response.data && !response.error) {
-        setUserInteractions(response.data.interactions || []);
+        _setUserInteractions(response.data.interactions || []);
       }
     } catch (error) {
       console.error("靜默更新用戶互動記錄失敗:", error);
@@ -617,17 +619,37 @@ const BotUsersPage: React.FC = () => {
     }
     
     switch (lastMessage.type) {
+      case 'new_user_message':
+        // 收到新用戶訊息時更新用戶列表和對話記錄
+        if (lastMessage.data && lastMessage.line_user_id) {
+          // 靜默更新用戶列表以更新互動次數和最後互動時間
+          fetchUsersSilently(pagination.limit, pagination.offset);
+
+          // 如果當前選中的用戶就是發送訊息的用戶，更新其互動記錄
+          if (selectedUser && selectedUser.line_user_id === lastMessage.line_user_id) {
+            fetchUserInteractionsSilently(selectedUser.line_user_id);
+          }
+
+          // 顯示新訊息通知
+          toast({
+            title: "收到新訊息",
+            description: "用戶發送了新訊息",
+            duration: 2000,
+          });
+        }
+        break;
+
       case 'activity_update':
         // 有新活動時靜默更新用戶列表和選中用戶的互動記錄
         if (lastMessage.data) {
           // 靜默更新用戶列表以更新互動次數和最後互動時間，不顯示 loading
           fetchUsersSilently(pagination.limit, pagination.offset);
-          
+
           // 如果有選中的用戶，靜默更新其互動記錄
           if (selectedUser) {
             fetchUserInteractionsSilently(selectedUser.line_user_id);
           }
-          
+
           toast({
             title: "新用戶活動",
             description: "檢測到新的用戶互動",
@@ -635,14 +657,15 @@ const BotUsersPage: React.FC = () => {
           });
         }
         break;
-        
+
       case 'analytics_update':
         // 分析數據更新時，靜默重新獲取用戶列表以更新統計
         fetchUsersSilently(pagination.limit, pagination.offset);
         break;
-        
+
       default:
         // 未處理的消息類型
+        console.debug(`未處理的 WebSocket 訊息類型: ${lastMessage.type}`);
     }
   }, [lastMessage, botId, pagination.limit, pagination.offset, selectedUser, fetchUsersSilently, fetchUserInteractionsSilently, toast]);
 

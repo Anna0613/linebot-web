@@ -5,12 +5,29 @@
 
 import { authManager } from './UnifiedAuthManager';
 
+// WebSocket 訊息資料類型
+interface WebSocketMessageData {
+  bot_name?: string;
+  is_configured?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  line_user_id?: string;
+  message_data?: Record<string, unknown>;
+  timestamp?: string;
+  [key: string]: unknown;
+}
+
 interface WebSocketMessage {
   type: string;
   bot_id?: string;
-  data?: any;
+  data?: WebSocketMessageData;
   timestamp?: string;
-  [key: string]: any;
+  message?: string;
+  subscription?: string;
+  user_id?: string;
+  line_user_id?: string;
+  bot_ids?: string[];
+  count?: number;
 }
 
 interface WebSocketSubscriber {
@@ -99,7 +116,7 @@ class WebSocketManager {
     console.log(`🔗 為 Bot ${botId} 創建 WebSocket 連接`);
 
     const connection: WebSocketConnection = {
-      socket: null as any,
+      socket: null as unknown as WebSocket,
       subscribers: new Set(),
       isConnecting: true,
       reconnectAttempts: 0

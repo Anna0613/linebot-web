@@ -94,9 +94,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     setLoading(true);
     try {
       const response = await apiClient.getChatHistory(botId, selectedUser.line_user_id);
-      
+
       if (response.data && response.data.success) {
-        setChatHistory(response.data.chat_history || []);
+        const chatHistory = response.data.chat_history || [];
+        setChatHistory(chatHistory);
         // 延遲滾動以確保內容已渲染
         setTimeout(scrollToBottom, 100);
       } else {
@@ -246,33 +247,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   // 處理 WebSocket 消息，實現即時更新
   useEffect(() => {
     if (lastMessage && selectedUser) {
-      console.log("收到 WebSocket 消息:", lastMessage);
-      
       // 檢查是否是當前用戶的新訊息
       if (lastMessage.type === 'new_user_message') {
         const messageData = lastMessage.data as { line_user_id: string; [key: string]: unknown };
-        
+
         // 確保這是當前選中用戶的訊息
         if (messageData && messageData.line_user_id === selectedUser.line_user_id) {
-          console.log("檢測到當前用戶的新訊息，重新載入聊天記錄");
-          
           // 延遲一下確保資料庫已經保存完成，然後重新獲取聊天記錄
           setTimeout(() => {
             fetchChatHistory();
           }, 500);
         }
       }
-      
+
       // 處理活動更新（也可能包含訊息事件）
       if (lastMessage.type === 'activity_update') {
         const activityData = lastMessage.data as { event_type: string; line_user_id: string; [key: string]: unknown };
-        
+
         // 如果是訊息事件且來自當前用戶，也觸發更新
-        if (activityData && 
-            activityData.event_type === 'message' && 
+        if (activityData &&
+            activityData.event_type === 'message' &&
             activityData.user_id === selectedUser.line_user_id) {
-          console.log("檢測到當前用戶的活動更新，重新載入聊天記錄");
-          
           setTimeout(() => {
             fetchChatHistory();
           }, 500);
