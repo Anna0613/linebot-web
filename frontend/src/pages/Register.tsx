@@ -114,9 +114,12 @@ const Register = () => {
         console.log('表單提交資料:', { usernameValue, passwordValue, emailValue });
         
         const success = await register(usernameValue, passwordValue, emailValue);
-        
+
         if (success) {
-          navigate("/email-verification-pending", { replace: true });
+          navigate("/email-verification-pending", {
+            replace: true,
+            state: { email: emailValue }
+          });
         }
       },
     });

@@ -54,11 +54,13 @@ class AuthService:
         if user_data.email:
             try:
                 EmailService.send_verification_email(user_data.email)
+                print(f"驗證郵件已發送至: {user_data.email}")
             except Exception as e:
-                # 郵件發送失敗不影響註冊流程
+                # 郵件發送失敗不影響註冊流程，只記錄錯誤
                 print(f"郵件發送失敗: {e}")
-        
-        return {"message": "用戶註冊成功"}
+                # 不拋出異常，讓註冊流程繼續
+
+        return {"message": "用戶註冊成功，請檢查您的郵箱以驗證帳戶"}
     
     @staticmethod
     def authenticate_user(db: Session, username: str, password: str, remember_me: bool = False) -> Token:
@@ -342,16 +344,11 @@ class AuthService:
                     detail="請稍後再試，發送過於頻繁"
                 )
         
-        try:
-            EmailService.send_verification_email(email)
-            user.last_verification_sent = datetime.now(timezone.utc)
-            db.commit()
-            return {"message": "驗證郵件已重新發送"}
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"郵件發送失敗: {str(e)}"
-            )
+        # 發送驗證郵件（現在不會拋出異常）
+        EmailService.send_verification_email(email)
+        user.last_verification_sent = datetime.now(timezone.utc)
+        db.commit()
+        return {"message": "驗證郵件已重新發送"}
     
     @staticmethod
     def send_password_reset_email(db: Session, email: str) -> Dict[str, str]:
