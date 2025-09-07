@@ -292,7 +292,9 @@ export const VisualBotEditor: React.FC = () => {
     try {
       const message = await VisualEditorApi.createFlexMessage({
         name,
-        content: { blocks: [] }
+        content: { blocks: [] },
+        // 同步保存編輯器 blocks，供重新載入時還原預覽
+        design_blocks: []
       });
       
       // 自動選擇新創建的 FlexMessage
@@ -349,7 +351,9 @@ export const VisualBotEditor: React.FC = () => {
       setSaveError('');
 
       await VisualEditorApi.updateFlexMessage(messageId, {
-        content: { blocks: data.flexBlocks }
+        content: { blocks: data.flexBlocks },
+        // 併行保存設計器 blocks，避免後端只保留編譯後的 bubble 而導致重載後無法還原預覽
+        design_blocks: data.flexBlocks
       });
       
       // 原子性狀態更新：同時設置所有狀態避免競爭
