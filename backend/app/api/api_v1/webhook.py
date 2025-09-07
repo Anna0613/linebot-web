@@ -356,14 +356,32 @@ async def process_single_event(
 
         logger.info(f"處理事件: type={event_type}, source={source_type}, user={user_id}")
 
-        # 只處理用戶訊息事件
-        if event_type != 'message' or source_type != 'user' or not user_id:
-            logger.info(f"跳過非用戶訊息事件: {event_type}")
+        # 僅處理來自 user 的事件
+        if source_type != 'user' or not user_id:
+            logger.info(f"跳過非使用者來源事件: source_type={source_type}")
             return None
 
-        message = event.get('message', {})
-        message_type = message.get('type')
-        line_message_id = message.get('id')
+        # 根據事件類型組裝通用欄位
+        message = {}
+        message_type = None
+        line_message_id = None
+
+        if event_type == 'message':
+            message = event.get('message', {})
+            message_type = message.get('type')
+            line_message_id = message.get('id')
+        elif event_type == 'postback':
+            # 將 postback 當作一個 message_type='postback' 的訊息存檔，並交由邏輯引擎處理
+            message = event.get('postback', {}) or {}
+            message_type = 'postback'
+            line_message_id = None
+        elif event_type in ['follow', 'unfollow']:
+            message = {}
+            message_type = event_type
+            line_message_id = None
+        else:
+            logger.info(f"跳過未支援事件: {event_type}")
+            return None
 
         if not line_message_id:
             logger.warning("事件缺少 LINE 訊息 ID，跳過處理")
@@ -396,6 +414,23 @@ async def process_single_event(
                     line_bot_service=line_bot_service
                 )
             )
+
+        # 進行邏輯模板匹配與回覆（僅針對部分事件觸發）
+        if event_type in ['message', 'postback', 'follow']:
+            try:
+                from app.models.bot import Bot as BotModel
+                bot = db.query(BotModel).filter(BotModel.id == bot_id).first()
+                if bot:
+                    from app.services.logic_engine_service import LogicEngineService
+                    await LogicEngineService.evaluate_and_reply(
+                        db=db,
+                        bot=bot,
+                        line_bot_service=line_bot_service,
+                        user_id=user_id,
+                        event=event
+                    )
+            except Exception as le_err:
+                logger.error(f"邏輯引擎處理失敗: {le_err}")
 
         return {
             'event_type': event_type,

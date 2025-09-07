@@ -376,6 +376,26 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                       </div>
                     )}
                     
+                    {/* 機器人訊息 */}
+                    {msg.sender_type === "bot" && (
+                      <div className="flex items-start gap-2">
+                        <Avatar className="h-8 w-8 mt-1">
+                          <AvatarFallback className="bg-purple-500 text-white text-xs">
+                            機器
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="bg-purple-500 text-white rounded-2xl rounded-tl-md px-4 py-2">
+                            {renderMessageContent(msg)}
+                          </div>
+                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                            <span>{formatTime(msg.timestamp)}</span>
+                            <Badge variant="outline" className="text-xs">Bot</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* 用戶訊息 */}
                     {msg.sender_type === "user" && (
                       <div className="flex flex-col items-end">
