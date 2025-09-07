@@ -371,6 +371,24 @@ class LogicEngineService:
                         results.append({"type": "image", "url": image_url, "result": send_result})
                         break
 
+                # 發送 sticker
+                elif rtype == "sticker":
+                    package_id = str(rb_data.get("packageId") or "").strip()
+                    sticker_id = str(rb_data.get("stickerId") or "").strip()
+                    if package_id and sticker_id:
+                        send_result = line_bot_service.send_sticker_message(user_id, package_id, sticker_id)
+                        try:
+                            await ConversationService.add_bot_message(
+                                bot_id=str(bot.id),
+                                line_user_id=user_id,
+                                message_content={"packageId": package_id, "stickerId": sticker_id},
+                                message_type="sticker",
+                            )
+                        except Exception as log_err:
+                            logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
+                        results.append({"type": "sticker", "packageId": package_id, "stickerId": sticker_id, "result": send_result})
+                        break
+
                 else:
                     # 其他回覆暫不支援，跳過此模板
                     logger.info(f"回覆類型尚未支援: {rtype}")
@@ -380,4 +398,3 @@ class LogicEngineService:
             logger.error(f"邏輯引擎處理失敗: {e}")
 
         return results
-

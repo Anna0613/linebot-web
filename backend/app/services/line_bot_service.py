@@ -15,7 +15,7 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import LineBotApiError, InvalidSignatureError
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
-    ImageSendMessage, FlexSendMessage, RichMenu
+    ImageSendMessage, FlexSendMessage, RichMenu, StickerSendMessage
 )
 
 logger = logging.getLogger(__name__)
@@ -488,6 +488,37 @@ class LineBotService:
             raise Exception(f"LINE API 錯誤: {e.message}")
         except Exception as e:
             logger.error(f"發送 Flex 訊息失敗: {e}")
+            raise Exception(f"發送失敗: {str(e)}")
+
+    def send_sticker_message(self, user_id: str, package_id: str, sticker_id: str) -> Dict:
+        """
+        發送貼圖訊息
+
+        Args:
+            user_id: 用戶 ID
+            package_id: 貼圖包 ID（字串）
+            sticker_id: 貼圖 ID（字串）
+
+        Returns:
+            Dict: 發送結果
+        """
+        if not self.is_configured():
+            raise ValueError("LINE Bot 未正確配置")
+
+        try:
+            message = StickerSendMessage(package_id=package_id, sticker_id=sticker_id)
+            self.line_bot_api.push_message(user_id, message)
+
+            return {
+                "success": True,
+                "message": "貼圖訊息發送成功",
+                "timestamp": datetime.now().isoformat()
+            }
+        except LineBotApiError as e:
+            logger.error(f"發送貼圖訊息失敗: {e}")
+            raise Exception(f"LINE API 錯誤: {e.message}")
+        except Exception as e:
+            logger.error(f"發送貼圖訊息失敗: {e}")
             raise Exception(f"發送失敗: {str(e)}")
     
     def get_user_profile(self, user_id: str) -> Optional[Dict]:

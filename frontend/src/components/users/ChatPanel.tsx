@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "../../services/UnifiedApiClient";
 import { useWebSocket } from "../../hooks/useWebSocket";
+import FlexMessagePreview from "../Panels/FlexMessagePreview";
 
 // 類型定義
 interface LineUser {
@@ -200,8 +201,23 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
           )}
         </div>
       );
+    } else if (message.message_type === "flex") {
+      try {
+        // 後端存的是 { altText, contents }
+        const fm = { type: 'flex', contents: (content as any)?.contents } as unknown;
+        return (
+          <div className="bg-white border rounded p-2 max-w-xl">
+            <FlexMessagePreview json={fm} />
+          </div>
+        );
+      } catch (_err) {
+        return <div className="text-gray-500">Flex 訊息</div>;
+      }
     } else if (message.message_type === "sticker") {
-      return <div className="text-2xl">😊 貼圖</div>;
+      // 無法直接渲染 LINE 貼圖，給提示樣式
+      const pkg = (content as any)?.packageId || '';
+      const sid = (content as any)?.stickerId || '';
+      return <div className="text-gray-600">😊 貼圖（{pkg}-{sid}）</div>;
     } else if (message.message_type === "location") {
       return <div className="text-gray-600">📍 位置訊息</div>;
     }
@@ -348,73 +364,73 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
             </div>
           ) : (
             <div className="space-y-4">
-              {chatHistory.map((msg, index) => (
-                <div 
-                  key={`${msg.id}-${index}`} 
-                  className={`flex ${msg.sender_type === "admin" ? "justify-start" : "justify-end"}`}
-                >
-                  <div className={`max-w-xs lg:max-w-md ${
-                    msg.sender_type === "admin" ? "" : ""
-                  }`}>
-                    {/* 管理者訊息 */}
-                    {msg.sender_type === "admin" && (
+              {chatHistory.map((msg, index) => {
+                const isUser = msg.sender_type === 'user';
+                const isAdmin = msg.sender_type === 'admin';
+                const isBot = msg.sender_type === 'bot';
+
+                // 對齊方向：用戶在左，管理員/機器人在右
+                const justify = isUser ? 'justify-start' : 'justify-end';
+                return (
+                  <div key={`${msg.id}-${index}`} className={`flex ${justify}`}>
+                    {/* 左側（用戶）顯示頭像在左 */}
+                    {isUser && (
                       <div className="flex items-start gap-2">
                         <Avatar className="h-8 w-8 mt-1">
-                          <AvatarFallback className="bg-green-500 text-white text-xs">
-                            管理
-                          </AvatarFallback>
+                          <AvatarFallback className="bg-blue-500 text-white text-xs">用戶</AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
-                          <div className="bg-green-500 text-white rounded-2xl rounded-tl-md px-4 py-2">
+                        <div>
+                          <div className="bg-gray-100 text-gray-800 rounded-2xl rounded-tl-md px-4 py-2 max-w-xs lg:max-w-md">
                             {renderMessageContent(msg)}
                           </div>
                           <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                            <span>{formatTime(msg.timestamp)}</span>
+                            {msg.event_type !== "message" && (
+                              <Badge variant="outline" className="text-xs">{msg.event_type}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 右側（管理員）顯示頭像在右 */}
+                    {isAdmin && (
+                      <div className="flex items-start gap-2">
+                        <div>
+                          <div className="bg-green-500 text-white rounded-2xl rounded-tr-md px-4 py-2 max-w-xs lg:max-w-md">
+                            {renderMessageContent(msg)}
+                          </div>
+                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 justify-end">
                             <span>{formatTime(msg.timestamp)}</span>
                             <CheckCheck className="h-3 w-3 text-green-500" />
                           </div>
                         </div>
+                        <Avatar className="h-8 w-8 mt-1">
+                          <AvatarFallback className="bg-green-500 text-white text-xs">管理</AvatarFallback>
+                        </Avatar>
                       </div>
                     )}
-                    
-                    {/* 機器人訊息 */}
-                    {msg.sender_type === "bot" && (
+
+                    {/* 右側（機器人）顯示頭像在右 */}
+                    {isBot && (
                       <div className="flex items-start gap-2">
-                        <Avatar className="h-8 w-8 mt-1">
-                          <AvatarFallback className="bg-purple-500 text-white text-xs">
-                            機器
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="bg-purple-500 text-white rounded-2xl rounded-tl-md px-4 py-2">
+                        <div>
+                          <div className="bg-purple-500 text-white rounded-2xl rounded-tr-md px-4 py-2 max-w-xs lg:max-w-md">
                             {renderMessageContent(msg)}
                           </div>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 justify-end">
                             <span>{formatTime(msg.timestamp)}</span>
                             <Badge variant="outline" className="text-xs">Bot</Badge>
                           </div>
                         </div>
-                      </div>
-                    )}
-                    
-                    {/* 用戶訊息 */}
-                    {msg.sender_type === "user" && (
-                      <div className="flex flex-col items-end">
-                        <div className="bg-blue-500 text-white rounded-2xl rounded-tr-md px-4 py-2">
-                          {renderMessageContent(msg)}
-                        </div>
-                        <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-                          <span>{formatTime(msg.timestamp)}</span>
-                          {msg.event_type !== "message" && (
-                            <Badge variant="outline" className="text-xs">
-                              {msg.event_type}
-                            </Badge>
-                          )}
-                        </div>
+                        <Avatar className="h-8 w-8 mt-1">
+                          <AvatarFallback className="bg-purple-500 text-white text-xs">機器</AvatarFallback>
+                        </Avatar>
                       </div>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
           )}
