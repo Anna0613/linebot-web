@@ -14,6 +14,9 @@ from typing import Optional, Dict, Any
 from app.database import get_db
 from app.models.bot import Bot
 from app.services.line_bot_service import LineBotService
+from app.models.line_user import LineBotUser
+from uuid import UUID as PyUUID
+from sqlalchemy.sql import func
 from app.services.conversation_service import ConversationService
 from app.services.websocket_manager import websocket_manager
 
@@ -396,6 +399,45 @@ async def process_single_event(
             message_content=message,
             line_message_id=line_message_id
         )
+
+        # 保障：若 PostgreSQL 尚無此用戶紀錄，於收到訊息時自動向 LINE 取用戶資料並建立
+        try:
+            try:
+                bot_uuid = PyUUID(bot_id)
+            except Exception:
+                bot_uuid = None
+
+            if bot_uuid is not None:
+                existing = db.query(LineBotUser).filter(
+                    LineBotUser.bot_id == bot_uuid,
+                    LineBotUser.line_user_id == user_id
+                ).first()
+
+                if not existing:
+                    profile = line_bot_service.get_user_profile(user_id)
+                    new_user = LineBotUser(
+                        bot_id=bot_uuid,
+                        line_user_id=user_id,
+                        display_name=(profile or {}).get("display_name"),
+                        picture_url=(profile or {}).get("picture_url"),
+                        status_message=(profile or {}).get("status_message"),
+                        language=(profile or {}).get("language"),
+                        is_followed=True,
+                        interaction_count="1"
+                    )
+                    db.add(new_user)
+                    db.commit()
+                else:
+                    # 更新互動次數與最後互動時間
+                    existing.last_interaction = func.now()
+                    try:
+                        cnt = int(existing.interaction_count or "0")
+                        existing.interaction_count = str(cnt + 1)
+                    except Exception:
+                        existing.interaction_count = "1"
+                    db.commit()
+        except Exception as upsert_err:
+            logger.warning(f"同步用戶資料至 PostgreSQL 失敗: {upsert_err}")
 
         # 如果是重複訊息，直接跳過
         if not is_new:
