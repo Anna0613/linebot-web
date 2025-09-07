@@ -119,7 +119,13 @@ class MongoDBManager:
                 ("messages.sender_type", 1),
                 ("messages.timestamp", -1)
             ], name="sender_time_idx")
-            
+
+            # 建立複合索引：(bot_id, messages.line_message_id) 用於防重複檢查
+            await conversations_collection.create_index([
+                ("bot_id", 1),
+                ("messages.line_message_id", 1)
+            ], name="line_message_id_idx")
+
             logger.info("MongoDB 索引創建完成")
             
         except Exception as e:

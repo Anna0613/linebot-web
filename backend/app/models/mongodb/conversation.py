@@ -19,6 +19,7 @@ class AdminUserInfo(BaseModel):
 class MessageDocument(BaseModel):
     """訊息文檔模型"""
     id: str = Field(default_factory=lambda: str(ObjectId()), description="訊息 ID")
+    line_message_id: Optional[str] = Field(None, description="LINE 原始訊息 ID")
     event_type: str = Field(..., description="事件類型 (message, follow, unfollow, postback)")
     message_type: str = Field(..., description="訊息類型 (text, image, audio, video, file, location, sticker)")
     content: Dict[str, Any] = Field(default_factory=dict, description="訊息內容 JSON")
@@ -56,6 +57,7 @@ class ConversationDocument(Document):
             [("bot_id", 1), ("line_user_id", 1), ("messages.timestamp", -1)],  # 查詢索引
             [("updated_at", -1)],  # 更新時間索引
             [("messages.sender_type", 1), ("messages.timestamp", -1)],  # 發送者類型索引
+            [("bot_id", 1), ("messages.line_message_id", 1)],  # 防重複索引
         ]
         
     class Config:
@@ -79,19 +81,35 @@ class ConversationDocument(Document):
         }
     
     async def add_message(self, message_data: Dict[str, Any]) -> MessageDocument:
-        """新增訊息到對話中"""
+        """新增訊息到對話中（含重複檢查）"""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        line_message_id = message_data.get('line_message_id')
+
+        # 檢查是否已存在相同的 line_message_id
+        if line_message_id:
+            existing_message = next(
+                (msg for msg in self.messages if msg.line_message_id == line_message_id),
+                None
+            )
+            if existing_message:
+                logger.warning(f"訊息已存在，跳過重複記錄: {line_message_id}")
+                return existing_message
+
         # 創建新的訊息文檔
         message = MessageDocument(**message_data)
-        
+
         # 添加到訊息列表
         self.messages.append(message)
-        
+
         # 更新時間戳
         self.updated_at = datetime.utcnow()
-        
+
         # 保存到資料庫
         await self.save()
-        
+
+        logger.info(f"新增訊息成功: {message.id}, line_message_id: {line_message_id}")
         return message
     
     async def get_messages(

@@ -281,11 +281,12 @@ class ConversationService:
         message_type: str,
         message_content: Dict[str, Any],
         media_url: Optional[str] = None,
-        media_path: Optional[str] = None
+        media_path: Optional[str] = None,
+        line_message_id: Optional[str] = None
     ) -> MessageDocument:
         """
-        添加用戶訊息
-        
+        添加用戶訊息（含重複檢查）
+
         Args:
             bot_id: Bot ID
             line_user_id: LINE 用戶 ID
@@ -294,16 +295,35 @@ class ConversationService:
             message_content: 訊息內容
             media_url: 媒體 URL
             media_path: 媒體路徑
-            
+            line_message_id: LINE 原始訊息 ID
+
         Returns:
             MessageDocument: 新增的訊息文檔
         """
         try:
+            # 如果有 line_message_id，先檢查是否已存在
+            if line_message_id:
+                existing_conversation = await ConversationDocument.find_one({
+                    "bot_id": bot_id,
+                    "messages.line_message_id": line_message_id
+                })
+
+                if existing_conversation:
+                    existing_message = next(
+                        (msg for msg in existing_conversation.messages
+                         if msg.line_message_id == line_message_id),
+                        None
+                    )
+                    if existing_message:
+                        logger.warning(f"訊息已存在，跳過重複記錄: {line_message_id}")
+                        return existing_message
+
             # 獲取或創建對話
             conversation = await ConversationService.get_or_create_conversation(bot_id, line_user_id)
-            
+
             # 構建訊息資料
             message_data = {
+                "line_message_id": line_message_id,
                 "event_type": event_type,
                 "message_type": message_type,
                 "content": message_content,
@@ -312,16 +332,41 @@ class ConversationService:
                 "media_url": media_url,
                 "media_path": media_path
             }
-            
+
             # 添加訊息
             message = await conversation.add_message(message_data)
-            
-            logger.info(f"用戶訊息已添加: bot_id={bot_id}, line_user_id={line_user_id}, message_id={message.id}")
+
+            logger.info(f"用戶訊息已添加: bot_id={bot_id}, line_user_id={line_user_id}, message_id={message.id}, line_message_id={line_message_id}")
             return message
             
         except Exception as e:
             logger.error(f"添加用戶訊息失敗: {e}")
             raise
+
+    @staticmethod
+    async def get_conversation_by_line_message_id(
+        bot_id: str,
+        line_message_id: str
+    ) -> Optional[ConversationDocument]:
+        """
+        根據 LINE 訊息 ID 查找對話
+
+        Args:
+            bot_id: Bot ID
+            line_message_id: LINE 原始訊息 ID
+
+        Returns:
+            ConversationDocument: 對話文檔，如果不存在則返回 None
+        """
+        try:
+            conversation = await ConversationDocument.find_one({
+                "bot_id": bot_id,
+                "messages.line_message_id": line_message_id
+            })
+            return conversation
+        except Exception as e:
+            logger.error(f"根據 LINE 訊息 ID 查找對話失敗: {e}")
+            return None
     
     @staticmethod
     async def add_admin_message(
