@@ -73,8 +73,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [limit] = useState(50);
+  const [offset, setOffset] = useState(0); // 以最新訊息為基準的偏移
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // WebSocket 連接，用於即時更新
   const { isConnected, lastMessage } = useWebSocket({
@@ -88,37 +93,61 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 獲取聊天記錄
-  const fetchChatHistory = useCallback(async () => {
+  // 初始化或重新載入最新聊天記錄（最末端 50 筆）
+  const loadInitial = useCallback(async () => {
     if (!selectedUser || !botId) return;
-
     setLoading(true);
     try {
-      const response = await apiClient.getChatHistory(botId, selectedUser.line_user_id);
-
-      if (response.data && response.data.success) {
-        const chatHistory = response.data.chat_history || [];
-        setChatHistory(chatHistory);
-        // 延遲滾動以確保內容已渲染
-        setTimeout(scrollToBottom, 100);
+      const resp = await apiClient.getChatHistory(botId, selectedUser.line_user_id, limit, 0);
+      if (resp.data && resp.data.success) {
+        const list: ChatMessage[] = resp.data.chat_history || [];
+        setChatHistory(list);
+        setOffset(list.length);
+        setHasMore((resp.data.total_count || 0) > list.length);
+        setTimeout(scrollToBottom, 50);
       } else {
-        toast({
-          variant: "destructive",
-          title: "載入失敗",
-          description: "無法載入聊天記錄",
-        });
+        toast({ variant: "destructive", title: "載入失敗", description: "無法載入聊天記錄" });
       }
-    } catch (error) {
-      console.error("獲取聊天記錄失敗:", error);
-      toast({
-        variant: "destructive",
-        title: "載入失敗",
-        description: "無法載入聊天記錄",
-      });
+    } catch (err) {
+      console.error("載入聊天記錄失敗:", err);
+      toast({ variant: "destructive", title: "載入失敗", description: "無法載入聊天記錄" });
     } finally {
       setLoading(false);
     }
-  }, [selectedUser, botId, toast]);
+  }, [selectedUser, botId, limit, toast]);
+
+  // 加載更舊訊息並置頂插入
+  const loadMoreOlder = useCallback(async () => {
+    if (!selectedUser || !botId || isFetchingMore || !hasMore) return;
+    setIsFetchingMore(true);
+    const el = scrollRef.current;
+    const prevScrollHeight = el ? el.scrollHeight : 0;
+    const prevScrollTop = el ? el.scrollTop : 0;
+    try {
+      const resp = await apiClient.getChatHistory(botId, selectedUser.line_user_id, limit, offset);
+      if (resp.data && resp.data.success) {
+        const older: ChatMessage[] = resp.data.chat_history || [];
+        if (older.length > 0) {
+          setChatHistory((prev) => [...older, ...prev]);
+          setOffset(offset + older.length);
+          setHasMore((resp.data.total_count || 0) > (offset + older.length));
+          // 維持目前視窗位置
+          setTimeout(() => {
+            if (scrollRef.current) {
+              const delta = scrollRef.current.scrollHeight - prevScrollHeight;
+              scrollRef.current.scrollTop = prevScrollTop + delta;
+            }
+          }, 0);
+        } else {
+          setHasMore(false);
+        }
+      }
+    } catch (err) {
+      console.error("載入更舊訊息失敗:", err);
+    } finally {
+      setIsFetchingMore(false);
+    }
+  }, [selectedUser, botId, limit, offset, hasMore, isFetchingMore]);
 
   // 發送訊息
   const handleSendMessage = async () => {
@@ -138,8 +167,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
           description: "訊息已發送給用戶",
         });
         setMessage("");
-        // 重新獲取聊天記錄以顯示新訊息
-        await fetchChatHistory();
+        // 交由 WebSocket 推播觸發增量更新（避免整頁重載）
       } else {
         throw new Error(response.data?.message || "發送失敗");
       }
@@ -278,51 +306,48 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     }
   };
 
-  // 當選中用戶變化時，重新獲取聊天記錄
+  // 當選中用戶變化時，初始化最近訊息
   useEffect(() => {
     if (selectedUser) {
-      fetchChatHistory();
+      setChatHistory([]);
+      setOffset(0);
+      setHasMore(true);
+      loadInitial();
     } else {
       setChatHistory([]);
     }
-  }, [selectedUser, botId, fetchChatHistory]);
+  }, [selectedUser, botId, loadInitial]);
 
   // 當聊天記錄更新時滾動到底部
   useEffect(() => {
     scrollToBottom();
   }, [chatHistory]);
 
-  // 處理 WebSocket 消息，實現即時更新
+  // 處理 WebSocket 消息：優先增量更新
   useEffect(() => {
     if (lastMessage && selectedUser) {
-      // 檢查是否是當前用戶的新訊息
-      if (lastMessage.type === 'new_user_message') {
-        const messageData = lastMessage.data as { line_user_id: string; [key: string]: unknown };
-
-        // 確保這是當前選中用戶的訊息
-        if (messageData && messageData.line_user_id === selectedUser.line_user_id) {
-          // 延遲一下確保資料庫已經保存完成，然後重新獲取聊天記錄
-          setTimeout(() => {
-            fetchChatHistory();
-          }, 500);
+      // 直接推送的聊天消息（我們在後端廣播/單發時發出）
+      if (lastMessage.type === 'chat_message') {
+        const payload = lastMessage.data as { line_user_id?: string; message?: ChatMessage };
+        if (payload?.line_user_id === selectedUser.line_user_id && payload.message) {
+          setChatHistory((prev) => {
+            const idx = prev.findIndex(m => m.id === payload.message!.id);
+            if (idx >= 0) {
+              // 更新既有訊息（例如媒體就緒）
+              const next = prev.slice();
+              next[idx] = { ...prev[idx], ...payload.message };
+              return next;
+            }
+            // 新增訊息（增量 append）
+            return [...prev, payload.message!];
+          });
+          setTimeout(scrollToBottom, 50);
         }
       }
-
-      // 處理活動更新（也可能包含訊息事件）
-      if (lastMessage.type === 'activity_update') {
-        const activityData = lastMessage.data as { event_type: string; line_user_id: string; [key: string]: unknown };
-
-        // 如果是訊息事件且來自當前用戶，也觸發更新
-        if (activityData &&
-            activityData.event_type === 'message' &&
-            activityData.user_id === selectedUser.line_user_id) {
-          setTimeout(() => {
-            fetchChatHistory();
-          }, 500);
-        }
-      }
+      // 其餘事件（new_user_message / activity_update）不再觸發整頁重載，
+      // 改由後端推送 chat_message 時進行增量插入，避免閃動與 loading。
     }
-  }, [lastMessage, selectedUser, fetchChatHistory]);
+  }, [lastMessage, selectedUser, loadInitial]);
 
   // 處理 Enter 鍵發送
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -384,7 +409,16 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
 
       {/* 聊天訊息區域 */}
       <CardContent className="flex-1 p-0">
-        <ScrollArea className="h-[400px] p-4">
+        <ScrollArea
+          ref={scrollRef}
+          className="h-[400px] p-4"
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            if (el.scrollTop < 40 && hasMore && !isFetchingMore) {
+              void loadMoreOlder();
+            }
+          }}
+        >
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

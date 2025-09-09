@@ -457,6 +457,33 @@ async def process_single_event(
                 )
             )
 
+        # 即時推送完整聊天訊息到 WebSocket，讓前端增量插入（message/postback/follow）
+        if event_type in ['message', 'postback', 'follow']:
+            try:
+                from app.services.websocket_manager import websocket_manager
+                admin_user_info = None
+                await websocket_manager.broadcast_to_bot(bot_id, {
+                    'type': 'chat_message',
+                    'bot_id': bot_id,
+                    'line_user_id': user_id,
+                    'data': {
+                        'line_user_id': user_id,
+                        'message': {
+                            'id': message_doc.id,
+                            'event_type': message_doc.event_type,
+                            'message_type': message_doc.message_type,
+                            'message_content': message_doc.content,
+                            'sender_type': message_doc.sender_type,
+                            'timestamp': message_doc.timestamp.isoformat() if hasattr(message_doc.timestamp, 'isoformat') else message_doc.timestamp,
+                            'media_url': message_doc.media_url,
+                            'media_path': message_doc.media_path,
+                            'admin_user': admin_user_info
+                        }
+                    }
+                })
+            except Exception as ws_err:
+                logger.warning(f"推送用戶聊天消息到 WebSocket 失敗: {ws_err}")
+
         # 進行邏輯模板匹配與回覆（僅針對部分事件觸發）
         if event_type in ['message', 'postback', 'follow']:
             try:
@@ -523,13 +550,41 @@ async def process_media_async(
                 bot_id, line_message_id
             )
             if conversation:
+                updated_message = None
                 for message in conversation.messages:
                     if message.line_message_id == line_message_id:
                         message.media_path = media_path
                         message.media_url = media_url
-                        await conversation.save()
-                        logger.info(f"媒體檔案處理完成: {media_path}")
+                        updated_message = message
                         break
+                await conversation.save()
+                logger.info(f"媒體檔案處理完成: {media_path}")
+
+                # 推送更新後的完整訊息，讓前端就地更新（不新增）
+                try:
+                    if updated_message is not None:
+                        from app.services.websocket_manager import websocket_manager
+                        await websocket_manager.broadcast_to_bot(bot_id, {
+                            'type': 'chat_message',
+                            'bot_id': bot_id,
+                            'line_user_id': user_id,
+                            'data': {
+                                'line_user_id': user_id,
+                                'message': {
+                                    'id': updated_message.id,
+                                    'event_type': updated_message.event_type,
+                                    'message_type': updated_message.message_type,
+                                    'message_content': updated_message.content,
+                                    'sender_type': updated_message.sender_type,
+                                    'timestamp': updated_message.timestamp.isoformat() if hasattr(updated_message.timestamp, 'isoformat') else updated_message.timestamp,
+                                    'media_url': updated_message.media_url,
+                                    'media_path': updated_message.media_path,
+                                    'admin_user': None
+                                }
+                            }
+                        })
+                except Exception as ws_err:
+                    logger.warning(f"推送媒體就緒消息到 WebSocket 失敗: {ws_err}")
 
     except Exception as e:
         logger.error(f"處理媒體檔案失敗: {e}")

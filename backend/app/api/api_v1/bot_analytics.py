@@ -316,16 +316,44 @@ async def send_test_message(
         # 發送
         result = line_bot_service.send_text_message(user_id, message)
 
-        # 記錄到 MongoDB 對話（admin 訊息）
+        # 記錄到 MongoDB 對話（admin 訊息）並即時通知前端
         try:
             from app.services.conversation_service import ConversationService
-            await ConversationService.add_admin_message(
+            from app.services.websocket_manager import websocket_manager
+            added = await ConversationService.add_admin_message(
                 bot_id=bot_id,
                 line_user_id=user_id,
                 admin_user=current_user,
                 message_content={"text": message},
                 message_type="text"
             )
+            try:
+                admin_user_info = added.admin_user.dict() if hasattr(added.admin_user, 'dict') else {
+                    'id': getattr(added.admin_user, 'id', None),
+                    'username': getattr(added.admin_user, 'username', None),
+                    'full_name': getattr(added.admin_user, 'full_name', None)
+                }
+                await websocket_manager.broadcast_to_bot(bot_id, {
+                    'type': 'chat_message',
+                    'bot_id': bot_id,
+                    'line_user_id': user_id,
+                    'data': {
+                        'line_user_id': user_id,
+                        'message': {
+                            'id': added.id,
+                            'event_type': added.event_type,
+                            'message_type': added.message_type,
+                            'message_content': added.content,
+                            'sender_type': added.sender_type,
+                            'timestamp': added.timestamp.isoformat() if hasattr(added.timestamp, 'isoformat') else added.timestamp,
+                            'media_url': added.media_url,
+                            'media_path': added.media_path,
+                            'admin_user': admin_user_info
+                        }
+                    }
+                })
+            except Exception as ws_err:
+                logger.warning(f"推送 WebSocket 聊天消息失敗: {ws_err}")
         except Exception as mongo_error:
             logger.error(f"記錄測試訊息到 MongoDB 失敗: {mongo_error}")
 
@@ -642,6 +670,7 @@ async def broadcast_message(
         try:
             from app.models.line_user import LineBotUser
             from app.services.conversation_service import ConversationService
+            from app.services.websocket_manager import websocket_manager
             targets: List[str]
             if user_ids:
                 targets = list(user_ids)
@@ -655,13 +684,41 @@ async def broadcast_message(
             # 對每位用戶記錄 admin 訊息到 MongoDB
             for uid in targets:
                 try:
-                    await ConversationService.add_admin_message(
+                    added = await ConversationService.add_admin_message(
                         bot_id=bot_id,
                         line_user_id=uid,
                         admin_user=current_user,
                         message_content={"text": message},
                         message_type="text"
                     )
+                    # 推送到 WebSocket，讓前端聊天室增量更新
+                    try:
+                        admin_user_info = added.admin_user.dict() if hasattr(added.admin_user, 'dict') else {
+                            'id': getattr(added.admin_user, 'id', None),
+                            'username': getattr(added.admin_user, 'username', None),
+                            'full_name': getattr(added.admin_user, 'full_name', None)
+                        }
+                        await websocket_manager.broadcast_to_bot(bot_id, {
+                            'type': 'chat_message',
+                            'bot_id': bot_id,
+                            'line_user_id': uid,
+                            'data': {
+                                'line_user_id': uid,
+                                'message': {
+                                    'id': added.id,
+                                    'event_type': added.event_type,
+                                    'message_type': added.message_type,
+                                    'message_content': added.content,
+                                    'sender_type': added.sender_type,
+                                    'timestamp': added.timestamp.isoformat() if hasattr(added.timestamp, 'isoformat') else added.timestamp,
+                                    'media_url': added.media_url,
+                                    'media_path': added.media_path,
+                                    'admin_user': admin_user_info
+                                }
+                            }
+                        })
+                    except Exception as ws_err:
+                        logger.warning(f"推送 WebSocket 聊天消息失敗: user={uid}, err={ws_err}")
                 except Exception as mongo_error:
                     logger.error(f"記錄廣播訊息到 MongoDB 失敗: user={uid}, err={mongo_error}")
         except Exception as log_err:
@@ -721,9 +778,10 @@ async def send_message_to_user(
         db.add(admin_message)
         db.commit()
         
-        # 同時記錄到 MongoDB 聊天記錄
+        # 同時記錄到 MongoDB 聊天記錄並推送到 WebSocket（增量更新）
         try:
-            await ConversationService.add_admin_message(
+            from app.services.websocket_manager import websocket_manager
+            added = await ConversationService.add_admin_message(
                 bot_id=bot_id,
                 line_user_id=line_user_id,
                 admin_user=current_user,
@@ -731,6 +789,33 @@ async def send_message_to_user(
                 message_type="text"
             )
             logger.info(f"管理者訊息已記錄到 MongoDB: bot_id={bot_id}, line_user_id={line_user_id}, admin_id={current_user.id}")
+            try:
+                admin_user_info = added.admin_user.dict() if hasattr(added.admin_user, 'dict') else {
+                    'id': getattr(added.admin_user, 'id', None),
+                    'username': getattr(added.admin_user, 'username', None),
+                    'full_name': getattr(added.admin_user, 'full_name', None)
+                }
+                await websocket_manager.broadcast_to_bot(bot_id, {
+                    'type': 'chat_message',
+                    'bot_id': bot_id,
+                    'line_user_id': line_user_id,
+                    'data': {
+                        'line_user_id': line_user_id,
+                        'message': {
+                            'id': added.id,
+                            'event_type': added.event_type,
+                            'message_type': added.message_type,
+                            'message_content': added.content,
+                            'sender_type': added.sender_type,
+                            'timestamp': added.timestamp.isoformat() if hasattr(added.timestamp, 'isoformat') else added.timestamp,
+                            'media_url': added.media_url,
+                            'media_path': added.media_path,
+                            'admin_user': admin_user_info
+                        }
+                    }
+                })
+            except Exception as ws_err:
+                logger.warning(f"推送 WebSocket 聊天消息失敗: user={line_user_id}, err={ws_err}")
         except Exception as mongo_error:
             logger.error(f"記錄訊息到 MongoDB 失敗: {mongo_error}")
             # MongoDB 錯誤不應該影響主要功能，只記錄錯誤
