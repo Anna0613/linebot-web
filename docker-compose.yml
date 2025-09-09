@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: linebot-web-backend
     ports:
-      - "6000:8005"
+      - "8001:8005"
     env_file:
       - ./backend/.env
     volumes:

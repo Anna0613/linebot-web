@@ -106,7 +106,7 @@ class Settings(BaseSettings):
         """取得允許的 CORS 來源"""
         default_origins = [
             "http://localhost:8080",
-            "http://localhost:3000", 
+            "http://localhost:3000",
             "http://localhost:5173",
             "https://localhost:5173",
             "http://127.0.0.1:5173",
@@ -121,6 +121,10 @@ class Settings(BaseSettings):
             "https://puzzle-api.jkl921102.org",
             "http://setting-api.jkl921102.org",
             "https://setting-api.jkl921102.org",
+            "http://linebot.jkl921102.org",
+            "https://linebot.jkl921102.org",
+            "http://api.jkl921102.org",
+            "https://api.jkl921102.org",
             "https://jkl921102.org",
             "http://jkl921102.org"
         ]
