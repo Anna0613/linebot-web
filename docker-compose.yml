@@ -21,6 +21,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_UNIFIED_API_URL=https://api.jkl921102.org
+        - VITE_WEBHOOK_DOMAIN=https://api.jkl921102.org
+        - VITE_DOMAIN=https://api.jkl921102.org
+        - REACT_APP_DOMAIN=https://api.jkl921102.org
     container_name: linebot-web-frontend
     ports:
       - "3000:3000"
