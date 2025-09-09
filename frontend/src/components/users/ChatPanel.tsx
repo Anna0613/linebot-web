@@ -88,9 +88,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     autoReconnect: true
   });
 
-  // 滾動到最新訊息
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // 僅滾動聊天區域到最底，不觸發整頁滾動
+  const scrollToBottom = (smooth: boolean = true) => {
+    const el = scrollRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    } else {
+      // 後備：若尚未綁定 scrollRef，避免觸發頁面滾動
+      try {
+        messagesEndRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: smooth ? 'smooth' : 'auto' });
+      } catch {}
+    }
   };
 
   // 初始化或重新載入最新聊天記錄（最末端 50 筆）
