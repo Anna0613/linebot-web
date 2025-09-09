@@ -379,7 +379,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   }
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="flex flex-col self-start max-h-[75vh]">
       {/* 聊天室頭部 */}
       <CardHeader className="pb-3 border-b">
         <div className="flex items-center justify-between">
@@ -416,10 +416,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       </CardHeader>
 
       {/* 聊天訊息區域 */}
-      <CardContent className="flex-1 p-0">
+      <CardContent className="p-0">
         <ScrollArea
           ref={scrollRef}
-          className="h-[400px] p-4"
+          className="max-h-[60vh] p-4"
           onScroll={(e) => {
             const el = e.currentTarget;
             if (el.scrollTop < 40 && hasMore && !isFetchingMore) {
