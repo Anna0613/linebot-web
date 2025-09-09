@@ -10,7 +10,10 @@ from pathlib import Path
 import logging
 
 # 添加專案根目錄到 Python 路徑
-sys.path.insert(0, str(Path(__file__).parent))
+current_dir = Path(__file__).parent
+scripts_dir = current_dir.parent
+backend_dir = scripts_dir.parent
+sys.path.insert(0, str(backend_dir))
 
 from app.database import SessionLocal
 from app.models.line_user import LineBotUser

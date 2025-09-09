@@ -76,6 +76,7 @@ export interface FlexMessage {
   id: string;
   name: string;
   content: Record<string, unknown>;
+  design_blocks?: unknown; // 新增：編輯器 blocks（可選）
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -90,11 +91,15 @@ export interface FlexMessageSummary {
 export interface FlexMessageCreate {
   name: string;
   content: Record<string, unknown>;
+  // 編輯器原始 blocks，與 content 併行保存（後端支援）
+  design_blocks?: unknown;
 }
 
 export interface FlexMessageUpdate {
   name?: string;
   content?: Record<string, unknown>;
+  // 編輯器原始 blocks，與 content 併行保存（後端支援）
+  design_blocks?: unknown;
 }
 
 export class VisualEditorApi {

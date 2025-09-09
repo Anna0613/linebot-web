@@ -23,7 +23,10 @@ from typing import List, Dict, Any, Optional
 from collections import defaultdict
 
 # 添加專案根目錄到 Python 路徑
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+scripts_dir = os.path.dirname(current_dir)
+backend_dir = os.path.dirname(scripts_dir)
+sys.path.insert(0, backend_dir)
 
 import asyncio
 from sqlalchemy.orm import Session, joinedload

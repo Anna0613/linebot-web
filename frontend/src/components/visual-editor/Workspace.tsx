@@ -33,8 +33,23 @@ class FlexMessageGenerator {
       }
     };
 
+    // 處理所有積木
     blocks.forEach(block => {
-      if (block.blockType === 'flex-content') {
+      if (block.blockType === 'flex-container') {
+        // 處理容器積木
+        switch (block.blockData.containerType) {
+          case 'bubble':
+            // Bubble 容器已經是預設結構，不需要額外處理
+            break;
+          case 'box':
+            // 如果是 box 容器，可以調整 layout
+            if (block.blockData.layout) {
+              bubble.body.layout = block.blockData.layout as string;
+            }
+            break;
+        }
+      } else if (block.blockType === 'flex-content') {
+        // 處理內容積木
         switch (block.blockData.contentType) {
           case 'text':
             bubble.body.contents.push({
@@ -48,7 +63,9 @@ class FlexMessageGenerator {
           case 'image':
             bubble.body.contents.push({
               type: "image",
-              url: block.blockData.url || "https://via.placeholder.com/300x200"
+              url: block.blockData.url || "https://via.placeholder.com/300x200",
+              aspectMode: "cover",
+              aspectRatio: "20:13"
             });
             break;
           case 'button':
@@ -70,6 +87,16 @@ class FlexMessageGenerator {
         }
       }
     });
+
+    // 如果沒有內容，添加一個預設文字
+    if (bubble.body.contents.length === 0) {
+      bubble.body.contents.push({
+        type: "text",
+        text: "Flex 訊息內容",
+        color: "#666666",
+        align: "center"
+      });
+    }
 
     return bubble;
   }

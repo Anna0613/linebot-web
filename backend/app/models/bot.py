@@ -40,7 +40,8 @@ class FlexMessage(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False, default="Untitled Message")
-    content = Column(JSONB, nullable=False)  # 使用 JSONB 提高查詢效能
+    content = Column(JSONB, nullable=False)  # 編譯後的合法 Flex JSON（bubble/carousel）
+    design_blocks = Column(JSONB, nullable=True)  # 編輯器 blocks（可選，併行儲存）
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

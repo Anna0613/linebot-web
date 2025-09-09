@@ -70,23 +70,47 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
           flexMessageId: block.blockData.flexMessageId
         })}`);
         
-        // 優先使用當前 Flex 設計器內容
+        // 檢查是否指定了特定的 Flex Message 模板
+        const storedKey = block.blockData.flexMessageName || block.blockData.flexMessageId;
+        const stored = storedKey ? savedFlexMessages.get(storedKey as string) : undefined;
+
+        debugInfo.push(`🔍 當前 flexBlocks 狀態: ${flexBlocks ? flexBlocks.length : 0} 個積木`);
         if (flexBlocks && flexBlocks.length > 0) {
-          const currentFlexMessage = convertFlexBlocksToFlexMessage(flexBlocks);
-          debugInfo.push(`✅ 使用當前 Flex 設計 (${flexBlocks.length} 個組件)`);
-          return {
-            type: 'bot',
-            content: 'Flex 訊息',
-            messageType: 'flex',
-            flexMessage: currentFlexMessage,
-            timestamp: Date.now()
-          };
+          debugInfo.push(`🔍 flexBlocks 詳情: ${JSON.stringify(flexBlocks.map(b => ({ blockType: b.blockType, contentType: b.blockData?.contentType })))}`);
+        }
+
+        // 如果指定了 Flex Message 模板，優先使用指定的模板
+        if (stored) {
+          debugInfo.push(`📦 使用指定的 Flex 模板: ${stored.name}`);
+        } else if (flexBlocks && flexBlocks.length > 0) {
+          // 如果沒有指定模板，則使用當前 Flex 設計器內容
+          debugInfo.push(`🔍 Flex 積木詳情: ${JSON.stringify(flexBlocks.map(b => ({ blockType: b.blockType, contentType: b.blockData?.contentType })))}`);
+          const currentBubble = convertFlexBlocksToFlexMessage(flexBlocks);
+          debugInfo.push(`🔍 轉換後的 bubble: ${JSON.stringify(currentBubble).substring(0, 200)}...`);
+
+          // 檢查 bubble 是否有內容
+          if (currentBubble && currentBubble.body && currentBubble.body.contents && currentBubble.body.contents.length > 0) {
+            // convertFlexBlocksToFlexMessage 返回的是 bubble 結構，需要包裝成完整的 Flex Message
+            const currentFlexMessage = {
+              type: 'flex',
+              altText: 'Flex 訊息',
+              contents: currentBubble
+            };
+            debugInfo.push(`✅ 使用當前 Flex 設計 (${flexBlocks.length} 個組件，${currentBubble.body.contents.length} 個內容)`);
+            return {
+              type: 'bot',
+              content: 'Flex 訊息',
+              messageType: 'flex',
+              flexMessage: currentFlexMessage,
+              timestamp: Date.now()
+            };
+          } else {
+            debugInfo.push(`⚠️ Flex 積木轉換後沒有內容`);
+          }
         }
 
         {
-        // 使用儲存的 Flex Message
-        const storedKey = block.blockData.flexMessageName || block.blockData.flexMessageId;
-        const stored = storedKey ? savedFlexMessages.get(storedKey as string) : undefined;
+        // 處理儲存的 Flex Message
         
         if (stored) {
           debugInfo.push(`📦 使用儲存的 Flex: ${stored.name}`);
@@ -121,11 +145,12 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
               debugInfo.push(`🔧 轉換系統積木格式到 LINE Flex Message (${parsedContent.blocks.length} 個積木)`);
               try {
                 const flexBlocks = parsedContent.blocks as Block[];
-                const convertedFlexMessage = convertFlexBlocksToFlexMessage(flexBlocks);
+                const convertedBubble = convertFlexBlocksToFlexMessage(flexBlocks);
+                // convertFlexBlocksToFlexMessage 返回的是 bubble 結構，需要包裝成完整的 Flex Message
                 flexMessage = {
                   type: 'flex',
                   altText: stored.name || 'Flex 訊息',
-                  contents: convertedFlexMessage
+                  contents: convertedBubble
                 };
                 debugInfo.push(`✅ 成功轉換 ${flexBlocks.length} 個 Flex 積木`);
               } catch (error) {

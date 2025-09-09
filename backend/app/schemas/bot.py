@@ -64,9 +64,13 @@ class BotResponse(BaseModel):
         from_attributes = True
 
 class FlexMessageBase(BaseModel):
-    """Flex 訊息基礎 schema"""
+    """Flex 訊息基礎 schema
+    - content: 編譯後的合法 Flex JSON（bubble/carousel 或其字串）或設計器格式（含 blocks）
+    - design_blocks: 可選，編輯器 blocks，與 content 併行保存
+    """
     name: str
-    content: Any  # JSON 格式的 Flex 訊息內容
+    content: Any
+    design_blocks: Optional[Any] = None
 
 class FlexMessageCreate(FlexMessageBase):
     """Flex 訊息創建 schema"""
@@ -93,11 +97,27 @@ class FlexMessageCreate(FlexMessageBase):
             raise ValueError('內容必須是有效的 JSON 格式')
         # 關鍵：返回原始數據
         return v
+    
+    @validator('design_blocks')
+    def validate_design_blocks(cls, v):
+        if v is None:
+            return v
+        try:
+            if isinstance(v, dict) or isinstance(v, list):
+                json.dumps(v)
+            elif isinstance(v, str):
+                json.loads(v)
+            else:
+                raise ValueError('design_blocks 必須是有效的 JSON 格式')
+        except (json.JSONDecodeError, TypeError):
+            raise ValueError('design_blocks 必須是有效的 JSON 格式')
+        return v
 
 class FlexMessageUpdate(BaseModel):
     """Flex 訊息更新 schema"""
     name: Optional[str] = None
     content: Optional[Any] = None
+    design_blocks: Optional[Any] = None
     
     @validator('name')
     def validate_name(cls, v):
@@ -125,12 +145,27 @@ class FlexMessageUpdate(BaseModel):
                 raise ValueError('內容必須是有效的 JSON 格式')
         # 關鍵：返回原始數據
         return v
+    
+    @validator('design_blocks')
+    def validate_design_blocks(cls, v):
+        if v is not None:
+            try:
+                if isinstance(v, dict) or isinstance(v, list):
+                    json.dumps(v)
+                elif isinstance(v, str):
+                    json.loads(v)
+                else:
+                    raise ValueError('design_blocks 必須是有效的 JSON 格式')
+            except (json.JSONDecodeError, TypeError):
+                raise ValueError('design_blocks 必須是有效的 JSON 格式')
+        return v
 
 class FlexMessageResponse(BaseModel):
     """Flex 訊息回應 schema"""
     id: str
     name: str
     content: Any
+    design_blocks: Optional[Any] = None
     user_id: str
     created_at: datetime
     updated_at: datetime

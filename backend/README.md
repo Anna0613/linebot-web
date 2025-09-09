@@ -28,16 +28,31 @@ backend/
 │   ├── dependencies.py # 依賴注入
 │   └── main.py         # 主應用程式
 ├── scripts/            # 管理腳本
-│   ├── manage_db.py    # 資料庫管理
-│   ├── start.py        # 服務啟動
-│   └── db_schema_generator.py # 架構生成器
+│   ├── database/       # 資料庫管理腳本
+│   │   ├── manage_db.py
+│   │   ├── db.py
+│   │   ├── db_manager.py
+│   │   ├── db_schema_generator.py
+│   │   └── ...
+│   ├── development/    # 開發工具
+│   │   ├── start.py
+│   │   ├── run.py
+│   │   ├── quick_start.py
+│   │   └── debug_models.py
+│   ├── data_processing/ # 資料處理
+│   │   ├── process_existing_media.py
+│   │   ├── update_media_info.py
+│   │   └── query_mongodb.py
+│   └── migration/      # 資料遷移
+│       └── migrate_conversations_to_mongo.py
 ├── docs/               # 專案文檔
 │   └── DATABASE_GUIDE.md
 ├── migrations/         # 資料庫遷移
 ├── tests/             # 測試檔案
-├── run.py             # 快速啟動
-├── db.py              # 資料庫管理快捷方式
-└── ...配置檔案
+├── Dockerfile         # Docker 配置
+├── alembic.ini        # Alembic 配置
+├── pyproject.toml     # Python 專案配置
+└── requirements.txt   # 依賴清單
 ```
 
 ## 安裝與部署
@@ -58,10 +73,10 @@ cp env.example .env
 3. 啟動應用程式：
 ```bash
 # 方法 1: 使用快速啟動腳本
-python run.py
+python scripts/development/run.py
 
 # 方法 2: 使用 scripts 目錄啟動
-python scripts/start.py
+python scripts/development/start.py
 
 # 方法 3: 直接使用 uvicorn
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -123,14 +138,14 @@ docker run -p 8000:8000 --env-file .env linebot-web-api
 
 ```bash
 # 使用快捷方式
-python db.py status          # 檢查資料庫狀態
-python db.py migrate         # 執行遷移
-python db.py generate -m "新功能"  # 生成新遷移
-python db.py schema          # 生成架構報告
+python scripts/database/db.py status          # 檢查資料庫狀態
+python scripts/database/db.py migrate         # 執行遷移
+python scripts/database/db.py generate -m "新功能"  # 生成新遷移
+python scripts/database/db.py schema          # 生成架構報告
 
 # 或直接使用管理腳本
-python scripts/manage_db.py status
-python scripts/manage_db.py migrate
+python scripts/database/manage_db.py status
+python scripts/database/manage_db.py migrate
 
 # 傳統方式（仍然支援）
 alembic revision --autogenerate -m "描述"

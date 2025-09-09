@@ -12,8 +12,9 @@ from sqlalchemy.engine import Engine
 
 # 添加專案路徑
 current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
+scripts_dir = os.path.dirname(current_dir)
+backend_dir = os.path.dirname(scripts_dir)
+sys.path.insert(0, backend_dir)
 
 from app.config import settings
 from app.database import engine

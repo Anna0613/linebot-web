@@ -8,8 +8,8 @@ import subprocess
 import sys
 
 def main():
-    """主函數 - 轉發到 scripts/manage_db.py"""
-    script_path = os.path.join("scripts", "manage_db.py")
+    """主函數 - 轉發到 manage_db.py"""
+    script_path = os.path.join(os.path.dirname(__file__), "manage_db.py")
     
     if not os.path.exists(script_path):
         print(f"❌ 找不到資料庫管理腳本: {script_path}")

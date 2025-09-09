@@ -11,8 +11,9 @@ from pathlib import Path
 
 # 添加專案路徑
 current_dir = os.path.dirname(__file__)
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
+scripts_dir = os.path.dirname(current_dir)
+backend_dir = os.path.dirname(scripts_dir)
+sys.path.append(backend_dir)
 
 from app.config import settings
 from app.database import init_database
@@ -23,17 +24,17 @@ class DatabaseManager:
     
     def __init__(self):
         # 動態檢測 Python 和 Alembic 路徑
-        venv_python = os.path.join(parent_dir, "venv", "Scripts", "python.exe")
+        venv_python = os.path.join(backend_dir, "venv", "Scripts", "python.exe")
         if not os.path.exists(venv_python):
-            venv_python = os.path.join(parent_dir, "venv", "bin", "python")
+            venv_python = os.path.join(backend_dir, "venv", "bin", "python")
         
         if os.path.exists(venv_python):
             self.alembic_cmd = [venv_python, "-m", "alembic"]
         else:
             self.alembic_cmd = ["python", "-m", "alembic"]
         
-        # 設定工作目錄為父目錄（backend 根目錄）
-        self.working_dir = parent_dir
+        # 設定工作目錄為 backend 根目錄
+        self.working_dir = backend_dir
     
     def status(self):
         """顯示資料庫狀態 (類似 prisma db push)"""

@@ -14,6 +14,9 @@ from typing import Optional, Dict, Any
 from app.database import get_db
 from app.models.bot import Bot
 from app.services.line_bot_service import LineBotService
+from app.models.line_user import LineBotUser
+from uuid import UUID as PyUUID
+from sqlalchemy.sql import func
 from app.services.conversation_service import ConversationService
 from app.services.websocket_manager import websocket_manager
 
@@ -356,14 +359,32 @@ async def process_single_event(
 
         logger.info(f"處理事件: type={event_type}, source={source_type}, user={user_id}")
 
-        # 只處理用戶訊息事件
-        if event_type != 'message' or source_type != 'user' or not user_id:
-            logger.info(f"跳過非用戶訊息事件: {event_type}")
+        # 僅處理來自 user 的事件
+        if source_type != 'user' or not user_id:
+            logger.info(f"跳過非使用者來源事件: source_type={source_type}")
             return None
 
-        message = event.get('message', {})
-        message_type = message.get('type')
-        line_message_id = message.get('id')
+        # 根據事件類型組裝通用欄位
+        message = {}
+        message_type = None
+        line_message_id = None
+
+        if event_type == 'message':
+            message = event.get('message', {})
+            message_type = message.get('type')
+            line_message_id = message.get('id')
+        elif event_type == 'postback':
+            # 將 postback 當作一個 message_type='postback' 的訊息存檔，並交由邏輯引擎處理
+            message = event.get('postback', {}) or {}
+            message_type = 'postback'
+            line_message_id = None
+        elif event_type in ['follow', 'unfollow']:
+            message = {}
+            message_type = event_type
+            line_message_id = None
+        else:
+            logger.info(f"跳過未支援事件: {event_type}")
+            return None
 
         if not line_message_id:
             logger.warning("事件缺少 LINE 訊息 ID，跳過處理")
@@ -378,6 +399,45 @@ async def process_single_event(
             message_content=message,
             line_message_id=line_message_id
         )
+
+        # 保障：若 PostgreSQL 尚無此用戶紀錄，於收到訊息時自動向 LINE 取用戶資料並建立
+        try:
+            try:
+                bot_uuid = PyUUID(bot_id)
+            except Exception:
+                bot_uuid = None
+
+            if bot_uuid is not None:
+                existing = db.query(LineBotUser).filter(
+                    LineBotUser.bot_id == bot_uuid,
+                    LineBotUser.line_user_id == user_id
+                ).first()
+
+                if not existing:
+                    profile = line_bot_service.get_user_profile(user_id)
+                    new_user = LineBotUser(
+                        bot_id=bot_uuid,
+                        line_user_id=user_id,
+                        display_name=(profile or {}).get("display_name"),
+                        picture_url=(profile or {}).get("picture_url"),
+                        status_message=(profile or {}).get("status_message"),
+                        language=(profile or {}).get("language"),
+                        is_followed=True,
+                        interaction_count="1"
+                    )
+                    db.add(new_user)
+                    db.commit()
+                else:
+                    # 更新互動次數與最後互動時間
+                    existing.last_interaction = func.now()
+                    try:
+                        cnt = int(existing.interaction_count or "0")
+                        existing.interaction_count = str(cnt + 1)
+                    except Exception:
+                        existing.interaction_count = "1"
+                    db.commit()
+        except Exception as upsert_err:
+            logger.warning(f"同步用戶資料至 PostgreSQL 失敗: {upsert_err}")
 
         # 如果是重複訊息，直接跳過
         if not is_new:
@@ -396,6 +456,23 @@ async def process_single_event(
                     line_bot_service=line_bot_service
                 )
             )
+
+        # 進行邏輯模板匹配與回覆（僅針對部分事件觸發）
+        if event_type in ['message', 'postback', 'follow']:
+            try:
+                from app.models.bot import Bot as BotModel
+                bot = db.query(BotModel).filter(BotModel.id == bot_id).first()
+                if bot:
+                    from app.services.logic_engine_service import LogicEngineService
+                    await LogicEngineService.evaluate_and_reply(
+                        db=db,
+                        bot=bot,
+                        line_bot_service=line_bot_service,
+                        user_id=user_id,
+                        event=event
+                    )
+            except Exception as le_err:
+                logger.error(f"邏輯引擎處理失敗: {le_err}")
 
         return {
             'event_type': event_type,

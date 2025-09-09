@@ -344,6 +344,56 @@ class ConversationService:
             raise
 
     @staticmethod
+    async def add_bot_message(
+        bot_id: str,
+        line_user_id: str,
+        message_content: Dict[str, Any],
+        message_type: str = "text",
+        media_url: Optional[str] = None,
+        media_path: Optional[str] = None,
+    ) -> MessageDocument:
+        """
+        添加機器人（自動回覆）訊息到對話記錄
+
+        Args:
+            bot_id: Bot ID
+            line_user_id: LINE 用戶 ID
+            message_content: 訊息內容 JSON
+            message_type: 訊息類型（text, flex, image, ...）
+            media_url: 媒體 URL（可選）
+            media_path: 媒體路徑（可選）
+
+        Returns:
+            MessageDocument: 新增的訊息文檔
+        """
+        try:
+            # 獲取或創建對話
+            conversation = await ConversationService.get_or_create_conversation(bot_id, line_user_id)
+
+            # 構建訊息資料（sender_type='bot'）
+            message_data = {
+                "event_type": "message",
+                "message_type": message_type,
+                "content": message_content or {},
+                "sender_type": "bot",
+                "timestamp": datetime.utcnow(),
+                "media_url": media_url,
+                "media_path": media_path,
+            }
+
+            # 添加訊息
+            message = await conversation.add_message(message_data)
+
+            logger.info(
+                f"機器人訊息已添加: bot_id={bot_id}, line_user_id={line_user_id}, message_id={message.id}, type={message_type}"
+            )
+            return message
+
+        except Exception as e:
+            logger.error(f"添加機器人訊息失敗: {e}")
+            raise
+
+    @staticmethod
     async def get_conversation_by_line_message_id(
         bot_id: str,
         line_message_id: str

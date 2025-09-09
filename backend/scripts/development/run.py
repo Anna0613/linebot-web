@@ -21,8 +21,8 @@ def main():
             print("❌ 啟動已取消")
             return 1
     
-    # 使用 scripts/start.py 啟動
-    script_path = os.path.join("scripts", "start.py")
+    # 使用 start.py 啟動
+    script_path = os.path.join(os.path.dirname(__file__), "start.py")
     if os.path.exists(script_path):
         try:
             return subprocess.call([sys.executable, script_path])

@@ -8,8 +8,9 @@ from pathlib import Path
 
 # 添加專案路徑
 current_dir = Path(__file__).parent
-parent_dir = current_dir.parent
-sys.path.append(str(parent_dir))
+scripts_dir = current_dir.parent
+backend_dir = scripts_dir.parent
+sys.path.append(str(backend_dir))
 
 from app.database import clean_unused_schemas, check_database_connection
 from app.schema_config import SchemaConfig
