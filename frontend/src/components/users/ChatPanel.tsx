@@ -80,6 +80,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [adminAvatar, setAdminAvatar] = useState<string | null>(null);
 
   // WebSocket 連接，用於即時更新
   const { isConnected, lastMessage } = useWebSocket({
@@ -326,6 +327,23 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     }
   }, [selectedUser, botId, loadInitial]);
 
+  // 載入管理員頭像（從使用者 PostgreSQL 儲存的 avatar_base64）
+  useEffect(() => {
+    const fetchAdminAvatar = async () => {
+      try {
+        const resp = await apiClient.getUserAvatar();
+        if (resp.status === 200 && resp.data && resp.data.avatar) {
+          setAdminAvatar(resp.data.avatar as string);
+        } else {
+          setAdminAvatar(null);
+        }
+      } catch (_e) {
+        setAdminAvatar(null);
+      }
+    };
+    fetchAdminAvatar();
+  }, []);
+
   // 當聊天記錄更新時滾動到底部
   useEffect(() => {
     scrollToBottom();
@@ -451,6 +469,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                     {isUser && (
                       <div className="flex items-start gap-2">
                         <Avatar className="h-8 w-8 mt-1">
+                          <AvatarImage src={selectedUser?.picture_url} />
                           <AvatarFallback className="bg-blue-500 text-white text-xs">用戶</AvatarFallback>
                         </Avatar>
                         <div>
@@ -480,6 +499,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                           </div>
                         </div>
                         <Avatar className="h-8 w-8 mt-1">
+                          <AvatarImage src={adminAvatar || undefined} />
                           <AvatarFallback className="bg-green-500 text-white text-xs">管理</AvatarFallback>
                         </Avatar>
                       </div>
