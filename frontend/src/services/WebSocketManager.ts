@@ -4,6 +4,7 @@
  */
 
 import { authManager } from './UnifiedAuthManager';
+import { API_CONFIG } from '../config/apiConfig';
 
 // WebSocket 訊息資料類型
 interface WebSocketMessageData {
@@ -310,11 +311,13 @@ class WebSocketManager {
    * 獲取 WebSocket URL
    */
   private getWebSocketUrl(botId: string, token: string): string {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.hostname;
-    const port = window.location.hostname === 'localhost' ? ':8000' : '';
-    
-    return `${protocol}//${host}${port}/api/v1/ws/bot/${botId}?token=${token}`;
+    // 使用配置的後端 API URL 而不是當前頁面的 hostname
+    const apiUrl = API_CONFIG.UNIFIED.FULL_URL;
+
+    // 將 HTTP/HTTPS 協議轉換為 WS/WSS
+    const wsUrl = apiUrl.replace(/^https?:/, apiUrl.startsWith('https:') ? 'wss:' : 'ws:');
+
+    return `${wsUrl}/api/v1/ws/bot/${botId}?token=${token}`;
   }
 
   /**
