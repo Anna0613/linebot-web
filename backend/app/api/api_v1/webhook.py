@@ -386,21 +386,7 @@ async def process_single_event(
             logger.info(f"跳過未支援事件: {event_type}")
             return None
 
-        if not line_message_id:
-            logger.warning("事件缺少 LINE 訊息 ID，跳過處理")
-            return None
-
-        # 檢查是否已處理過此訊息
-        message, is_new = await ConversationService.add_user_message(
-            bot_id=bot_id,
-            line_user_id=user_id,
-            event_type=event_type,
-            message_type=message_type,
-            message_content=message,
-            line_message_id=line_message_id
-        )
-
-        # 保障：若 PostgreSQL 尚無此用戶紀錄，於收到訊息時自動向 LINE 取用戶資料並建立
+        # 保障：若 PostgreSQL 尚無此用戶紀錄，先建立/更新，確保不會出現未知用戶
         try:
             try:
                 bot_uuid = PyUUID(bot_id)
@@ -422,7 +408,7 @@ async def process_single_event(
                         picture_url=(profile or {}).get("picture_url"),
                         status_message=(profile or {}).get("status_message"),
                         language=(profile or {}).get("language"),
-                        is_followed=True,
+                        is_followed=True if event_type != 'unfollow' else False,
                         interaction_count="1"
                     )
                     db.add(new_user)
@@ -435,17 +421,31 @@ async def process_single_event(
                         existing.interaction_count = str(cnt + 1)
                     except Exception:
                         existing.interaction_count = "1"
+                    if event_type == 'unfollow':
+                        existing.is_followed = False
+                    elif event_type == 'follow':
+                        existing.is_followed = True
                     db.commit()
         except Exception as upsert_err:
             logger.warning(f"同步用戶資料至 PostgreSQL 失敗: {upsert_err}")
 
-        # 如果是重複訊息，直接跳過
-        if not is_new:
+        # 寫入 MongoDB：允許 postback/follow/unfollow 無 line_message_id 也入庫
+        message_doc, is_new = await ConversationService.add_user_message(
+            bot_id=bot_id,
+            line_user_id=user_id,
+            event_type=event_type,
+            message_type=message_type,
+            message_content=message,
+            line_message_id=line_message_id
+        )
+
+        # 如果是重複訊息（僅針對有 line_message_id 的事件），直接跳過
+        if line_message_id and (not is_new):
             logger.info(f"跳過重複訊息: {line_message_id}")
             return None
 
         # 如果是新訊息，處理媒體檔案
-        if message_type in ['image', 'video', 'audio']:
+        if message_type in ['image', 'video', 'audio'] and line_message_id:
             # 異步處理媒體檔案
             asyncio.create_task(
                 process_media_async(

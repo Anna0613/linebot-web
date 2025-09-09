@@ -287,8 +287,48 @@ async def send_test_message(
         if not user_id:
             raise HTTPException(status_code=400, detail="需要提供用戶 ID")
         
+        # 確保 PostgreSQL 存在該用戶（不可有未知用戶）
+        try:
+            from app.models.line_user import LineBotUser
+            from uuid import UUID as PyUUID
+            bot_uuid = PyUUID(bot_id)
+            existing = db.query(LineBotUser).filter(
+                LineBotUser.bot_id == bot_uuid,
+                LineBotUser.line_user_id == user_id
+            ).first()
+            if not existing:
+                profile = line_bot_service.get_user_profile(user_id)
+                new_user = LineBotUser(
+                    bot_id=bot_uuid,
+                    line_user_id=user_id,
+                    display_name=(profile or {}).get("display_name"),
+                    picture_url=(profile or {}).get("picture_url"),
+                    status_message=(profile or {}).get("status_message"),
+                    language=(profile or {}).get("language"),
+                    is_followed=True,
+                    interaction_count="1"
+                )
+                db.add(new_user)
+                db.commit()
+        except Exception:
+            db.rollback()
+
+        # 發送
         result = line_bot_service.send_text_message(user_id, message)
-        
+
+        # 記錄到 MongoDB 對話（admin 訊息）
+        try:
+            from app.services.conversation_service import ConversationService
+            await ConversationService.add_admin_message(
+                bot_id=bot_id,
+                line_user_id=user_id,
+                admin_user=current_user,
+                message_content={"text": message},
+                message_type="text"
+            )
+        except Exception as mongo_error:
+            logger.error(f"記錄測試訊息到 MongoDB 失敗: {mongo_error}")
+
         return {
             "success": True,
             "message": "測試訊息發送成功",
@@ -597,7 +637,36 @@ async def broadcast_message(
             raise HTTPException(status_code=400, detail="需要提供訊息內容")
         
         result = line_bot_service.broadcast_message(message, user_ids)
-        
+
+        # 取得廣播對象清單（若未指定 user_ids，取該 Bot 的所有關注者）
+        try:
+            from app.models.line_user import LineBotUser
+            from app.services.conversation_service import ConversationService
+            targets: List[str]
+            if user_ids:
+                targets = list(user_ids)
+            else:
+                targets = [
+                    u.line_user_id for u in db.query(LineBotUser)
+                    .filter(LineBotUser.bot_id == bot.id, LineBotUser.is_followed == True)
+                    .all()
+                ]
+
+            # 對每位用戶記錄 admin 訊息到 MongoDB
+            for uid in targets:
+                try:
+                    await ConversationService.add_admin_message(
+                        bot_id=bot_id,
+                        line_user_id=uid,
+                        admin_user=current_user,
+                        message_content={"text": message},
+                        message_type="text"
+                    )
+                except Exception as mongo_error:
+                    logger.error(f"記錄廣播訊息到 MongoDB 失敗: user={uid}, err={mongo_error}")
+        except Exception as log_err:
+            logger.error(f"整理廣播目標或寫入對話失敗: {log_err}")
+
         return {
             "success": True,
             "message": "廣播訊息發送成功",
@@ -712,8 +781,10 @@ async def selective_broadcast_message(
         # 發送訊息到 LINE
         result = line_bot_service.broadcast_message(message, selected_user_ids)
         
-        # 為每個選中的用戶記錄管理者發送的訊息
+        # 為每個選中的用戶記錄管理者發送的訊息（PostgreSQL + MongoDB）
+        from app.services.conversation_service import ConversationService
         for line_user_id in selected_user_ids:
+            # PostgreSQL 紀錄（保留既有行為）
             admin_message = AdminMessage(
                 bot_id=bot_id,
                 line_user_id=line_user_id,
@@ -723,7 +794,18 @@ async def selective_broadcast_message(
                 sent_status="sent" if result.get("success") else "failed"
             )
             db.add(admin_message)
-        
+            # MongoDB 對話紀錄（新增）
+            try:
+                await ConversationService.add_admin_message(
+                    bot_id=bot_id,
+                    line_user_id=line_user_id,
+                    admin_user=current_user,
+                    message_content={"text": message},
+                    message_type="text"
+                )
+            except Exception as mongo_error:
+                logger.error(f"記錄選擇性廣播到 MongoDB 失敗: user={line_user_id}, err={mongo_error}")
+
         db.commit()
         
         return {
