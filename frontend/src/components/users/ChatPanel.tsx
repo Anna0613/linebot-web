@@ -204,7 +204,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     } else if (message.message_type === "flex") {
       try {
         // 後端存的是 { altText, contents }
-        const fm = { type: 'flex', contents: (content as any)?.contents } as unknown;
+        const flexContent = content as { contents?: unknown };
+        const fm = { type: 'flex', contents: flexContent?.contents } as unknown;
         return (
           <div className="bg-white border rounded p-2 max-w-xl">
             <FlexMessagePreview json={fm} />
@@ -215,8 +216,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       }
     } else if (message.message_type === "sticker") {
       // 嘗試以 LINE 官方貼圖圖檔顯示（以 stickerId 組 URL）
-      const pkg = (content as any)?.packageId || '';
-      const sid = (content as any)?.stickerId || '';
+      const stickerContent = content as { packageId?: string; stickerId?: string };
+      const pkg = stickerContent?.packageId || '';
+      const sid = stickerContent?.stickerId || '';
       if (!sid) {
         return <div className="text-gray-600">😊 貼圖</div>;
       }

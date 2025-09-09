@@ -61,7 +61,7 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
         };
       }
 
-      case 'flex':
+      case 'flex': {
         debugInfo.push('🎨 處理 Flex 回覆');
         debugInfo.push(`📋 積木資料: ${JSON.stringify({
           content: block.blockData.content,
@@ -69,7 +69,7 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
           flexMessageName: block.blockData.flexMessageName,
           flexMessageId: block.blockData.flexMessageId
         })}`);
-        
+
         // 檢查是否指定了特定的 Flex Message 模板
         const storedKey = block.blockData.flexMessageName || block.blockData.flexMessageId;
         const stored = storedKey ? savedFlexMessages.get(storedKey as string) : undefined;
@@ -109,7 +109,6 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
           }
         }
 
-        {
         // 處理儲存的 Flex Message
         
         if (stored) {
@@ -173,7 +172,6 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
             };
           }
         }
-        }
 
         // 預設 Flex 回覆
         debugInfo.push('⚠️ 無可用的 Flex 內容，使用預設 Flex 回覆');
@@ -201,6 +199,7 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
           },
           timestamp: Date.now()
         };
+      }
 
       case 'image': {
         const imageUrl = block.blockData.imageUrl as string || 'https://via.placeholder.com/300x200';
