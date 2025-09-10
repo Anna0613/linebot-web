@@ -1,10 +1,45 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Block, Message } from '../../types/index';
 import { EnhancedEventMatcher, MatchType } from '../../utils/EventMatchingSystem';
 import { BlockConnectionManager } from '../../utils/BlockConnectionManager';
-import { ExecutionContext } from '../../types/block';
-import { FlexMessage } from '../../types/linebot';
+import { ExecutionContext } from '../../types/blockConnection';
 import FlexMessagePreview from '../Panels/FlexMessagePreview';
+
+// 本地類型定義（臨時解決方案）
+interface BlockData {
+  [key: string]: unknown;
+  eventType?: string;
+  condition?: string;
+  replyType?: string;
+  content?: string;
+  flexMessageId?: string;
+  flexMessageName?: string;
+}
+
+interface Block {
+  blockType: string;
+  blockData: BlockData;
+  id?: string;
+  parentId?: string;
+}
+
+interface FlexMessage {
+  type: string;
+  altText?: string;
+  contents?: any;
+}
+
+interface Message {
+  type: 'user' | 'bot' | string;
+  content: string;
+  messageType?: 'text' | 'flex' | string;
+  flexMessage?: FlexMessage;
+  timestamp?: number;
+  executionInfo?: {
+    matchedPatterns: string[];
+    executionPath: string[];
+    processingTime: number;
+  };
+}
 
 interface SavedFlexMessage {
   name: string;
@@ -41,8 +76,8 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
 
   // 處理回覆積木
   const handleReplyBlock = useCallback(async (
-    block: Block, 
-    context: ExecutionContext, 
+    block: Block,
+    _context: ExecutionContext,
     debugInfo: string[]
   ): Promise<Message> => {
     const replyType = block.blockData.replyType as string;
@@ -89,14 +124,15 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
           debugInfo.push(`🔍 轉換後的 bubble: ${JSON.stringify(currentBubble).substring(0, 200)}...`);
 
           // 檢查 bubble 是否有內容
-          if (currentBubble && currentBubble.body && currentBubble.body.contents && currentBubble.body.contents.length > 0) {
+          const bubbleData = currentBubble as any;
+          if (bubbleData && bubbleData.body && bubbleData.body.contents && bubbleData.body.contents.length > 0) {
             // convertFlexBlocksToFlexMessage 返回的是 bubble 結構，需要包裝成完整的 Flex Message
             const currentFlexMessage = {
               type: 'flex',
               altText: 'Flex 訊息',
-              contents: currentBubble
+              contents: bubbleData
             };
-            debugInfo.push(`✅ 使用當前 Flex 設計 (${flexBlocks.length} 個組件，${currentBubble.body.contents.length} 個內容)`);
+            debugInfo.push(`✅ 使用當前 Flex 設計 (${flexBlocks.length} 個組件，${bubbleData.body.contents.length} 個內容)`);
             return {
               type: 'bot',
               content: 'Flex 訊息',
@@ -116,7 +152,7 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
           debugInfo.push(`📄 Flex 內容結構: ${JSON.stringify(stored.content).substring(0, 200)}...`);
           
           // 檢查儲存的 Flex 結構
-          let flexMessage;
+          let flexMessage: FlexMessage;
           debugInfo.push(`🔍 儲存內容類型: ${typeof stored.content}`);
 
           let parsedContent = stored.content;
@@ -266,8 +302,8 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
 
   // 處理控制積木
   const handleControlBlock = useCallback(async (
-    block: Block, 
-    context: ExecutionContext, 
+    block: Block,
+    _context: ExecutionContext,
     debugInfo: string[]
   ): Promise<Message> => {
     const controlType = block.blockData.controlType as string;
