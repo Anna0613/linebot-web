@@ -3,6 +3,9 @@ import LanguageToggle from "../LanguageToggle/LanguageToggle";
 
 const DashboardFooter = () => {
   return (
+    <>
+    {/* 滾動後才會看到 Footer：預留一段視窗高的空間，確保初載不顯示 */}
+    <div aria-hidden className="h-[20vh] md:h-[24vh] lg:h-[28vh]"></div>
     <footer
       id="contact"
       className="bg-white pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-[#E6EEF6]"
@@ -185,6 +188,7 @@ const DashboardFooter = () => {
         </div>
       </div>
     </footer>
+    </>
   );
 };
 
