@@ -268,19 +268,33 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
       };
     }
 
-    // 如果 contents 本身就是 bubble / flex 結構，直接回傳
+    // 如果 contents 本身就是 bubble / flex 結構，適當處理
     if (contents && typeof contents === 'object') {
-      // 偵測常見 flex structure
       const obj = contents as Record<string, unknown>;
-      if (
-        obj.type === 'bubble' ||
-        typeof obj.body === 'object' ||
-        typeof obj.contents === 'object'
-      ) {
+
+      // 如果已經是完整的 Flex Message，直接返回
+      if (obj.type === 'flex' && obj.contents) {
+        return contents as FlexMessage;
+      }
+
+      // 如果是 bubble 或 carousel 結構，包裝成完整的 Flex Message
+      if (obj.type === 'bubble' || obj.type === 'carousel') {
         return {
           type: 'flex',
           altText: stored.name || 'Flex Message',
           contents
+        };
+      }
+
+      // 如果有 body 屬性，可能是 bubble 結構（沒有明確的 type）
+      if (typeof obj.body === 'object') {
+        return {
+          type: 'flex',
+          altText: stored.name || 'Flex Message',
+          contents: {
+            type: 'bubble',
+            ...contents
+          }
         };
       }
     }

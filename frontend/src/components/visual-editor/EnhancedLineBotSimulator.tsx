@@ -157,8 +157,38 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
                 flexMessage = null;
               }
             } else {
-              flexMessage = parsedContent;
-              debugInfo.push(`✅ 直接使用物件作為 Flex Message`);
+              // 檢查是否是 bubble 或 carousel 結構，需要包裝成完整的 Flex Message
+              if (parsedContent.type === 'bubble' || parsedContent.type === 'carousel') {
+                flexMessage = {
+                  type: 'flex',
+                  altText: stored.name || 'Flex 訊息',
+                  contents: parsedContent
+                };
+                debugInfo.push(`✅ 包裝 ${parsedContent.type} 結構為完整的 Flex Message`);
+              } else if (parsedContent.type === 'flex') {
+                flexMessage = parsedContent;
+                debugInfo.push(`✅ 直接使用完整的 Flex Message`);
+              } else {
+                // 其他格式，嘗試作為 bubble 內容處理
+                flexMessage = {
+                  type: 'flex',
+                  altText: stored.name || 'Flex 訊息',
+                  contents: {
+                    type: 'bubble',
+                    body: {
+                      type: 'box',
+                      layout: 'vertical',
+                      contents: [
+                        {
+                          type: 'text',
+                          text: JSON.stringify(parsedContent)
+                        }
+                      ]
+                    }
+                  }
+                };
+                debugInfo.push(`⚠️ 未知格式，包裝為文字內容`);
+              }
             }
           }
           
