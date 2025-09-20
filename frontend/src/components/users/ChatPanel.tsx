@@ -92,7 +92,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [aiSettings, setAiSettings] = useState<AISettings>({
     systemPrompt: "你是一位專精客服對話洞察的分析助手。請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。",
-    timeRangeDays: 30
+    timeRangeDays: 30,
+    contextFormat: 'standard'
   });
 
   // WebSocket 連接，用於即時更新
@@ -530,6 +531,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         max_messages: 200,
         model: selectedModel || undefined,
         system_prompt: aiSettings.systemPrompt,
+        context_format: aiSettings.contextFormat || 'standard',
       };
 
       // 處理時間範圍設定

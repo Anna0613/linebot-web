@@ -14,6 +14,7 @@ import requests
 from app.config import settings
 from app.models.mongodb.conversation import ConversationDocument
 from app.services.groq_service import GroqService
+from app.services.context_formatter import ContextFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -120,12 +121,14 @@ class AIAnalysisService:
         *,
         time_range_days: Optional[int] = None,
         max_messages: int = 200,
+        context_format: str = "standard",
     ) -> str:
         """
         從 MongoDB 讀取該用戶的對話歷史，整理為可供大模型理解的上下文文字。
 
         - 依 updated_at 取對話，若提供 time_range_days 則僅取該期間內訊息。
         - 最多包含 max_messages 筆（越新的訊息優先）。
+        - 使用 ContextFormatter 進行格式優化以減少 token 消耗。
         """
         try:
             conversation = await ConversationDocument.find_one(
@@ -145,35 +148,8 @@ class AIAnalysisService:
             if len(messages) > max_messages:
                 messages = messages[-max_messages:]
 
-            # 轉為可讀上下文
-            lines: List[str] = []
-            lines.append(
-                "以下是 LINE 用戶與 LINE Bot/管理者的歷史對話摘要（依時間排序）："
-            )
-            for m in messages:
-                who = {
-                    "user": "[用戶]",
-                    "admin": "[管理者]",
-                    "bot": "[機器人]",
-                }.get(m.sender_type or "user", "[用戶]")
-                ts = m.timestamp.isoformat() if hasattr(m.timestamp, "isoformat") else str(m.timestamp)
-                # 盡力提取文字
-                text = ""
-                content = m.content or {}
-                if isinstance(content, dict):
-                    if isinstance(content.get("text"), dict):
-                        text = str(content["text"].get("text", "")).strip()
-                    else:
-                        text = str(content.get("text") or content.get("content") or "").strip()
-                else:
-                    text = str(content)
-
-                if not text:
-                    text = f"<{m.message_type or 'message'}>"
-
-                lines.append(f"{ts} {who} {text}")
-
-            return "\n".join(lines)
+            # 使用 ContextFormatter 進行格式化
+            return ContextFormatter.format_context(messages, context_format)
         except Exception as e:
             logger.error(f"建立用戶上下文失敗: {e}")
             return "(讀取對話歷史時發生錯誤，可能無資料)"

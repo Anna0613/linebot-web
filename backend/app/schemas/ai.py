@@ -21,6 +21,7 @@ class AIQueryRequest(BaseModel):
     model: Optional[str] = Field(default=None, description="指定使用的 AI 模型")
     provider: Optional[str] = Field(default=None, description="指定使用的 AI 提供商（groq/gemini）")
     system_prompt: Optional[str] = Field(default=None, description="自訂系統提示詞")
+    context_format: Optional[str] = Field(default="standard", description="上下文格式模式（detailed/standard/compact）")
 
 
 class AIQueryResponse(BaseModel):

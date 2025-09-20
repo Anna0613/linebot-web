@@ -55,6 +55,7 @@ async def ai_query_user(
             line_user_id,
             time_range_days=payload.time_range_days,
             max_messages=payload.max_messages,
+            context_format=payload.context_format or "standard",
         )
 
         result = await AIAnalysisService.ask_ai(

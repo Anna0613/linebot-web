@@ -23,6 +23,7 @@ export interface AISettings {
     from: Date;
     to: Date;
   };
+  contextFormat?: string;
 }
 
 // 預設系統提示詞
@@ -37,12 +38,32 @@ const TIME_RANGE_OPTIONS = [
   { value: 'custom', label: '自訂範圍' },
 ];
 
+// 上下文格式選項
+const CONTEXT_FORMAT_OPTIONS = [
+  {
+    value: 'detailed',
+    label: '詳細格式',
+    description: '完整時間戳和發送者標識，適合深度分析'
+  },
+  {
+    value: 'standard',
+    label: '標準格式',
+    description: '簡化時間戳，平衡資訊量和效率'
+  },
+  {
+    value: 'compact',
+    label: '精簡格式',
+    description: '最小化格式，節省 token 消耗'
+  },
+];
+
 // localStorage 鍵名
 const STORAGE_KEYS = {
   SYSTEM_PROMPT: 'ai_settings_system_prompt',
   TIME_RANGE: 'ai_settings_time_range',
   CUSTOM_DATE_FROM: 'ai_settings_custom_date_from',
   CUSTOM_DATE_TO: 'ai_settings_custom_date_to',
+  CONTEXT_FORMAT: 'ai_settings_context_format',
 };
 
 export default function AISettingsModal({ onSettingsChange, disabled = false }: AISettingsModalProps) {
@@ -51,6 +72,7 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
   const [timeRange, setTimeRange] = useState<string>('30');
   const [customDateFrom, setCustomDateFrom] = useState<Date>();
   const [customDateTo, setCustomDateTo] = useState<Date>();
+  const [contextFormat, setContextFormat] = useState<string>('standard');
 
   // 從 localStorage 載入設定
   useEffect(() => {
@@ -58,6 +80,7 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
     const savedTimeRange = localStorage.getItem(STORAGE_KEYS.TIME_RANGE);
     const savedDateFrom = localStorage.getItem(STORAGE_KEYS.CUSTOM_DATE_FROM);
     const savedDateTo = localStorage.getItem(STORAGE_KEYS.CUSTOM_DATE_TO);
+    const savedContextFormat = localStorage.getItem(STORAGE_KEYS.CONTEXT_FORMAT);
 
     if (savedSystemPrompt) {
       setSystemPrompt(savedSystemPrompt);
@@ -71,12 +94,16 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
     if (savedDateTo) {
       setCustomDateTo(new Date(savedDateTo));
     }
+    if (savedContextFormat) {
+      setContextFormat(savedContextFormat);
+    }
   }, []);
 
   // 儲存設定到 localStorage
   const saveSettings = () => {
     localStorage.setItem(STORAGE_KEYS.SYSTEM_PROMPT, systemPrompt);
     localStorage.setItem(STORAGE_KEYS.TIME_RANGE, timeRange);
+    localStorage.setItem(STORAGE_KEYS.CONTEXT_FORMAT, contextFormat);
     if (customDateFrom) {
       localStorage.setItem(STORAGE_KEYS.CUSTOM_DATE_FROM, customDateFrom.toISOString());
     }
@@ -91,7 +118,8 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
     setTimeRange('30');
     setCustomDateFrom(undefined);
     setCustomDateTo(undefined);
-    
+    setContextFormat('standard');
+
     // 清除 localStorage
     Object.values(STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key);
@@ -104,6 +132,7 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
     
     const settings: AISettings = {
       systemPrompt,
+      contextFormat,
     };
 
     // 處理時間範圍
@@ -126,6 +155,7 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
   useEffect(() => {
     const settings: AISettings = {
       systemPrompt,
+      contextFormat,
     };
 
     if (timeRange === 'custom') {
@@ -140,7 +170,7 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
     }
 
     onSettingsChange(settings);
-  }, [systemPrompt, timeRange, customDateFrom, customDateTo, onSettingsChange]);
+  }, [systemPrompt, timeRange, customDateFrom, customDateTo, contextFormat, onSettingsChange]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -269,6 +299,29 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
 
             <p className="text-sm text-muted-foreground">
               選擇要分析的對話時間範圍，影響 AI 分析的資料來源。
+            </p>
+          </div>
+
+          {/* 上下文格式設定 */}
+          <div className="space-y-3">
+            <Label>上下文格式</Label>
+            <Select value={contextFormat} onValueChange={setContextFormat}>
+              <SelectTrigger>
+                <SelectValue placeholder="選擇上下文格式" />
+              </SelectTrigger>
+              <SelectContent>
+                {CONTEXT_FORMAT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{option.label}</span>
+                      <span className="text-xs text-muted-foreground">{option.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              選擇上下文的詳細程度，影響 token 消耗和分析精度。
             </p>
           </div>
 

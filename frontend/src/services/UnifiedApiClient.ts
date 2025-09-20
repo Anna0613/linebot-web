@@ -627,6 +627,7 @@ export class UnifiedApiClient {
       model?: string;
       provider?: string;
       system_prompt?: string;
+      context_format?: string;
     }
   ): Promise<ApiResponse> {
     return this.post(
