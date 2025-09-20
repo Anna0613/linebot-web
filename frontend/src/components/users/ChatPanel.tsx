@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { 
   Send, 
@@ -81,6 +82,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [adminAvatar, setAdminAvatar] = useState<string | null>(null);
+
+  // AI 分析模式
+  const [aiMode, setAiMode] = useState(false);
+  const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
+  const [awaitingAI, setAwaitingAI] = useState(false);
 
   // WebSocket 連接，用於即時更新
   const { isConnected, lastMessage } = useWebSocket({
@@ -221,9 +227,62 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       return String(content || '');
     };
 
+    // 以最小實作支援 Markdown 的渲染（粗體、斜體、連結、inline code、code block、換行）
+    const renderMarkdown = (md: string) => {
+      const escapeHtml = (s: string) =>
+        s
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+
+      // 先 escape，再進行標記轉換
+      let html = escapeHtml(md);
+
+      // 三個反引號的程式碼區塊 ```lang ... ```
+      html = html.replace(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_m, lang, code) => {
+        const langCls = lang ? ` class="language-${lang}"` : '';
+        return `<pre><code${langCls}>${code}</code></pre>`;
+      });
+
+      // 粗體與斜體（注意順序避免互相干擾）
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+      // 反引號 inline code
+      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+      // 連結 [text](url)
+      html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text, url) => {
+        const safeText = String(text);
+        const safeUrl = String(url);
+        return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="underline text-blue-600">${safeText}</a>`;
+      });
+
+      // 標題（#, ##, ### 轉成粗體行）
+      html = html.replace(/^###\s+(.+)$/gm, '<strong>$1</strong><br/>');
+      html = html.replace(/^##\s+(.+)$/gm, '<strong>$1</strong><br/>');
+      html = html.replace(/^#\s+(.+)$/gm, '<strong>$1</strong><br/>');
+
+      // 換行
+      html = html.replace(/\n/g, '<br/>');
+
+      return (
+        <div
+          className="prose prose-sm max-w-none prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md prose-code:before:content-[''] prose-code:after:content-['']"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    };
+
     if (message.message_type === "text") {
       const textContent = getTextContent(content);
-      return <div className="break-words">{textContent}</div>;
+      // AI 模式下的 AI 回覆支援 Markdown 顯示
+      if (aiMode && message.sender_type === 'bot') {
+        return renderMarkdown(textContent);
+      }
+      return <div className="break-words whitespace-pre-wrap">{textContent}</div>;
     } else if (message.message_type === "image") {
       return (
         <div>
@@ -325,6 +384,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       setOffset(0);
       setHasMore(true);
       loadInitial();
+      // 切換用戶時重設 AI 模式與內容
+      setAiMode(false);
+      setAiMessages([]);
     } else {
       setChatHistory([]);
     }
@@ -347,10 +409,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     fetchAdminAvatar();
   }, []);
 
-  // 當聊天記錄更新時滾動到底部
+  // 當聊天記錄或 AI 訊息更新時滾動到底部
   useEffect(() => {
     scrollToBottom();
-  }, [chatHistory]);
+  }, [chatHistory, aiMessages]);
 
   // 處理 WebSocket 消息：優先增量更新
   useEffect(() => {
@@ -382,7 +444,104 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      if (aiMode) {
+        void handleAskAI();
+      } else {
+        void handleSendMessage();
+      }
+    }
+  };
+
+  // 切換 AI 分析模式
+  const toggleAIMode = (checked: boolean) => {
+    setAiMode(checked);
+    if (checked && aiMessages.length === 0) {
+      const now = new Date().toISOString();
+      // 加入一則引導訊息（以 bot 身份顯示）
+      setAiMessages([
+        {
+          id: `ai-welcome-${now}`,
+          event_type: "message",
+          message_type: "text",
+          message_content: { text: "AI 分析模式已啟用。請直接用繁體中文提問，例如：「請總結該用戶的常見問題與情緒傾向」或「過去 30 天，此用戶在什麼主題上互動最多？」" },
+          sender_type: "bot",
+          timestamp: now,
+        },
+      ]);
+    }
+  };
+
+  // 構建傳給後端的 AI 歷史（user / assistant）
+  const buildAIHistory = (): Array<{ role: 'user' | 'assistant'; content: string }> => {
+    const turns: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    for (const m of aiMessages) {
+      const content = (() => {
+        const c = m.message_content as any;
+        if (!c) return '';
+        if (typeof c === 'string') return c;
+        if (typeof c.text === 'object' && c.text?.text) return String(c.text.text);
+        if (c.text) return String(c.text);
+        if (c.content) return String(c.content);
+        return '';
+      })();
+      if (!content) continue;
+      if (m.sender_type === 'admin') {
+        turns.push({ role: 'user', content });
+      } else if (m.sender_type === 'bot') {
+        turns.push({ role: 'assistant', content });
+      }
+    }
+    return turns;
+  };
+
+  // AI 提問
+  const handleAskAI = async () => {
+    if (!message.trim() || !selectedUser || !botId || awaitingAI) return;
+    const q = message.trim();
+    setAwaitingAI(true);
+
+    const now = new Date().toISOString();
+    // 先插入管理者問題
+    const adminMsg: ChatMessage = {
+      id: `ai-q-${now}`,
+      event_type: 'message',
+      message_type: 'text',
+      message_content: { text: q },
+      sender_type: 'admin',
+      timestamp: now,
+    };
+    setAiMessages(prev => [...prev, adminMsg]);
+    setMessage('');
+
+    try {
+      const history = buildAIHistory();
+      const resp = await apiClient.askAI(botId, selectedUser.line_user_id, {
+        question: q,
+        history,
+        // 可選時間範圍：例如 90 天；此處不強制，由管理者自然提問
+        // time_range_days: 90,
+        max_messages: 200,
+      });
+      if (resp.success && resp.data) {
+        const answer = (resp.data as any).answer || '（無回應）';
+        const ts = new Date().toISOString();
+        const botMsg: ChatMessage = {
+          id: `ai-a-${ts}`,
+          event_type: 'message',
+          message_type: 'text',
+          message_content: { text: answer },
+          sender_type: 'bot',
+          timestamp: ts,
+        };
+        setAiMessages(prev => [...prev, botMsg]);
+      } else {
+        toast({ variant: 'destructive', title: 'AI 服務錯誤', description: String((resp.error || '請稍後重試')) });
+      }
+    } catch (err) {
+      console.error('AI 分析失敗:', err);
+      toast({ variant: 'destructive', title: 'AI 分析失敗', description: '請確認後端 GEMINI_API_KEY 設定，或稍後再試。' });
+    } finally {
+      setAwaitingAI(false);
     }
   };
 
@@ -428,11 +587,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
               </div>
             </div>
           </div>
-          {onClose && (
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">AI 分析</span>
+              <Switch checked={aiMode} onCheckedChange={toggleAIMode} />
+            </div>
+            {onClose && (
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
 
@@ -448,24 +613,28 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
             }
           }}
         >
-          {loading ? (
+          {(!aiMode && loading) ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
-          ) : chatHistory.length === 0 ? (
+          ) : (!aiMode && chatHistory.length === 0) ? (
             <div className="text-center py-8">
               <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-muted-foreground">尚無對話記錄</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {chatHistory.map((msg, index) => {
+              {(aiMode ? aiMessages : chatHistory).map((msg, index) => {
                 const isUser = msg.sender_type === 'user';
                 const isAdmin = msg.sender_type === 'admin';
                 const isBot = msg.sender_type === 'bot';
 
-                // 對齊方向：用戶在左，管理員/機器人在右
-                const justify = isUser ? 'justify-start' : 'justify-end';
+                // 對齊方向
+                // - 一般模式：用戶在左，其餘在右
+                // - AI 模式：AI(機器人)在左，管理者在右
+                const justify = aiMode
+                  ? (isBot ? 'justify-start' : 'justify-end')
+                  : (isUser ? 'justify-start' : 'justify-end');
                 return (
                   <div key={`${msg.id}-${index}`} className={`flex ${justify}`}>
                     {/* 左側（用戶）顯示頭像在左 */}
@@ -508,22 +677,41 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                       </div>
                     )}
 
-                    {/* 右側（機器人）顯示頭像在右 */}
+                    {/* 機器人訊息：AI 模式在左側，其他在右側 */}
                     {isBot && (
-                      <div className="flex items-start gap-2">
-                        <div>
-                          <div className="bg-purple-500 text-white rounded-2xl rounded-tr-md px-4 py-2 max-w-xs lg:max-w-md">
-                            {renderMessageContent(msg)}
-                          </div>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground justify-end">
-                            <span>{formatTime(msg.timestamp)}</span>
-                            <Badge variant="outline" className="text-xs">Bot</Badge>
+                      aiMode ? (
+                        // 左側（AI）顯示頭像在左，使用淺底色
+                        <div className="flex items-start gap-2">
+                          <Avatar className="h-8 w-8 mt-1">
+                            <AvatarFallback className="bg-purple-500 text-white text-xs">AI</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="bg-secondary text-foreground rounded-2xl rounded-tl-md px-4 py-2 max-w-xs lg:max-w-md">
+                              {renderMessageContent(msg)}
+                            </div>
+                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                              <span>{formatTime(msg.timestamp)}</span>
+                              <Badge variant="outline" className="text-xs">AI</Badge>
+                            </div>
                           </div>
                         </div>
-                        <Avatar className="h-8 w-8 mt-1">
-                          <AvatarFallback className="bg-purple-500 text-white text-xs">機器</AvatarFallback>
-                        </Avatar>
-                      </div>
+                      ) : (
+                        // 右側（一般 bot 訊息）
+                        <div className="flex items-start gap-2">
+                          <div>
+                            <div className="bg-purple-500 text-white rounded-2xl rounded-tr-md px-4 py-2 max-w-xs lg:max-w-md">
+                              {renderMessageContent(msg)}
+                            </div>
+                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground justify-end">
+                              <span>{formatTime(msg.timestamp)}</span>
+                              <Badge variant="outline" className="text-xs">Bot</Badge>
+                            </div>
+                          </div>
+                          <Avatar className="h-8 w-8 mt-1">
+                            <AvatarFallback className="bg-purple-500 text-white text-xs">機器</AvatarFallback>
+                          </Avatar>
+                        </div>
+                      )
                     )}
                   </div>
                 );
@@ -538,20 +726,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       <div className="border-t p-4">
         <div className="flex gap-2">
           <Input
-            placeholder="輸入訊息..."
+            placeholder={aiMode ? "向 AI 詢問關於此用戶的問題…" : "輸入訊息..."}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            disabled={sending}
+            disabled={sending || awaitingAI}
             className="flex-1"
           />
           <Button
-            onClick={handleSendMessage}
-            disabled={sending || !message.trim()}
+            onClick={aiMode ? handleAskAI : handleSendMessage}
+            disabled={(sending || awaitingAI) || !message.trim()}
             size="sm"
           >
             <Send className="h-4 w-4" />
-            {sending ? "發送中" : "發送"}
+            {aiMode ? (awaitingAI ? "分析中" : "詢問 AI") : (sending ? "發送中" : "發送")}
           </Button>
         </div>
       </div>

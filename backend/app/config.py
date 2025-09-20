@@ -99,6 +99,11 @@ class Settings(BaseSettings):
         
         ssl_param = "?ssl=true" if self.MONGODB_SSL else ""
         return f"mongodb://{auth_part}{self.MONGODB_HOST}:{self.MONGODB_PORT}/{self.MONGODB_DATABASE}{ssl_param}"
+
+    # AI / Gemini 設定
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    AI_MAX_HISTORY_MESSAGES: int = int(os.getenv("AI_MAX_HISTORY_MESSAGES", "200"))
     
     # CORS 設定 - 預設允許的來源
     @property

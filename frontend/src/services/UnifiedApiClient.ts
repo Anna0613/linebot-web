@@ -615,6 +615,18 @@ export class UnifiedApiClient {
     );
   }
 
+  // AI 分析（Gemini）
+  public async askAI(
+    botId: string,
+    lineUserId: string,
+    data: { question: string; history?: Array<{ role: 'user'|'assistant'; content: string }>; time_range_days?: number; max_messages?: number }
+  ): Promise<ApiResponse> {
+    return this.post(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/ai/query`),
+      data
+    );
+  }
+
   public async getBotActivities(botId: string, limit: number = 20, offset: number = 0): Promise<ApiResponse> {
     const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/activities?limit=${limit}&offset=${offset}`);
     console.log('調用 getBotActivities API:', url);

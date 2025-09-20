@@ -110,6 +110,10 @@ docker run -p 8000:8000 --env-file .env linebot-web-api
 - `PUT /api/v1/bots/{bot_id}` - 更新 Bot
 - `DELETE /api/v1/bots/{bot_id}` - 刪除 Bot
 
+### AI 分析（Gemini）
+- `POST /api/v1/bots/{bot_id}/users/{line_user_id}/ai/query` - 對指定用戶的歷史對話進行 AI 問答（需先在後端 `.env` 設定 `GEMINI_API_KEY`）
+
+
 ## 環境變數
 
 參考 `env.example` 文件設定以下環境變數：
@@ -118,6 +122,9 @@ docker run -p 8000:8000 --env-file .env linebot-web-api
 - `JWT_*`: JWT Token 設定
 - `LINE_*`: LINE 登入設定
 - `MAIL_*`: 郵件服務設定
+- `GEMINI_API_KEY`: Google Gemini API Key（必填以啟用 AI 分析）
+- `GEMINI_MODEL`: 模型名稱（預設 `gemini-1.5-flash`）
+- `AI_MAX_HISTORY_MESSAGES`: AI 分析納入的歷史訊息上限（預設 200）
 
 ## 相容性
 
