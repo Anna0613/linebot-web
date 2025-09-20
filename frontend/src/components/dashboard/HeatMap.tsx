@@ -48,37 +48,38 @@ const getTimeSlot = (hour: number) => {
 };
 
 const colorSchemes = {
+  // 提高暗色模式下的可讀性：使用 400 色階作為基色，漸進式提高透明度
   blue: {
-    0: "bg-blue-50 dark:bg-blue-950/20",
-    1: "bg-blue-100 dark:bg-blue-900/25", 
-    2: "bg-blue-200 dark:bg-blue-900/35",
-    3: "bg-blue-300 dark:bg-blue-800/45",
-    4: "bg-blue-400 dark:bg-blue-700/55",
-    5: "bg-blue-500 dark:bg-blue-600/65"
+    0: "bg-blue-50 dark:bg-sky-400/20",
+    1: "bg-blue-100 dark:bg-sky-400/30", 
+    2: "bg-blue-200 dark:bg-sky-400/40",
+    3: "bg-blue-300 dark:bg-sky-400/50",
+    4: "bg-blue-400 dark:bg-sky-400/60",
+    5: "bg-blue-500 dark:bg-sky-400/70"
   },
   green: {
-    0: "bg-green-50 dark:bg-green-950/20",
-    1: "bg-green-100 dark:bg-green-900/25",
-    2: "bg-green-200 dark:bg-green-900/35", 
-    3: "bg-green-300 dark:bg-green-800/45",
-    4: "bg-green-400 dark:bg-green-700/55",
-    5: "bg-green-500 dark:bg-green-600/65"
+    0: "bg-green-50 dark:bg-emerald-400/20",
+    1: "bg-green-100 dark:bg-emerald-400/30",
+    2: "bg-green-200 dark:bg-emerald-400/40", 
+    3: "bg-green-300 dark:bg-emerald-400/50",
+    4: "bg-green-400 dark:bg-emerald-400/60",
+    5: "bg-green-500 dark:bg-emerald-400/70"
   },
   purple: {
-    0: "bg-purple-50 dark:bg-purple-950/20",
-    1: "bg-purple-100 dark:bg-purple-900/25",
-    2: "bg-purple-200 dark:bg-purple-900/35",
-    3: "bg-purple-300 dark:bg-purple-800/45", 
-    4: "bg-purple-400 dark:bg-purple-700/55",
-    5: "bg-purple-500 dark:bg-purple-600/65"
+    0: "bg-purple-50 dark:bg-violet-400/20",
+    1: "bg-purple-100 dark:bg-violet-400/30",
+    2: "bg-purple-200 dark:bg-violet-400/40",
+    3: "bg-purple-300 dark:bg-violet-400/50", 
+    4: "bg-purple-400 dark:bg-violet-400/60",
+    5: "bg-purple-500 dark:bg-violet-400/70"
   },
   orange: {
-    0: "bg-orange-50 dark:bg-orange-950/20",
-    1: "bg-orange-100 dark:bg-orange-900/25",
-    2: "bg-orange-200 dark:bg-orange-900/35",
-    3: "bg-orange-300 dark:bg-orange-800/45",
-    4: "bg-orange-400 dark:bg-orange-700/55", 
-    5: "bg-orange-500 dark:bg-orange-600/65"
+    0: "bg-orange-50 dark:bg-amber-400/20",
+    1: "bg-orange-100 dark:bg-amber-400/30",
+    2: "bg-orange-200 dark:bg-amber-400/40",
+    3: "bg-orange-300 dark:bg-amber-400/50",
+    4: "bg-orange-400 dark:bg-amber-400/60", 
+    5: "bg-orange-500 dark:bg-amber-400/70"
   }
 };
 
@@ -398,7 +399,7 @@ const HeatMap: React.FC<HeatMapProps> = ({
                           <TooltipTrigger>
                             <div
                               className={cn(
-                                "border border-border rounded-sm hover:ring-2 hover:ring-primary/20 transition-all duration-200 hover:scale-110",
+                                "border border-border dark:border-white/10 rounded-sm hover:ring-2 hover:ring-primary/30 transition-all duration-200 hover:scale-110",
                                 colorClass
                               )}
                               style={{ 
