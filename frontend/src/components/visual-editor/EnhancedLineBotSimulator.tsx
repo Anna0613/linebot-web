@@ -348,7 +348,7 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
   }, []);
 
   // 增強的 Bot 模擬器
-  const enhancedBotSimulator = useCallback(async (userMessage: string): Promise<Message> => {
+  const enhancedBotSimulator = useCallback(async (userMessage: string): Promise<Message[]> => {
     setIsProcessing(true);
     const startTime = performance.now();
     const newDebugInfo: string[] = [];
@@ -419,7 +419,7 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
 
       if (!matchedEventBlock) {
         newDebugInfo.push('❌ 未找到匹配的事件積木');
-        return {
+        return [{
           type: 'bot',
           content: '我還不知道如何回應這個訊息。請檢查您的 Bot 邏輯設定。',
           messageType: 'text',
@@ -429,81 +429,92 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
             executionPath: [],
             processingTime: performance.now() - startTime
           }
-        };
+        }];
       }
 
-      // 找到下一個要執行的積木
-      const connections = connectionManager.getOutgoingConnections(matchedEventBlock.id);
+      // 從事件積木開始，依序執行多個積木（最多 10 步）
+      const results: Message[] = [];
+      const eventIndex = blocks.findIndex(b => b.id === matchedEventBlock.id);
+      let currentIndex = eventIndex + 1;
+      let steps = 0;
+      while (currentIndex < blocks.length && steps < 10) {
+        const connections = connectionManager.getOutgoingConnections(blocks[currentIndex - 1]?.id || '');
+        newDebugInfo.push(`🔍 查找連接: ${blocks[currentIndex - 1]?.id} -> ${connections.length} 個連接`);
 
-      newDebugInfo.push(`🔍 查找連接: 事件積木 ${matchedEventBlock.id} -> ${connections.length} 個連接`);
-
-      let nextBlock: Block | undefined;
-
-      if (connections.length > 0) {
-        const connection = connections[0];
-        nextBlock = blocks.find(block => block.id === connection.targetBlockId);
-        newDebugInfo.push(`🔗 使用連接找到積木: ${nextBlock?.id}`);
-      } else {
-        // 如果沒有明確的連接，嘗試找到緊鄰的回覆積木（簡化邏輯）
-        const eventIndex = blocks.findIndex(b => b.id === matchedEventBlock.id);
-        if (eventIndex !== -1 && eventIndex + 1 < blocks.length) {
-          nextBlock = blocks[eventIndex + 1];
-          newDebugInfo.push(`🔄 使用順序邏輯找到下一個積木: ${nextBlock.id}`);
+        let currentBlock: Block | undefined;
+        if (connections.length > 0) {
+          const connection = connections[0];
+          currentBlock = blocks.find(block => block.id === connection.targetBlockId);
+          // 若找不到，退回順序
+          if (!currentBlock) currentBlock = blocks[currentIndex];
         } else {
-          // 找第一個回覆積木
-          nextBlock = blocks.find(block => block.blockType === 'reply');
-          newDebugInfo.push(`🔄 使用第一個回覆積木: ${nextBlock?.id}`);
+          currentBlock = blocks[currentIndex];
+        }
+
+        if (!currentBlock) break;
+        if (currentBlock.blockType === 'event') break;
+
+        newDebugInfo.push(`🔄 執行積木: ${currentBlock.id} (${currentBlock.blockType})`);
+
+        if (currentBlock.blockType === 'reply') {
+          const msg = await handleReplyBlock(currentBlock, context, newDebugInfo);
+          msg.executionInfo = {
+            matchedPatterns: matchResult.matched ? matchResult.matchedPatterns : [],
+            executionPath: [matchedEventBlock.id || '', currentBlock.id || ''],
+            processingTime: performance.now() - startTime
+          };
+          results.push(msg);
+        } else if (currentBlock.blockType === 'control') {
+          // 控制積木也以文字訊息顯示在模擬器中，方便觀察流程
+          const ctrl = await handleControlBlock(currentBlock, context, newDebugInfo);
+          ctrl.executionInfo = {
+            matchedPatterns: matchResult.matched ? matchResult.matchedPatterns : [],
+            executionPath: [matchedEventBlock.id || '', currentBlock.id || ''],
+            processingTime: performance.now() - startTime
+          };
+          results.push(ctrl);
+        } else {
+          newDebugInfo.push(`⚠️ 未知的積木類型: ${currentBlock.blockType}`);
+          results.push({
+            type: 'bot',
+            content: `不支援的積木類型: ${currentBlock.blockType}`,
+            messageType: 'text',
+            timestamp: Date.now()
+          });
+        }
+
+        steps += 1;
+        // 若有連接，下一步會由連接決定；否則按順序往下
+        if (connections.length > 0) {
+          const nextId = connections[0].targetBlockId;
+          const nextIndex = blocks.findIndex(b => b.id === nextId);
+          currentIndex = nextIndex > -1 ? nextIndex : currentIndex + 1;
+        } else {
+          currentIndex += 1;
         }
       }
 
-      if (!nextBlock) {
-        newDebugInfo.push('⚠️ 找不到目標積木');
-        return {
+      if (results.length === 0) {
+        return [{
           type: 'bot',
-          content: '積木執行錯誤：找不到目標積木。',
+          content: '我還不知道如何回應這個訊息。請檢查您的 Bot 邏輯設定。',
           messageType: 'text',
           timestamp: Date.now(),
           executionInfo: {
-            matchedPatterns: matchResult.matchedPatterns,
+            matchedPatterns: matchResult.matched ? matchResult.matchedPatterns : [],
             executionPath: [matchedEventBlock.id || ''],
             processingTime: performance.now() - startTime
           }
-        };
+        }];
       }
 
-      newDebugInfo.push(`🔄 執行積木: ${nextBlock.id} (${nextBlock.blockType})`);
-
-      // 根據積木類型執行相應邏輯
-      let botResponse: Message;
-
-      if (nextBlock.blockType === 'reply') {
-        botResponse = await handleReplyBlock(nextBlock, context, newDebugInfo);
-      } else if (nextBlock.blockType === 'control') {
-        botResponse = await handleControlBlock(nextBlock, context, newDebugInfo);
-      } else {
-        newDebugInfo.push(`⚠️ 未知的積木類型: ${nextBlock.blockType}`);
-        botResponse = {
-          type: 'bot',
-          content: `不支援的積木類型: ${nextBlock.blockType}`,
-          messageType: 'text',
-          timestamp: Date.now()
-        };
-      }
-
-      // 添加執行資訊
-      botResponse.executionInfo = {
-        matchedPatterns: matchResult.matched ? matchResult.matchedPatterns : [],
-        executionPath: [matchedEventBlock.id || '', nextBlock.id || ''],
-        processingTime: performance.now() - startTime
-      };
-
-      return botResponse;
+      return results;
 
     } catch (error) {
       console.error('❌ 模擬器執行錯誤:', error);
       newDebugInfo.push(`❌ 執行錯誤: ${error}`);
       
-      return {
+      return [{
         type: 'bot',
         content: '抱歉，處理您的訊息時發生了錯誤。',
         messageType: 'text',
@@ -513,7 +524,7 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
           executionPath: [],
           processingTime: performance.now() - startTime
         }
-      };
+      }];
     } finally {
       setIsProcessing(false);
       if (showDebugInfo) {
@@ -533,8 +544,8 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
 
     setChatMessages(prev => [...prev, userMsg]);
 
-    const botResponse = await enhancedBotSimulator(message);
-    setChatMessages(prev => [...prev, botResponse]);
+    const botResponses = await enhancedBotSimulator(message);
+    setChatMessages(prev => [...prev, ...botResponses]);
   }, [enhancedBotSimulator]);
 
   // 處理測試動作

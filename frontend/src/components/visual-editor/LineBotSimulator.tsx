@@ -360,116 +360,111 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
     return false;
   }, []);
 
-  // 根據目前的 blocks 與 flexBlocks 模擬 bot 回應（改進版）
-  const botSimulator = useCallback((userMessage: string): Message => {
-    // 預設回應
-    let botResponse: Message = {
-      type: 'bot',
-      content: '我還不知道如何回應這個訊息。請檢查您的 Bot 邏輯設定。',
-      messageType: 'text'
-    };
+  // 根據目前的 blocks 與 flexBlocks 模擬 bot 回應（支援序列執行）
+  const botSimulatorMulti = useCallback((userMessage: string): Message[] => {
+    const responses: Message[] = [];
 
-    // 獲取所有事件積木和回覆積木
     const eventBlocks = blocks.filter(b => b.blockType === 'event' && b.blockData.eventType === 'message.text');
     const replyBlocks = blocks.filter(b => b.blockType === 'reply');
 
-    // 如果沒有事件積木或回覆積木，返回預設回應
     if (eventBlocks.length === 0 || replyBlocks.length === 0) {
-      return botResponse;
+      return [{
+        type: 'bot',
+        content: '我還不知道如何回應這個訊息。請檢查您的 Bot 邏輯設定。',
+        messageType: 'text'
+      }];
     }
 
     // 找到匹配的事件積木
     let matchedEventBlock: Block | null = null;
-
-    // 首先檢查有條件的事件積木
     for (const eventBlock of eventBlocks) {
       const condition = eventBlock.blockData.condition || eventBlock.blockData.pattern || '';
       if (condition && isMessageMatched(userMessage, condition as string)) {
         matchedEventBlock = eventBlock;
-        break; // 找到第一個匹配的有條件事件就停止
+        break;
       }
     }
-
-    // 如果沒有找到有條件的匹配事件，檢查無條件的事件積木
     if (!matchedEventBlock) {
-      for (const eventBlock of eventBlocks) {
-        const condition = eventBlock.blockData.condition || eventBlock.blockData.pattern || '';
-        if (!condition) {
-          matchedEventBlock = eventBlock;
-          break; // 找到第一個無條件事件就停止
-        }
-      }
+      matchedEventBlock = eventBlocks.find(eb => !eb.blockData.condition && !eb.blockData.pattern) || null;
+    }
+    if (!matchedEventBlock) {
+      return [{
+        type: 'bot',
+        content: '我還不知道如何回應這個訊息。請檢查您的 Bot 邏輯設定。',
+        messageType: 'text'
+      }];
     }
 
-    // 如果找到匹配的事件積木，尋找對應的回覆積木
-    if (matchedEventBlock) {
-      const replyBlock = findConnectedReplyBlock(matchedEventBlock, replyBlocks);
+    // 依序從事件積木後方往下執行，直到遇到下一個事件或達到安全上限
+    const startIndex = blocks.findIndex(b => b.id === matchedEventBlock!.id);
+    const MAX_STEPS = 10;
+    let steps = 0;
+    for (let i = startIndex + 1; i < blocks.length && steps < MAX_STEPS; i++) {
+      const b = blocks[i];
+      if (b.blockType === 'event') break;
+      steps += 1;
 
-      if (replyBlock) {
-        if (replyBlock.blockData.replyType === 'text') {
-          // 文字回覆 - 檢查 content 或 text 欄位
-          const content = (replyBlock.blockData.content || replyBlock.blockData.text) as string || '空的回覆內容';
-          botResponse = {
+      if (b.blockType === 'control') {
+        // 基礎處理控制積木（僅作為提示，不中斷流程）
+        const ctype = (b.blockData.controlType as string) || '';
+        if (ctype === 'wait' || ctype === 'delay') {
+          const delayTime = (b.blockData.delay as number) || (b.blockData.wait as number) || 0;
+          responses.push({ type: 'bot', content: `延遲 ${delayTime}ms`, messageType: 'text' });
+        }
+        continue;
+      }
+
+      if (b.blockType !== 'reply') continue;
+
+      const replyType = (b.blockData.replyType as string) || 'text';
+      if (replyType === 'text') {
+        const content = (b.blockData.content || b.blockData.text) as string || '空的回覆內容';
+        responses.push({ type: 'bot', content, messageType: 'text' });
+      } else if (replyType === 'flex') {
+        const storedKey = b.blockData.flexMessageName || b.blockData.flexMessageId;
+        const stored = storedKey ? savedFlexMessages.get(storedKey as string) : undefined;
+        if (stored) {
+          const fm = convertStoredFlexMessage(stored);
+          responses.push({ type: 'bot', content: fm.altText || 'Flex 訊息', messageType: 'flex', flexMessage: fm });
+        } else if (flexBlocks && flexBlocks.length > 0) {
+          const currentFlexMessage = convertFlexBlocksToFlexMessage(flexBlocks);
+          responses.push({ type: 'bot', content: 'Flex 訊息', messageType: 'flex', flexMessage: currentFlexMessage });
+        } else if (b.blockData.flexContent && Object.keys(b.blockData.flexContent as Record<string, unknown>).length > 0) {
+          responses.push({
             type: 'bot',
-            content,
-            messageType: 'text'
-          };
-        } else if (replyBlock.blockData.replyType === 'flex') {
-          // FLEX訊息回覆 - 使用 Flex 設計器中的內容
-          const storedKey = replyBlock.blockData.flexMessageName || replyBlock.blockData.flexMessageId;
-          const stored = storedKey ? savedFlexMessages.get(storedKey as string) : undefined;
-          if (stored) {
-            const fm = convertStoredFlexMessage(stored);
-
-            botResponse = {
-              type: 'bot',
-              content: fm.altText || 'Flex 訊息',
-              messageType: 'flex',
-              flexMessage: fm
-            };
-          }
-          else if (flexBlocks && flexBlocks.length > 0) {
-            // 使用當前 Flex 設計器中設計的內容
-            const currentFlexMessage = convertFlexBlocksToFlexMessage(flexBlocks);
-            botResponse = {
-              type: 'bot',
-              content: `Flex 訊息`,
-              messageType: 'flex',
-              flexMessage: currentFlexMessage
-            };
-          } else if (replyBlock.blockData.flexContent && Object.keys(replyBlock.blockData.flexContent as Record<string, unknown>).length > 0) {
-            // 備用：使用積木中設定的 Flex 內容
-            botResponse = {
-              type: 'bot',
-              content: `Flex 訊息`,
-              messageType: 'flex',
-              flexMessage: {
-                type: 'flex',
-                contents: replyBlock.blockData.flexContent as Record<string, unknown>
-              }
-            };
-          } else {
-            botResponse = {
-              type: 'bot',
-              content: '請在 Flex 設計器中設計 Flex 訊息內容',
-              messageType: 'text'
-            };
-          }
+            content: 'Flex 訊息',
+            messageType: 'flex',
+            flexMessage: { type: 'flex', contents: b.blockData.flexContent as Record<string, unknown> }
+          });
+        } else {
+          responses.push({ type: 'bot', content: '請在 Flex 設計器中設計 Flex 訊息內容', messageType: 'text' });
         }
+      } else if (replyType === 'image') {
+        const imageUrl = (b.blockData.originalContentUrl || b.blockData.url) as string;
+        const previewUrl = (b.blockData.previewImageUrl || imageUrl) as string;
+        if (imageUrl) {
+          responses.push({ type: 'bot', content: previewUrl || imageUrl, messageType: 'image' });
+        }
+      } else if (replyType === 'sticker') {
+        const stickerId = (b.blockData.stickerId as string) || '1';
+        responses.push({ type: 'bot', content: `貼圖 ${stickerId}`, messageType: 'sticker' });
       }
     }
 
-    return botResponse;
-  }, [blocks, flexBlocks, savedFlexMessages, findConnectedReplyBlock, isMessageMatched, convertFlexBlocksToFlexMessage, convertStoredFlexMessage]);
+    if (responses.length === 0) {
+      responses.push({ type: 'bot', content: '我還不知道如何回應這個訊息。請檢查您的 Bot 邏輯設定。', messageType: 'text' });
+    }
+    return responses;
+  }, [blocks, flexBlocks, savedFlexMessages, isMessageMatched, convertFlexBlocksToFlexMessage, convertStoredFlexMessage]);
 
   // 模擬用戶發送訊息（依賴 botSimulator）
   const simulateUserMessage = useCallback((message: string) => {
     setChatMessages(prev => {
       const userMsg = { type: 'user', content: message, messageType: 'text' } as const;
-      const botResp = botSimulator(message);
-      return [...prev, userMsg, botResp];
+      const botResps = botSimulatorMulti(message);
+      return [...prev, userMsg, ...botResps];
     });
-  }, [botSimulator]);
+  }, [botSimulatorMulti]);
 
   // 處理測試動作（依賴 simulateUserMessage）
   const handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
@@ -523,8 +518,8 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
     ];
 
     // 模擬 Bot 回應
-    const botResp = botSimulator(text);
-    newMsgs.push(botResp);
+    const botResps = botSimulatorMulti(text);
+    newMsgs.push(...botResps);
 
     setChatMessages(newMsgs);
     setInputMessage('');

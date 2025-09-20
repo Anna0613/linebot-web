@@ -294,105 +294,122 @@ class LogicEngineService:
                     continue
 
                 eb, rb = pair
-                rb_data = rb.get("blockData") or {}
-                rtype = (rb_data.get("replyType") or "text").lower()
 
-                # 發送 text
-                if rtype == "text":
-                    text = str(rb_data.get("text") or "")
-                    if not text:
-                        text = "\u6211\u9084\u4e0d\u77e5\u9053\u5982\u4f55\u56de\u61c9\u60a8\u7684\u8a0a\u606f"
-                    send_result = line_bot_service.send_text_message(user_id, text)
-                    try:
-                        await ConversationService.add_bot_message(
-                            bot_id=str(bot.id),
-                            line_user_id=user_id,
-                            message_content={"text": text},
-                            message_type="text",
-                        )
-                    except Exception as log_err:
-                        logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
-                    results.append({"type": "text", "text": text, "result": send_result})
-                    break  # 命中一個即停止
+                # 從事件積木後方開始，依序處理多個回覆積木，直到下一個事件或達到上限
+                try:
+                    blocks = LogicEngineService._normalize_blocks(tpl.logic_blocks)
+                except Exception:
+                    blocks = LogicEngineService._normalize_blocks(tpl.logic_blocks)
 
-                # 發送 flex
-                elif rtype == "flex":
-                    alt_text = str(rb_data.get("altText") or "Flex 訊息")
-                    contents: Optional[Dict[str, Any]] = None
+                start_index = 0
+                try:
+                    start_index = next((i for i, b in enumerate(blocks) if (b.get("id") or (b.get("blockData") or {}).get("id")) == (eb.get("id") or (eb.get("blockData") or {}).get("id"))), 0)
+                except Exception:
+                    start_index = 0
 
-                    # 1) 指向 FlexMessage 資源
-                    flex_id = rb_data.get("flexMessageId")
-                    if flex_id:
-                        fm: Optional[FlexMessage] = (
-                            db.query(FlexMessage)
-                            .filter(FlexMessage.id == flex_id, FlexMessage.user_id == bot.user_id)
-                            .first()
-                        )
-                        if fm:
-                            contents = LogicEngineService._to_flex_contents(fm.content)
+                max_replies = 5
+                sent = 0
+                i = start_index + 1
+                while i < len(blocks) and sent < max_replies:
+                    b = blocks[i]
+                    if b.get("blockType") == "event":
+                        break
 
-                    # 2) 直接使用 block 內的 flexContent
-                    if not contents and rb_data.get("flexContent") is not None:
-                        contents = LogicEngineService._to_flex_contents(rb_data.get("flexContent"))
+                    if b.get("blockType") != "reply":
+                        i += 1
+                        continue
 
-                    # 3) 無內容時給個 fallback
-                    if not contents:
-                        contents = {"type": "bubble", "body": {"type": "box", "layout": "vertical", "contents": [{"type": "text", "text": "Flex 無內容"}]}}
+                    bdata = b.get("blockData") or {}
+                    rtype = str(bdata.get("replyType") or "text").lower()
 
-                    send_result = line_bot_service.send_flex_message(user_id, alt_text, contents)
-                    try:
-                        await ConversationService.add_bot_message(
-                            bot_id=str(bot.id),
-                            line_user_id=user_id,
-                            message_content={"altText": alt_text, "contents": contents},
-                            message_type="flex",
-                        )
-                    except Exception as log_err:
-                        logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
-
-                    results.append({"type": "flex", "altText": alt_text, "contents": contents, "result": send_result})
-                    break
-
-                # 發送 image（可選）
-                elif rtype == "image":
-                    image_url = rb_data.get("originalContentUrl") or rb_data.get("url")
-                    preview_url = rb_data.get("previewImageUrl") or image_url
-                    if image_url:
-                        send_result = line_bot_service.send_image_message(user_id, image_url, preview_url)
+                    if rtype == "text":
+                        text = str(bdata.get("text") or "")
+                        if not text:
+                            text = "我還不知道如何回應您的訊息"
+                        send_result = line_bot_service.send_text_message(user_id, text)
                         try:
                             await ConversationService.add_bot_message(
                                 bot_id=str(bot.id),
                                 line_user_id=user_id,
-                                message_content={"originalContentUrl": image_url, "previewImageUrl": preview_url},
-                                message_type="image",
+                                message_content={"text": text},
+                                message_type="text",
                             )
                         except Exception as log_err:
                             logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
-                        results.append({"type": "image", "url": image_url, "result": send_result})
-                        break
+                        results.append({"type": "text", "text": text, "result": send_result})
+                        sent += 1
 
-                # 發送 sticker
-                elif rtype == "sticker":
-                    package_id = str(rb_data.get("packageId") or "").strip()
-                    sticker_id = str(rb_data.get("stickerId") or "").strip()
-                    if package_id and sticker_id:
-                        send_result = line_bot_service.send_sticker_message(user_id, package_id, sticker_id)
+                    elif rtype == "flex":
+                        alt_text = str(bdata.get("altText") or "Flex 訊息")
+                        contents: Optional[Dict[str, Any]] = None
+
+                        flex_id = bdata.get("flexMessageId")
+                        if flex_id:
+                            fm: Optional[FlexMessage] = (
+                                db.query(FlexMessage)
+                                .filter(FlexMessage.id == flex_id, FlexMessage.user_id == bot.user_id)
+                                .first()
+                            )
+                            if fm:
+                                contents = LogicEngineService._to_flex_contents(fm.content)
+
+                        if not contents and bdata.get("flexContent") is not None:
+                            contents = LogicEngineService._to_flex_contents(bdata.get("flexContent"))
+
+                        if not contents:
+                            contents = {"type": "bubble", "body": {"type": "box", "layout": "vertical", "contents": [{"type": "text", "text": "Flex 無內容"}]}}
+
+                        send_result = line_bot_service.send_flex_message(user_id, alt_text, contents)
                         try:
                             await ConversationService.add_bot_message(
                                 bot_id=str(bot.id),
                                 line_user_id=user_id,
-                                message_content={"packageId": package_id, "stickerId": sticker_id},
-                                message_type="sticker",
+                                message_content={"altText": alt_text, "contents": contents},
+                                message_type="flex",
                             )
                         except Exception as log_err:
                             logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
-                        results.append({"type": "sticker", "packageId": package_id, "stickerId": sticker_id, "result": send_result})
-                        break
+                        results.append({"type": "flex", "altText": alt_text, "contents": contents, "result": send_result})
+                        sent += 1
 
-                else:
-                    # 其他回覆暫不支援，跳過此模板
-                    logger.info(f"回覆類型尚未支援: {rtype}")
-                    continue
+                    elif rtype == "image":
+                        image_url = bdata.get("originalContentUrl") or bdata.get("url")
+                        preview_url = bdata.get("previewImageUrl") or image_url
+                        if image_url:
+                            send_result = line_bot_service.send_image_message(user_id, image_url, preview_url)
+                            try:
+                                await ConversationService.add_bot_message(
+                                    bot_id=str(bot.id),
+                                    line_user_id=user_id,
+                                    message_content={"originalContentUrl": image_url, "previewImageUrl": preview_url},
+                                    message_type="image",
+                                )
+                            except Exception as log_err:
+                                logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
+                            results.append({"type": "image", "url": image_url, "result": send_result})
+                            sent += 1
+
+                    elif rtype == "sticker":
+                        package_id = str(bdata.get("packageId") or "").strip()
+                        sticker_id = str(bdata.get("stickerId") or "").strip()
+                        if package_id and sticker_id:
+                            send_result = line_bot_service.send_sticker_message(user_id, package_id, sticker_id)
+                            try:
+                                await ConversationService.add_bot_message(
+                                    bot_id=str(bot.id),
+                                    line_user_id=user_id,
+                                    message_content={"packageId": package_id, "stickerId": sticker_id},
+                                    message_type="sticker",
+                                )
+                            except Exception as log_err:
+                                logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
+                            results.append({"type": "sticker", "packageId": package_id, "stickerId": sticker_id, "result": send_result})
+                            sent += 1
+
+                    i += 1
+
+                # 命中一個模板（可能多個回覆）後停止嘗試其他模板
+                break
 
         except Exception as e:
             logger.error(f"邏輯引擎處理失敗: {e}")
