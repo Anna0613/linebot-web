@@ -318,7 +318,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
   }, [convertFlexBlocksToFlexMessage]);
 
   // 尋找與事件積木連接的回覆積木
-  const findConnectedReplyBlock = useCallback((eventBlock: Block, allReplyBlocks: Block[]): Block | undefined => {
+  const _findConnectedReplyBlock = useCallback((eventBlock: Block, allReplyBlocks: Block[]): Block | undefined => {
     // 簡化的連接邏輯：在視覺化編輯器中，通常是按順序配對
     const eventId = eventBlock.blockData.id || eventBlock.id;
 

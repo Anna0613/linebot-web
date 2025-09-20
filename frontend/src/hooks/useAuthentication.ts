@@ -40,7 +40,6 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
 
   const checkLoginStatus = useCallback(async () => {
     try {
-      const authManager = UnifiedAuthManager.getInstance();
       
       const nativeFetch = window.fetch.bind(window);
       const response = await nativeFetch(

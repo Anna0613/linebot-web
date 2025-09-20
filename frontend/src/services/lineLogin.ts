@@ -1,4 +1,3 @@
-import { apiClient } from "./UnifiedApiClient";
 import { API_CONFIG } from "../config/apiConfig";
 
 export interface LineLoginResponse {
@@ -54,7 +53,7 @@ export class LineLoginService {
 
       return data;
     } catch (error) {
-      console.error("Error occurred:", _error);
+      console.error("Error occurred:", error);
       return {
         error: error instanceof Error ? error.message : "獲取登入連結失敗",
       };

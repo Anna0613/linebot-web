@@ -3,24 +3,22 @@
  * 安全特性：HttpOnly cookies、防 XSS、自動刷新、統一清除
  */
 
-import { parseJWTToken, isTokenExpired } from "../utils/tokenUtils";
+import { parseJWTToken } from "../utils/tokenUtils";
 import {
   setAuthToken,
   getAuthToken,
   getTokenType,
-  setRefreshToken,
-  getRefreshToken,
+  
   setUserData,
   getUserData,
   clearAllAuthCookies,
-  getAuthHeaders,
   isRememberMeActive,
   extendAuthCookies,
-  hasValidAuth
+  
 } from "../utils/cookieUtils";
 import { cacheService, CACHE_KEYS, CACHE_TTL } from "./CacheService";
 
-const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5分鐘前刷新
+// const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // not used in cookie-based flow
 
 export interface UnifiedUser {
   id: string;

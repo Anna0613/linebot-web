@@ -19,9 +19,9 @@ interface User {
 }
 
 const LINELogin: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [user, _setUser] = useState<User | null>(null);
+  const [error, _setError] = useState<string | null>(null);
+  const [loading, _setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,7 +38,10 @@ const LINELogin: React.FC = () => {
         if (data?.authenticated) {
           navigate('/dashboard', { replace: true });
         }
-      } catch {}
+      } catch (_err) {
+        // ignore errors during initial login status check
+        console.debug('LINE login pre-check failed');
+      }
     };
     check();
   }, [navigate]);

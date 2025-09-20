@@ -98,7 +98,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       // 後備：若尚未綁定 scrollRef，避免觸發頁面滾動
       try {
         messagesEndRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: smooth ? 'smooth' : 'auto' });
-      } catch {}
+      } catch (_err) {
+        // ignore if scrollIntoView fails (ref not ready)
+        console.debug('scrollIntoView fallback failed');
+      }
     }
   };
 

@@ -3,7 +3,6 @@
  * 解決多重連接問題，確保每個 Bot 只有一個 WebSocket 連接
  */
 
-import { authManager } from './UnifiedAuthManager';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 // WebSocket 訊息資料類型
@@ -149,7 +148,7 @@ class WebSocketManager {
             connection.isConnecting = false;
           }
         })
-        .catch((err) => {
+        .catch((_err) => {
           console.warn('取得 ws_ticket 失敗，直接嘗試以 Cookie 連線');
           connection.socket = new WebSocket(baseUrl);
           this.attachSocketHandlers(botId, connection);

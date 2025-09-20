@@ -1,4 +1,3 @@
-import { UnifiedAuthManager } from "./UnifiedAuthManager";
 import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 
 export interface Bot {

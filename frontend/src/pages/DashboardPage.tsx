@@ -1,5 +1,5 @@
-import React, { lazy, Suspense, useEffect, memo } from "react";
-import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import React, { lazy, Suspense, memo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import HomeBotfly from "../components/features/dashboard/HomeBotfly";
 const DashboardFooter = lazy(() => import("../components/layout/DashboardFooter"));
@@ -18,12 +18,11 @@ interface _User {
 }
 
 const DashboardPage = memo(() => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const _location = useLocation();
 
   // 使用統一認證Hook，具備自動保護功能
-  const { user, loading, error, handleLineLogin } = useUnifiedAuth({
+  const { user, loading, error } = useUnifiedAuth({
     requireAuth: true,
     redirectTo: "/login"
   });

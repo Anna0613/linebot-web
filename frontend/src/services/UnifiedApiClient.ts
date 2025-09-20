@@ -218,8 +218,15 @@ export class UnifiedApiClient {
           secureLog('會話刷新失敗:', refreshError);
         }
 
-        authManager.handleAuthError({ status, message: (data as any)?.error || '認證已過期' });
-        return { error: (data as any)?.error || '認證已過期，請重新登入', status };
+        const errFromData = (() => {
+          if (data && typeof data === 'object' && data !== null) {
+            const d = data as Record<string, unknown>;
+            return typeof d.error === 'string' ? d.error : undefined;
+          }
+          return undefined;
+        })();
+        authManager.handleAuthError({ status, message: errFromData || '認證已過期' });
+        return { error: errFromData || '認證已過期，請重新登入', status };
       }
 
       // 處理其他錯誤狀態

@@ -7,6 +7,9 @@ try {
   if (!document.documentElement.getAttribute("lang")) {
     document.documentElement.setAttribute("lang", "zh-TW");
   }
-} catch {}
+} catch (_err) {
+  // ignore if document not ready
+  console.debug('lang attribute setup skipped');
+}
 
 createRoot(document.getElementById("root")!).render(<App />);

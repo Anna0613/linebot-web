@@ -1,4 +1,3 @@
-import { useCallback } from "react";
 import { LineLoginService } from "../services/lineLogin";
 import { useAuthForm } from "./useAuthForm";
 

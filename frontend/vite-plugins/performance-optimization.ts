@@ -1,6 +1,7 @@
 import { Plugin } from 'vite';
-import { readFileSync, writeFileSync } from 'fs';
+import { writeFileSync } from 'fs';
 import { resolve } from 'path';
+import type { OutputAsset, OutputChunk } from 'rollup';
 
 /**
  * Vite 性能優化插件
@@ -11,7 +12,7 @@ export function performanceOptimizationPlugin(): Plugin {
     name: 'performance-optimization',
     apply: 'build',
     
-    generateBundle(options, bundle) {
+    generateBundle(_options, bundle) {
       // 分析包大小並生成報告
       generateSizeReport(bundle);
 
@@ -24,58 +25,64 @@ export function performanceOptimizationPlugin(): Plugin {
   };
 
   // 將方法移到外部
-  function generateSizeReport(bundle: any) {
-  function generateSizeReport(bundle: any) {
-      const sizeReport: any = {
-        total: 0,
-        chunks: [],
-        assets: []
-      };
+  interface ChunkInfo { name: string; size: number; sizeKB: string; type: 'entry' | 'dynamic'; }
+  interface AssetInfo { name: string; size: number; sizeKB: string; }
+  interface SizeReport { total: number; chunks: ChunkInfo[]; assets: AssetInfo[] }
+
+  type BundleMap = Record<string, OutputAsset | OutputChunk>;
+
+  function generateSizeReport(bundle: BundleMap) {
+      const sizeReport: SizeReport = { total: 0, chunks: [], assets: [] };
       
       for (const [fileName, chunk] of Object.entries(bundle)) {
-        const chunkData = chunk as any;
-        const size = chunkData.code?.length || chunkData.source?.length || 0;
-        
+        let size = 0;
+        if (chunk.type === 'chunk') {
+          size = chunk.code.length;
+        } else {
+          const src = chunk.source;
+          size = typeof src === 'string' ? src.length : src.byteLength;
+        }
+
         sizeReport.total += size;
-        
-        if (chunkData.isEntry || chunkData.isDynamicEntry) {
+
+        if (chunk.type === 'chunk' && (chunk.isEntry || chunk.isDynamicEntry)) {
           sizeReport.chunks.push({
             name: fileName,
-            size: size,
+            size,
             sizeKB: (size / 1024).toFixed(2),
-            type: chunkData.isEntry ? 'entry' : 'dynamic'
+            type: chunk.isEntry ? 'entry' : 'dynamic'
           });
         } else {
           sizeReport.assets.push({
             name: fileName,
-            size: size,
+            size,
             sizeKB: (size / 1024).toFixed(2)
           });
         }
       }
       
       // 排序並顯示最大的檔案
-      sizeReport.chunks.sort((a: any, b: any) => b.size - a.size);
-      sizeReport.assets.sort((a: any, b: any) => b.size - a.size);
+      sizeReport.chunks.sort((a, b) => b.size - a.size);
+      sizeReport.assets.sort((a, b) => b.size - a.size);
       
       console.log('\n📊 建置大小分析:');
       console.log(`總大小: ${(sizeReport.total / 1024).toFixed(2)} KB`);
       
       console.log('\n🎯 主要 Chunks:');
-      sizeReport.chunks.slice(0, 5).forEach((chunk: any) => {
+      sizeReport.chunks.slice(0, 5).forEach((chunk) => {
         console.log(`  ${chunk.name}: ${chunk.sizeKB} KB (${chunk.type})`);
       });
       
       console.log('\n📦 最大資源:');
-      sizeReport.assets.slice(0, 5).forEach((asset: any) => {
+      sizeReport.assets.slice(0, 5).forEach((asset) => {
         console.log(`  ${asset.name}: ${asset.sizeKB} KB`);
       });
       
       // 警告大型檔案
-      const largeChunks = sizeReport.chunks.filter((chunk: any) => chunk.size > 500000); // 500KB
+      const largeChunks = sizeReport.chunks.filter((chunk) => chunk.size > 500000); // 500KB
       if (largeChunks.length > 0) {
         console.log('\n⚠️  大型 Chunks (>500KB):');
-        largeChunks.forEach((chunk: any) => {
+        largeChunks.forEach((chunk) => {
           console.log(`  ${chunk.name}: ${chunk.sizeKB} KB`);
         });
       }
@@ -87,12 +94,14 @@ export function performanceOptimizationPlugin(): Plugin {
       );
   }
 
-  function optimizeCSS(bundle: any) {
+  function optimizeCSS(bundle: BundleMap) {
       // 尋找 CSS 檔案並進行額外優化
       for (const [fileName, chunk] of Object.entries(bundle)) {
         if (fileName.endsWith('.css')) {
-          const chunkData = chunk as any;
-          let css = chunkData.source || '';
+          if (chunk.type !== 'asset') continue;
+          const src = chunk.source;
+          if (typeof src !== 'string') continue;
+          let css = src;
           
           // 移除多餘的空白和註釋
           css = css
@@ -106,14 +115,14 @@ export function performanceOptimizationPlugin(): Plugin {
             .replace(/\s*;\s*/g, ';') // 壓縮分號
             .trim();
           
-          chunkData.source = css;
+          chunk.source = css;
           
           console.log(`✅ 優化 CSS: ${fileName} (${(css.length / 1024).toFixed(2)} KB)`);
         }
       }
   }
 
-  function addResourceHints(bundle: any) {
+  function addResourceHints(bundle: BundleMap) {
       // 生成資源提示清單
       const resourceHints = {
         preload: [] as string[],
@@ -122,15 +131,14 @@ export function performanceOptimizationPlugin(): Plugin {
       };
       
       for (const [fileName, chunk] of Object.entries(bundle)) {
-        const chunkData = chunk as any;
         
         // 關鍵資源應該 preload
-        if (chunkData.isEntry) {
+        if (chunk.type === 'chunk' && chunk.isEntry) {
           resourceHints.preload.push(fileName);
         }
         
         // 動態導入的資源可以 prefetch
-        if (chunkData.isDynamicEntry) {
+        if (chunk.type === 'chunk' && chunk.isDynamicEntry) {
           resourceHints.prefetch.push(fileName);
         }
       }
@@ -155,7 +163,7 @@ function criticalCSSPlugin(): Plugin {
     name: 'critical-css',
     apply: 'build',
     
-    generateBundle(options, bundle) {
+    generateBundle(_options, bundle) {
       // 提取關鍵 CSS（首屏渲染需要的樣式）
       const criticalCSS = extractCriticalCSS(bundle);
 
@@ -166,7 +174,7 @@ function criticalCSSPlugin(): Plugin {
     }
   };
 
-  function extractCriticalCSS(bundle: any): string {
+  function extractCriticalCSS(_bundle: BundleMap): string {
       // 這裡可以實施更複雜的關鍵 CSS 提取邏輯
       // 目前返回基本的重置樣式
       return `
@@ -180,18 +188,20 @@ function criticalCSSPlugin(): Plugin {
       `.replace(/\s+/g, ' ').trim();
   }
 
-  function inlineCriticalCSS(bundle: any, criticalCSS: string) {
+  function inlineCriticalCSS(bundle: BundleMap, criticalCSS: string) {
       // 尋找 HTML 檔案並內聯關鍵 CSS
       for (const [fileName, chunk] of Object.entries(bundle)) {
         if (fileName.endsWith('.html')) {
-          const chunkData = chunk as any;
-          let html = chunkData.source || '';
+          if (chunk.type !== 'asset') continue;
+          const src = chunk.source;
+          if (typeof src !== 'string') continue;
+          let html = src;
           
           // 在 </head> 前插入關鍵 CSS
           const styleTag = `<style>${criticalCSS}</style>`;
           html = html.replace('</head>', `${styleTag}</head>`);
           
-          chunkData.source = html;
+          chunk.source = html;
           
           console.log(`✅ 關鍵 CSS 已內聯到 ${fileName}`);
         }

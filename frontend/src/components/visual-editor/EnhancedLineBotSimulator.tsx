@@ -25,8 +25,13 @@ interface Block {
 interface FlexMessage {
   type: string;
   altText?: string;
-  contents?: any;
+  contents?: unknown;
 }
+
+type FlexBubble = {
+  type: 'bubble';
+  body?: { type: 'box'; layout: string; contents: unknown[] };
+};
 
 interface Message {
   type: 'user' | 'bot' | string;
@@ -124,7 +129,7 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
           debugInfo.push(`🔍 轉換後的 bubble: ${JSON.stringify(currentBubble).substring(0, 200)}...`);
 
           // 檢查 bubble 是否有內容
-          const bubbleData = currentBubble as any;
+          const bubbleData = currentBubble as FlexBubble;
           if (bubbleData && bubbleData.body && bubbleData.body.contents && bubbleData.body.contents.length > 0) {
             // convertFlexBlocksToFlexMessage 返回的是 bubble 結構，需要包裝成完整的 Flex Message
             const currentFlexMessage = {

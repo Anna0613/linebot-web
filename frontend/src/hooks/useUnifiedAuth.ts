@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authManager, UnifiedUser, TokenInfo } from '../services/UnifiedAuthManager';
+import { authManager, UnifiedUser } from '../services/UnifiedAuthManager';
 import { useToast } from './use-toast';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import { cacheService, CACHE_KEYS, CACHE_TTL } from '../services/CacheService';
@@ -185,7 +185,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [toast, onAuthChange]);
+  }, [toast, refreshUserInfo]);
 
   /**
    * 傳統註冊
