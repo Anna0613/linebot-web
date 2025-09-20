@@ -20,6 +20,7 @@ class AIQueryRequest(BaseModel):
     max_messages: int = Field(default=200, description="最多納入多少筆歷史訊息")
     model: Optional[str] = Field(default=None, description="指定使用的 AI 模型")
     provider: Optional[str] = Field(default=None, description="指定使用的 AI 提供商（groq/gemini）")
+    system_prompt: Optional[str] = Field(default=None, description="自訂系統提示詞")
 
 
 class AIQueryResponse(BaseModel):

@@ -63,6 +63,7 @@ async def ai_query_user(
             history=[t.model_dump() for t in (payload.history or [])],
             model=payload.model,
             provider=payload.provider,
+            system_prompt=payload.system_prompt,
         )
 
         return AIQueryResponse(

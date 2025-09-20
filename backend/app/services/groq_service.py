@@ -139,19 +139,22 @@ class GroqService:
         question: str,
         context_text: str,
         history: Optional[List[Dict[str, str]]] = None,
+        system_prompt: Optional[str] = None,
     ) -> List[Dict[str, str]]:
         """
         建立 Groq API 的訊息格式（OpenAI 相容）。
         - history: List[{role: 'user'|'assistant', content: str}]
+        - system_prompt: 自訂系統提示詞，若未提供則使用預設值
         """
         messages: List[Dict[str, str]] = []
 
-        # 系統提示
-        system_prompt = (
-            "你是一位專精客服對話洞察的分析助手。"
-            "請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、"
-            "有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。"
-        )
+        # 系統提示（支援自訂）
+        if not system_prompt:
+            system_prompt = (
+                "你是一位專精客服對話洞察的分析助手。"
+                "請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、"
+                "有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。"
+            )
         messages.append({"role": "system", "content": system_prompt})
 
         # 將歷史對話（管理者與 AI 的往返）帶入，作為多輪上下文
@@ -179,6 +182,7 @@ class GroqService:
         history: Optional[List[Dict[str, str]]] = None,
         model: Optional[str] = None,
         api_key: Optional[str] = None,
+        system_prompt: Optional[str] = None,
     ) -> str:
         """
         呼叫 Groq API 以取得答案。
@@ -197,7 +201,7 @@ class GroqService:
         client = AsyncGroq(api_key=api_key)
 
         # 準備訊息
-        messages = GroqService._build_messages_for_groq(question, context_text, history)
+        messages = GroqService._build_messages_for_groq(question, context_text, history, system_prompt)
 
         # 取得模型配置
         model_config = GroqService.GROQ_MODELS.get(model, GroqService.GROQ_MODELS["llama-3.1-70b-versatile"])

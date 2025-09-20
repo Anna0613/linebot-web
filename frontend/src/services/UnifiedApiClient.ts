@@ -626,6 +626,7 @@ export class UnifiedApiClient {
       max_messages?: number;
       model?: string;
       provider?: string;
+      system_prompt?: string;
     }
   ): Promise<ApiResponse> {
     return this.post(

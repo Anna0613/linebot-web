@@ -19,6 +19,7 @@ import { apiClient } from "../../services/UnifiedApiClient";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import FlexMessagePreview from "../Panels/FlexMessagePreview";
 import ModelSelector from "../ai/ModelSelector";
+import AISettingsModal, { AISettings } from "../ai/AISettingsModal";
 
 // 類型定義
 interface LineUser {
@@ -89,6 +90,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
   const [awaitingAI, setAwaitingAI] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('');
+  const [aiSettings, setAiSettings] = useState<AISettings>({
+    systemPrompt: "你是一位專精客服對話洞察的分析助手。請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。",
+    timeRangeDays: 30
+  });
 
   // WebSocket 連接，用於即時更新
   const { isConnected, lastMessage } = useWebSocket({
@@ -517,14 +522,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
 
     try {
       const history = buildAIHistory();
-      const resp = await apiClient.askAI(botId, selectedUser.line_user_id, {
+
+      // 準備 API 請求參數
+      const requestParams: any = {
         question: q,
         history,
-        // 可選時間範圍：例如 90 天；此處不強制，由管理者自然提問
-        // time_range_days: 90,
         max_messages: 200,
         model: selectedModel || undefined,
-      });
+        system_prompt: aiSettings.systemPrompt,
+      };
+
+      // 處理時間範圍設定
+      if (aiSettings.timeRangeDays) {
+        requestParams.time_range_days = aiSettings.timeRangeDays;
+      } else if (aiSettings.customDateRange) {
+        // 計算自訂日期範圍的天數
+        const diffTime = aiSettings.customDateRange.to.getTime() - aiSettings.customDateRange.from.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        requestParams.time_range_days = diffDays;
+      }
+
+      const resp = await apiClient.askAI(botId, selectedUser.line_user_id, requestParams);
       if (resp.success && resp.data) {
         const answer = (resp.data as any).answer || '（無回應）';
         const ts = new Date().toISOString();
@@ -604,15 +622,23 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         </div>
       </CardHeader>
 
-      {/* AI 模型選擇器 */}
+      {/* AI 模型選擇器與設定 */}
       {aiMode && (
         <div className="px-4 pb-4 border-b">
-          <ModelSelector
-            value={selectedModel}
-            onChange={setSelectedModel}
-            disabled={awaitingAI}
-            className="w-full"
-          />
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <ModelSelector
+                value={selectedModel}
+                onChange={setSelectedModel}
+                disabled={awaitingAI}
+                className="w-full"
+              />
+            </div>
+            <AISettingsModal
+              onSettingsChange={setAiSettings}
+              disabled={awaitingAI}
+            />
+          </div>
         </div>
       )}
 

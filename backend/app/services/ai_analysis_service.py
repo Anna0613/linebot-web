@@ -31,6 +31,7 @@ class AIAnalysisService:
         history: Optional[List[Dict[str, str]]] = None,
         model: Optional[str] = None,
         provider: Optional[str] = None,
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         統一的 AI 調用介面，根據配置選擇 AI 提供商。
@@ -52,7 +53,8 @@ class AIAnalysisService:
                 question,
                 context_text=context_text,
                 history=history,
-                model=model
+                model=model,
+                system_prompt=system_prompt
             )
 
             return {
@@ -70,7 +72,8 @@ class AIAnalysisService:
                 question,
                 context_text=context_text,
                 history=history,
-                model=model
+                model=model,
+                system_prompt=system_prompt
             )
 
             return {
@@ -180,10 +183,12 @@ class AIAnalysisService:
         question: str,
         context_text: str,
         history: Optional[List[Dict[str, str]]] = None,
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         建立 Gemini REST API 的請求 payload。
         - history: List[{role: 'user'|'assistant', content: str}]
+        - system_prompt: 自訂系統提示詞，若未提供則使用預設值
         """
         contents: List[Dict[str, Any]] = []
 
@@ -202,16 +207,18 @@ class AIAnalysisService:
         # 當前問題
         contents.append({"role": "user", "parts": [{"text": f"問題：{question}"}]})
 
+        # 系統提示（支援自訂）
+        if not system_prompt:
+            system_prompt = (
+                "你是一位專精客服對話洞察的分析助手。"
+                "請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、"
+                "有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。"
+            )
+
         payload: Dict[str, Any] = {
             "systemInstruction": {
                 "role": "system",
-                "parts": [{
-                    "text": (
-                        "你是一位專精客服對話洞察的分析助手。"
-                        "請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、"
-                        "有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。"
-                    )
-                }]
+                "parts": [{"text": system_prompt}]
             },
             "contents": contents,
             "generationConfig": {
@@ -231,6 +238,7 @@ class AIAnalysisService:
         history: Optional[List[Dict[str, str]]] = None,
         model: Optional[str] = None,
         api_key: Optional[str] = None,
+        system_prompt: Optional[str] = None,
     ) -> str:
         """
         呼叫 Google Gemini 以取得答案。若設定缺失，拋出例外。
@@ -243,7 +251,7 @@ class AIAnalysisService:
 
         endpoint = AIAnalysisService.GEMINI_ENDPOINT.format(model=model)
         params = {"key": api_key}
-        payload = AIAnalysisService._build_contents_for_gemini(question, context_text, history)
+        payload = AIAnalysisService._build_contents_for_gemini(question, context_text, history, system_prompt)
 
         def _post() -> requests.Response:
             return requests.post(endpoint, params=params, json=payload, timeout=30)
