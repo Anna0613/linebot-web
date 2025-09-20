@@ -100,9 +100,18 @@ class Settings(BaseSettings):
         ssl_param = "?ssl=true" if self.MONGODB_SSL else ""
         return f"mongodb://{auth_part}{self.MONGODB_HOST}:{self.MONGODB_PORT}/{self.MONGODB_DATABASE}{ssl_param}"
 
-    # AI / Gemini 設定
+    # AI 設定
+    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "groq")  # groq 或 gemini
+
+    # Groq 設定
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
+
+    # Gemini 設定（向後相容）
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+
+    # 通用 AI 設定
     AI_MAX_HISTORY_MESSAGES: int = int(os.getenv("AI_MAX_HISTORY_MESSAGES", "200"))
     
     # CORS 設定 - 預設允許的來源

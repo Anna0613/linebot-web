@@ -615,15 +615,29 @@ export class UnifiedApiClient {
     );
   }
 
-  // AI 分析（Gemini）
+  // AI 分析（支援 Groq 和 Gemini）
   public async askAI(
     botId: string,
     lineUserId: string,
-    data: { question: string; history?: Array<{ role: 'user'|'assistant'; content: string }>; time_range_days?: number; max_messages?: number }
+    data: {
+      question: string;
+      history?: Array<{ role: 'user'|'assistant'; content: string }>;
+      time_range_days?: number;
+      max_messages?: number;
+      model?: string;
+      provider?: string;
+    }
   ): Promise<ApiResponse> {
     return this.post(
       getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/ai/query`),
       data
+    );
+  }
+
+  // 取得可用的 AI 模型列表
+  public async getAIModels(): Promise<ApiResponse> {
+    return this.get(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, '/bots/ai/models')
     );
   }
 

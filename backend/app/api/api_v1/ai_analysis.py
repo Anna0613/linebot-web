@@ -15,7 +15,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.bot import Bot
 from app.models.user import User
-from app.schemas.ai import AIQueryRequest, AIQueryResponse
+from app.schemas.ai import AIQueryRequest, AIQueryResponse, AIModelsResponse, AIModelInfo
 from app.services.ai_analysis_service import AIAnalysisService
 from app.config import settings
 
@@ -43,8 +43,10 @@ async def ai_query_user(
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
 
     # 基本設定檢查
-    gemini_key = getattr(settings, "GEMINI_API_KEY", "")
-    if not gemini_key:
+    provider = settings.AI_PROVIDER
+    if provider == "groq" and not settings.GROQ_API_KEY:
+        raise HTTPException(status_code=400, detail="後端未配置 GROQ_API_KEY，請先設定 .env")
+    elif provider == "gemini" and not settings.GEMINI_API_KEY:
         raise HTTPException(status_code=400, detail="後端未配置 GEMINI_API_KEY，請先設定 .env")
 
     try:
@@ -55,15 +57,18 @@ async def ai_query_user(
             max_messages=payload.max_messages,
         )
 
-        answer = await AIAnalysisService.ask_gemini(
+        result = await AIAnalysisService.ask_ai(
             payload.question,
             context_text=context_text,
             history=[t.model_dump() for t in (payload.history or [])],
+            model=payload.model,
+            provider=payload.provider,
         )
 
         return AIQueryResponse(
-            answer=answer,
-            model=getattr(settings, "GEMINI_MODEL", "gemini-1.5-flash"),
+            answer=result["answer"],
+            model=result["model"],
+            provider=result["provider"],
             usage_note="此回應依據 MongoDB 對話歷史生成，僅供客服與營運決策參考。",
         )
     except HTTPException:
@@ -71,4 +76,23 @@ async def ai_query_user(
     except Exception as e:
         logger.error(f"AI 分析失敗: {e}")
         raise HTTPException(status_code=500, detail=f"AI 分析失敗: {str(e)}")
+
+
+@router.get("/ai/models", response_model=AIModelsResponse)
+async def get_ai_models(
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """取得可用的 AI 模型列表。"""
+
+    try:
+        models_data = AIAnalysisService.get_available_models()
+        models = [AIModelInfo(**model) for model in models_data]
+
+        return AIModelsResponse(
+            models=models,
+            current_provider=settings.AI_PROVIDER
+        )
+    except Exception as e:
+        logger.error(f"取得 AI 模型列表失敗: {e}")
+        raise HTTPException(status_code=500, detail=f"取得 AI 模型列表失敗: {str(e)}")
 

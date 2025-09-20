@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "../../services/UnifiedApiClient";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import FlexMessagePreview from "../Panels/FlexMessagePreview";
+import ModelSelector from "../ai/ModelSelector";
 
 // 類型定義
 interface LineUser {
@@ -87,6 +88,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const [aiMode, setAiMode] = useState(false);
   const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
   const [awaitingAI, setAwaitingAI] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>('');
 
   // WebSocket 連接，用於即時更新
   const { isConnected, lastMessage } = useWebSocket({
@@ -521,6 +523,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         // 可選時間範圍：例如 90 天；此處不強制，由管理者自然提問
         // time_range_days: 90,
         max_messages: 200,
+        model: selectedModel || undefined,
       });
       if (resp.success && resp.data) {
         const answer = (resp.data as any).answer || '（無回應）';
@@ -539,7 +542,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       }
     } catch (err) {
       console.error('AI 分析失敗:', err);
-      toast({ variant: 'destructive', title: 'AI 分析失敗', description: '請確認後端 GEMINI_API_KEY 設定，或稍後再試。' });
+      toast({ variant: 'destructive', title: 'AI 分析失敗', description: '請確認後端 AI 服務設定（GROQ_API_KEY 或 GEMINI_API_KEY），或稍後再試。' });
     } finally {
       setAwaitingAI(false);
     }
@@ -600,6 +603,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
           </div>
         </div>
       </CardHeader>
+
+      {/* AI 模型選擇器 */}
+      {aiMode && (
+        <div className="px-4 pb-4 border-b">
+          <ModelSelector
+            value={selectedModel}
+            onChange={setSelectedModel}
+            disabled={awaitingAI}
+            className="w-full"
+          />
+        </div>
+      )}
 
       {/* 聊天訊息區域 */}
       <CardContent className="p-0">

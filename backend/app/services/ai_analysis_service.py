@@ -1,6 +1,6 @@
 """
 AI 分析服務
-整合 Google Gemini，根據 MongoDB 中的用戶對話歷史提供分析與問答。
+整合多個 AI 提供商（Groq、Google Gemini），根據 MongoDB 中的用戶對話歷史提供分析與問答。
 """
 from __future__ import annotations
 
@@ -13,14 +13,102 @@ import requests
 
 from app.config import settings
 from app.models.mongodb.conversation import ConversationDocument
+from app.services.groq_service import GroqService
 
 logger = logging.getLogger(__name__)
 
 
 class AIAnalysisService:
-    """提供 AI 分析能力（Google Gemini）。"""
+    """提供 AI 分析能力（支援 Groq 和 Google Gemini）。"""
 
     GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+    @staticmethod
+    async def ask_ai(
+        question: str,
+        *,
+        context_text: str,
+        history: Optional[List[Dict[str, str]]] = None,
+        model: Optional[str] = None,
+        provider: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        統一的 AI 調用介面，根據配置選擇 AI 提供商。
+
+        Returns:
+            Dict containing:
+            - answer: str - AI 回答
+            - model: str - 使用的模型
+            - provider: str - 使用的提供商
+        """
+        provider = provider or settings.AI_PROVIDER
+
+        if provider == "groq":
+            # 使用 Groq
+            if not model:
+                model = settings.GROQ_MODEL
+
+            answer = await GroqService.ask_groq(
+                question,
+                context_text=context_text,
+                history=history,
+                model=model
+            )
+
+            return {
+                "answer": answer,
+                "model": model,
+                "provider": "groq"
+            }
+
+        elif provider == "gemini":
+            # 使用 Gemini（向後相容）
+            if not model:
+                model = settings.GEMINI_MODEL
+
+            answer = await AIAnalysisService.ask_gemini(
+                question,
+                context_text=context_text,
+                history=history,
+                model=model
+            )
+
+            return {
+                "answer": answer,
+                "model": model,
+                "provider": "gemini"
+            }
+        else:
+            raise ValueError(f"不支援的 AI 提供商: {provider}")
+
+    @staticmethod
+    def get_available_models(provider: Optional[str] = None) -> List[Dict[str, Any]]:
+        """取得可用的模型列表"""
+        provider = provider or settings.AI_PROVIDER
+
+        if provider == "groq":
+            return GroqService.get_available_models()
+        elif provider == "gemini":
+            return [
+                {
+                    "id": "gemini-1.5-flash",
+                    "name": "Gemini 1.5 Flash",
+                    "description": "快速回應的 Google AI 模型",
+                    "category": "Google",
+                    "max_tokens": 1024,
+                    "context_length": 1000000
+                },
+                {
+                    "id": "gemini-1.5-pro",
+                    "name": "Gemini 1.5 Pro",
+                    "description": "高品質的 Google AI 模型",
+                    "category": "Google",
+                    "max_tokens": 8192,
+                    "context_length": 2000000
+                }
+            ]
+        else:
+            return []
 
     @staticmethod
     async def build_user_context(
