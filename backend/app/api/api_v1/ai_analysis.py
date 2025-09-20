@@ -99,3 +99,35 @@ async def get_ai_models(
         logger.error(f"取得 AI 模型列表失敗: {e}")
         raise HTTPException(status_code=500, detail=f"取得 AI 模型列表失敗: {str(e)}")
 
+
+@router.delete("/{bot_id}/users/{line_user_id}/ai/history")
+async def clear_ai_conversation_history(
+    bot_id: str,
+    line_user_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    清除指定用戶的 AI 對話歷史快取
+
+    注意：此操作僅清除 AI 分析對話的快取，不影響 MongoDB 中的原始對話記錄
+    """
+    try:
+        # 清除 Redis 快取中的 AI 對話歷史
+        from app.services.redis_cache_service import cache_service
+
+        # 使用安全的快取清除方法
+        success = cache_service.invalidate_conversation_cache(bot_id, line_user_id)
+
+        if success:
+            logger.info(f"已清除用戶 AI 對話歷史快取: {bot_id}:{line_user_id}")
+            message = "AI 對話歷史已清除"
+        else:
+            logger.warning(f"無法清除快取（Redis 可能不可用）: {bot_id}:{line_user_id}")
+            message = "AI 對話歷史已清除（快取清除失敗，但不影響功能）"
+
+        return {"success": True, "message": message}
+
+    except Exception as e:
+        logger.error(f"清除 AI 對話歷史失敗: {e}")
+        raise HTTPException(status_code=500, detail=f"清除 AI 對話歷史失敗: {str(e)}")
+

@@ -643,6 +643,13 @@ export class UnifiedApiClient {
     );
   }
 
+  // 清除 AI 對話歷史
+  public async clearAIConversationHistory(botId: string, lineUserId: string): Promise<ApiResponse> {
+    return this.delete(
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/ai/history`)
+    );
+  }
+
   public async getBotActivities(botId: string, limit: number = 20, offset: number = 0): Promise<ApiResponse> {
     const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/activities?limit=${limit}&offset=${offset}`);
     console.log('調用 getBotActivities API:', url);

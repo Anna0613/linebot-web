@@ -2,17 +2,18 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Send, 
-  MessageSquare, 
-  User, 
+import {
+  Send,
+  MessageSquare,
+  User,
   Clock,
   CheckCheck,
-  X
+  X,
+  Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "../../services/UnifiedApiClient";
@@ -20,6 +21,33 @@ import { useWebSocket } from "../../hooks/useWebSocket";
 import FlexMessagePreview from "../Panels/FlexMessagePreview";
 import ModelSelector from "../ai/ModelSelector";
 import AISettingsModal, { AISettings } from "../ai/AISettingsModal";
+
+// API 回應類型定義
+interface ChatHistoryResponse {
+  success: boolean;
+  chat_history: ChatMessage[];
+  total_count: number;
+}
+
+interface SendMessageResponse {
+  success: boolean;
+  message?: string;
+}
+
+interface UserAvatarResponse {
+  avatar?: string;
+}
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // 類型定義
 interface LineUser {
@@ -54,7 +82,7 @@ interface ChatMessage {
   event_type: string;
   message_type: string;
   message_content: MessageContent;
-  sender_type: "user" | "admin";
+  sender_type: "user" | "admin" | "bot";
   timestamp: string;
   media_url?: string;
   media_path?: string;
@@ -62,6 +90,7 @@ interface ChatMessage {
     id: string;
     username: string;
     full_name: string;
+    avatar?: string;
   };
 }
 
@@ -90,6 +119,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
   const [awaitingAI, setAwaitingAI] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('');
+  const [clearingHistory, setClearingHistory] = useState(false);
   const [aiSettings, setAiSettings] = useState<AISettings>({
     systemPrompt: "你是一位專精客服對話洞察的分析助手。請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。",
     timeRangeDays: 30,
@@ -125,11 +155,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     setLoading(true);
     try {
       const resp = await apiClient.getChatHistory(botId, selectedUser.line_user_id, limit, 0);
-      if (resp.data && resp.data.success) {
-        const list: ChatMessage[] = resp.data.chat_history || [];
+      const data = resp.data as ChatHistoryResponse;
+      if (data && data.success) {
+        const list: ChatMessage[] = data.chat_history || [];
         setChatHistory(list);
         setOffset(list.length);
-        setHasMore((resp.data.total_count || 0) > list.length);
+        setHasMore((data.total_count || 0) > list.length);
         setTimeout(scrollToBottom, 50);
       } else {
         toast({ variant: "destructive", title: "載入失敗", description: "無法載入聊天記錄" });
@@ -151,12 +182,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     const prevScrollTop = el ? el.scrollTop : 0;
     try {
       const resp = await apiClient.getChatHistory(botId, selectedUser.line_user_id, limit, offset);
-      if (resp.data && resp.data.success) {
-        const older: ChatMessage[] = resp.data.chat_history || [];
+      const data = resp.data as ChatHistoryResponse;
+      if (data && data.success) {
+        const older: ChatMessage[] = data.chat_history || [];
         if (older.length > 0) {
           setChatHistory((prev) => [...older, ...prev]);
           setOffset(offset + older.length);
-          setHasMore((resp.data.total_count || 0) > (offset + older.length));
+          setHasMore((data.total_count || 0) > (offset + older.length));
           // 維持目前視窗位置
           setTimeout(() => {
             if (scrollRef.current) {
@@ -182,12 +214,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     setSending(true);
     try {
       const response = await apiClient.sendMessageToUser(
-        botId, 
-        selectedUser.line_user_id, 
+        botId,
+        selectedUser.line_user_id,
         { message: message.trim() }
       );
 
-      if (response.data && response.data.success) {
+      const data = response.data as SendMessageResponse;
+      if (data && data.success) {
         toast({
           title: "發送成功",
           description: "訊息已發送給用戶",
@@ -195,7 +228,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         setMessage("");
         // 交由 WebSocket 推播觸發增量更新（避免整頁重載）
       } else {
-        throw new Error(response.data?.message || "發送失敗");
+        throw new Error(data?.message || "發送失敗");
       }
     } catch (error) {
       console.error("發送訊息失敗:", error);
@@ -405,8 +438,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     const fetchAdminAvatar = async () => {
       try {
         const resp = await apiClient.getUserAvatar();
-        if (resp.status === 200 && resp.data && resp.data.avatar) {
-          setAdminAvatar(resp.data.avatar as string);
+        const data = resp.data as UserAvatarResponse;
+        if (resp.status === 200 && data && data.avatar) {
+          setAdminAvatar(data.avatar as string);
         } else {
           setAdminAvatar(null);
         }
@@ -449,7 +483,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   }, [lastMessage, selectedUser, loadInitial]);
 
   // 處理 Enter 鍵發送
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (aiMode) {
@@ -569,6 +603,39 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     }
   };
 
+  // 清除 AI 對話歷史
+  const handleClearAIHistory = async () => {
+    if (!selectedUser || !botId || clearingHistory) return;
+
+    setClearingHistory(true);
+
+    try {
+      // 清除後端快取
+      const response = await apiClient.clearAIConversationHistory(botId, selectedUser.line_user_id);
+
+      if (response.success) {
+        // 清除前端 AI 對話狀態
+        setAiMessages([]);
+
+        toast({
+          title: '清除成功',
+          description: 'AI 對話歷史已清除',
+        });
+      } else {
+        throw new Error(response.error || '清除失敗');
+      }
+    } catch (error) {
+      console.error('清除 AI 對話歷史失敗:', error);
+      toast({
+        variant: 'destructive',
+        title: '清除失敗',
+        description: '無法清除 AI 對話歷史，請稍後再試',
+      });
+    } finally {
+      setClearingHistory(false);
+    }
+  };
+
   if (!selectedUser) {
     return (
       <Card className="h-full">
@@ -641,16 +708,50 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
               onSettingsChange={setAiSettings}
               disabled={awaitingAI}
             />
+
+            {/* 清除 AI 對話歷史按鈕 */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={awaitingAI || clearingHistory || aiMessages.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  清除對話
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>確認清除 AI 對話歷史</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    此操作將清除當前用戶的所有 AI 分析對話記錄。
+                    <br />
+                    <strong>注意：</strong>此操作不會影響用戶與 LINE Bot 的正常聊天記錄。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleClearAIHistory}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    確認清除
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       )}
 
       {/* 聊天訊息區域 */}
       <CardContent className="p-0">
-        <ScrollArea
+        <div
           ref={scrollRef}
-          className="max-h-[60vh] p-4"
-          onScroll={(e) => {
+          className="max-h-[60vh] p-4 overflow-y-auto"
+          onScroll={(e: React.UIEvent<HTMLDivElement>) => {
             const el = e.currentTarget;
             if (el.scrollTop < 40 && hasMore && !isFetchingMore) {
               void loadMoreOlder();
@@ -665,6 +766,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
             <div className="text-center py-8">
               <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-muted-foreground">尚無對話記錄</p>
+            </div>
+          ) : (aiMode && aiMessages.length === 0) ? (
+            <div className="text-center py-8">
+              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-muted-foreground">歡迎使用 AI 分析功能</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                請在下方輸入您的問題，AI 將基於用戶的對話歷史進行分析
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -763,7 +872,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
               <div ref={messagesEndRef} />
             </div>
           )}
-        </ScrollArea>
+        </div>
       </CardContent>
 
       {/* 訊息輸入區域 */}
@@ -773,7 +882,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
             placeholder={aiMode ? "向 AI 詢問關於此用戶的問題…" : "輸入訊息..."}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             disabled={sending || awaitingAI}
             className="flex-1"
           />

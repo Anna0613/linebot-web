@@ -50,7 +50,13 @@ class AIAnalysisService:
         if provider == "groq":
             # 使用 Groq
             if not model:
-                model = settings.GROQ_MODEL
+                # 如果沒有指定模型，使用支援列表中的第一個可用模型
+                available_models = GroqService.get_available_models()
+                if available_models:
+                    model = available_models[0]["id"]
+                else:
+                    # 如果沒有可用模型，使用預設值
+                    model = settings.GROQ_MODEL
 
             answer = await GroqService.ask_groq(
                 question,

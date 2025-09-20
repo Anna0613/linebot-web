@@ -201,8 +201,13 @@ class GroqService:
             raise RuntimeError("缺少 GROQ_API_KEY，請於後端 .env 設定")
 
         if model not in GroqService.GROQ_MODELS:
-            logger.warning(f"未知的 Groq 模型: {model}，使用預設模型")
-            model = "llama-3.1-70b-versatile"
+            logger.warning(f"未知的 Groq 模型: {model}，使用第一個可用模型")
+            # 使用第一個可用模型
+            available_models = list(GroqService.GROQ_MODELS.keys())
+            if available_models:
+                model = available_models[0]
+            else:
+                raise RuntimeError("沒有可用的 Groq 模型")
 
         # 建立 Groq 客戶端
         client = AsyncGroq(api_key=api_key)
@@ -211,7 +216,14 @@ class GroqService:
         messages = GroqService._build_messages_for_groq(question, context_text, history, system_prompt)
 
         # 取得模型配置
-        model_config = GroqService.GROQ_MODELS.get(model, GroqService.GROQ_MODELS["llama-3.1-70b-versatile"])
+        model_config = GroqService.GROQ_MODELS.get(model)
+        if not model_config:
+            # 如果模型配置不存在，使用第一個可用模型的配置
+            available_models = list(GroqService.GROQ_MODELS.keys())
+            if available_models:
+                model_config = GroqService.GROQ_MODELS[available_models[0]]
+            else:
+                raise RuntimeError("沒有可用的 Groq 模型配置")
 
         try:
             # 計算合適的 max_tokens 值
