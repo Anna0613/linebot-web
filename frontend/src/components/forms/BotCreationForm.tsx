@@ -134,10 +134,7 @@ const AddServerPage = () => {
         // 顯示成功訊息
         setSuccess(true);
 
-        // 2秒後跳轉到區塊設定頁面
-        setTimeout(() => {
-          navigate(`/bots/editor?botId=${createdBot.id}&botName=${encodeURIComponent(createdBot.name)}`);
-        }, 2000);
+        // 移除自動跳轉，讓用戶停留在當前頁面
       }
     } catch (error) {
       // 錯誤已經在 useBotManagement 中處理，這裡不需要額外處理
@@ -297,10 +294,10 @@ const AddServerPage = () => {
         <div className="text-center space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate("/bots/editor")}
+              onClick={() => navigate("/bots/management")}
               className="px-8 py-4 bg-[#A0D6B4] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
             >
-              開始設計對話
+              查看我的機器人
             </button>
             <button
               onClick={() => {

@@ -198,7 +198,11 @@ export const useCreateBot = () => {
 
   return useMutation({
     mutationFn: async (botData: { name: string, channel_access_token: string, channel_secret: string }) => {
-      return await apiClient.createBot(botData);
+      const result = await apiClient.createBot(botData);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      return result;
     },
     onSuccess: (data) => {
       // 使快取失效，重新獲取 Bot 列表

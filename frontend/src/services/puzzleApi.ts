@@ -51,7 +51,7 @@ export class PuzzleApiService {
           if (errorData.detail && errorData.detail.includes("duplicate key")) {
             return "此 Bot 名稱已被使用，請選擇其他名稱";
           }
-          if (errorData.detail && errorData.detail.includes("Maximum 3 bots")) {
+          if (errorData.detail && (errorData.detail.includes("Maximum 3 bots") || errorData.detail.includes("每個用戶最多只能建立 3 個 Bot"))) {
             return "每個用戶最多只能創建 3 個 Bot，請先刪除不需要的 Bot";
           }
           if (
