@@ -23,6 +23,7 @@ interface ModelSelectorProps {
   onChange: (value: string) => void;
   disabled?: boolean;
   className?: string;
+  hideDescription?: boolean;
 }
 
 const getCategoryIcon = (category: string) => {
@@ -95,11 +96,12 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
   value,
   onChange,
   disabled = false,
-  className = ''
+  className = '',
+  hideDescription = false
 }) => {
   const [models, setModels] = useState<AIModel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentProvider, setCurrentProvider] = useState<string>('');
+  const [_currentProvider, _setCurrentProvider] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -111,7 +113,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
         if (response.success && response.data) {
           const data = response.data as { models: AIModel[]; current_provider: string };
           setModels(data.models);
-          setCurrentProvider(data.current_provider);
+          _setCurrentProvider(data.current_provider);
           
           // 如果沒有選中的模型，選擇第一個
           if (!value && data.models.length > 0) {
@@ -159,7 +161,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
       {/* 移除 AI 模型標籤和提供商徽章顯示 */}
       
       <Select value={value} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full h-10">
           <SelectValue placeholder="選擇 AI 模型">
             {selectedModel && (
               <div className="flex items-center gap-2">
@@ -201,8 +203,8 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
           ))}
         </SelectContent>
       </Select>
-      
-      {selectedModel && (
+
+      {!hideDescription && selectedModel && (
         <div className="text-xs text-muted-foreground">
           {selectedModel.description}
         </div>

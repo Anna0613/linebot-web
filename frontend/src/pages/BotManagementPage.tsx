@@ -135,6 +135,17 @@ interface PaginationInfo {
   has_prev: boolean;
 }
 
+// 後端 API 回應型別
+interface GetBotUsersResponse {
+  users: LineUser[];
+  total_count: number;
+  pagination: PaginationInfo;
+}
+
+interface GetUserInteractionsResponse {
+  interactions: UserInteraction[];
+}
+
 // 訊息內容類型定義
 type MessageContent =
   | string
@@ -283,7 +294,7 @@ const BotManagementPage: React.FC = () => {
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [currentChatUser, setCurrentChatUser] = useState<LineUser | null>(null);
   const [selectiveBroadcastLoading, setSelectiveBroadcastLoading] = useState(false);
-  const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
+  const [_mediaUrls, _setMediaUrls] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState("analytics");
 
   // WebSocket 即時連接 - 在選擇 Bot 後立即連接，由 useWebSocket 內部處理延遲
@@ -581,11 +592,11 @@ const BotManagementPage: React.FC = () => {
       const response = await apiClient.getBotUsers(selectedBotId, limit, offset);
 
       if (response.data) {
-        const data = response.data as any;
-        const users = data.users || [];
+        const data = response.data as Partial<GetBotUsersResponse>;
+        const users = (data.users as LineUser[] | undefined) || [];
         setUsers(users);
-        setTotalCount(data.total_count || 0);
-        setPagination(data.pagination || {
+        setTotalCount((data.total_count as number | undefined) || 0);
+        setPagination((data.pagination as PaginationInfo | undefined) || {
           limit,
           offset,
           has_next: false,
@@ -613,12 +624,12 @@ const BotManagementPage: React.FC = () => {
 
       if (response.data && !response.error) {
         // 使用函數式更新，保持其他狀態不變
-        const data = response.data as any;
-        setUsers(data.users || []);
-        setTotalCount(data.total_count || 0);
+        const data = response.data as Partial<GetBotUsersResponse>;
+        setUsers((data.users as LineUser[] | undefined) || []);
+        setTotalCount((data.total_count as number | undefined) || 0);
         setPagination(prev => ({
           ...prev,
-          ...data.pagination,
+          ...(data.pagination as PaginationInfo | undefined),
           limit,
           offset
         }));
@@ -638,8 +649,8 @@ const BotManagementPage: React.FC = () => {
       const response = await apiClient.getUserInteractions(selectedBotId, lineUserId);
 
       if (response.data) {
-        const data = response.data as any;
-        const interactions = data.interactions || [];
+        const data = response.data as Partial<GetUserInteractionsResponse>;
+        const interactions = (data.interactions as UserInteraction[] | undefined) || [];
         _setUserInteractions(interactions);
       }
     } catch (error) {
@@ -662,7 +673,8 @@ const BotManagementPage: React.FC = () => {
       const response = await apiClient.getUserInteractions(selectedBotId, lineUserId);
 
       if (response.data && !response.error) {
-        _setUserInteractions((response.data as any).interactions || []);
+        const d = response.data as Partial<{ interactions: UserInteraction[] }>;
+        _setUserInteractions((d.interactions as UserInteraction[] | undefined) || []);
       }
     } catch (error) {
       console.error("靜默更新用戶互動記錄失敗:", error);
@@ -1244,13 +1256,17 @@ const BotManagementPage: React.FC = () => {
 
       case 'new_user_message':
         // 收到新用戶訊息時更新用戶列表和對話記錄
-        if (lastMessage.data && (lastMessage as any).line_user_id) {
-          // 如果在用戶管理 Tab，靜默更新用戶列表以更新互動次數和最後互動時間
-          if (activeTab === "users") {
+        if (lastMessage?.data) {
+          const lm = lastMessage as unknown;
+          const lineUserId = (lm && typeof lm === 'object' && 'line_user_id' in (lm as Record<string, unknown>))
+            ? String((lm as { line_user_id?: string }).line_user_id)
+            : undefined;
+          if (lineUserId && activeTab === "users") {
+            // 靜默更新用戶列表以更新互動次數和最後互動時間
             fetchUsersSilently(pagination.limit, pagination.offset);
 
             // 如果當前選中的用戶就是發送訊息的用戶，更新其互動記錄
-            if (selectedUser && selectedUser.line_user_id === (lastMessage as any).line_user_id) {
+            if (selectedUser && selectedUser.line_user_id === lineUserId) {
               fetchUserInteractionsSilently(selectedUser.line_user_id);
             }
 

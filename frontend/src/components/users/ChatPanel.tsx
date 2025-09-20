@@ -29,6 +29,16 @@ interface ChatHistoryResponse {
   total_count: number;
 }
 
+// AI 模型類型定義
+interface AIModel {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  max_tokens: number;
+  context_length: number;
+}
+
 interface SendMessageResponse {
   success: boolean;
   message?: string;
@@ -119,6 +129,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
   const [awaitingAI, setAwaitingAI] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('');
+  const [models, setModels] = useState<AIModel[]>([]);
   const [clearingHistory, setClearingHistory] = useState(false);
   const [aiSettings, setAiSettings] = useState<AISettings>({
     systemPrompt: "你是一位專精客服對話洞察的分析助手。請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。",
@@ -275,7 +286,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
-          .replace(/\"/g, '&quot;')
+          .replace(/"/g, '&quot;')
           .replace(/'/g, '&#39;');
 
       // 先 escape，再進行標記轉換
@@ -482,6 +493,30 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     }
   }, [lastMessage, selectedUser, loadInitial]);
 
+  // 載入 AI 模型列表
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const response = await apiClient.getAIModels();
+        if (response.success && response.data) {
+          const data = response.data as { models: AIModel[]; current_provider: string };
+          setModels(data.models);
+
+          // 如果沒有選中的模型，選擇第一個
+          if (!selectedModel && data.models.length > 0) {
+            setSelectedModel(data.models[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('載入 AI 模型失敗:', error);
+      }
+    };
+
+    if (aiMode) {
+      void loadModels();
+    }
+  }, [aiMode, selectedModel]);
+
   // 處理 Enter 鍵發送
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -518,12 +553,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     const turns: Array<{ role: 'user' | 'assistant'; content: string }> = [];
     for (const m of aiMessages) {
       const content = (() => {
-        const c = m.message_content as any;
-        if (!c) return '';
+        const c: MessageContent = m.message_content;
         if (typeof c === 'string') return c;
-        if (typeof c.text === 'object' && c.text?.text) return String(c.text.text);
-        if (c.text) return String(c.text);
-        if (c.content) return String(c.content);
+        if (c && typeof c === 'object') {
+          if (typeof c.text === 'object' && (c.text as { text?: string })?.text) {
+            return String((c.text as { text?: string }).text);
+          }
+          if (typeof c.text === 'string') return c.text as string;
+          if (typeof c.content === 'string') return c.content as string;
+        }
         return '';
       })();
       if (!content) continue;
@@ -559,7 +597,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       const history = buildAIHistory();
 
       // 準備 API 請求參數
-      const requestParams: any = {
+      interface AskAIRequest {
+        question: string;
+        history: Array<{ role: 'user' | 'assistant'; content: string }>;
+        max_messages: number;
+        model?: string;
+        system_prompt: string;
+        context_format: string;
+        max_tokens: number;
+        time_range_days?: number;
+      }
+      const requestParams: AskAIRequest = {
         question: q,
         history,
         max_messages: 200,
@@ -581,7 +629,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
 
       const resp = await apiClient.askAI(botId, selectedUser.line_user_id, requestParams);
       if (resp.success && resp.data) {
-        const answer = (resp.data as any).answer || '（無回應）';
+        type AskAIResponse = { answer?: string };
+        const data = resp.data as AskAIResponse;
+        const answer = typeof data?.answer === 'string' ? data.answer : '（無回應）';
         const ts = new Date().toISOString();
         const botMsg: ChatMessage = {
           id: `ai-a-${ts}`,
@@ -695,13 +745,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       {/* AI 模型選擇器與設定 */}
       {aiMode && (
         <div className="px-4 pb-4 border-b">
-          <div className="flex items-center gap-2">
+          {/* 頂部對齊區域：模型選擇器與按鈕 */}
+          <div className="flex items-center gap-2 mb-2">
             <div className="flex-1">
               <ModelSelector
                 value={selectedModel}
                 onChange={setSelectedModel}
                 disabled={awaitingAI}
                 className="w-full"
+                hideDescription={true}
               />
             </div>
             <AISettingsModal
@@ -714,9 +766,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
               <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="default"
                   disabled={awaitingAI || clearingHistory || aiMessages.length === 0}
-                  className="flex items-center gap-2"
+                  className="h-10 flex items-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
                   清除對話
@@ -743,6 +795,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
               </AlertDialogContent>
             </AlertDialog>
           </div>
+
+          {/* 模型說明文字 */}
+          {selectedModel && models.length > 0 && (
+            <div className="text-xs text-muted-foreground">
+              {models.find(m => m.id === selectedModel)?.description}
+            </div>
+          )}
         </div>
       )}
 
