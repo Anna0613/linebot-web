@@ -33,12 +33,12 @@ const PreviewControlPanel: React.FC<PreviewControlPanelProps> = ({
 
 
   return (
-    <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+    <div className="w-80 bg-card text-card-foreground border-r border-border flex flex-col h-full">
       {/* 標題區域 */}
-      <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
+      <div className="p-4 bg-card border-b border-border flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Eye className="w-5 h-5 text-blue-500" />
-          <h3 className="text-lg font-semibold text-gray-800">預覽控制台</h3>
+          <h3 className="text-lg font-semibold text-foreground">預覽控制台</h3>
         </div>
       </div>
 
@@ -53,23 +53,23 @@ const PreviewControlPanel: React.FC<PreviewControlPanelProps> = ({
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
-              <div className="text-center p-2 bg-gray-100 rounded">
-                <div className="text-lg font-bold text-gray-800">{blockStats.total}</div>
-                <div className="text-xs text-gray-600">邏輯積木</div>
+              <div className="text-center p-2 bg-secondary rounded">
+                <div className="text-lg font-bold text-foreground">{blockStats.total}</div>
+                <div className="text-xs text-muted-foreground">邏輯積木</div>
               </div>
-              <div className="text-center p-2 bg-blue-100 rounded">
-                <div className="text-lg font-bold text-blue-800">{flexBlocks?.length || 0}</div>
-                <div className="text-xs text-blue-600">Flex 組件</div>
+              <div className="text-center p-2 bg-secondary rounded">
+                <div className="text-lg font-bold text-foreground">{flexBlocks?.length || 0}</div>
+                <div className="text-xs text-muted-foreground">Flex 組件</div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="text-center p-2 bg-green-100 rounded">
-                <div className="text-lg font-bold text-green-800">{blockStats.replies}</div>
-                <div className="text-xs text-green-600">回覆</div>
+              <div className="text-center p-2 bg-secondary rounded">
+                <div className="text-lg font-bold text-foreground">{blockStats.replies}</div>
+                <div className="text-xs text-muted-foreground">回覆</div>
               </div>
-              <div className="text-center p-2 bg-purple-100 rounded">
-                <div className="text-lg font-bold text-purple-800">{blockStats.controls}</div>
-                <div className="text-xs text-purple-600">控制</div>
+              <div className="text-center p-2 bg-secondary rounded">
+                <div className="text-lg font-bold text-foreground">{blockStats.controls}</div>
+                <div className="text-xs text-muted-foreground">控制</div>
               </div>
             </div>
           </CardContent>
@@ -115,7 +115,7 @@ const PreviewControlPanel: React.FC<PreviewControlPanelProps> = ({
         </Card>
 
         {/* 狀態指示 */}
-        <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>總組件數</span>
           <Badge variant="outline">
             {blockStats.total + (flexBlocks?.length || 0)}

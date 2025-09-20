@@ -65,7 +65,7 @@ const StepTwo = () => {
             </div>
 
             <div className="space-y-6">
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/50 shadow-glass">
+              <div className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-sm">
                 <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3">
                   操作步驟：
                 </h3>
@@ -97,16 +97,16 @@ const StepTwo = () => {
                 </ul>
               </div>
 
-              <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-200/50">
+              <div className="bg-secondary rounded-xl p-4 border border-border">
                 <div className="flex items-start space-x-3">
                   <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-xs text-white font-bold">!</span>
                   </div>
                   <div>
-                    <h4 className="font-medium text-blue-900 mb-1 text-sm sm:text-base">
+                    <h4 className="font-medium text-foreground mb-1 text-sm sm:text-base">
                       小提示
                     </h4>
-                    <p className="text-xs sm:text-sm text-blue-700">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Provider名稱建議使用有意義的英文名稱，之後無法修改。一個開發者可以建立多個Provider來管理不同的專案。
                     </p>
                   </div>

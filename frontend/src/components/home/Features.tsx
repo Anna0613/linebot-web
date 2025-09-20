@@ -22,21 +22,21 @@ const features = [
       "有預先建立對話流程的範本庫",
     ],
     image: (
-      <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="flex items-center justify-between mb-6">
           <div className="h-8 w-32 bg-primary/20 rounded"></div>
           <div className="flex space-x-2">
-            <div className="h-8 w-8 rounded-full bg-gray-100"></div>
-            <div className="h-8 w-8 rounded-full bg-gray-100"></div>
+            <div className="h-8 w-8 rounded-full bg-secondary"></div>
+            <div className="h-8 w-8 rounded-full bg-secondary"></div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="h-24 bg-gray-100 rounded-lg flex items-center justify-center">
+          <div className="h-24 bg-secondary rounded-lg flex items-center justify-center">
             <div className="h-12 w-12 bg-line/20 rounded"></div>
           </div>
-          <div className="h-24 bg-gray-100 rounded-lg"></div>
-          <div className="h-24 bg-gray-100 rounded-lg"></div>
-          <div className="h-24 bg-gray-100 rounded-lg"></div>
+          <div className="h-24 bg-secondary rounded-lg"></div>
+          <div className="h-24 bg-secondary rounded-lg"></div>
+          <div className="h-24 bg-secondary rounded-lg"></div>
         </div>
         <div className="w-full h-12 bg-line/20 rounded-full"></div>
       </div>
@@ -54,25 +54,25 @@ const features = [
       "伺服器健康監控和警報",
     ],
     image: (
-      <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-6">
           <div className="h-6 w-36 bg-primary/20 rounded"></div>
-          <div className="h-8 w-8 rounded-full bg-gray-100"></div>
+          <div className="h-8 w-8 rounded-full bg-secondary"></div>
         </div>
         <div className="space-y-4">
-          <div className="h-12 bg-gray-100 rounded-lg flex items-center px-4">
+          <div className="h-12 bg-secondary rounded-lg flex items-center px-4">
             <div className="h-6 w-6 rounded-full bg-green-200 mr-3"></div>
-            <div className="h-4 w-32 bg-gray-200 rounded"></div>
+            <div className="h-4 w-32 bg-muted rounded"></div>
             <div className="ml-auto h-6 w-16 bg-line/20 rounded-full"></div>
           </div>
-          <div className="h-12 bg-gray-100 rounded-lg flex items-center px-4">
+          <div className="h-12 bg-secondary rounded-lg flex items-center px-4">
             <div className="h-6 w-6 rounded-full bg-green-200 mr-3"></div>
-            <div className="h-4 w-40 bg-gray-200 rounded"></div>
+            <div className="h-4 w-40 bg-muted rounded"></div>
             <div className="ml-auto h-6 w-16 bg-line/20 rounded-full"></div>
           </div>
-          <div className="h-12 bg-gray-100 rounded-lg flex items-center px-4">
+          <div className="h-12 bg-secondary rounded-lg flex items-center px-4">
             <div className="h-6 w-6 rounded-full bg-yellow-200 mr-3"></div>
-            <div className="h-4 w-36 bg-gray-200 rounded"></div>
+            <div className="h-4 w-36 bg-muted rounded"></div>
             <div className="ml-auto h-6 w-16 bg-primary/20 rounded-full"></div>
           </div>
         </div>
@@ -92,34 +92,34 @@ const features = [
       "以多種格式匯出和匯入資料",
     ],
     image: (
-      <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="flex justify-between mb-6">
           <div className="h-6 w-32 bg-primary/20 rounded"></div>
           <div className="flex space-x-2">
-            <div className="h-8 w-8 rounded bg-gray-100"></div>
-            <div className="h-8 w-8 rounded bg-gray-100"></div>
+            <div className="h-8 w-8 rounded bg-secondary"></div>
+            <div className="h-8 w-8 rounded bg-secondary"></div>
           </div>
         </div>
-        <div className="bg-gray-100 rounded-lg p-4 mb-4">
+        <div className="bg-secondary rounded-lg p-4 mb-4">
           <div className="flex justify-between mb-3">
-            <div className="h-5 w-24 bg-gray-200 rounded"></div>
-            <div className="h-5 w-16 bg-gray-200 rounded"></div>
+            <div className="h-5 w-24 bg-muted rounded"></div>
+            <div className="h-5 w-16 bg-muted rounded"></div>
           </div>
           <div className="space-y-2">
-            <div className="h-8 bg-white rounded flex items-center px-2">
+            <div className="h-8 bg-card border border-border rounded flex items-center px-2">
               <div className="h-4 w-4 bg-line/20 rounded-full mr-2"></div>
-              <div className="h-4 w-32 bg-gray-200 rounded"></div>
-              <div className="ml-auto h-4 w-16 bg-gray-200 rounded"></div>
+              <div className="h-4 w-32 bg-muted rounded"></div>
+              <div className="ml-auto h-4 w-16 bg-muted rounded"></div>
             </div>
-            <div className="h-8 bg-white rounded flex items-center px-2">
+            <div className="h-8 bg-card border border-border rounded flex items-center px-2">
               <div className="h-4 w-4 bg-line/20 rounded-full mr-2"></div>
-              <div className="h-4 w-40 bg-gray-200 rounded"></div>
-              <div className="ml-auto h-4 w-16 bg-gray-200 rounded"></div>
+              <div className="h-4 w-40 bg-muted rounded"></div>
+              <div className="ml-auto h-4 w-16 bg-muted rounded"></div>
             </div>
-            <div className="h-8 bg-white rounded flex items-center px-2">
+            <div className="h-8 bg-card border border-border rounded flex items-center px-2">
               <div className="h-4 w-4 bg-line/20 rounded-full mr-2"></div>
-              <div className="h-4 w-36 bg-gray-200 rounded"></div>
-              <div className="ml-auto h-4 w-16 bg-gray-200 rounded"></div>
+              <div className="h-4 w-36 bg-muted rounded"></div>
+              <div className="ml-auto h-4 w-16 bg-muted rounded"></div>
             </div>
           </div>
         </div>
@@ -142,20 +142,20 @@ const features = [
       "自訂報告和數據視覺化",
     ],
     image: (
-      <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="h-6 w-32 bg-primary/20 rounded mb-6"></div>
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="bg-gray-100 rounded-lg p-3">
-            <div className="h-4 w-16 bg-gray-200 rounded mb-2"></div>
+          <div className="bg-secondary rounded-lg p-3">
+            <div className="h-4 w-16 bg-muted rounded mb-2"></div>
             <div className="h-10 w-20 bg-line/20 rounded-lg"></div>
           </div>
-          <div className="bg-gray-100 rounded-lg p-3">
-            <div className="h-4 w-16 bg-gray-200 rounded mb-2"></div>
+          <div className="bg-secondary rounded-lg p-3">
+            <div className="h-4 w-16 bg-muted rounded mb-2"></div>
             <div className="h-10 w-24 bg-primary/20 rounded-lg"></div>
           </div>
         </div>
-        <div className="bg-gray-100 rounded-lg p-3 mb-4">
-          <div className="h-4 w-24 bg-gray-200 rounded mb-3"></div>
+        <div className="bg-secondary rounded-lg p-3 mb-4">
+          <div className="h-4 w-24 bg-muted rounded mb-3"></div>
           <div className="flex items-end space-x-2">
             <div className="h-16 w-8 bg-line/20 rounded-t-lg"></div>
             <div className="h-12 w-8 bg-line/20 rounded-t-lg"></div>
@@ -180,18 +180,18 @@ const features = [
       "定期安全審核和更新",
     ],
     image: (
-      <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="h-6 w-32 bg-primary/20 rounded mb-6"></div>
-        <div className="bg-gray-100 rounded-lg p-4 mb-4">
+        <div className="bg-secondary rounded-lg p-4 mb-4">
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
             <div className="w-8 h-8 rounded-full bg-green-200"></div>
           </div>
-          <div className="h-4 w-32 bg-gray-200 rounded mx-auto mb-2"></div>
-          <div className="h-4 w-48 bg-gray-200 rounded mx-auto"></div>
+          <div className="h-4 w-32 bg-muted rounded mx-auto mb-2"></div>
+          <div className="h-4 w-48 bg-muted rounded mx-auto"></div>
         </div>
         <div className="flex justify-between">
           <div className="h-10 w-32 rounded-full bg-line/20"></div>
-          <div className="h-10 w-32 rounded-full bg-gray-100"></div>
+          <div className="h-10 w-32 rounded-full bg-secondary"></div>
         </div>
       </div>
     ),
@@ -208,25 +208,25 @@ const features = [
       "快速回覆和持久選單選項",
     ],
     image: (
-      <div className="bg-white rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="flex justify-between mb-6">
           <div className="h-6 w-32 bg-primary/20 rounded"></div>
-          <div className="h-6 w-6 rounded bg-gray-100"></div>
+          <div className="h-6 w-6 rounded bg-secondary"></div>
         </div>
         <div className="space-y-4">
-          <div className="bg-gray-100 rounded-lg p-3 flex items-start">
+          <div className="bg-secondary rounded-lg p-3 flex items-start">
             <div className="h-8 w-8 rounded-full bg-line/20 mr-3 flex-shrink-0"></div>
-            <div className="bg-white rounded-lg p-3 shadow-sm">
-              <div className="h-4 w-40 bg-gray-200 rounded mb-2"></div>
-              <div className="h-4 w-32 bg-gray-200 rounded"></div>
+            <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
+              <div className="h-4 w-40 bg-muted rounded mb-2"></div>
+              <div className="h-4 w-32 bg-muted rounded"></div>
             </div>
           </div>
-          <div className="bg-gray-100 rounded-lg p-3 flex items-start justify-end">
+          <div className="bg-secondary rounded-lg p-3 flex items-start justify-end">
             <div className="bg-line/20 rounded-lg p-3">
-              <div className="h-4 w-36 bg-white rounded mb-2"></div>
-              <div className="h-4 w-24 bg-white rounded"></div>
+              <div className="h-4 w-36 bg-muted rounded mb-2"></div>
+              <div className="h-4 w-24 bg-muted rounded"></div>
             </div>
-            <div className="h-8 w-8 rounded-full bg-gray-200 ml-3 flex-shrink-0"></div>
+            <div className="h-8 w-8 rounded-full bg-secondary ml-3 flex-shrink-0"></div>
           </div>
         </div>
       </div>
@@ -261,7 +261,7 @@ const Features = () => {
               key={feature.id}
               value={feature.id}
               className={`
-                flex flex-col items-center space-y-2 p-4 data-[state=active]:bg-white data-[state=active]:shadow-md
+                flex flex-col items-center space-y-2 p-4 data-[state=active]:bg-card data-[state=active]:shadow-md
                 rounded-xl transition-all duration-200 border border-transparent data-[state=active]:border-border
               `}
             >

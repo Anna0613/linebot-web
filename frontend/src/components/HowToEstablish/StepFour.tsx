@@ -63,7 +63,7 @@ const StepFour = () => {
             </div>
 
             <div className="space-y-6">
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/50 shadow-glass">
+              <div className="bg-card rounded-2xl p-4 sm:p-6 border border-border shadow-sm">
                 <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-4">
                   操作步驟：
                 </h3>
@@ -151,16 +151,16 @@ const StepFour = () => {
                 </div>
               </div>
 
-              <div className="bg-red-50/50 rounded-xl p-4 border border-red-200/50">
+              <div className="bg-secondary rounded-xl p-4 border border-border">
                 <div className="flex items-start space-x-3">
                   <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-xs text-white font-bold">!</span>
                   </div>
                   <div>
-                    <h4 className="font-medium text-red-900 mb-1 text-sm sm:text-base">
+                    <h4 className="font-medium text-foreground mb-1 text-sm sm:text-base">
                       重要提醒
                     </h4>
-                    <p className="text-xs sm:text-sm text-red-700">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       請妥善保管這兩個金鑰，不要公開分享。這些是您的 LINE Bot
                       身份驗證憑證。
                     </p>
@@ -168,14 +168,14 @@ const StepFour = () => {
                 </div>
               </div>
 
-              <div className="bg-green-50/50 rounded-xl p-4 border border-green-200/50">
+              <div className="bg-secondary rounded-xl p-4 border border-border">
                 <div className="flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-green-900 mb-1 text-sm sm:text-base">
+                    <h4 className="font-medium text-foreground mb-1 text-sm sm:text-base">
                       下一步
                     </h4>
-                    <p className="text-xs sm:text-sm text-green-700">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       取得金鑰後，將它們貼到我們的網站中，就可以開始設定您的
                       LINE Bot 伺服器了。
                     </p>

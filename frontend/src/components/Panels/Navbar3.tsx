@@ -210,7 +210,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={toggleDropdown}
-                className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-200 overflow-hidden"
+                className="flex items-center justify-center h-10 w-10 rounded-full bg-muted overflow-hidden"
               >
                 {userImage || user?.picture_url ? (
                   <img
@@ -220,7 +220,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                   />
                 ) : (
                   <svg
-                    className="h-6 w-6 text-gray-700"
+                    className="h-6 w-6 text-muted-foreground"
                     viewBox="0 0 24 24"
                     fill="currentColor"
                   >
@@ -233,7 +233,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                 <div className="absolute right-0 mt-3 w-[260px] bg-card text-card-foreground border border-border shadow-xl rounded-lg z-50 p-4">
                   <button
                     onClick={() => setShowDropdown(false)}
-                    className="absolute top-2 right-2 text-gray-500 text-xl"
+                    className="absolute top-2 right-2 text-muted-foreground text-xl hover:text-foreground"
                   >
                     ×
                   </button>
@@ -249,7 +249,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                       />
                     ) : (
                       <svg
-                        className="w-16 h-16 text-gray-400 mb-2"
+                        className="w-16 h-16 text-muted-foreground mb-2"
                         viewBox="0 0 24 24"
                         fill="currentColor"
                       >
@@ -298,7 +298,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                     </button>
                     <Link
                       to="/setting"
-                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]"
+                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary text-[16px]"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -370,7 +370,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
           <div className="flex justify-end">
             <button
               onClick={toggleMobileMenu}
-              className="text-2xl text-gray-700"
+              className="text-2xl text-muted-foreground hover:text-foreground"
             >
               <X />
             </button>

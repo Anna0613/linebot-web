@@ -30,7 +30,7 @@ const StepOne = () => {
             </div>
 
             <div className="space-y-6">
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/50 shadow-glass">
+              <div className="bg-card text-card-foreground rounded-2xl p-4 sm:p-6 border border-border shadow-glass dark:shadow-neon">
                 <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3">
                   操作步驟：
                 </h3>
