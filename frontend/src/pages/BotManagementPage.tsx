@@ -341,7 +341,26 @@ const BotManagementPage: React.FC = () => {
 
       // 處理使用統計數據
       if (usageStatsRes.data && !usageStatsRes.error) {
-        setUsageData(Array.isArray(usageStatsRes.data) ? usageStatsRes.data as UsageData[] : []);
+        // 定義顏色映射（活力配色方案，每個類別都有獨特顏色）
+        const colorMapping: Record<string, string> = {
+          "文字訊息": "#6366F1",  // 靛藍色 - 最常用的訊息類型，專業且有活力
+          "圖片訊息": "#3B82F6",  // 天藍色 - 視覺媒體
+          "影片訊息": "#8B5CF6",  // 紫色 - 動態媒體
+          "語音訊息": "#10B981",  // 翠綠色 - 聲音媒體
+          "貼圖訊息": "#F59E0B",  // 琥珀色 - 表情互動
+          "位置訊息": "#EF4444",  // 玫瑰色 - 地理位置
+          "其他類型": "#06B6D4"   // 青色 - 其他未分類
+        };
+
+        // 為後端數據添加顏色信息
+        const dataWithColors = Array.isArray(usageStatsRes.data)
+          ? (usageStatsRes.data as Array<{feature: string; usage: number; percentage: number}>).map(item => ({
+              ...item,
+              color: colorMapping[item.feature] || "#A4A6B0"
+            }))
+          : [];
+
+        setUsageData(dataWithColors as UsageData[]);
       } else {
         errorCount++;
         if (!String(usageStatsRes.error).includes('AbortError')) {
@@ -828,7 +847,26 @@ const BotManagementPage: React.FC = () => {
 
           // 更新使用統計數據
           if (usageStatsRes.data && !usageStatsRes.error) {
-            setUsageData(Array.isArray(usageStatsRes.data) ? usageStatsRes.data as UsageData[] : []);
+            // 定義顏色映射（與主要處理邏輯保持一致）
+            const colorMapping: Record<string, string> = {
+              "文字訊息": "#6366F1",  // 靛藍色 - 最常用的訊息類型，專業且有活力
+              "圖片訊息": "#3B82F6",  // 天藍色 - 視覺媒體
+              "影片訊息": "#8B5CF6",  // 紫色 - 動態媒體
+              "語音訊息": "#10B981",  // 翠綠色 - 聲音媒體
+              "貼圖訊息": "#F59E0B",  // 琥珀色 - 表情互動
+              "位置訊息": "#EF4444",  // 玫瑰色 - 地理位置
+              "其他類型": "#06B6D4"   // 青色 - 其他未分類
+            };
+
+            // 為後端數據添加顏色信息
+            const dataWithColors = Array.isArray(usageStatsRes.data)
+              ? (usageStatsRes.data as Array<{feature: string; usage: number; percentage: number}>).map(item => ({
+                  ...item,
+                  color: colorMapping[item.feature] || "#A4A6B0"
+                }))
+              : [];
+
+            setUsageData(dataWithColors as UsageData[]);
           }
         }).catch(() => {
           // 靜默處理錯誤，不影響用戶體驗

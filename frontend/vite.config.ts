@@ -4,6 +4,8 @@ import path from "path";
 import { fileURLToPath, URL } from "node:url";
 import { componentTagger } from "lovable-tagger";
 import fs from "fs";
+import type { ViteDevServer } from "vite";
+import type { IncomingMessage, ServerResponse } from "http";
 // import { performanceOptimizationPlugin, criticalCSSPlugin } from './vite-plugins/performance-optimization';
 
 // https://vitejs.dev/config/
@@ -24,12 +26,18 @@ export default defineConfig(({ mode }) => ({
       '@tanstack/react-query',
       'lucide-react',
       'clsx',
-      'tailwind-merge'
+      'tailwind-merge',
+      // 強制預構建 recharts 和相關 lodash 模組
+      'recharts',
+      'lodash/get',
+      'lodash/isString',
+      'lodash/isNaN',
+      'lodash/isNumber',
+      'lodash/isNil'
     ],
     exclude: [
       // 排除大型依賴，讓它們按需載入
-      'framer-motion',
-      'recharts'
+      'framer-motion'
     ]
   },
   server: {
@@ -57,13 +65,13 @@ export default defineConfig(({ mode }) => ({
     // 自定義靜態資源插件
     {
       name: 'assets-middleware',
-      configureServer(server) {
-        server.middlewares.use('/assets', (req, res, next) => {
-          const assetsPath = path.join(fileURLToPath(new URL('.', import.meta.url)), '../assets', req.url);
+      configureServer(server: ViteDevServer) {
+        server.middlewares.use('/assets', (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+          const assetsPath = path.join(fileURLToPath(new URL('.', import.meta.url)), '../assets', req.url || '');
 
           if (fs.existsSync(assetsPath) && fs.statSync(assetsPath).isFile()) {
             const ext = path.extname(assetsPath).toLowerCase();
-            const mimeTypes = {
+            const mimeTypes: Record<string, string> = {
               '.png': 'image/png',
               '.jpg': 'image/jpeg',
               '.jpeg': 'image/jpeg',

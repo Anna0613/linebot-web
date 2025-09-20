@@ -175,41 +175,42 @@ class ConversationService:
     async def get_today_message_count(bot_id: str) -> int:
         """
         獲取今日訊息數量
-        
+
         Args:
             bot_id: Bot ID
-            
+
         Returns:
             int: 今日訊息數量
         """
         try:
-            from datetime import datetime, timedelta
-            
-            # 計算今日時間範圍
-            now = datetime.now()
+            from datetime import datetime, timedelta, timezone
+
+            # 計算今日時間範圍（使用 UTC）
+            now = datetime.utcnow()
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             today_end = today_start + timedelta(days=1)
-            
-            # 查詢今日訊息數量
-            conversations = await ConversationDocument.find({
-                "bot_id": bot_id,
-                "messages.timestamp": {
-                    "$gte": today_start,
-                    "$lt": today_end
-                }
-            }).to_list()
-            
-            # 統計今日訊息總數
-            message_count = 0
-            for conversation in conversations:
-                for message in conversation.messages:
-                    if today_start <= message.timestamp < today_end:
-                        message_count += 1
-            
+
+            # 使用聚合管道直接統計
+            pipeline = [
+                {"$match": {"bot_id": bot_id}},
+                {"$unwind": "$messages"},
+                {"$match": {
+                    "messages.timestamp": {
+                        "$gte": today_start,
+                        "$lt": today_end
+                    }
+                }},
+                {"$count": "total"}
+            ]
+
+            results = await ConversationDocument.aggregate(pipeline).to_list()
+            message_count = results[0]["total"] if results else 0
+
+            logger.debug(f"今日訊息數量: bot_id={bot_id}, count={message_count}")
             return message_count
-            
+
         except Exception as e:
-            logger.error(f"獲取今日訊息數量失敗: {e}")
+            logger.error(f"獲取今日訊息數量失敗: {e}", exc_info=True)
             return 0
     
     @staticmethod
@@ -928,33 +929,56 @@ class ConversationService:
             List[Dict]: 每日訊息統計
         """
         try:
-            from datetime import timedelta
+            from datetime import timedelta, timezone
 
             stats = []
+
+            # 使用 UTC 時間確保與 MongoDB 中的時間戳一致
+            utc_now = datetime.utcnow()
+
             for i in range(days):
-                date = datetime.now() - timedelta(days=days-1-i)
+                # 計算每天的 UTC 時間範圍
+                date = utc_now - timedelta(days=days-1-i)
                 day_start = datetime.combine(date.date(), datetime.min.time())
                 day_end = datetime.combine(date.date(), datetime.max.time())
 
-                # 獲取當天的訊息數
-                conversations = await ConversationDocument.find({
-                    "bot_id": bot_id,
-                    "messages.timestamp": {
-                        "$gte": day_start,
-                        "$lte": day_end
-                    }
-                }).to_list()
+                # 確保時間是 UTC（使用內建的 timezone.utc）
+                day_start = day_start.replace(tzinfo=timezone.utc) if day_start.tzinfo is None else day_start
+                day_end = day_end.replace(tzinfo=timezone.utc) if day_end.tzinfo is None else day_end
 
+                logger.debug(f"查詢日期範圍: {day_start} 到 {day_end}")
+
+                # 使用聚合管道直接統計，提高效率
+                pipeline = [
+                    {"$match": {"bot_id": bot_id}},
+                    {"$unwind": "$messages"},
+                    {"$match": {
+                        "messages.timestamp": {
+                            "$gte": day_start,
+                            "$lte": day_end
+                        }
+                    }},
+                    {"$group": {
+                        "_id": "$messages.sender_type",
+                        "count": {"$sum": 1}
+                    }}
+                ]
+
+                results = await ConversationDocument.aggregate(pipeline).to_list()
+
+                # 處理聚合結果
                 received_count = 0
                 sent_count = 0
 
-                for conversation in conversations:
-                    for message in conversation.messages:
-                        if day_start <= message.timestamp <= day_end:
-                            if message.sender_type == "user":
-                                received_count += 1
-                            elif message.sender_type == "admin":
-                                sent_count += 1
+                for result in results:
+                    sender_type = result["_id"]
+                    count = result["count"]
+
+                    if sender_type == "user":
+                        received_count = count
+                    elif sender_type in ["admin", "bot"]:
+                        # 將 admin 和 bot 的訊息都算作"發送"
+                        sent_count += count
 
                 stats.append({
                     "date": date.strftime("%Y-%m-%d"),
@@ -962,11 +986,24 @@ class ConversationService:
                     "sent": sent_count
                 })
 
+                logger.debug(f"日期 {date.strftime('%Y-%m-%d')}: 接收 {received_count}, 發送 {sent_count}")
+
+            logger.info(f"獲取訊息統計成功: bot_id={bot_id}, days={days}, 結果數量={len(stats)}")
             return stats
 
         except Exception as e:
-            logger.error(f"獲取訊息統計失敗: {e}")
-            return []
+            logger.error(f"獲取訊息統計失敗: {e}", exc_info=True)
+            # 返回空數據結構而不是空列表，確保前端圖表能正常顯示
+            empty_stats = []
+            utc_now = datetime.utcnow()
+            for i in range(days):
+                date = utc_now - timedelta(days=days-1-i)
+                empty_stats.append({
+                    "date": date.strftime("%Y-%m-%d"),
+                    "received": 0,
+                    "sent": 0
+                })
+            return empty_stats
 
     @staticmethod
     async def get_user_activity(bot_id: str) -> List[Dict[str, Any]]:
