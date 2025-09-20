@@ -532,6 +532,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         model: selectedModel || undefined,
         system_prompt: aiSettings.systemPrompt,
         context_format: aiSettings.contextFormat || 'standard',
+        max_tokens: aiSettings.maxTokens || 4096,
       };
 
       // 處理時間範圍設定

@@ -34,6 +34,7 @@ class AIAnalysisService:
         model: Optional[str] = None,
         provider: Optional[str] = None,
         system_prompt: Optional[str] = None,
+        max_tokens: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         統一的 AI 調用介面，根據配置選擇 AI 提供商。
@@ -56,7 +57,8 @@ class AIAnalysisService:
                 context_text=context_text,
                 history=history,
                 model=model,
-                system_prompt=system_prompt
+                system_prompt=system_prompt,
+                max_tokens=max_tokens
             )
 
             return {

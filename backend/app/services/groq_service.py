@@ -189,6 +189,7 @@ class GroqService:
         model: Optional[str] = None,
         api_key: Optional[str] = None,
         system_prompt: Optional[str] = None,
+        max_tokens: Optional[int] = None,
     ) -> str:
         """
         呼叫 Groq API 以取得答案。
@@ -213,12 +214,21 @@ class GroqService:
         model_config = GroqService.GROQ_MODELS.get(model, GroqService.GROQ_MODELS["llama-3.1-70b-versatile"])
 
         try:
+            # 計算合適的 max_tokens 值
+            if max_tokens is None:
+                # 預設使用模型最大 tokens 的 80%，但至少 2048 tokens
+                default_max_tokens = max(2048, int(model_config["max_tokens"] * 0.8))
+                actual_max_tokens = min(default_max_tokens, model_config["max_tokens"])
+            else:
+                # 使用指定的 max_tokens，但不超過模型限制
+                actual_max_tokens = min(max_tokens, model_config["max_tokens"])
+
             # 調用 Groq API
             completion: ChatCompletion = await client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=0.3,
-                max_tokens=min(1024, model_config["max_tokens"]),
+                max_tokens=actual_max_tokens,
                 top_p=0.9,
                 stream=False
             )

@@ -65,6 +65,7 @@ async def ai_query_user(
             model=payload.model,
             provider=payload.provider,
             system_prompt=payload.system_prompt,
+            max_tokens=payload.max_tokens,
         )
 
         return AIQueryResponse(

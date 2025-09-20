@@ -22,6 +22,7 @@ class AIQueryRequest(BaseModel):
     provider: Optional[str] = Field(default=None, description="指定使用的 AI 提供商（groq/gemini）")
     system_prompt: Optional[str] = Field(default=None, description="自訂系統提示詞")
     context_format: Optional[str] = Field(default="standard", description="上下文格式模式（detailed/standard/compact）")
+    max_tokens: Optional[int] = Field(default=None, description="AI 回覆的最大 token 數量")
 
 
 class AIQueryResponse(BaseModel):

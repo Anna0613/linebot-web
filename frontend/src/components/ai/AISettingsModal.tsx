@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
@@ -24,6 +25,7 @@ export interface AISettings {
     to: Date;
   };
   contextFormat?: string;
+  maxTokens?: number;
 }
 
 // 預設系統提示詞
@@ -64,6 +66,7 @@ const STORAGE_KEYS = {
   CUSTOM_DATE_FROM: 'ai_settings_custom_date_from',
   CUSTOM_DATE_TO: 'ai_settings_custom_date_to',
   CONTEXT_FORMAT: 'ai_settings_context_format',
+  MAX_TOKENS: 'ai_settings_max_tokens',
 };
 
 export default function AISettingsModal({ onSettingsChange, disabled = false }: AISettingsModalProps) {
@@ -73,6 +76,7 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
   const [customDateFrom, setCustomDateFrom] = useState<Date>();
   const [customDateTo, setCustomDateTo] = useState<Date>();
   const [contextFormat, setContextFormat] = useState<string>('standard');
+  const [maxTokens, setMaxTokens] = useState<number>(4096);
 
   // 從 localStorage 載入設定
   useEffect(() => {
@@ -81,6 +85,7 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
     const savedDateFrom = localStorage.getItem(STORAGE_KEYS.CUSTOM_DATE_FROM);
     const savedDateTo = localStorage.getItem(STORAGE_KEYS.CUSTOM_DATE_TO);
     const savedContextFormat = localStorage.getItem(STORAGE_KEYS.CONTEXT_FORMAT);
+    const savedMaxTokens = localStorage.getItem(STORAGE_KEYS.MAX_TOKENS);
 
     if (savedSystemPrompt) {
       setSystemPrompt(savedSystemPrompt);
@@ -97,6 +102,9 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
     if (savedContextFormat) {
       setContextFormat(savedContextFormat);
     }
+    if (savedMaxTokens) {
+      setMaxTokens(parseInt(savedMaxTokens, 10));
+    }
   }, []);
 
   // 儲存設定到 localStorage
@@ -104,6 +112,7 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
     localStorage.setItem(STORAGE_KEYS.SYSTEM_PROMPT, systemPrompt);
     localStorage.setItem(STORAGE_KEYS.TIME_RANGE, timeRange);
     localStorage.setItem(STORAGE_KEYS.CONTEXT_FORMAT, contextFormat);
+    localStorage.setItem(STORAGE_KEYS.MAX_TOKENS, maxTokens.toString());
     if (customDateFrom) {
       localStorage.setItem(STORAGE_KEYS.CUSTOM_DATE_FROM, customDateFrom.toISOString());
     }
@@ -133,6 +142,7 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
     const settings: AISettings = {
       systemPrompt,
       contextFormat,
+      maxTokens,
     };
 
     // 處理時間範圍
@@ -322,6 +332,26 @@ export default function AISettingsModal({ onSettingsChange, disabled = false }: 
             </Select>
             <p className="text-sm text-muted-foreground">
               選擇上下文的詳細程度，影響 token 消耗和分析精度。
+            </p>
+          </div>
+
+          {/* 最大 Token 數設定 */}
+          <div className="space-y-3">
+            <Label>最大回覆長度 (Tokens)</Label>
+            <div className="flex items-center space-x-2">
+              <Input
+                type="number"
+                value={maxTokens}
+                onChange={(e) => setMaxTokens(Math.max(512, Math.min(32768, parseInt(e.target.value) || 4096)))}
+                min={512}
+                max={32768}
+                step={256}
+                className="w-32"
+              />
+              <span className="text-sm text-muted-foreground">tokens</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              控制 AI 回覆的最大長度。較高的值允許更詳細的回覆，但會增加 API 成本。
             </p>
           </div>
 
