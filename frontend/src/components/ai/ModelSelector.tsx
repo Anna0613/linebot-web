@@ -156,12 +156,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium">AI 模型</span>
-        <Badge variant="outline" className="text-xs">
-          {currentProvider.toUpperCase()}
-        </Badge>
-      </div>
+      {/* 移除 AI 模型標籤和提供商徽章顯示 */}
       
       <Select value={value} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger className="w-full">

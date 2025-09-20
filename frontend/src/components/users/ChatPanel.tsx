@@ -562,7 +562,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       }
     } catch (err) {
       console.error('AI 分析失敗:', err);
-      toast({ variant: 'destructive', title: 'AI 分析失敗', description: '請確認後端 AI 服務設定（GROQ_API_KEY 或 GEMINI_API_KEY），或稍後再試。' });
+      toast({ variant: 'destructive', title: 'AI 分析失敗', description: '請確認後端 AI 服務設定，或稍後再試。' });
     } finally {
       setAwaitingAI(false);
     }

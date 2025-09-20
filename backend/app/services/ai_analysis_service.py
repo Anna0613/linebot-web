@@ -15,6 +15,7 @@ from app.config import settings
 from app.models.mongodb.conversation import ConversationDocument
 from app.services.groq_service import GroqService
 from app.services.context_formatter import ContextFormatter
+from app.services.redis_cache_service import cache_service
 
 logger = logging.getLogger(__name__)
 
@@ -131,25 +132,60 @@ class AIAnalysisService:
         - 使用 ContextFormatter 進行格式優化以減少 token 消耗。
         """
         try:
-            conversation = await ConversationDocument.find_one(
-                {"bot_id": bot_id, "line_user_id": line_user_id}
-            )
-            if not conversation or not conversation.messages:
-                return "(無歷史對話)"
+            # 先嘗試從快取獲取對話歷史
+            cached_messages = cache_service.get_conversation_cache(bot_id, line_user_id)
+
+            if cached_messages is not None:
+                logger.debug(f"使用快取的對話歷史: {bot_id}:{line_user_id}")
+                messages = cached_messages
+            else:
+                # 快取不存在，從 MongoDB 讀取
+                logger.debug(f"從 MongoDB 讀取對話歷史: {bot_id}:{line_user_id}")
+                conversation = await ConversationDocument.find_one(
+                    {"bot_id": bot_id, "line_user_id": line_user_id}
+                )
+                if not conversation or not conversation.messages:
+                    return "(無歷史對話)"
+
+                # 將 MongoDB 文檔轉換為字典格式以便快取
+                messages = []
+                for msg in conversation.messages:
+                    message_dict = {
+                        'sender_type': msg.sender_type,
+                        'content': msg.content,
+                        'timestamp': msg.timestamp,
+                        'message_type': getattr(msg, 'message_type', 'text')
+                    }
+                    messages.append(message_dict)
+
+                # 設定快取（30 分鐘）
+                cache_service.set_conversation_cache(bot_id, line_user_id, messages, 1800)
 
             # 依時間範圍過濾
-            messages = conversation.messages
             if time_range_days and time_range_days > 0:
                 since = datetime.utcnow() - timedelta(days=time_range_days)
-                messages = [m for m in messages if m.timestamp >= since]
+                messages = [m for m in messages if m['timestamp'] >= since]
 
             # 依時間排序（舊→新），然後截取最後 max_messages 筆
-            messages.sort(key=lambda m: m.timestamp)
+            messages.sort(key=lambda m: m['timestamp'])
             if len(messages) > max_messages:
                 messages = messages[-max_messages:]
 
+            # 轉換為適合 ContextFormatter 的格式
+            formatted_messages = []
+            for msg in messages:
+                # 建立模擬的訊息物件
+                class MockMessage:
+                    def __init__(self, data):
+                        self.sender_type = data['sender_type']
+                        self.content = data['content']
+                        self.timestamp = data['timestamp']
+                        self.message_type = data.get('message_type', 'text')
+
+                formatted_messages.append(MockMessage(msg))
+
             # 使用 ContextFormatter 進行格式化
-            return ContextFormatter.format_context(messages, context_format)
+            return ContextFormatter.format_context(formatted_messages, context_format)
         except Exception as e:
             logger.error(f"建立用戶上下文失敗: {e}")
             return "(讀取對話歷史時發生錯誤，可能無資料)"

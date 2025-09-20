@@ -148,14 +148,20 @@ class GroqService:
         """
         messages: List[Dict[str, str]] = []
 
-        # 系統提示（支援自訂）
+        # 系統層級基礎提示詞（不可被用戶覆蓋）
+        base_system_prompt = "請盡量使用 Markdown 格式輸出。"
+
+        # 用戶自訂或預設的系統提示詞
         if not system_prompt:
             system_prompt = (
                 "你是一位專精客服對話洞察的分析助手。"
                 "請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、"
                 "有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。"
             )
-        messages.append({"role": "system", "content": system_prompt})
+
+        # 合併系統層級提示詞和用戶提示詞
+        combined_system_prompt = f"{base_system_prompt}\n\n{system_prompt}"
+        messages.append({"role": "system", "content": combined_system_prompt})
 
         # 將歷史對話（管理者與 AI 的往返）帶入，作為多輪上下文
         if history:

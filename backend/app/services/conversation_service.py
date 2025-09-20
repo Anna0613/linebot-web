@@ -10,6 +10,7 @@ from bson import ObjectId
 from app.models.mongodb.conversation import ConversationDocument, MessageDocument, AdminUserInfo
 from app.database_mongo import get_mongodb
 from app.models.user import User
+from app.services.redis_cache_service import cache_service
 
 logger = logging.getLogger(__name__)
 
@@ -337,6 +338,18 @@ class ConversationService:
             # 添加訊息
             message = await conversation.add_message(message_data)
 
+            # 更新 Redis 快取
+            try:
+                message_dict = {
+                    'sender_type': message.sender_type,
+                    'content': message.content,
+                    'timestamp': message.timestamp,
+                    'message_type': message.message_type
+                }
+                cache_service.update_conversation_cache(bot_id, line_user_id, message_dict)
+            except Exception as cache_error:
+                logger.warning(f"更新對話快取失敗: {cache_error}")
+
             logger.info(f"用戶訊息已添加: bot_id={bot_id}, line_user_id={line_user_id}, message_id={message.id}, line_message_id={line_message_id}")
             return message, True  # 返回新訊息，標記為新訊息
             
@@ -384,6 +397,18 @@ class ConversationService:
 
             # 添加訊息
             message = await conversation.add_message(message_data)
+
+            # 更新 Redis 快取
+            try:
+                message_dict = {
+                    'sender_type': message.sender_type,
+                    'content': message.content,
+                    'timestamp': message.timestamp,
+                    'message_type': message.message_type
+                }
+                cache_service.update_conversation_cache(bot_id, line_user_id, message_dict)
+            except Exception as cache_error:
+                logger.warning(f"更新對話快取失敗: {cache_error}")
 
             logger.info(
                 f"機器人訊息已添加: bot_id={bot_id}, line_user_id={line_user_id}, message_id={message.id}, type={message_type}"
