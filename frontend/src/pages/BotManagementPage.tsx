@@ -7,11 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { 
-  Bot, 
-  BarChart3, 
-  Users, 
-  MessageSquare, 
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Bot,
+  BarChart3,
+  Users,
+  MessageSquare,
   Settings,
   Eye,
   Activity,
@@ -23,6 +25,15 @@ import {
   CheckCircle,
   Play,
   Pause,
+  Search,
+  Hash,
+  User,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  UserCheck,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +50,10 @@ import MetricCard from "@/components/dashboard/MetricCard";
 import ChartWidget from "@/components/dashboard/ChartWidget";
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
 import HeatMap from "@/components/dashboard/HeatMap";
+
+// 導入用戶管理相關元件
+import ChatPanel from "../components/users/ChatPanel";
+import UserDetailsModal from "../components/users/UserDetailsModal";
 
 // 類型定義
 interface BotAnalytics {
@@ -89,6 +104,51 @@ interface ActivityItem {
     [key: string]: string | number | boolean | undefined;
   };
 }
+
+// 用戶管理相關類型定義
+interface LineUser {
+  id: string;
+  line_user_id: string;
+  display_name: string;
+  picture_url: string;
+  status_message: string;
+  language: string;
+  first_interaction: string;
+  last_interaction: string;
+  interaction_count: string;
+}
+
+interface UserInteraction {
+  id: string;
+  event_type: string;
+  message_type: string;
+  message_content: MessageContent;
+  media_url?: string;
+  media_path?: string;
+  timestamp: string;
+}
+
+interface PaginationInfo {
+  limit: number;
+  offset: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
+// 訊息內容類型定義
+type MessageContent =
+  | string
+  | {
+      text?: string | { text: string };
+      content?: string;
+      stickerId?: string;
+      packageId?: string;
+      title?: string;
+      address?: string;
+      latitude?: number;
+      longitude?: number;
+      [key: string]: unknown;
+    };
 
 // 後端資料結構介面（從資料庫查詢結果）
 interface BackendActivityData {
@@ -201,6 +261,30 @@ const BotManagementPage: React.FC = () => {
   const [_refreshing, setRefreshing] = useState(false);
   const [botHealth, setBotHealth] = useState<"online" | "offline" | "error">("online");
   const [_lastRenderTime, setLastRenderTime] = useState(new Date().toISOString());
+
+  // 用戶管理相關狀態
+  const [users, setUsers] = useState<LineUser[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    limit: 20,
+    offset: 0,
+    has_next: false,
+    has_prev: false
+  });
+  const [selectedUser, setSelectedUser] = useState<LineUser | null>(null);
+  const [_userInteractions, _setUserInteractions] = useState<UserInteraction[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [_interactionsLoading, _setInteractionsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastLoading, setBroadcastLoading] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [showChatPanel, setShowChatPanel] = useState(false);
+  const [showUserDetails, setShowUserDetails] = useState(false);
+  const [currentChatUser, setCurrentChatUser] = useState<LineUser | null>(null);
+  const [selectiveBroadcastLoading, setSelectiveBroadcastLoading] = useState(false);
+  const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState("analytics");
 
   // WebSocket 即時連接 - 在選擇 Bot 後立即連接，由 useWebSocket 內部處理延遲
   const { isConnected, connectionError, lastMessage } = useWebSocket({
@@ -468,11 +552,11 @@ const BotManagementPage: React.FC = () => {
       } else {
         await apiClient.deactivateLogicTemplate(templateId);
       }
-      
+
       if (selectedBotId) {
         await fetchLogicTemplates(selectedBotId);
       }
-      
+
       toast({
         title: isActive ? "啟用成功" : "停用成功",
         description: `邏輯模板已${isActive ? "啟用" : "停用"}`,
@@ -486,6 +570,226 @@ const BotManagementPage: React.FC = () => {
       });
     }
   };
+
+  // 用戶管理相關函數
+  // 獲取用戶列表
+  const fetchUsers = useCallback(async (limit: number = 20, offset: number = 0) => {
+    if (!selectedBotId) return;
+
+    setUsersLoading(true);
+    try {
+      const response = await apiClient.getBotUsers(selectedBotId, limit, offset);
+
+      if (response.data) {
+        const data = response.data as any;
+        const users = data.users || [];
+        setUsers(users);
+        setTotalCount(data.total_count || 0);
+        setPagination(data.pagination || {
+          limit,
+          offset,
+          has_next: false,
+          has_prev: false
+        });
+      }
+    } catch (error) {
+      console.error("獲取用戶列表失敗:", error);
+      toast({
+        variant: "destructive",
+        title: "載入失敗",
+        description: "無法載入用戶列表",
+      });
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [selectedBotId, toast]);
+
+  // 靜默更新用戶列表（WebSocket 更新時使用，不顯示 loading）
+  const fetchUsersSilently = useCallback(async (limit: number = 20, offset: number = 0) => {
+    if (!selectedBotId) return;
+
+    try {
+      const response = await apiClient.getBotUsers(selectedBotId, limit, offset);
+
+      if (response.data && !response.error) {
+        // 使用函數式更新，保持其他狀態不變
+        const data = response.data as any;
+        setUsers(data.users || []);
+        setTotalCount(data.total_count || 0);
+        setPagination(prev => ({
+          ...prev,
+          ...data.pagination,
+          limit,
+          offset
+        }));
+      }
+    } catch (error) {
+      console.error("靜默更新用戶列表失敗:", error);
+      // 靜默處理錯誤，不顯示通知
+    }
+  }, [selectedBotId]);
+
+  // 獲取用戶互動歷史
+  const fetchUserInteractions = useCallback(async (lineUserId: string) => {
+    if (!selectedBotId) return;
+
+    _setInteractionsLoading(true);
+    try {
+      const response = await apiClient.getUserInteractions(selectedBotId, lineUserId);
+
+      if (response.data) {
+        const data = response.data as any;
+        const interactions = data.interactions || [];
+        _setUserInteractions(interactions);
+      }
+    } catch (error) {
+      console.error("獲取用戶互動失敗:", error);
+      toast({
+        variant: "destructive",
+        title: "載入失敗",
+        description: "無法載入用戶互動歷史",
+      });
+    } finally {
+      _setInteractionsLoading(false);
+    }
+  }, [selectedBotId, toast]);
+
+  // 靜默更新用戶互動記錄（WebSocket 更新時使用，不顯示 loading）
+  const fetchUserInteractionsSilently = useCallback(async (lineUserId: string) => {
+    if (!selectedBotId) return;
+
+    try {
+      const response = await apiClient.getUserInteractions(selectedBotId, lineUserId);
+
+      if (response.data && !response.error) {
+        _setUserInteractions((response.data as any).interactions || []);
+      }
+    } catch (error) {
+      console.error("靜默更新用戶互動記錄失敗:", error);
+      // 靜默處理錯誤，不顯示通知
+    }
+  }, [selectedBotId]);
+
+  // 廣播訊息
+  const handleBroadcast = async () => {
+    if (!selectedBotId || !broadcastMessage.trim()) {
+      toast({
+        variant: "destructive",
+        title: "參數不足",
+        description: "請填寫廣播訊息內容",
+      });
+      return;
+    }
+
+    setBroadcastLoading(true);
+    try {
+      await apiClient.broadcastMessage(selectedBotId, {
+        message: broadcastMessage
+      });
+
+      toast({
+        title: "廣播成功",
+        description: "訊息已發送給所有關注者",
+      });
+
+      setBroadcastMessage("");
+    } catch (error) {
+      console.error("廣播失敗:", error);
+      toast({
+        variant: "destructive",
+        title: "廣播失敗",
+        description: "無法發送廣播訊息",
+      });
+    } finally {
+      setBroadcastLoading(false);
+    }
+  };
+
+  // 處理分頁
+  const handlePageChange = (newOffset: number) => {
+    fetchUsers(pagination.limit, newOffset);
+  };
+
+  // 處理用戶選擇
+  const handleUserSelect = (user: LineUser) => {
+    setSelectedUser(user);
+    fetchUserInteractions(user.line_user_id);
+  };
+
+  // 處理用戶多選
+  const handleUserCheck = (userId: string, checked: boolean) => {
+    const newSelected = new Set(selectedUserIds);
+    if (checked) {
+      newSelected.add(userId);
+    } else {
+      newSelected.delete(userId);
+    }
+    setSelectedUserIds(newSelected);
+  };
+
+  // 全選/取消全選
+  const handleSelectAll = () => {
+    if (selectedUserIds.size === filteredUsers.length) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(filteredUsers.map(user => user.line_user_id)));
+    }
+  };
+
+  // 開始聊天
+  const handleStartChat = (user: LineUser) => {
+    setCurrentChatUser(user);
+    setShowChatPanel(true);
+  };
+
+  // 查看用戶詳情
+  const handleViewUserDetails = (user: LineUser) => {
+    setSelectedUser(user);
+    setShowUserDetails(true);
+  };
+
+  // 選擇性廣播
+  const handleSelectiveBroadcast = async () => {
+    if (!selectedBotId || !broadcastMessage.trim() || selectedUserIds.size === 0) {
+      toast({
+        variant: "destructive",
+        title: "參數不足",
+        description: "請選擇用戶並填寫廣播訊息內容",
+      });
+      return;
+    }
+
+    setSelectiveBroadcastLoading(true);
+    try {
+      await apiClient.selectiveBroadcastMessage(selectedBotId, {
+        message: broadcastMessage,
+        user_ids: Array.from(selectedUserIds)
+      });
+
+      toast({
+        title: "廣播成功",
+        description: `訊息已發送給 ${selectedUserIds.size} 個選中的用戶`,
+      });
+
+      setBroadcastMessage("");
+      setSelectedUserIds(new Set());
+    } catch (error) {
+      console.error("選擇性廣播失敗:", error);
+      toast({
+        variant: "destructive",
+        title: "廣播失敗",
+        description: "無法發送選擇性廣播訊息",
+      });
+    } finally {
+      setSelectiveBroadcastLoading(false);
+    }
+  };
+
+  // 過濾用戶列表
+  const filteredUsers = users.filter(user =>
+    user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.line_user_id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
 
 
@@ -786,6 +1090,13 @@ const BotManagementPage: React.FC = () => {
     };
   }, [selectedBotId, fetchLogicTemplates, fetchAnalytics, fetchWebhookStatus, toast]);
 
+  // 當切換到用戶管理 Tab 時載入用戶數據
+  useEffect(() => {
+    if (activeTab === "users" && selectedBotId && users.length === 0) {
+      fetchUsers();
+    }
+  }, [activeTab, selectedBotId, users.length, fetchUsers]);
+
   // 處理 WebSocket 即時更新消息
   useEffect(() => {
     if (!lastMessage || !selectedBotId) return;
@@ -881,9 +1192,9 @@ const BotManagementPage: React.FC = () => {
             console.log('WebSocket 觸發的活動 API 響應:', response);
             if (response.data && !response.error) {
               console.log('WebSocket - 原始響應數據:', response.data);
-              
+
               let activitiesData: unknown = response.data;
-              
+
               // 嘗試從不同的可能結構中提取資料
               const dataObj = activitiesData as { activities?: unknown; data?: unknown };
               if (dataObj.activities && Array.isArray(dataObj.activities)) {
@@ -894,17 +1205,17 @@ const BotManagementPage: React.FC = () => {
                 console.warn('WebSocket：活動數據結構異常:', activitiesData);
                 activitiesData = []; // 設為空陣列
               }
-              
+
               console.log('WebSocket - 提取後的活動數據:', activitiesData);
-              
+
               if (Array.isArray(activitiesData)) {
                 // 使用轉換函式處理後端資料
                 const convertedActivities = convertBackendDataToActivityItem(activitiesData as BackendActivityData[]);
                 console.log('WebSocket - 轉換後的活動數據:', convertedActivities);
-                
+
                 setActivities(convertedActivities);
                 console.log('WebSocket 成功更新活動數據，數量:', convertedActivities.length);
-                
+
                 toast({
                   title: "新活動",
                   description: "檢測到新的 Bot 活動",
@@ -919,6 +1230,37 @@ const BotManagementPage: React.FC = () => {
           }).catch((error) => {
             console.error('WebSocket 活動更新錯誤:', error);
           });
+
+          // 如果在用戶管理 Tab，也更新用戶列表
+          if (activeTab === "users") {
+            fetchUsersSilently(pagination.limit, pagination.offset);
+            // 如果有選中的用戶，靜默更新其互動記錄
+            if (selectedUser) {
+              fetchUserInteractionsSilently(selectedUser.line_user_id);
+            }
+          }
+        }
+        break;
+
+      case 'new_user_message':
+        // 收到新用戶訊息時更新用戶列表和對話記錄
+        if (lastMessage.data && (lastMessage as any).line_user_id) {
+          // 如果在用戶管理 Tab，靜默更新用戶列表以更新互動次數和最後互動時間
+          if (activeTab === "users") {
+            fetchUsersSilently(pagination.limit, pagination.offset);
+
+            // 如果當前選中的用戶就是發送訊息的用戶，更新其互動記錄
+            if (selectedUser && selectedUser.line_user_id === (lastMessage as any).line_user_id) {
+              fetchUserInteractionsSilently(selectedUser.line_user_id);
+            }
+
+            // 顯示新訊息通知
+            toast({
+              title: "收到新訊息",
+              description: "用戶發送了新訊息",
+              duration: 2000,
+            });
+          }
         }
         break;
         
@@ -942,7 +1284,7 @@ const BotManagementPage: React.FC = () => {
       default:
         // 未處理的消息類型
     }
-  }, [lastMessage, selectedBotId, timeRange, toast]);
+  }, [lastMessage, selectedBotId, timeRange, toast, activeTab, pagination.limit, pagination.offset, selectedUser, fetchUsersSilently, fetchUserInteractionsSilently]);
 
   // 更新渲染時間
   useEffect(() => {
@@ -1038,8 +1380,8 @@ const BotManagementPage: React.FC = () => {
             </Card>
           </div>
 
-          <Tabs defaultValue="analytics" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted p-1">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4 rounded-lg bg-muted p-1">
                 <TabsTrigger value="analytics" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   數據分析
@@ -1051,6 +1393,10 @@ const BotManagementPage: React.FC = () => {
                 <TabsTrigger value="logic" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   <Zap className="h-4 w-4 mr-2" />
                   邏輯管理
+                </TabsTrigger>
+                <TabsTrigger value="users" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <Users className="h-4 w-4 mr-2" />
+                  用戶管理
                 </TabsTrigger>
               </TabsList>
 
@@ -1382,28 +1728,7 @@ const BotManagementPage: React.FC = () => {
                       </CardContent>
                     </Card>
 
-                    {/* 用戶管理 */}
-                    <Card className="shadow-sm hover:shadow-md transition">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Send className="h-5 w-5" />
-                          用戶管理
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {/* 用戶管理 */}
-                        <Button
-                          className="w-full"
-                          variant="outline"
-                          onClick={() => navigate(`/bots/${selectedBotId}/users`)}
-                          disabled={!selectedBotId}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          查看用戶列表
-                        </Button>
 
-                      </CardContent>
-                    </Card>
                   </div>
 
                   {/* 右側：Webhook 和其他設定 */}
@@ -1645,6 +1970,246 @@ const BotManagementPage: React.FC = () => {
                 )}
               </TabsContent>
 
+              {/* 用戶管理頁籤 */}
+              <TabsContent value="users" className="space-y-6">
+                {!selectedBotId ? (
+                  <Card>
+                    <CardContent className="text-center py-8">
+                      <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-muted-foreground">請先選擇一個 Bot 來管理用戶</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* 用戶列表 */}
+                    <div className="space-y-6">
+                      {/* 廣播訊息 */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Send className="h-5 w-5" />
+                            廣播訊息
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <Textarea
+                            placeholder="輸入要廣播的訊息..."
+                            value={broadcastMessage}
+                            onChange={(e) => setBroadcastMessage(e.target.value)}
+                            rows={3}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={handleBroadcast}
+                              disabled={broadcastLoading || !broadcastMessage.trim()}
+                              variant="outline"
+                              className="flex-1"
+                            >
+                              <Send className="h-4 w-4 mr-2" />
+                              {broadcastLoading ? "發送中..." : `全部用戶 (${totalCount})`}
+                            </Button>
+                            <Button
+                              onClick={handleSelectiveBroadcast}
+                              disabled={selectiveBroadcastLoading || !broadcastMessage.trim() || selectedUserIds.size === 0}
+                              className="flex-1"
+                            >
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              {selectiveBroadcastLoading ? "發送中..." : `選中用戶 (${selectedUserIds.size})`}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* 搜尋和統計 */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-5 w-5" />
+                              關注者列表 ({totalCount})
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleSelectAll}
+                                className="flex items-center gap-1"
+                              >
+                                {selectedUserIds.size === filteredUsers.length && filteredUsers.length > 0 ? (
+                                  <CheckSquare className="h-4 w-4" />
+                                ) : (
+                                  <Square className="h-4 w-4" />
+                                )}
+                                全選
+                              </Button>
+                              {selectedUserIds.size > 0 && (
+                                <Badge variant="secondary">
+                                  已選 {selectedUserIds.size}
+                                </Badge>
+                              )}
+                            </div>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="搜尋用戶名稱或 ID..."
+                              autoComplete="off"
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="pl-10"
+                            />
+                          </div>
+
+                          {/* 用戶列表 */}
+                          <div className="space-y-3">
+                            {usersLoading ? (
+                              <div className="flex justify-center py-8">
+                                <Loader />
+                              </div>
+                            ) : filteredUsers.length === 0 ? (
+                              <div className="text-center py-8">
+                                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                <p className="text-muted-foreground">尚無關注者</p>
+                              </div>
+                            ) : (
+                              filteredUsers.map((user) => (
+                                <div
+                                  key={user.id}
+                                  className={`p-4 border rounded-lg transition-colors hover:bg-secondary ${
+                                    selectedUser?.id === user.id ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10" : ""
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    {/* 復選框 */}
+                                    <Checkbox
+                                      checked={selectedUserIds.has(user.line_user_id)}
+                                      onCheckedChange={(checked) => handleUserCheck(user.line_user_id, !!checked)}
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+
+                                    {/* 用戶頭像 */}
+                                    {user.picture_url ? (
+                                      <img
+                                        src={user.picture_url}
+                                        alt={user.display_name}
+                                        className="w-10 h-10 rounded-full object-cover cursor-pointer"
+                                        onClick={() => handleUserSelect(user)}
+                                      />
+                                    ) : (
+                                      <div
+                                        className="w-10 h-10 rounded-full bg-muted flex items-center justify-center cursor-pointer"
+                                        onClick={() => handleUserSelect(user)}
+                                      >
+                                        <User className="h-5 w-5 text-muted-foreground" />
+                                      </div>
+                                    )}
+
+                                    {/* 用戶信息 */}
+                                    <div
+                                      className="flex-1 min-w-0 cursor-pointer"
+                                      onClick={() => handleUserSelect(user)}
+                                    >
+                                      <h3 className="font-medium text-foreground truncate">
+                                        {user.display_name || "未設定名稱"}
+                                      </h3>
+                                      <p className="text-sm text-muted-foreground truncate">
+                                        {user.line_user_id}
+                                      </p>
+                                      {user.status_message && (
+                                        <p className="text-xs text-muted-foreground truncate">
+                                          {user.status_message}
+                                        </p>
+                                      )}
+                                    </div>
+
+                                    {/* 互動統計 */}
+                                    <div className="text-center">
+                                      <Badge variant="secondary" className="text-xs">
+                                        <Hash className="h-3 w-3 mr-1" />
+                                        {user.interaction_count}
+                                      </Badge>
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {new Date(user.last_interaction).toLocaleDateString("zh-TW")}
+                                      </p>
+                                    </div>
+
+                                    {/* 操作按鈕 */}
+                                    <div className="flex flex-col gap-1">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleViewUserDetails(user);
+                                        }}
+                                        className="px-2"
+                                      >
+                                        <Info className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStartChat(user);
+                                        }}
+                                        className="px-2"
+                                      >
+                                        <MessageSquare className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+
+                          {/* 分頁 */}
+                          {totalCount > pagination.limit && (
+                            <div className="flex items-center justify-between pt-4">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePageChange(pagination.offset - pagination.limit)}
+                                disabled={!pagination.has_prev}
+                              >
+                                <ChevronLeft className="h-4 w-4 mr-2" />
+                                上一頁
+                              </Button>
+                              <span className="text-sm text-muted-foreground">
+                                {pagination.offset + 1} - {Math.min(pagination.offset + pagination.limit, totalCount)} / {totalCount}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePageChange(pagination.offset + pagination.limit)}
+                                disabled={!pagination.has_next}
+                              >
+                                下一頁
+                                <ChevronRight className="h-4 w-4 ml-2" />
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* 聊天面板區域 */}
+                    {showChatPanel && currentChatUser && (
+                      <div className="space-y-6">
+                        <ChatPanel
+                          botId={selectedBotId}
+                          selectedUser={currentChatUser}
+                          onClose={() => setShowChatPanel(false)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+
             </Tabs>
 
           {bots.length === 0 && !loading && (
@@ -1660,8 +2225,15 @@ const BotManagementPage: React.FC = () => {
           )}
         </div>
       </div>
-      
+
       <DashboardFooter />
+
+      {/* 用戶詳細資訊彈窗 */}
+      <UserDetailsModal
+        user={selectedUser}
+        isOpen={showUserDetails}
+        onClose={() => setShowUserDetails(false)}
+      />
     </div>
   );
 };

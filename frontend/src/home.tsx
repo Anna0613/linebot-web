@@ -37,9 +37,6 @@ const VisualBotEditorPage = lazy(() =>
 const BotManagementPage = lazy(() =>
   import("./pages/BotManagementPage").then(module => ({ default: module.default }))
 );
-const BotUsersPage = lazy(() =>
-  import("./pages/BotUsersPage").then(module => ({ default: module.default }))
-);
 
 // 最低優先級 - 輔助頁面
 const HowToEstablish = lazy(() => import("./pages/HowToEstablish"));
@@ -139,7 +136,6 @@ const App = () => {
               <Route path="/bots/editor" element={<BotEditorPage />} />
               <Route path="/bots/visual-editor" element={<VisualBotEditorPage />} />
               <Route path="/bots/management" element={<BotManagementPage />} />
-              <Route path="/bots/:botId/users" element={<BotUsersPage />} />
               <Route path="/how-to-establish" element={<HowToEstablish />} />
 
 
