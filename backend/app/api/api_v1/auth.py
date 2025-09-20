@@ -7,13 +7,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from typing import Dict
-import asyncio
 
 from app.database import get_db
 from app.services.auth_service import AuthService
 from app.schemas.auth import UserRegister, UserLogin, Token, EmailVerification, ForgotPassword, RefreshToken
 from app.core.security import get_cookie_settings, get_refresh_cookie_settings
 from app.models.user import User
+from datetime import timedelta
 
 router = APIRouter()
 
@@ -113,30 +113,28 @@ async def line_callback(
     response: Response,
     db: Session = Depends(get_db)
 ):
-    """LINE 登入回調"""
+    """LINE 登入回調（Cookie-only，不再透過 URL 傳遞 token）"""
     try:
         result = await AuthService.handle_line_callback(db, code, state)
-        
-        # 重導向到前端，並透過 URL 參數傳遞 token
+
+        # 只做重導向，不帶任何敏感資訊
         from app.config import settings
-        import urllib.parse
-        
-        token = result["access_token"]
-        user_data = result["user"]
-        
-        # 將用戶資料編碼為 URL 參數
-        params = {
-            "token": token,
-            "username": user_data["username"],
-            "email": user_data.get("email", ""),
-            "login_type": "line"
-        }
-        
-        query_string = urllib.parse.urlencode(params)
-        return RedirectResponse(url=f"{settings.FRONTEND_URL}/login-success?{query_string}")
-        
+        redirect = RedirectResponse(url=f"{settings.FRONTEND_URL}/login-success")
+
+        # 設定 Access Token Cookie（需設在實際回應物件上）
+        access_token = result["access_token"]
+        cookie_settings = get_cookie_settings(False)
+        redirect.set_cookie(
+            key="token",
+            value=access_token,
+            **cookie_settings
+        )
+        # 若未來需要，也可在此發 refresh_token（目前 LINE 登入預設不發）
+
+        return redirect
+
     except HTTPException as e:
-        # 重導向到錯誤頁面
+        # 重導向到錯誤頁面（不帶敏感資訊）
         from app.config import settings
         return RedirectResponse(url=f"{settings.FRONTEND_URL}/login-error?error={e.detail}")
 
@@ -148,16 +146,7 @@ def verify_email(
     """驗證郵箱"""
     return AuthService.verify_email_token(db, verification_data.token)
 
-@router.get("/verify_email/{token}")
-def verify_email_redirect(token: str, db: Session = Depends(get_db)):
-    """郵箱驗證重導向（相容舊版）"""
-    try:
-        result = AuthService.verify_email_token(db, token)
-        from app.config import settings
-        return RedirectResponse(url=f"{settings.FRONTEND_URL}/email-verified")
-    except HTTPException as e:
-        from app.config import settings
-        return RedirectResponse(url=f"{settings.FRONTEND_URL}/email-verify-error?error={e.detail}")
+# 已移除舊版 GET /verify_email/{token} 的相容路由，統一使用 POST /verify-email
 
 @router.post("/resend-verification", response_model=Dict[str, str])
 def resend_verification(
@@ -262,91 +251,24 @@ def check_login(
     except HTTPException:
         return {"authenticated": False}
 
-@router.post("/test-cookie")
-def test_cookie(response: Response):
-    """測試 cookie 設定"""
-    from app.core.security import get_cookie_settings
-    cookie_settings = get_cookie_settings()
-    
-    # 設定一個測試 cookie
-    response.set_cookie(
-        key="test_token",
-        value="test_value_123456",
-        **cookie_settings
-    )
-    
-    return {
-        "message": "測試 cookie 已設定",
-        "cookie_settings": cookie_settings
-    }
-
-# 為了相容性保留的路由
-@router.post("/verify-token")
-async def verify_token_compatibility(
-    request: Request, 
+@router.get("/ws-ticket")
+def get_ws_ticket(
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    """驗證 token（相容舊版）"""
-    try:
-        # 從請求體取得 token
-        body = await request.json()
-        token = body.get('token')
-        
-        if not token:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Token is missing"
-            )
-        
-        # 驗證 token
-        from app.core.security import verify_token
-        try:
-            payload = verify_token(token)
-            username = payload.get("sub")
-            login_type = payload.get("login_type")
-            
-            if not username:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token data"
-                )
-            
-            # 查找用戶
-            user = await asyncio.to_thread(lambda: db.query(User).filter(User.username == username).first())
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found"
-                )
-            
-            # 如果是 LINE 登入，返回 LINE 特定資料
-            if login_type == "line" and user.line_account:
-                return {
-                    "line_id": user.line_account.line_id,
-                    "display_name": user.line_account.display_name,
-                    "picture_url": user.line_account.picture_url,
-                    "username": user.username,
-                    "email": user.email,
-                    "login_type": "line"
-                }
-            else:
-                # 一般登入用戶
-                return {
-                    "username": user.username,
-                    "email": user.email,
-                    "login_type": login_type or "general"
-                }
-                
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Token validation failed: {str(e)}"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {str(e)}"
-        ) 
+    """取得 WebSocket 短效票證（需已登入）"""
+    # 透過 Cookie 認證當前用戶
+    from app.dependencies import get_current_user
+    user = get_current_user(request, db)
+
+    # 簽發短效（5 分鐘）票證，只用於 WS 握手
+    from app.core.security import create_access_token
+    ws_token = create_access_token(
+        data={"sub": user.username, "login_type": "general", "token_use": "ws"},
+        expires_delta=timedelta(minutes=5)
+    )
+    return {"ws_token": ws_token}
+
+# 移除 /test-cookie 測試端點
+
+# 已移除 /verify-token 相容端點

@@ -48,7 +48,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
         getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.GET_PROFILE),
         {
           method: 'GET',
-          headers: authManager.getAuthHeaders(),
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           credentials: 'include',
         }
       );
@@ -153,7 +153,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
         getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.LOGIN),
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify({ username, password, remember_me: rememberMe }),
           credentials: 'include',
         }
@@ -164,46 +164,15 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
         throw new Error(errorData.error || errorData.detail || '登錄失敗');
       }
 
-      const data = await response.json();
-
-      if (data.access_token) {
-        // 使用統一認證管理器設置token
-        const tokenInfo: TokenInfo = {
-          access_token: data.access_token,
-          refresh_token: data.refresh_token,
-          token_type: 'Bearer',
-          expires_in: data.expires_in,
-        };
-
-        authManager.setTokenInfo(tokenInfo, 'traditional', rememberMe);
-
-        // 設置用戶信息
-        if (data.user) {
-          const userData: UnifiedUser = {
-            id: data.user.id || data.user.username,
-            username: data.user.username,
-            email: data.user.email,
-            display_name: data.user.display_name || data.user.username,
-            login_type: 'traditional',
-          };
-
-          authManager.setUserInfo(userData, rememberMe);
-          setUser(userData);
-          onAuthChange?.(true, userData);
-        }
-
-        toast({
-          title: '登錄成功',
-          description: `歡迎回來，${data.user?.username || '用戶'}！`,
-        });
-
-        // 登錄成功後短暫延遲，確保狀態完全更新
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+      // 成功時由後端以 Set-Cookie 建立會話；不再依賴回傳 token
+      if (response.ok) {
+        await refreshUserInfo(true);
+        toast({ title: '登錄成功', description: '歡迎回來！' });
         return true;
       }
 
-      throw new Error('回應中沒有找到access_token');
+      const data = await response.json();
+      throw new Error(data?.error || data?.detail || '登錄失敗');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '登錄失敗';
       setError(errorMessage);
@@ -273,75 +242,32 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
   /**
    * LINE登錄處理
    */
-  const handleLineLogin = useCallback(async (token: string, rememberMe = false) => {
+  const handleLineLogin = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
-        getApiUrl(
-          API_CONFIG.LINE_LOGIN.BASE_URL,
-          API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN
-        ),
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('LINE token驗證失敗');
-      }
-
-      const result = await response.json();
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      // 設置LINE token
-      const tokenInfo: TokenInfo = {
-        access_token: token,
-        token_type: 'LINE',
-      };
-
-      authManager.setTokenInfo(tokenInfo, 'line', rememberMe);
-
-      // 設置用戶信息
-      const userData: UnifiedUser = {
-        id: result.line_id || result.display_name,
-        username: result.display_name,
-        email: result.email,
-        display_name: result.display_name,
-        picture_url: result.picture_url,
-        line_id: result.line_id,
-        login_type: 'line',
-      };
-
-      authManager.setUserInfo(userData, rememberMe);
-      setUser(userData);
-      onAuthChange?.(true, userData);
-
-      toast({
-        title: 'LINE登錄成功',
-        description: `歡迎，${result.display_name}！`,
+      // 取得 LINE 登入 URL 並重導
+      const resp = await fetch(getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.LINE_LOGIN), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'include'
       });
-
-      return userData;
+      const data = await resp.json();
+      if (!resp.ok || !data?.url) {
+        throw new Error(data?.error || '無法獲取 LINE 登入連結');
+      }
+      window.location.href = data.url;
+      return null;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'LINE登錄失敗';
       setError(errorMessage);
-      toast({
-        variant: 'destructive',
-        title: 'LINE登錄失敗',
-        description: errorMessage,
-      });
+      toast({ variant: 'destructive', title: 'LINE登錄失敗', description: errorMessage });
       return null;
     } finally {
       setLoading(false);
     }
-  }, [toast, onAuthChange]);
+  }, [toast]);
 
   /**
    * 登出
@@ -354,7 +280,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
           getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.LOGOUT),
           {
             method: 'POST',
-            headers: authManager.getAuthHeaders(),
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             credentials: 'include',
           }
         );
@@ -388,7 +314,8 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
    * 獲取認證headers
    */
   const getAuthHeaders = useCallback(() => {
-    return authManager.getAuthHeaders();
+    // 不再提供 Authorization header，統一依賴 Cookie
+    return { 'Content-Type': 'application/json', 'Accept': 'application/json' } as Record<string, string>;
   }, []);
 
   // 初始化認證狀態

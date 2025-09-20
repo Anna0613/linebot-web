@@ -8,45 +8,29 @@ import {
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { authManager } from "../services/UnifiedAuthManager";
+import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 
 const LoginSuccess: React.FC = () => {
   const navigate = useNavigate();
   const [countdown, setCountdown] = useState(3); // 倒數秒數
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      console.log("=== LoginSuccess 頁面初始化 ===");
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlToken = urlParams.get("token");
-      const urlUsername = urlParams.get("username");
-      const urlEmail = urlParams.get("email");
-
-      if (urlToken) {
-        authManager.setTokenInfo(
-          { access_token: urlToken, token_type: "Bearer" },
-          "line"
+    const checkSession = async () => {
+      try {
+        const resp = await fetch(
+          getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN),
+          { method: 'GET', credentials: 'include' }
         );
-
-        if (urlUsername) {
-          authManager.setUserInfo({
-            username: urlUsername,
-            email: urlEmail || "",
-            login_type: "line",
-          });
+        const data = await resp.json();
+        if (!data?.authenticated) {
+          setTimeout(() => navigate("/login", { replace: true }), 1500);
         }
-
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-
-      if (!authManager.isAuthenticated()) {
-        setTimeout(() => navigate("/login", { replace: true }), 2000);
-        return;
+      } catch (_e) {
+        setTimeout(() => navigate("/login", { replace: true }), 1500);
       }
     };
 
-    initializeAuth();
+    checkSession();
 
     // 設定倒數計時器
     const interval = setInterval(() => {
@@ -77,7 +61,7 @@ const LoginSuccess: React.FC = () => {
           <CardTitle className="text-2xl text-[#425B4F]">登入成功！</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
-          <p className="text-gray-600">您已成功透過 LINE 登入系統</p>
+          <p className="text-gray-600">您已成功登入</p>
           <p className="text-sm text-gray-500">
             {countdown > 0
               ? `${countdown} 秒後將自動跳轉到主頁面...`

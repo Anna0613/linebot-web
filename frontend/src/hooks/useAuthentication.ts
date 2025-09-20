@@ -41,7 +41,6 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
   const checkLoginStatus = useCallback(async () => {
     try {
       const authManager = UnifiedAuthManager.getInstance();
-      const authHeaders = authManager.getAuthHeaders();
       
       const nativeFetch = window.fetch.bind(window);
       const response = await nativeFetch(
@@ -54,8 +53,7 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
           credentials: "include",
           headers: {
             Accept: "application/json",
-            "Content-Type": "application/json",
-            ...authHeaders,
+            "Content-Type": "application/json"
           },
         }
       );
@@ -123,24 +121,7 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
           return;
         }
 
-        // 處理 LINE 登入 token
-        const token = searchParams.get("token");
-        const displayName = searchParams.get("display_name");
-
-        if (token && allowLineLogin) {
-          const userData = await verifyLineToken(token);
-          if (userData) {
-            setUser(userData);
-            setLoading(false);
-            return;
-          }
-        }
-
-        if (displayName) {
-          setUser({ display_name: displayName });
-          setLoading(false);
-          return;
-        }
+        // 新流程：不再處理 URL 中的 token/display_name 參數
 
         // 檢查現有的認證狀態
         const userInfo = authManager.getUserInfo();
@@ -178,28 +159,9 @@ export const useAuthentication = (options: UseAuthenticationOptions = {}) => {
     authManager,
   ]);
 
-  const verifyLineToken = async (token: string): Promise<User | null> => {
-    try {
-      const response = await fetch(
-        getApiUrl(
-          API_CONFIG.LINE_LOGIN.BASE_URL,
-          API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN
-        ),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Token 驗證失敗");
-
-      const result = await response.json();
-      return result;
-    } catch (_error) {
-      console.error("Error occurred:", _error);
-      return null;
-    }
+  const verifyLineToken = async (_token: string): Promise<User | null> => {
+    // 已移除舊的 LINE token 客戶端驗證流程
+    return null;
   };
 
 

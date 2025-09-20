@@ -4,15 +4,13 @@ FastAPI 依賴注入模組
 """
 from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models.user import User
-from app.core.security import verify_token, extract_token_from_header
+from app.core.security import verify_token
 from .config import settings
 
-# OAuth2 方案
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
+# 已移除 OAuth2 Bearer 方案，統一採用 HttpOnly Cookie
 
 def get_current_user(
     request: Request,
@@ -28,25 +26,9 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    token = None
-    
-    # 首先嘗試從 Authorization header 獲取 token
-    auth_header = request.headers.get('Authorization')
-    logger.debug(f"Authorization header: {auth_header}")
-    
-    if auth_header:
-        try:
-            token = extract_token_from_header(auth_header)
-            logger.debug(f"Token extracted from header: {token[:20]}..." if token else "None")
-        except HTTPException as e:
-            logger.warning(f"Invalid Authorization header: {e}")
-            # Authorization header 無效，嘗試從 cookie 獲取
-            token = request.cookies.get('token')
-            logger.debug(f"Token from cookie: {token[:20]}..." if token else "None")
-    else:
-        # 如果沒有 Authorization header，嘗試從 cookie 獲取
-        token = request.cookies.get('token')
-        logger.debug(f"No Authorization header, token from cookie: {token[:20]}..." if token else "None")
+    # 僅從 HttpOnly Cookie 取得 token（不再支援 Authorization header）
+    token = request.cookies.get('token')
+    logger.debug(f"Token from cookie: {token[:20]}..." if token else "None")
     
     if not token:
         logger.warning("No token found in request")

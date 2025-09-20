@@ -31,6 +31,4 @@ api_router.include_router(websocket.router, prefix="", tags=["WebSocket"])
 # MinIO 測試路由
 api_router.include_router(storage_test.router, prefix="", tags=["MinIO 測試"])
 
-# 為了與舊版 API 保持相容，添加一些別名路由
-api_router.include_router(auth.router, prefix="", tags=["認證（相容）"])  # 支援 /register, /login 等
-api_router.include_router(bots.router, prefix="", tags=["Bot 管理（相容）"])  # 支援 /messages, /codes 等
+# 已移除舊版 API 的相容別名路由，統一走 /api/v1 前綴

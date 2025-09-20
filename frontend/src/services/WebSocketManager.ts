@@ -4,7 +4,7 @@
  */
 
 import { authManager } from './UnifiedAuthManager';
-import { API_CONFIG } from '../config/apiConfig';
+import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 
 // WebSocket 訊息資料類型
 interface WebSocketMessageData {
@@ -126,61 +126,77 @@ class WebSocketManager {
     this.connections.set(botId, connection);
 
     try {
-      const token = this.getAuthToken();
-      const url = this.getWebSocketUrl(botId, token);
-      
-      connection.socket = new WebSocket(url);
-      
-      connection.socket.onopen = () => {
-        console.log(`✅ Bot ${botId} WebSocket 連接已建立`);
-        connection.isConnecting = false;
-        connection.reconnectAttempts = 0;
-        
-        // 發送訂閱消息
-        this.sendSubscriptions(connection.socket);
-        
-        // 啟動心跳
-        this.startHeartbeat(botId);
-      };
-
-      connection.socket.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          console.log(`📨 收到 Bot ${botId} WebSocket 消息:`, message.type);
-          
-          // 廣播給所有訂閱者
-          connection.subscribers.forEach(subscriber => {
-            try {
-              subscriber.callback(message);
-            } catch (error) {
-              console.error(`訂閱者 ${subscriber.id} 處理消息失敗:`, error);
+      const baseUrl = this.getWebSocketUrl(botId, '');
+      // 先嘗試向後端索取短效 ws_token（依賴已登入 Cookie）
+      fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, '/ws-ticket'), {
+        method: 'GET',
+        credentials: 'include'
+      })
+        .then(async (resp) => {
+          try {
+            let finalUrl = baseUrl;
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data?.ws_token) {
+                const sep = baseUrl.includes('?') ? '&' : '?';
+                finalUrl = `${baseUrl}${sep}ws_token=${encodeURIComponent(data.ws_token)}`;
+              }
             }
-          });
-        } catch (error) {
-          console.error(`解析 WebSocket 消息失敗:`, error);
-        }
-      };
-
-      connection.socket.onclose = () => {
-        console.log(`❌ Bot ${botId} WebSocket 連接已關閉`);
-        connection.isConnecting = false;
-        this.stopHeartbeat(botId);
-        
-        // 如果還有訂閱者，嘗試重連
-        if (connection.subscribers.size > 0) {
-          this.scheduleReconnect(botId);
-        }
-      };
-
-      connection.socket.onerror = (error) => {
-        console.error(`❌ Bot ${botId} WebSocket 連接錯誤:`, error);
-        connection.isConnecting = false;
-      };
+            connection.socket = new WebSocket(finalUrl);
+            this.attachSocketHandlers(botId, connection);
+          } catch (err) {
+            console.error(`建立 WebSocket 連接時解析 ws_token 失敗:`, err);
+            connection.isConnecting = false;
+          }
+        })
+        .catch((err) => {
+          console.warn('取得 ws_ticket 失敗，直接嘗試以 Cookie 連線');
+          connection.socket = new WebSocket(baseUrl);
+          this.attachSocketHandlers(botId, connection);
+        });
 
     } catch (error) {
       console.error(`創建 WebSocket 連接失敗:`, error);
       connection.isConnecting = false;
     }
+  }
+
+  private attachSocketHandlers(botId: string, connection: WebSocketConnection): void {
+    connection.socket.onopen = () => {
+      console.log(`✅ Bot ${botId} WebSocket 連接已建立`);
+      connection.isConnecting = false;
+      connection.reconnectAttempts = 0;
+      this.sendSubscriptions(connection.socket);
+      this.startHeartbeat(botId);
+    };
+
+    connection.socket.onmessage = (event) => {
+      try {
+        const message: WebSocketMessage = JSON.parse(event.data);
+        console.log(`📨 收到 Bot ${botId} WebSocket 消息:`, message.type);
+        connection.subscribers.forEach(subscriber => {
+          try { subscriber.callback(message); } catch (error) {
+            console.error(`訂閱者 ${subscriber.id} 處理消息失敗:`, error);
+          }
+        });
+      } catch (error) {
+        console.error(`解析 WebSocket 消息失敗:`, error);
+      }
+    };
+
+    connection.socket.onclose = (ev) => {
+      console.log(`❌ Bot ${botId} WebSocket 連接已關閉 (code=${ev.code}, reason=${ev.reason})`);
+      connection.isConnecting = false;
+      this.stopHeartbeat(botId);
+      if (connection.subscribers.size > 0) {
+        this.scheduleReconnect(botId);
+      }
+    };
+
+    connection.socket.onerror = (error) => {
+      console.error(`❌ Bot ${botId} WebSocket 連接錯誤:`, error);
+      connection.isConnecting = false;
+    };
   }
 
   /**
@@ -284,40 +300,22 @@ class WebSocketManager {
    * 獲取認證 Token
    */
   private getAuthToken(): string {
-    try {
-      // 使用 UnifiedAuthManager 獲取 token
-      const token = authManager.getAccessToken();
-
-      if (token) {
-        console.debug('✅ 從 UnifiedAuthManager 獲取到 token');
-        return token;
-      }
-
-      console.warn('❌ UnifiedAuthManager 中未找到認證 token');
-      return '';
-    } catch (error) {
-      console.error('從 UnifiedAuthManager 獲取 token 失敗:', error);
-
-      // 備用方案：嘗試從 localStorage 獲取
-      const fallbackToken = localStorage.getItem('auth_token') || '';
-      if (fallbackToken) {
-        console.debug('✅ 使用備用 token');
-      }
-      return fallbackToken;
-    }
+    // 不再於前端讀取 token，WebSocket 認證將依賴 HttpOnly Cookie
+    return '';
   }
 
   /**
    * 獲取 WebSocket URL
    */
-  private getWebSocketUrl(botId: string, token: string): string {
+  private getWebSocketUrl(botId: string, _token: string): string {
     // 使用配置的後端 API URL 而不是當前頁面的 hostname
     const apiUrl = API_CONFIG.UNIFIED.FULL_URL;
 
     // 將 HTTP/HTTPS 協議轉換為 WS/WSS
     const wsUrl = apiUrl.replace(/^https?:/, apiUrl.startsWith('https:') ? 'wss:' : 'ws:');
 
-    return `${wsUrl}/api/v1/ws/bot/${botId}?token=${token}`;
+    // 不再拼接 token 查詢參數
+    return `${wsUrl}/api/v1/ws/bot/${botId}`;
   }
 
   /**

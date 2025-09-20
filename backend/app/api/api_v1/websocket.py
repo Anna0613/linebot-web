@@ -23,14 +23,15 @@ router = APIRouter()
 async def websocket_bot_endpoint(
     websocket: WebSocket,
     bot_id: str,
-    token: Optional[str] = Query(None),
+    ws_token: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """Bot 專用 WebSocket 端點"""
 
-    # WebSocket 認證檢查
+    # WebSocket 認證檢查（改用 Cookie）
+    token = websocket.cookies.get("token") or ws_token
     if not token:
-        await websocket.close(code=4001, reason="Missing authentication token")
+        await websocket.close(code=4001, reason="Missing authentication")
         return
 
     try:
@@ -100,14 +101,15 @@ async def websocket_bot_endpoint(
 async def websocket_dashboard_endpoint(
     websocket: WebSocket,
     user_id: str,
-    token: Optional[str] = Query(None),
+    ws_token: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """用戶儀表板 WebSocket 端點"""
 
-    # WebSocket 認證檢查
+    # WebSocket 認證檢查（改用 Cookie）
+    token = websocket.cookies.get("token") or ws_token
     if not token:
-        await websocket.close(code=4001, reason="Missing authentication token")
+        await websocket.close(code=4001, reason="Missing authentication")
         return
 
     try:

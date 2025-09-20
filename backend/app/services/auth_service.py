@@ -10,6 +10,7 @@ import aiohttp
 import secrets
 import string
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+import asyncio
 
 from app.models.user import User, LineUser
 from app.schemas.auth import UserRegister, UserLogin, Token
@@ -218,45 +219,60 @@ class AuthService:
             picture_url = profile_data.get("pictureUrl")
             
             # 檢查是否已存在 LINE 用戶
-            line_user = db.query(LineUser).filter(LineUser.line_id == line_id).first()
+            # 查詢是否存在 LINE 用戶（避免阻塞事件圈）
+            line_user = await asyncio.to_thread(
+                lambda: db.query(LineUser).filter(LineUser.line_id == line_id).first()
+            )
             
             if line_user:
                 # 已存在的 LINE 用戶，直接登入
                 user = line_user.user
                 # 更新用戶的顯示名稱和頭像（如果有變更）
-                if line_user.display_name != display_name:
-                    line_user.display_name = display_name
-                if line_user.picture_url != picture_url:
-                    line_user.picture_url = picture_url
-                db.commit()  # 確保已存在用戶也要 commit
+                def _update_line_user():
+                    updated = False
+                    if line_user.display_name != display_name:
+                        line_user.display_name = display_name
+                        updated = True
+                    if line_user.picture_url != picture_url:
+                        line_user.picture_url = picture_url
+                        updated = True
+                    if updated:
+                        db.commit()
+                await asyncio.to_thread(_update_line_user)
             else:
                 # 新的 LINE 用戶，建立帳號
                 # 生成唯一的用戶名稱
                 base_username = display_name or f"line_user_{line_id[:8]}"
                 username = base_username
                 counter = 1
-                while db.query(User).filter(User.username == username).first():
-                    username = f"{base_username}_{counter}"
-                    counter += 1
+                # 以阻塞 I/O 包裝在執行緒中避免阻塞
+                def _generate_unique_username() -> str:
+                    nonlocal username, counter
+                    while db.query(User).filter(User.username == username).first():
+                        username = f"{base_username}_{counter}"
+                        counter += 1
+                    return username
+                username = await asyncio.to_thread(_generate_unique_username)
                 
-                # 建立新用戶
-                user = User(
-                    username=username,
-                    password=get_password_hash(''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))),  # 隨機密碼
-                    email_verified=True  # LINE 用戶預設為已驗證
-                )
-                db.add(user)
-                db.flush()  # 取得用戶 ID
-                
-                # 建立 LINE 用戶記錄
-                line_user = LineUser(
-                    user_id=user.id,
-                    line_id=line_id,
-                    display_name=display_name,
-                    picture_url=picture_url
-                )
-                db.add(line_user)
-                db.commit()
+                # 建立新用戶與 LINE 關聯（放入執行緒）
+                def _create_user_and_line():
+                    user_local = User(
+                        username=username,
+                        password=get_password_hash(''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))),
+                        email_verified=True
+                    )
+                    db.add(user_local)
+                    db.flush()
+                    line_user_local = LineUser(
+                        user_id=user_local.id,
+                        line_id=line_id,
+                        display_name=display_name,
+                        picture_url=picture_url
+                    )
+                    db.add(line_user_local)
+                    db.commit()
+                    return user_local
+                user = await asyncio.to_thread(_create_user_and_line)
             
             # 生成 JWT token
             jwt_token = create_access_token(

@@ -29,18 +29,7 @@ const DashboardPage = memo(() => {
   });
 
 
-  // 處理LINE登入回調
-  useEffect(() => {
-    const token = searchParams.get("token");
-    const displayName = searchParams.get("display_name");
-    
-    if (token && displayName) {
-      handleLineLogin(token).then(() => {
-        // 清理URL參數
-        navigate('/dashboard', { replace: true });
-      });
-    }
-  }, [searchParams, handleLineLogin, navigate]);
+  // 新流程：LINE 登入回調已於後端設定 Cookie，前端無需處理 token 參數
 
 
   // 處理錯誤狀態顯示

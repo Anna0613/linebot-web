@@ -33,7 +33,6 @@ export const API_CONFIG = {
     FULL_URL: LINE_LOGIN_API_URL,
     ENDPOINTS: {
       LINE_LOGIN: "/line-login",
-      VERIFY_TOKEN: "/verify-token",
       DISCONNECT: "/disconnect",
     },
   },

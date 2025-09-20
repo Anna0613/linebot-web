@@ -30,11 +30,10 @@ export class PuzzleApiService {
 
   // 獲取認證headers
   private static getHeaders(): Headers {
-    const authManager = UnifiedAuthManager.getInstance();
-    const authHeaders = authManager.getAuthHeaders();
+    // 不再附帶 Authorization header，統一依賴 Cookie
     const headers = new Headers({
       'Content-Type': 'application/json',
-      ...authHeaders
+      'Accept': 'application/json'
     });
     return headers;
   }
@@ -119,6 +118,7 @@ export class PuzzleApiService {
           method: "POST",
           headers: this.getHeaders(),
           body: JSON.stringify(botData),
+          credentials: 'include'
         }
       );
 
@@ -145,6 +145,7 @@ export class PuzzleApiService {
         {
           method: "GET",
           headers: this.getHeaders(),
+          credentials: 'include'
         }
       );
 
@@ -168,6 +169,7 @@ export class PuzzleApiService {
       const response = await fetch(getApiUrl(this.baseUrl, `/${botId}`), {
         method: "GET",
         headers: this.getHeaders(),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -193,6 +195,7 @@ export class PuzzleApiService {
           method: "PUT",
           headers: this.getHeaders(),
           body: JSON.stringify(botData),
+          credentials: 'include'
         }
       );
 
@@ -218,6 +221,7 @@ export class PuzzleApiService {
         {
           method: "DELETE",
           headers: this.getHeaders(),
+          credentials: 'include'
         }
       );
 

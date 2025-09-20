@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import LINELoginButton from "../components/LINELogin/LINELoginButton";
 import {
   Card,
@@ -11,8 +11,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 // import { API_CONFIG, getApiUrl } from "../config/apiConfig";
-import { authManager } from "../services/UnifiedAuthManager";
-import { LineLoginService } from "../services/lineLogin";
 
 interface User {
   line_id: string;
@@ -21,87 +19,29 @@ interface User {
 }
 
 const LINELogin: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = searchParams.get("token");
-    const displayName = searchParams.get("display_name");
-    const linkingUserId = searchParams.get("linking_user_id");
-
-    const handleLogin = async () => {
-      if (!token) {
-        if (displayName) {
-          setUser({ line_id: "", display_name: displayName, picture_url: "" });
-        }
-        return;
-      }
-
+    // 新流程：不再從 URL 讀取 token；由後端回調直接設置 Cookie。
+    // 這裡僅在需要時引導使用者前往 LINE 授權頁。
+    const check = async () => {
       try {
-        setLoading(true);
-        
-        // 檢查是否有記住我設定（從登錄頁面設定的 sessionStorage）
-        const rememberMe = sessionStorage.getItem('line_login_remember_me') === 'true';
-        
-        authManager.setTokenInfo(
-          { access_token: token, token_type: 'Bearer' },
-          'line',
-          rememberMe
+        const { API_CONFIG, getApiUrl } = await import('../config/apiConfig');
+        const resp = await fetch(
+          getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN),
+          { method: 'GET', credentials: 'include' }
         );
-        const lineLoginService = LineLoginService.getInstance();
-
-        // 如果是連接已有帳號的情況
-        if (linkingUserId) {
-          const response = await lineLoginService.getLoginUrl();
-          if (response.error) {
-            throw new Error(response.error);
-          }
-          if (response.login_url) {
-            // 將連接資訊添加到URL
-            const loginUrl = new URL(response.login_url);
-            loginUrl.searchParams.append("linking_user_id", linkingUserId);
-            loginUrl.searchParams.append("linking_token", token);
-            window.location.href = loginUrl.toString();
-          }
-        } else {
-          // 一般LINE登入流程
-          const response = await lineLoginService.verifyToken(token);
-          if (response.error) {
-            throw new Error(response.error);
-          }
-          
-          // 設定用戶信息（包含 rememberMe 設定）
-          const userData = {
-            id: response.line_id || response.display_name,
-            username: response.display_name,
-            email: response.email,
-            display_name: response.display_name,
-            picture_url: response.picture_url,
-            line_id: response.line_id,
-            login_type: 'line' as const,
-          };
-          authManager.setUserInfo(userData, rememberMe);
-          
-          // 清除 sessionStorage 中的記住我設定
-          sessionStorage.removeItem('line_login_remember_me');
-          
-          setUser(response as User);
-          navigate("/dashboard");
+        const data = await resp.json();
+        if (data?.authenticated) {
+          navigate('/dashboard', { replace: true });
         }
-      } catch (err) {
-        console.error(err);
-        setError(err instanceof Error ? err.message : "驗證失敗");
-        authManager.clearAuth();
-      } finally {
-        setLoading(false);
-      }
+      } catch {}
     };
-
-    handleLogin();
-  }, [searchParams, navigate]);
+    check();
+  }, [navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

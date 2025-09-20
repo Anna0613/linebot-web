@@ -134,26 +134,9 @@ export class UnifiedAuthManager {
   /**
    * 安全地設定token信息到 cookies
    */
-  public setTokenInfo(tokenInfo: TokenInfo, loginType: UnifiedUser['login_type'], rememberMe = false): void {
-    try {
-      // 驗證token格式
-      if (!this.validateTokenFormat(tokenInfo.access_token)) {
-        throw new Error('無效的token格式');
-      }
-
-      // 使用 cookie 工具設定 token
-      setAuthToken(tokenInfo.access_token, rememberMe, tokenInfo.token_type);
-      
-      // 如果有 refresh token，也要設定
-      if (tokenInfo.refresh_token) {
-        setRefreshToken(tokenInfo.refresh_token);
-      }
-      
-      console.log(`Token 已設定 - 類型: ${tokenInfo.token_type}, 記住我: ${rememberMe}`);
-    } catch (error) {
-      console.error("Error occurred:", error);
-      throw error;
-    }
+  public setTokenInfo(_tokenInfo: TokenInfo, _loginType: UnifiedUser['login_type'], _rememberMe = false): void {
+    // 新策略：前端不再持有或設定任何可讀取的 token，改由後端以 HttpOnly Cookie 管理
+    console.warn('setTokenInfo 已不再使用，忽略呼叫');
   }
 
   /**
@@ -182,7 +165,8 @@ export class UnifiedAuthManager {
    * 獲取access token from cookies
    */
   public getAccessToken(): string | null {
-    return getAuthToken();
+    // 不再於前端存取 token
+    return null;
   }
 
   /**
@@ -213,67 +197,47 @@ export class UnifiedAuthManager {
    * 檢查是否已認證（帶自動刷新和快取）
    */
   public async isAuthenticated(): Promise<boolean> {
-    // 首先檢查快取的認證狀態
-    const cachedAuthStatus = cacheService.get<boolean>(CACHE_KEYS.AUTH_STATUS);
-    if (cachedAuthStatus !== null) {
-      // 如果快取顯示已認證，還需要檢查 token 是否真的有效
-      const token = this.getAccessToken();
-      if (token && !isTokenExpired(token) && !this.isTokenNearExpiry(token)) {
-        return true;
+    try {
+      const { API_CONFIG, getApiUrl } = await import('../config/apiConfig');
+      const resp = await fetch(
+        getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN),
+        { method: 'GET', credentials: 'include' }
+      );
+      if (!resp.ok) {
+        cacheService.set(CACHE_KEYS.AUTH_STATUS, false, CACHE_TTL.AUTH_STATUS);
+        return false;
       }
-      // 如果 token 無效或即將過期，清除快取狀態
-      cacheService.delete(CACHE_KEYS.AUTH_STATUS);
-    }
-    
-    const token = this.getAccessToken();
-    
-    if (!token) {
+      const data = await resp.json();
+      const ok = !!data?.authenticated;
+      cacheService.set(CACHE_KEYS.AUTH_STATUS, ok, CACHE_TTL.AUTH_STATUS);
+      if (ok && data.user) {
+        this.setUserInfo({
+          id: data.user.id || data.user.username,
+          username: data.user.username,
+          email: data.user.email,
+          display_name: data.user.username,
+          login_type: 'traditional'
+        });
+      }
+      return ok;
+    } catch {
       cacheService.set(CACHE_KEYS.AUTH_STATUS, false, CACHE_TTL.AUTH_STATUS);
       return false;
     }
-
-    // 檢查token是否即將過期
-    if (this.isTokenNearExpiry(token)) {
-      // 嘗試刷新token
-      const refreshed = await this.refreshToken();
-      if (refreshed) {
-        // 如果是記住我模式，延長 cookie 過期時間
-        if (isRememberMeActive()) {
-          extendAuthCookies();
-        }
-        cacheService.set(CACHE_KEYS.AUTH_STATUS, true, CACHE_TTL.AUTH_STATUS);
-      } else {
-        cacheService.set(CACHE_KEYS.AUTH_STATUS, false, CACHE_TTL.AUTH_STATUS);
-      }
-      return refreshed;
-    }
-
-    const isValid = !isTokenExpired(token);
-    cacheService.set(CACHE_KEYS.AUTH_STATUS, isValid, CACHE_TTL.AUTH_STATUS);
-    return isValid;
   }
 
   /**
    * 同步檢查認證狀態（不觸發刷新）
    */
   public isAuthenticatedSync(): boolean {
-    return hasValidAuth() && !isTokenExpired(this.getAccessToken()!);
+    const cached = cacheService.get<boolean>(CACHE_KEYS.AUTH_STATUS);
+    return !!cached;
   }
 
   /**
    * 檢查token是否即將過期
    */
-  private isTokenNearExpiry(token: string): boolean {
-    try {
-      const payload = parseJWTToken(token);
-      if (!payload?.exp) return false;
-      
-      const timeToExpiry = (payload.exp * 1000) - Date.now();
-      return timeToExpiry <= TOKEN_REFRESH_THRESHOLD;
-    } catch {
-      return true; // 解析失敗視為即將過期
-    }
-  }
+  private isTokenNearExpiry(_token: string): boolean { return false; }
 
   /**
    * 刷新token
@@ -293,15 +257,10 @@ export class UnifiedAuthManager {
 
   private async performTokenRefresh(): Promise<boolean> {
     try {
-      const refreshToken = getRefreshToken();
-      
-      if (!refreshToken) {
-        console.log('沒有 refresh token，無法刷新');
-        return false;
-      }
-
-      // 調用後端的 refresh API
-      const response = await fetch('/api/v1/auth/refresh', {
+      // 調用後端的 refresh API（依賴 HttpOnly Cookie）
+      const { API_CONFIG, getApiUrl } = await import('../config/apiConfig');
+      const response = await fetch(
+        getApiUrl(API_CONFIG.AUTH.BASE_URL, '/refresh'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -320,28 +279,9 @@ export class UnifiedAuthManager {
         return false;
       }
 
-      const tokenData = await response.json();
-      
-      // 更新 token 信息
-      if (tokenData.access_token) {
-        setAuthToken(tokenData.access_token, true, tokenData.token_type || 'Bearer'); // refresh 的都是記住我模式
-        
-        if (tokenData.refresh_token) {
-          setRefreshToken(tokenData.refresh_token);
-        }
-        
-        // 如果有用戶信息，也更新
-        if (tokenData.user) {
-          setUserData(tokenData.user, true);
-          // 更新快取
-          cacheService.set(CACHE_KEYS.USER_DATA, tokenData.user, CACHE_TTL.USER_DATA);
-        }
-        
-        console.log('Token 刷新成功');
-        return true;
-      }
-
-      return false;
+      // 後端已透過 Set-Cookie 更新，這裡不再處理任何 token
+      console.log('會話刷新成功（Cookie 已更新）');
+      return true;
     } catch (error) {
       console.error("Error occurred:", error);
       return false;
@@ -352,7 +292,8 @@ export class UnifiedAuthManager {
    * 獲取認證headers from cookies
    */
   public getAuthHeaders(): Record<string, string> {
-    return getAuthHeaders();
+    // 不再提供 Authorization header
+    return { 'Content-Type': 'application/json', 'Accept': 'application/json' };
   }
 
   /**

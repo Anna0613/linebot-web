@@ -18,8 +18,26 @@
       "purpose": "any maskable"
     },
     {
+      "src": "/assets/images/webp/LOGO-sm.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/images/webp/LOGO-md.webp",
+      "sizes": "384x384",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
       "src": "/assets/images/webp/LOGO.webp",
       "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/images/webp/LOGO-lg.webp",
+      "sizes": "1024x1024",
       "type": "image/webp",
       "purpose": "any"
     }
@@ -32,8 +50,9 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/assets/images/logo.svg",
-          "sizes": "96x96"
+          "src": "/assets/images/webp/LOGO-sm.webp",
+          "sizes": "96x96",
+          "type": "image/webp"
         }
       ]
     },
@@ -44,8 +63,9 @@
       "url": "/bots/create",
       "icons": [
         {
-          "src": "/assets/images/logo.svg",
-          "sizes": "96x96"
+          "src": "/assets/images/webp/LOGO-sm.webp",
+          "sizes": "96x96",
+          "type": "image/webp"
         }
       ]
     }

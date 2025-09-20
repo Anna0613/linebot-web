@@ -169,24 +169,14 @@ export class UnifiedApiClient {
    */
   private async buildHeaders(
     customHeaders: Record<string, string>,
-    skipAuth: boolean
+    _skipAuth: boolean
   ): Promise<Record<string, string>> {
+    // 不再注入 Authorization header，統一改用 HttpOnly Cookie
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       ...customHeaders,
     };
-
-    if (!skipAuth) {
-      // 檢查認證狀態並自動刷新
-      const isAuthenticated = await authManager.isAuthenticated();
-      
-      if (isAuthenticated) {
-        const authHeaders = authManager.getAuthHeaders();
-        Object.assign(headers, authHeaders);
-      }
-    }
-
     return headers;
   }
 
@@ -208,31 +198,28 @@ export class UnifiedApiClient {
 
       // 處理認證失敗
       if (status === 401) {
-        secureLog('收到 401 錯誤，嘗試刷新 token');
-        
-        // 嘗試刷新 token（只對記住我的用戶）
-        if (authManager.isRememberMeActive()) {
-          try {
-            const refreshed = await authManager.refreshToken();
-            if (refreshed) {
-              secureLog('Token 刷新成功，重新嘗試原始請求');
-              // 這裡不返回錯誤，讓外層重試邏輯來處理
-              throw new Error('TOKEN_REFRESHED');
-            }
-          } catch (refreshError) {
-            if (refreshError.message === 'TOKEN_REFRESHED') {
-              throw refreshError; // 重新拋出以觸發重試
-            }
-            secureLog('Token 刷新失敗:', refreshError);
+        secureLog('收到 401，嘗試以 Cookie 刷新會話');
+        // 嘗試呼叫後端 refresh（會依賴 HttpOnly cookies）
+        try {
+          const refreshResp = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, '/refresh'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            credentials: 'include',
+          });
+
+          if (refreshResp.ok) {
+            secureLog('會話刷新成功，重新嘗試原請求');
+            throw new Error('TOKEN_REFRESHED');
           }
+        } catch (refreshError) {
+          if (refreshError instanceof Error && refreshError.message === 'TOKEN_REFRESHED') {
+            throw refreshError;
+          }
+          secureLog('會話刷新失敗:', refreshError);
         }
-        
-        // 如果不是記住我模式或刷新失敗，清除認證信息
-        authManager.handleAuthError({ status, message: data.error || '認證已過期' });
-        return {
-          error: data.error || '認證已過期，請重新登入',
-          status,
-        };
+
+        authManager.handleAuthError({ status, message: (data as any)?.error || '認證已過期' });
+        return { error: (data as any)?.error || '認證已過期，請重新登入', status };
       }
 
       // 處理其他錯誤狀態
@@ -509,13 +496,7 @@ export class UnifiedApiClient {
     );
   }
 
-  public async verifyLineToken(token: string): Promise<ApiResponse> {
-    return this.post(
-      getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.VERIFY_TOKEN),
-      { token },
-      { skipAuth: true }
-    );
-  }
+  // 已移除舊的 LINE token 驗證端點調用，改由後端回調直接設置 Cookie
 
   // 邏輯模板相關API
   public async getBotLogicTemplates(botId: string): Promise<ApiResponse> {

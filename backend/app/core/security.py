@@ -48,27 +48,7 @@ def verify_token(token: str) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-def extract_token_from_header(auth_header: str) -> str:
-    """從 Authorization header 中提取 token"""
-    if not auth_header:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header 遺失"
-        )
-    
-    try:
-        scheme, token = auth_header.split()
-        if scheme.lower() != "bearer":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="無效的認證方案，必須是 Bearer"
-            )
-        return token
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="無效的 Authorization header 格式"
-        )
+# 已移除 Authorization header 解析，統一改用 HttpOnly Cookie 認證
 
 def create_refresh_token(data: Dict[Any, Any]) -> str:
     """創建 JWT refresh token (30天有效期)"""
