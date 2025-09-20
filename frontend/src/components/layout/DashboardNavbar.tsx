@@ -3,10 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageToggle from "../LanguageToggle/LanguageToggle";
-import "animate.css";
+// Removed animate.css to reduce unused CSS; use local animations
 import { API_CONFIG, getApiUrl } from "../../config/apiConfig";
 import { useUnifiedAuth } from "../../hooks/useUnifiedAuth";
-import { apiClient } from "../../services/UnifiedApiClient";
 import QuickActions from "@/components/common/QuickActions";
 
 // 定義 User 介面
@@ -37,6 +36,8 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
   const loadUserAvatar = useCallback(async () => {
     if (user && !user.isLineUser && !user.picture_url) {
       try {
+        // 動態載入，避免首屏引入大型 API 客戶端
+        const { apiClient } = await import("../../services/UnifiedApiClient");
         const response = await apiClient.getAvatar();
         if (response.status === 200 && response.data?.avatar) {
           setUserImage(response.data.avatar);
@@ -182,11 +183,18 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               to="/dashboard"
               className="flex items-center gap-2 sm:gap-3 z-10 min-w-0"
             >
-              <img
-                src="/images/logo.svg"
-                alt="Logo"
-                className="block h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain align-middle"
-              />
+              <picture>
+                <source srcSet="/assets/images/webp/LOGO.webp" type="image/webp" />
+                <img
+                  src="/assets/images/origin/LOGO.png"
+                  alt="Logo"
+                  loading="eager"
+                  decoding="async"
+                  fetchpriority="high"
+                  width="48" height="48"
+                  className="block h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain align-middle"
+                />
+              </picture>
               <h6 className="m-0 leading-none flex items-center text-lg sm:text-xl md:text-[28px] font-bold text-foreground tracking-wide truncate translate-y-[1px]">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
@@ -375,7 +383,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
           />
         )}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 animate__animated ${mobileMenuOpen ? "animate__fadeInLeft animate__faster" : "hidden"}`}
+          className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
         >
           <div className="flex justify-end">
             <button

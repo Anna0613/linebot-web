@@ -1,9 +1,9 @@
-import React, { useEffect, memo } from "react";
+import React, { lazy, Suspense, useEffect, memo } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import DashboardFooter from "../components/layout/DashboardFooter";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import HomeBotfly from "../components/features/dashboard/HomeBotfly";
-import TokenExpiryWarning from "../components/auth/TokenExpiryWarning";
+const DashboardFooter = lazy(() => import("../components/layout/DashboardFooter"));
+const TokenExpiryWarning = lazy(() => import("../components/auth/TokenExpiryWarning"));
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 // import { API_CONFIG, getApiUrl } from "../config/apiConfig";
@@ -67,23 +67,26 @@ const DashboardPage = memo(() => {
   return (
     <div className="min-h-screen flex flex-col">
       <DashboardNavbar user={user} />
-      <div className="pt-24 md:pt-28 mb-20">
+      <main id="main" role="main" className="pt-24 md:pt-28 mb-20">
         <HomeBotfly user={user} />
-
-      </div>
-      <DashboardFooter />
+      </main>
+      <Suspense fallback={null}>
+        <DashboardFooter />
+      </Suspense>
 
       {/* Token 過期警告 */}
-      <TokenExpiryWarning
-        onExtendSession={() => {
-          // 會話延長成功後的處理
-          console.log('會話已延長');
-        }}
-        onLogout={() => {
-          // 登出處理
-          navigate('/login', { replace: true });
-        }}
-      />
+      <Suspense fallback={null}>
+        <TokenExpiryWarning
+          onExtendSession={() => {
+            // 會話延長成功後的處理
+            console.log('會話已延長');
+          }}
+          onLogout={() => {
+            // 登出處理
+            navigate('/login', { replace: true });
+          }}
+        />
+      </Suspense>
     </div>
   );
 });

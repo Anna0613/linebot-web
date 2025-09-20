@@ -43,7 +43,7 @@ const QuickActions: React.FC = () => {
         className="fixed right-4 z-[1001]"
       >
         <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center hover:scale-110 transition-all duration-300">
-          <img src="/images/line-logo.svg" alt="Line icon" className="w-full h-full object-cover" />
+          <img src="/assets/images/line-logo.svg" alt="Line icon" className="w-full h-full object-cover" />
         </div>
       </a>
     </>

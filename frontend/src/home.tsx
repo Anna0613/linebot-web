@@ -8,9 +8,13 @@ import { initializeCacheEventHandler } from "@/utils/cacheEventHandler";
 import { authOptimizer } from "@/utils/authOptimizer";
 import { queryClient } from "@/hooks/useReactQuery";
 
-// 使用 React.lazy 進行代碼分割和懶載入
+// 使用 React.lazy 進行代碼分割和懶載入，按優先級分組
+// 高優先級 - 首頁和登入相關（用戶最可能訪問）
 const HomePage = lazy(() => import("./pages/HomePage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+
+// 中優先級 - 認證流程
 const ForgetThePassword = lazy(() => import("./pages/ForgetThePassword"));
 const Register = lazy(() => import("./pages/Register"));
 const LINELogin = lazy(() => import("./pages/LINELogin"));
@@ -18,29 +22,52 @@ const LoginSuccess = lazy(() => import("./pages/LoginSuccess"));
 const LoginError = lazy(() => import("./pages/LoginError"));
 const EmailVerification = lazy(() => import("./pages/EmailVerification"));
 const EmailVerificationPending = lazy(() => import("./pages/EmailVerificationPending"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
-const AddBotPage = lazy(() => import("./pages/AddBotPage"));
-const BotEditorPage = lazy(() => import("./pages/BotEditorPage"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+
+// 低優先級 - Bot 管理功能（需要登入後才能訪問）
+const AddBotPage = lazy(() =>
+  import("./pages/AddBotPage").then(module => ({ default: module.default }))
+);
+const BotEditorPage = lazy(() =>
+  import("./pages/BotEditorPage").then(module => ({ default: module.default }))
+);
+const VisualBotEditorPage = lazy(() =>
+  import("./pages/VisualBotEditorPage").then(module => ({ default: module.default }))
+);
+const BotManagementPage = lazy(() =>
+  import("./pages/BotManagementPage").then(module => ({ default: module.default }))
+);
+const BotUsersPage = lazy(() =>
+  import("./pages/BotUsersPage").then(module => ({ default: module.default }))
+);
+
+// 最低優先級 - 輔助頁面
 const HowToEstablish = lazy(() => import("./pages/HowToEstablish"));
 const Setting = lazy(() => import("./pages/Setting"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const About = lazy(() => import("./pages/About"));
 const Language = lazy(() => import("./pages/Language"));
 const Suggest = lazy(() => import("./pages/Suggest"));
-const VisualBotEditorPage = lazy(() => import("./pages/VisualBotEditorPage"));
-const BotManagementPage = lazy(() => import("./pages/BotManagementPage"));
-const BotUsersPage = lazy(() => import("./pages/BotUsersPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // 使用優化的 QueryClient 配置（從 useReactQuery 導入）
 
-// 載入指示器組件
+// 優化的載入指示器組件 - 使用 CSS 動畫而非 JavaScript
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-screen">
+  <div className="flex items-center justify-center min-h-screen bg-gray-50">
     <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-      <div className="text-gray-600">載入中...</div>
+      <div
+        className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-3"
+        style={{
+          animation: 'spin 1s linear infinite'
+        }}
+      ></div>
+      <div className="text-sm text-gray-500">載入中...</div>
     </div>
+    <style>{`
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    `}</style>
   </div>
 );
 
@@ -49,11 +76,35 @@ const App = () => {
   useEffect(() => {
     initializeCacheEventHandler();
     console.debug('應用程式啟動，快取事件處理器已初始化');
-    
+
     // 預熱認證狀態
     authOptimizer.preloadAuthStatus();
     console.debug('認證狀態預熱完成');
-    
+
+    // 註冊 Service Worker
+    if ('serviceWorker' in navigator && import.meta.env.PROD) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('Service Worker 註冊成功:', registration);
+
+          // 檢查更新
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // 有新版本可用
+                  console.log('新版本可用，建議重新載入頁面');
+                }
+              });
+            }
+          });
+        })
+        .catch((error) => {
+          console.error('Service Worker 註冊失敗:', error);
+        });
+    }
+
     return () => {
       // 組件卸載時清理（雖然 App 組件通常不會卸載）
       console.debug('應用程式關閉，清理優化器');

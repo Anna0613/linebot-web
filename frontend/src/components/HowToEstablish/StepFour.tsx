@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Key, Copy, ArrowRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProjectImage } from "@/components/ui/ResponsiveImage";
 
 const StepFour = () => {
   return (
@@ -17,13 +18,13 @@ const StepFour = () => {
             <div className="relative">
               <div className="glassmorphism p-3 sm:p-4 md:p-6 rounded-2xl sm:rounded-3xl shadow-glass-lg">
                 <div className="space-y-3 sm:space-y-4">
-                  <img
-                    src="/images/p7.png"
+                  <ProjectImage
+                    projectNumber={7}
                     alt="LINE Channel secret 設定頁面"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />
-                  <img
-                    src="/images/p8.png"
+                  <ProjectImage
+                    projectNumber={8}
                     alt="Channel access token 設定頁面"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />

@@ -2,9 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import LanguageToggle from "../LanguageToggle/LanguageToggle";
-import "animate.css";
+// Removed animate.css to reduce unused CSS; use local animations
 import { API_CONFIG, getApiUrl } from "../../config/apiConfig";
-import { apiClient } from "../../services/UnifiedApiClient";
 import { authManager } from "../../services/UnifiedAuthManager";
 
 // 定義 User 介面
@@ -35,6 +34,8 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
   const loadUserAvatar = useCallback(async () => {
     if (user && !user.isLineUser && !user.picture_url) {
       try {
+        // 動態載入，避免首屏引入大型 API 客戶端
+        const { apiClient } = await import("../../services/UnifiedApiClient");
         const response = await apiClient.getAvatar();
         if (response.status === 200 && response.data?.avatar) {
           setUserImage(response.data.avatar);
@@ -168,7 +169,10 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               to="/dashboard"
               className="flex items-center space-x-3 z-10 ml-2"
             >
-              <img src="/images/logo.svg" alt="Logo" className="h-12 w-auto" />
+              <picture>
+                <source srcSet="/assets/images/webp/LOGO.webp" type="image/webp" />
+                <img src="/assets/images/origin/LOGO.png" alt="Logo" loading="eager" decoding="async" fetchpriority="high" width="48" height="48" className="h-12 w-auto" />
+              </picture>
               <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">
                 LINE Bot 製作輔助系統
               </h6>
@@ -313,7 +317,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                       className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]"
                     >
                       <img
-                        src="/images/language setting.svg"
+                        src="/assets/images/language setting.svg"
                         alt="Logo"
                         className="w-6 h-6 fill-[#454658]"
                       />
@@ -361,7 +365,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
           />
         )}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 animate__animated ${mobileMenuOpen ? "animate__fadeInLeft animate__faster" : "hidden"}`}
+          className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
         >
           <div className="flex justify-end">
             <button
@@ -447,11 +451,12 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
       <a
         href="https://line.me/ti/p/OQV3UIgmr7"
         target="_blank"
+        rel="noopener noreferrer"
         className="fixed right-5 bottom-5 z-[1001]"
       >
         <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center hover:scale-110 transition">
           <img
-            src="/images/line-logo.svg"
+            src="/assets/images/line-logo.svg"
             alt="Line icon"
             className="w-full h-full object-cover"
           />

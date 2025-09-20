@@ -1,6 +1,7 @@
 import React from "react";
 import { ExternalLink, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProjectImage } from "@/components/ui/ResponsiveImage";
 
 const StepOne = () => {
   return (
@@ -96,13 +97,13 @@ const StepOne = () => {
             <div className="relative">
               <div className="glassmorphism p-3 sm:p-4 md:p-6 rounded-2xl sm:rounded-3xl shadow-glass-lg">
                 <div className="space-y-3 sm:space-y-4">
-                  <img
-                    src="/images/p1.png"
+                  <ProjectImage
+                    projectNumber={1}
                     alt="LINE Developers 登入頁面"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />
-                  <img
-                    src="/images/p2.png"
+                  <ProjectImage
+                    projectNumber={2}
                     alt="LINE Developers 註冊流程"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />

@@ -3,9 +3,35 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { fileURLToPath, URL } from "node:url";
 import { componentTagger } from "lovable-tagger";
+import fs from "fs";
+// import { performanceOptimizationPlugin, criticalCSSPlugin } from './vite-plugins/performance-optimization';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // 確保 assets 目錄被正確複製到 dist
+  publicDir: false, // 禁用默認的 public 目錄，我們將手動處理靜態資源
+  // 確保 React 使用 production 版本
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
+    __DEV__: mode !== 'production',
+  },
+  // 優化依賴預構建
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@tanstack/react-query',
+      'lucide-react',
+      'clsx',
+      'tailwind-merge'
+    ],
+    exclude: [
+      // 排除大型依賴，讓它們按需載入
+      'framer-motion',
+      'recharts'
+    ]
+  },
   server: {
     host: "::",
     port: 8080,
@@ -25,11 +51,38 @@ export default defineConfig(({ mode }) => ({
       "172.22.0.3"
     ]
   },
-  publicDir: '../assets',
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
+    // 自定義靜態資源插件
+    {
+      name: 'assets-middleware',
+      configureServer(server) {
+        server.middlewares.use('/assets', (req, res, next) => {
+          const assetsPath = path.join(fileURLToPath(new URL('.', import.meta.url)), '../assets', req.url);
+
+          if (fs.existsSync(assetsPath) && fs.statSync(assetsPath).isFile()) {
+            const ext = path.extname(assetsPath).toLowerCase();
+            const mimeTypes = {
+              '.png': 'image/png',
+              '.jpg': 'image/jpeg',
+              '.jpeg': 'image/jpeg',
+              '.webp': 'image/webp',
+              '.svg': 'image/svg+xml',
+              '.gif': 'image/gif'
+            };
+
+            res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+            fs.createReadStream(assetsPath).pipe(res);
+          } else {
+            next();
+          }
+        });
+      }
+    },
+    // 只在生產建置時啟用性能優化插件
+    // mode === 'production' && performanceOptimizationPlugin(),
+    // mode === 'production' && criticalCSSPlugin()
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -40,41 +93,42 @@ export default defineConfig(({ mode }) => ({
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
-    rollupOptions: {
-      input: {
-        main: path.resolve(fileURLToPath(new URL('.', import.meta.url)), 'index.html')
+    // 啟用 CSS 代碼分割
+    cssCodeSplit: true,
+    // 設定 chunk 大小警告限制
+    chunkSizeWarningLimit: 1000,
+    // 啟用壓縮
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn']
       },
+      mangle: {
+        safari10: true
+      },
+      format: {
+        comments: false
+      }
+    },
+    rollupOptions: {
       output: {
+        // 簡化的代碼分割策略
         manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'router': ['react-router-dom'],
-          'ui-dialog': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-alert-dialog',
-            '@radix-ui/react-popover'
-          ],
-          'ui-form': [
-            '@radix-ui/react-select',
-            '@radix-ui/react-checkbox',
-            '@radix-ui/react-radio-group',
-            '@radix-ui/react-slider',
-            '@radix-ui/react-switch',
-            'react-hook-form',
-            '@hookform/resolvers',
-            'zod'
-          ],
-          'ui-misc': [
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-toast',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-avatar',
-            '@radix-ui/react-separator'
-          ],
-          'query': ['@tanstack/react-query'],
-          'icons': ['lucide-react'],
-          'utils': ['clsx', 'tailwind-merge', 'class-variance-authority', 'date-fns']
-        }
+          // React 核心
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // 圖表庫
+          'charts': ['recharts'],
+          // UI 組件
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-tabs'],
+          // 圖標
+          'icons': ['lucide-react']
+        },
+        // 文件命名策略
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     }
   }

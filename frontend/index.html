@@ -3,7 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="/專題圖片/logo.svg" />
+    <meta http-equiv="content-language" content="zh-TW" />
+
+    <!-- Critical resource hints for performance -->
+    <link rel="preconnect" href="https://infragrid.v.network" crossorigin />
+    <link rel="preconnect" href="http://localhost:8000" crossorigin />
+    <link rel="dns-prefetch" href="//infragrid.v.network" />
+    <link rel="dns-prefetch" href="//localhost:8000" />
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/assets/images/webp/LOGO.webp" as="image" type="image/webp" fetchpriority="high" />
+    <link rel="preload" href="/src/start.tsx" as="script" crossorigin />
+
+    <!-- Prefetch likely next resources -->
+    <link rel="prefetch" href="/src/pages/DashboardPage.tsx" as="script" />
+    <link rel="prefetch" href="/src/pages/LoginPage.tsx" as="script" />
+
+    <!-- Module preload for critical chunks -->
+    <link rel="modulepreload" href="/src/start.tsx" />
+    <link rel="modulepreload" href="/src/home.tsx" />
+
+    <link rel="icon" href="/assets/images/logo.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="LineBot-Web" />
     <title>LineBot-Web | LINE Bot 管理平台 - 智慧聊天機器人製作系統</title>
     <meta name="description" content="LineBot-Web 是一個現代化的 LINE Bot 管理平台，提供直觀的 Web 介面來創建、管理和配置 LINE Bot。支援 Flex Message 編輯器、自動回覆設定、用戶分群管理、推播訊息排程等完整功能。" />
     <meta name="author" content="LineBot-Web Team" />
@@ -22,6 +47,68 @@
     <meta name="twitter:title" content="LineBot-Web | LINE Bot 管理平台" />
     <meta name="twitter:description" content="現代化的 LINE Bot 管理平台，提供完整的 Bot 創建、管理和配置功能。" />
     <meta name="twitter:image" content="/專題圖片/logo.svg" />
+
+    <!-- 關鍵 CSS 內聯 - 首屏渲染必需的樣式 -->
+    <style>
+      /* 重置和基礎樣式 */
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        line-height: 1.15;
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #ffffff;
+        color: #1f2937;
+      }
+
+      /* 載入指示器樣式 */
+      .loading-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background-color: #f9fafb;
+      }
+
+      .loading-spinner {
+        width: 2rem;
+        height: 2rem;
+        border: 2px solid #e5e7eb;
+        border-top: 2px solid #2563eb;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 0.75rem;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .loading-text {
+        font-size: 0.875rem;
+        color: #6b7280;
+        text-align: center;
+      }
+
+      /* 防止 FOUC (Flash of Unstyled Content) */
+      .app-container {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+      }
+
+      .app-container.loaded {
+        opacity: 1;
+      }
+    </style>
   </head>
 
   <body>

@@ -42,11 +42,18 @@ const Navbar = () => {
               to="/"
               className="flex items-center gap-2 sm:gap-3 z-10 min-w-0"
             >
-              <img
-                src="/images/logo.svg"
-                alt="Logo"
-                className="block h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain"
-              />
+              <picture>
+                <source srcSet="/assets/images/webp/LOGO.webp" type="image/webp" />
+                <img
+                  src="/assets/images/origin/LOGO.png"
+                  alt="Logo"
+                  loading="eager"
+                  decoding="async"
+                  fetchpriority="high"
+                  width="48" height="48"
+                  className="block h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain"
+                />
+              </picture>
               <h6 className="m-0 leading-none text-lg sm:text-xl md:text-[28px] font-bold text-foreground tracking-wide truncate translate-y-[1px]">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
@@ -138,7 +145,7 @@ const Navbar = () => {
           />
         )}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 animate__animated ${mobileMenuOpen ? "animate__fadeInLeft animate__faster" : "hidden"}`}
+          className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
         >
           <div className="flex justify-end">
             <button

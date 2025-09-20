@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,10 +7,10 @@ import { useBotManagement } from "@/hooks/useBotManagement";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/services/UnifiedApiClient";
 import { Bot as BotType } from "@/types/bot";
-import DeleteConfirmDialog from "@/components/Editbot/DeleteConfirmDialog";
-import EditOptionModal from "@/components/Editbot/EditOptionModal";
-import BotEditModal from "@/components/Editbot/BotEditModal";
-import BotDetailsModal from "./BotDetailsModal";
+const DeleteConfirmDialog = lazy(() => import("@/components/Editbot/DeleteConfirmDialog"));
+const EditOptionModal = lazy(() => import("@/components/Editbot/EditOptionModal"));
+const BotEditModal = lazy(() => import("@/components/Editbot/BotEditModal"));
+const BotDetailsModal = lazy(() => import("./BotDetailsModal"));
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -216,11 +216,12 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
       </div>
 
       {/* Quick Actions */}
+      <h2 className="text-xl font-semibold text-gray-900 mb-3">快速操作</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-medium">創建新 Bot</CardTitle>
-            <Plus className="h-6 w-6 text-blue-600" />
+            <Plus className="h-6 w-6 text-blue-700" />
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">
@@ -235,7 +236,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-medium">Bot 編輯器</CardTitle>
-            <Bot className="h-6 w-6 text-green-600" />
+            <Bot className="h-6 w-6 text-green-700" />
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">
@@ -250,7 +251,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-medium">管理 LINE Bot</CardTitle>
-            <Settings className="h-6 w-6 text-purple-600" />
+            <Settings className="h-6 w-6 text-purple-700" />
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">
@@ -393,7 +394,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">狀態:</span>
-                      <span className="font-medium text-green-600">啟用</span>
+                      <span className="font-medium text-green-700">啟用</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">建立時間:</span>
@@ -404,7 +405,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                     {bot.channel_token && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">頻道已設定:</span>
-                        <span className="text-green-600 font-medium">是</span>
+                        <span className="text-green-700 font-medium">是</span>
                       </div>
                     )}
                   </div>
@@ -416,37 +417,45 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
       </div>
 
       {/* 刪除確認對話框 */}
-      <DeleteConfirmDialog
-        isOpen={deleteDialog.isOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        botName={deleteDialog.botName}
-        isLoading={deleteDialog.isLoading}
-      />
+      <Suspense fallback={null}>
+        <DeleteConfirmDialog
+          isOpen={deleteDialog.isOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          botName={deleteDialog.botName}
+          isLoading={deleteDialog.isLoading}
+        />
+      </Suspense>
 
       {/* 編輯選項模態框 */}
-      <EditOptionModal
-        isOpen={editOptionModal.isOpen}
-        onClose={handleEditOptionClose}
-        botId={editOptionModal.botId}
-        onEditBasicInfo={handleEditBasicInfo}
-      />
+      <Suspense fallback={null}>
+        <EditOptionModal
+          isOpen={editOptionModal.isOpen}
+          onClose={handleEditOptionClose}
+          botId={editOptionModal.botId}
+          onEditBasicInfo={handleEditBasicInfo}
+        />
+      </Suspense>
 
       {/* 編輯模態框 */}
-      <BotEditModal
-        isOpen={editModal.isOpen}
-        onClose={handleEditModalClose}
-        botId={editModal.botId}
-        editType={editModal.editType}
-        onBotUpdated={handleBotUpdated}
-      />
+      <Suspense fallback={null}>
+        <BotEditModal
+          isOpen={editModal.isOpen}
+          onClose={handleEditModalClose}
+          botId={editModal.botId}
+          editType={editModal.editType}
+          onBotUpdated={handleBotUpdated}
+        />
+      </Suspense>
 
       {/* Bot詳情模態框 */}
-      <BotDetailsModal
-        isOpen={detailsModal.isOpen}
-        onClose={closeDetailsModal}
-        bot={detailsModal.bot}
-      />
+      <Suspense fallback={null}>
+        <BotDetailsModal
+          isOpen={detailsModal.isOpen}
+          onClose={closeDetailsModal}
+          bot={detailsModal.bot}
+        />
+      </Suspense>
 
       {/* Help Section */}
       <div className="mt-8 bg-blue-50 rounded-lg p-6">

@@ -1,3 +1,12 @@
+User-agent: *
+Disallow:
+
+# Allow crawling of SPA routes
+Allow: /
+Allow: /dashboard
+
+# Sitemap (optional, add if available)
+# Sitemap: /sitemap.xml
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Disallow:

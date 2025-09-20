@@ -1,6 +1,7 @@
 import React from "react";
 import { MessageSquare, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProjectImage } from "@/components/ui/ResponsiveImage";
 
 const StepThree = () => {
   return (
@@ -129,13 +130,13 @@ const StepThree = () => {
             <div className="relative">
               <div className="glassmorphism p-3 sm:p-4 md:p-6 rounded-2xl sm:rounded-3xl shadow-glass-lg">
                 <div className="space-y-3 sm:space-y-4">
-                  <img
-                    src="/images/p5.png"
+                  <ProjectImage
+                    projectNumber={5}
                     alt="LINE Channel 建立頁面"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />
-                  <img
-                    src="/images/p6.png"
+                  <ProjectImage
+                    projectNumber={6}
                     alt="Channel 設定表單"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />

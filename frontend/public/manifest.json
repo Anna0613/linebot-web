@@ -1,25 +1,54 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "name": "LineBot-Web | LINE Bot 管理平台",
+  "short_name": "LineBot-Web",
+  "description": "現代化的 LINE Bot 管理平台，提供完整的 Bot 創建、管理和配置功能",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "zh-TW",
+  "categories": ["productivity", "business", "utilities"],
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/assets/images/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "src": "/assets/images/webp/LOGO.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any"
     }
   ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "shortcuts": [
+    {
+      "name": "儀表板",
+      "short_name": "Dashboard",
+      "description": "查看 Bot 統計和管理概覽",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/assets/images/logo.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "創建 Bot",
+      "short_name": "Create Bot",
+      "description": "創建新的 LINE Bot",
+      "url": "/bots/create",
+      "icons": [
+        {
+          "src": "/assets/images/logo.svg",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
 }

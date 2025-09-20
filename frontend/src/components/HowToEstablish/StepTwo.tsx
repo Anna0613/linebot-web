@@ -1,6 +1,7 @@
 import React from "react";
 import { Plus, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProjectImage } from "@/components/ui/ResponsiveImage";
 
 const StepTwo = () => {
   return (
@@ -17,8 +18,8 @@ const StepTwo = () => {
               <div className="glassmorphism p-3 sm:p-4 md:p-6 rounded-2xl sm:rounded-3xl shadow-glass-lg">
                 <div className="grid grid-cols-1 gap-3 sm:gap-6">
                   <div className="relative">
-                    <img
-                      src="/images/p3.png"
+                    <ProjectImage
+                      projectNumber={3}
                       alt="LINE Developers Provider 建立頁面"
                       className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                     />
@@ -27,8 +28,8 @@ const StepTwo = () => {
                   </div>
 
                   <div className="relative">
-                    <img
-                      src="/images/p4.png"
+                    <ProjectImage
+                      projectNumber={4}
                       alt="Provider 建立表單"
                       className="w-full h-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                     />
