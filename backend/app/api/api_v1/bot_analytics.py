@@ -369,7 +369,7 @@ async def get_bot_profile(
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
         
         # 獲取 Bot 基本資訊
-        bot_info = line_bot_service.get_bot_info()
+        bot_info = await asyncio.to_thread(line_bot_service.get_bot_info)
         
         return {
             "id": bot.id,

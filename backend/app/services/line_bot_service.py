@@ -783,48 +783,50 @@ class LineBotService:
         """記錄用戶互動到 MongoDB（替代舊的 PostgreSQL 方法）"""
         from app.models.line_user import LineBotUser
         from uuid import UUID as PyUUID
+        import asyncio
 
         try:
             bot_uuid = PyUUID(bot_id)
 
-            # 查找或創建用戶記錄（PostgreSQL 部分保留）
-            line_user = db_session.query(LineBotUser).filter(
-                LineBotUser.bot_id == bot_uuid,
-                LineBotUser.line_user_id == user_id
-            ).first()
+            # 將所有與 SQLAlchemy Session 相關的操作集中到單一執行緒中處理
+            def _upsert_and_commit():
+                from sqlalchemy.sql import func as _func
+                # 查找或創建用戶記錄
+                lu = db_session.query(LineBotUser).filter(
+                    LineBotUser.bot_id == bot_uuid,
+                    LineBotUser.line_user_id == user_id
+                ).first()
 
-            if not line_user:
-                # 獲取用戶資料
-                user_profile = self.get_user_profile(user_id)
+                if not lu:
+                    # 取用戶資料（同步，允許在同一執行緒執行）
+                    profile = self.get_user_profile(user_id)
+                    lu = LineBotUser(
+                        bot_id=bot_uuid,
+                        line_user_id=user_id,
+                        display_name=(profile or {}).get("display_name"),
+                        picture_url=(profile or {}).get("picture_url"),
+                        status_message=(profile or {}).get("status_message"),
+                        language=(profile or {}).get("language"),
+                        is_followed=True,
+                        interaction_count="1",
+                    )
+                    db_session.add(lu)
+                else:
+                    # 更新互動資訊
+                    lu.last_interaction = _func.now()
+                    try:
+                        current_count = int(lu.interaction_count or "0")
+                        lu.interaction_count = str(current_count + 1)
+                    except (ValueError, TypeError):
+                        lu.interaction_count = "1"
+                    if event_type == "follow":
+                        lu.is_followed = True
+                    elif event_type == "unfollow":
+                        lu.is_followed = False
 
-                line_user = LineBotUser(
-                    bot_id=bot_uuid,
-                    line_user_id=user_id,
-                    display_name=user_profile.get("display_name") if user_profile else None,
-                    picture_url=user_profile.get("picture_url") if user_profile else None,
-                    status_message=user_profile.get("status_message") if user_profile else None,
-                    language=user_profile.get("language") if user_profile else None,
-                    is_followed=True,
-                    interaction_count="1"
-                )
-                db_session.add(line_user)
-                db_session.flush()  # 獲取 ID
-            else:
-                # 更新互動資訊
-                from sqlalchemy.sql import func
-                line_user.last_interaction = func.now()
-                try:
-                    current_count = int(line_user.interaction_count)
-                    line_user.interaction_count = str(current_count + 1)
-                except (ValueError, TypeError):
-                    line_user.interaction_count = "1"
+                db_session.commit()
 
-                if event_type == "follow":
-                    line_user.is_followed = True
-                elif event_type == "unfollow":
-                    line_user.is_followed = False
-
-            db_session.commit()
+            await asyncio.to_thread(_upsert_and_commit)
 
             # 使用 ConversationService 記錄到 MongoDB
             from app.services.conversation_service import ConversationService
