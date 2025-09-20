@@ -4,7 +4,8 @@
 """
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from fastapi import HTTPException, status
 import aiohttp
 import secrets
@@ -18,25 +19,33 @@ from app.core.security import verify_password, get_password_hash, create_access_
 from app.config import settings
 from app.services.email_service import EmailService
 
+ 
+
+
 class AuthService:
     """認證服務類別"""
     
     @staticmethod
-    def register_user(db: Session, user_data: UserRegister) -> Dict[str, str]:
+    async def register_user(db: AsyncSession, user_data: UserRegister) -> Dict[str, str]:
         """用戶註冊"""
         # 檢查用戶名稱是否已存在
-        if db.query(User).filter(User.username == user_data.username).first():
+        res = await db.execute(select(User).where(User.username == user_data.username))
+        exists_username = res.scalars().first()
+        if exists_username:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="用戶名稱已被註冊"
             )
         
         # 檢查郵箱是否已存在
-        if user_data.email and db.query(User).filter(User.email == user_data.email).first():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="郵箱地址已被註冊"
-            )
+        if user_data.email:
+            res = await db.execute(select(User).where(User.email == user_data.email))
+            exists_email = res.scalars().first()
+            if exists_email:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="郵箱地址已被註冊"
+                )
         
         # 建立新用戶
         hashed_password = get_password_hash(user_data.password)
@@ -46,10 +55,9 @@ class AuthService:
             password=hashed_password,
             email_verified=False if user_data.email else True  # 沒有郵箱的話直接設為已驗證
         )
-        
         db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
+        await db.commit()
+        await db.refresh(db_user)
         
         # 發送驗證郵件（如果有提供郵箱）
         if user_data.email:
@@ -64,7 +72,7 @@ class AuthService:
         return {"message": "用戶註冊成功，請檢查您的郵箱以驗證帳戶"}
     
     @staticmethod
-    def authenticate_user(db: Session, username: str, password: str, remember_me: bool = False) -> Token:
+    async def authenticate_user(db: AsyncSession, username: str, password: str, remember_me: bool = False) -> Token:
         """用戶認證登入"""
         import logging
         logger = logging.getLogger(__name__)
@@ -72,9 +80,8 @@ class AuthService:
         logger.info(f"開始認證用戶: {username}, remember_me: {remember_me}")
         
         # 支援用戶名稱或郵箱登入
-        user = db.query(User).filter(
-            (User.username == username) | (User.email == username)
-        ).first()
+        result = await db.execute(select(User).where((User.username == username) | (User.email == username)))
+        user = result.scalars().first()
         
         if not user:
             logger.warning(f"用戶不存在: {username}")
@@ -176,7 +183,7 @@ class AuthService:
         }
     
     @staticmethod
-    async def handle_line_callback(db: Session, code: str, state: str) -> Dict[str, str]:
+    async def handle_line_callback(db: AsyncSession, code: str, state: str) -> Dict[str, str]:
         """處理 LINE 登入回調"""
         try:
             # 取得 access token（改為非同步 HTTP 請求）
@@ -220,25 +227,22 @@ class AuthService:
             
             # 檢查是否已存在 LINE 用戶
             # 查詢是否存在 LINE 用戶（避免阻塞事件圈）
-            line_user = await asyncio.to_thread(
-                lambda: db.query(LineUser).filter(LineUser.line_id == line_id).first()
-            )
+            res = await db.execute(select(LineUser).where(LineUser.line_id == line_id))
+            line_user = res.scalars().first()
             
             if line_user:
                 # 已存在的 LINE 用戶，直接登入
                 user = line_user.user
                 # 更新用戶的顯示名稱和頭像（如果有變更）
-                def _update_line_user():
-                    updated = False
-                    if line_user.display_name != display_name:
-                        line_user.display_name = display_name
-                        updated = True
-                    if line_user.picture_url != picture_url:
-                        line_user.picture_url = picture_url
-                        updated = True
-                    if updated:
-                        db.commit()
-                await asyncio.to_thread(_update_line_user)
+                updated = False
+                if line_user.display_name != display_name:
+                    line_user.display_name = display_name
+                    updated = True
+                if line_user.picture_url != picture_url:
+                    line_user.picture_url = picture_url
+                    updated = True
+                if updated:
+                    await db.commit()
             else:
                 # 新的 LINE 用戶，建立帳號
                 # 生成唯一的用戶名稱
@@ -246,33 +250,30 @@ class AuthService:
                 username = base_username
                 counter = 1
                 # 以阻塞 I/O 包裝在執行緒中避免阻塞
-                def _generate_unique_username() -> str:
-                    nonlocal username, counter
-                    while db.query(User).filter(User.username == username).first():
-                        username = f"{base_username}_{counter}"
-                        counter += 1
-                    return username
-                username = await asyncio.to_thread(_generate_unique_username)
+                while True:
+                    res = await db.execute(select(User).where(User.username == username))
+                    if res.scalars().first() is None:
+                        break
+                    counter += 1
+                    username = f"{base_username}_{counter}"
                 
                 # 建立新用戶與 LINE 關聯（放入執行緒）
-                def _create_user_and_line():
-                    user_local = User(
-                        username=username,
-                        password=get_password_hash(''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))),
-                        email_verified=True
-                    )
-                    db.add(user_local)
-                    db.flush()
-                    line_user_local = LineUser(
-                        user_id=user_local.id,
-                        line_id=line_id,
-                        display_name=display_name,
-                        picture_url=picture_url
-                    )
-                    db.add(line_user_local)
-                    db.commit()
-                    return user_local
-                user = await asyncio.to_thread(_create_user_and_line)
+                user_local = User(
+                    username=username,
+                    password=get_password_hash(''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))),
+                    email_verified=True
+                )
+                db.add(user_local)
+                await db.flush()
+                line_user_local = LineUser(
+                    user_id=user_local.id,
+                    line_id=line_id,
+                    display_name=display_name,
+                    picture_url=picture_url
+                )
+                db.add(line_user_local)
+                await db.commit()
+                user = user_local
             
             # 生成 JWT token
             jwt_token = create_access_token(
@@ -293,23 +294,24 @@ class AuthService:
             }
             
         except HTTPException:
-            db.rollback()
+            await db.rollback()
             raise
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"LINE 登入處理失敗: {str(e)}"
             )
     
     @staticmethod
-    def verify_email_token(db: Session, token: str) -> Dict[str, str]:
+    async def verify_email_token(db: AsyncSession, token: str) -> Dict[str, str]:
         """驗證郵箱 token"""
         try:
             serializer = URLSafeTimedSerializer(settings.FLASK_SECRET_KEY)
             email = serializer.loads(token, salt='email-verify', max_age=3600)  # 1小時過期
             
-            user = db.query(User).filter(User.email == email).first()
+            res = await db.execute(select(User).where(User.email == email))
+            user = res.scalars().first()
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -320,7 +322,7 @@ class AuthService:
                 return {"message": "郵箱已經驗證過了"}
             
             user.email_verified = True
-            db.commit()
+            await db.commit()
             
             return {"message": "郵箱驗證成功"}
             
@@ -336,9 +338,10 @@ class AuthService:
             )
     
     @staticmethod
-    def resend_verification_email(db: Session, email: str) -> Dict[str, str]:
+    async def resend_verification_email(db: AsyncSession, email: str) -> Dict[str, str]:
         """重新發送驗證郵件"""
-        user = db.query(User).filter(User.email == email).first()
+        res = await db.execute(select(User).where(User.email == email))
+        user = res.scalars().first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -363,13 +366,14 @@ class AuthService:
         # 發送驗證郵件（現在不會拋出異常）
         EmailService.send_verification_email(email)
         user.last_verification_sent = datetime.now(timezone.utc)
-        db.commit()
+        await db.commit()
         return {"message": "驗證郵件已重新發送"}
     
     @staticmethod
-    def send_password_reset_email(db: Session, email: str) -> Dict[str, str]:
+    async def send_password_reset_email(db: AsyncSession, email: str) -> Dict[str, str]:
         """發送密碼重設郵件"""
-        user = db.query(User).filter(User.email == email).first()
+        res = await db.execute(select(User).where(User.email == email))
+        user = res.scalars().first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -388,7 +392,7 @@ class AuthService:
         try:
             EmailService.send_password_reset_email(email)
             user.last_verification_sent = datetime.now(timezone.utc)
-            db.commit()
+            await db.commit()
             return {"message": "密碼重設連結已發送至您的郵箱"}
         except Exception as e:
             raise HTTPException(
@@ -397,13 +401,14 @@ class AuthService:
             )
     
     @staticmethod
-    def reset_password(db: Session, token: str, new_password: str) -> Dict[str, str]:
+    async def reset_password(db: AsyncSession, token: str, new_password: str) -> Dict[str, str]:
         """重設密碼"""
         try:
             serializer = URLSafeTimedSerializer(settings.FLASK_SECRET_KEY)
             email = serializer.loads(token, salt='password-reset', max_age=3600)  # 1小時過期
             
-            user = db.query(User).filter(User.email == email).first()
+            res = await db.execute(select(User).where(User.email == email))
+            user = res.scalars().first()
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -412,7 +417,7 @@ class AuthService:
             
             # 更新密碼
             user.password = get_password_hash(new_password)
-            db.commit()
+            await db.commit()
             
             return {"message": "密碼重設成功"}
             
@@ -428,7 +433,7 @@ class AuthService:
             )
     
     @staticmethod
-    def refresh_access_token(db: Session, refresh_token: str) -> Token:
+    async def refresh_access_token(db: AsyncSession, refresh_token: str) -> Token:
         """使用 refresh token 刷新 access token"""
         try:
             # 驗證 refresh token
@@ -451,7 +456,8 @@ class AuthService:
                 )
             
             # 檢查用戶是否存在
-            user = db.query(User).filter(User.username == username).first()
+            res = await db.execute(select(User).where(User.username == username))
+            user = res.scalars().first()
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,

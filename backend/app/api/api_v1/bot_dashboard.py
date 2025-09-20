@@ -5,13 +5,13 @@ Bot 儀表板 API 路由
 import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import json
 
-from app.database import get_db
-from app.dependencies import get_current_user
+from app.database_async import get_async_db
+from app.dependencies import get_current_user_async
 from app.models.user import User
 from app.models.bot import Bot, LogicTemplate
 from app.models.line_user import LineBotUser
@@ -27,7 +27,6 @@ from app.config.redis_config import (
     DEFAULT_CACHE_TTL
 )
 from app.services.cache_service import get_cache, cache_async
-from app.utils.query_optimizer import QueryOptimizer
 from app.utils.pagination import LazyLoader, PaginationParams
 from app.services.websocket_manager import websocket_manager
 
@@ -48,8 +47,8 @@ async def get_bot_dashboard(
     include_logic: bool = True,
     include_webhook: bool = True,
     period: Optional[str] = "week",  # day, week, month
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """
     獲取 Bot 儀表板所有資料
@@ -71,12 +70,9 @@ async def get_bot_dashboard(
     """
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(
-        lambda: db.query(Bot).filter(
-            Bot.id == bot_id,
-            Bot.user_id == current_user.id
-        ).first()
-    )
+    from sqlalchemy import select
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -99,13 +95,9 @@ async def get_bot_dashboard(
         
         # 基本統計資料（總是獲取，因為開銷小）
         async def get_basic_stats():
-            # 使用異步方式執行同步查詢
-            import asyncio
-            loop = asyncio.get_event_loop()
-            total_users = await loop.run_in_executor(
-                None, 
-                lambda: db.query(LineBotUser).filter(LineBotUser.bot_id == bot_id).count()
-            )
+            from sqlalchemy import select, func
+            res = await db.execute(select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id))
+            total_users = res.scalar() or 0
             return {"total_users": total_users}
         
         # 邏輯模板查詢
@@ -113,23 +105,13 @@ async def get_bot_dashboard(
             if not include_logic:
                 return None
                 
-            loop = asyncio.get_event_loop()
-            logic_templates = await loop.run_in_executor(
-                None,
-                lambda: db.query(
-                    LogicTemplate.id,
-                    LogicTemplate.name,
-                    LogicTemplate.description,
-                    LogicTemplate.is_active,
-                    LogicTemplate.created_at,
-                    LogicTemplate.updated_at
-                ).filter(
-                    LogicTemplate.bot_id == bot_id
-                ).order_by(
-                    LogicTemplate.is_active.desc(),
-                    LogicTemplate.updated_at.desc()
-                ).all()
+            from sqlalchemy import select
+            res_lt = await db.execute(
+                select(LogicTemplate.id, LogicTemplate.name, LogicTemplate.description, LogicTemplate.is_active, LogicTemplate.created_at, LogicTemplate.updated_at)
+                .where(LogicTemplate.bot_id == bot_id)
+                .order_by(LogicTemplate.is_active.desc(), LogicTemplate.updated_at.desc())
             )
+            logic_templates = res_lt.all()
             
             return [
                 {
@@ -191,7 +173,7 @@ async def get_bot_dashboard(
     l2_ttl=900,   # L2 快取 15 分鐘
     use_args_in_key=True
 )
-async def _get_analytics_data(bot_id: str, period: str, db: Session) -> Dict[str, Any]:
+async def _get_analytics_data(bot_id: str, period: str, db: AsyncSession) -> Dict[str, Any]:
     """獲取分析資料"""
     
     # 計算時間範圍
@@ -243,8 +225,8 @@ async def _get_analytics_data(bot_id: str, period: str, db: Session) -> Dict[str
         month_start = end_date - timedelta(days=30)
         
         # 執行聯合查詢
-        def _exec_analytics():
-            return db.execute(analytics_query, {
+        # async execute analytics query
+        result = (await db.execute(analytics_query, {
                 'bot_id': bot_id,
                 'period_start': start_date,
                 'period_end': end_date,
@@ -252,8 +234,7 @@ async def _get_analytics_data(bot_id: str, period: str, db: Session) -> Dict[str
                 'today_end': today_end,
                 'week_start': week_start,
                 'month_start': month_start
-            }).fetchone()
-        result = await asyncio.to_thread(_exec_analytics)
+            })).fetchone()
         
         if result:
             active_users = result.active_users or 0
@@ -283,13 +264,11 @@ async def _get_analytics_data(bot_id: str, period: str, db: Session) -> Dict[str
         ORDER BY hour;
         """)
         
-        def _exec_activity():
-            return db.execute(activity_query, {
+        activity_result = (await db.execute(activity_query, {
                 'bot_id': bot_id,
                 'start_date': start_date,
                 'end_date': end_date
-            }).fetchall()
-        activity_result = await asyncio.to_thread(_exec_activity)
+            })).fetchall()
         
         activity_distribution = [
             {"hour": f"{int(row.hour):02d}:00", "activeUsers": row.count}
@@ -424,8 +403,8 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
 @router.get("/{bot_id}/dashboard/light")
 async def get_bot_dashboard_light(
     bot_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """
     獲取輕量版儀表板資料
@@ -434,13 +413,16 @@ async def get_bot_dashboard_light(
     """
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    from sqlalchemy import select, func
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
     # 基本統計（避免阻塞事件圈）
-    total_users = await asyncio.to_thread(lambda: db.query(LineBotUser).filter(LineBotUser.bot_id == bot_id).count())
+    res_cnt = await db.execute(select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id))
+    total_users = res_cnt.scalar() or 0
     
     # 今日互動數（快速查詢）
     today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -469,13 +451,14 @@ async def get_bot_dashboard_light(
 async def clear_bot_cache(
     bot_id: str,
     cache_type: Optional[str] = None,  # analytics, webhook, logic, all
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """清除 Bot 快取"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -517,25 +500,26 @@ async def get_bot_users_paginated(
     limit: int = 20,
     search: Optional[str] = None,
     active_only: bool = False,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """分頁獲取 Bot 用戶列表"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
     try:
-        result = await asyncio.to_thread(LazyLoader.paginate_bot_users,
+        result = await LazyLoader.paginate_bot_users_async(
             db=db,
             bot_id=bot_id,
             page=page,
             limit=limit,
             search=search,
-            active_only=active_only
+            active_only=active_only,
         )
         
         # 轉換項目為字典格式
@@ -565,13 +549,14 @@ async def get_bot_interactions_paginated(
     page: int = 1,
     limit: int = 50,
     event_type: Optional[str] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """分頁獲取 Bot 互動記錄"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -612,24 +597,25 @@ async def get_logic_templates_paginated(
     page: int = 1,
     limit: int = 10,
     active_only: bool = False,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """分頁獲取邏輯模板"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
     try:
-        result = await asyncio.to_thread(LazyLoader.paginate_logic_templates,
+        result = await LazyLoader.paginate_logic_templates_async(
             db=db,
             bot_id=bot_id,
             page=page,
             limit=limit,
-            active_only=active_only
+            active_only=active_only,
         )
         
         # 轉換項目為字典格式
@@ -654,19 +640,20 @@ async def get_logic_templates_paginated(
 @router.get("/{bot_id}/summary")
 async def get_bot_summary(
     bot_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取 Bot 概要統計（用於首次快速載入）"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
     try:
-        stats = await asyncio.to_thread(LazyLoader.get_summary_stats, db, bot_id)
+        stats = await LazyLoader.get_summary_stats_async(db, bot_id)
         
         return {
             "bot_info": {
@@ -685,13 +672,14 @@ async def get_bot_summary(
 async def get_bot_analytics_incremental(
     bot_id: str,
     since: Optional[datetime] = Query(None, description="獲取此時間之後的數據"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取增量分析數據"""
 
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
 
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在")
@@ -738,8 +726,8 @@ async def get_bot_analytics_incremental(
 @router.get("/{bot_id}/status/quick")
 async def get_bot_status_quick(
     bot_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """快速獲取 Bot 狀態（輕量級）"""
 
@@ -752,7 +740,8 @@ async def get_bot_status_quick(
         return json.loads(cached_status)
 
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
 
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在")

@@ -783,50 +783,48 @@ class LineBotService:
         """記錄用戶互動到 MongoDB（替代舊的 PostgreSQL 方法）"""
         from app.models.line_user import LineBotUser
         from uuid import UUID as PyUUID
-        import asyncio
+        from sqlalchemy import select
 
         try:
             bot_uuid = PyUUID(bot_id)
 
-            # 將所有與 SQLAlchemy Session 相關的操作集中到單一執行緒中處理
-            def _upsert_and_commit():
-                from sqlalchemy.sql import func as _func
-                # 查找或創建用戶記錄
-                lu = db_session.query(LineBotUser).filter(
+            # 以 AsyncSession 執行 upsert
+            res = await db_session.execute(
+                select(LineBotUser).where(
                     LineBotUser.bot_id == bot_uuid,
-                    LineBotUser.line_user_id == user_id
-                ).first()
+                    LineBotUser.line_user_id == user_id,
+                )
+            )
+            lu = res.scalars().first()
 
-                if not lu:
-                    # 取用戶資料（同步，允許在同一執行緒執行）
-                    profile = self.get_user_profile(user_id)
-                    lu = LineBotUser(
-                        bot_id=bot_uuid,
-                        line_user_id=user_id,
-                        display_name=(profile or {}).get("display_name"),
-                        picture_url=(profile or {}).get("picture_url"),
-                        status_message=(profile or {}).get("status_message"),
-                        language=(profile or {}).get("language"),
-                        is_followed=True,
-                        interaction_count="1",
-                    )
-                    db_session.add(lu)
-                else:
-                    # 更新互動資訊
-                    lu.last_interaction = _func.now()
-                    try:
-                        current_count = int(lu.interaction_count or "0")
-                        lu.interaction_count = str(current_count + 1)
-                    except (ValueError, TypeError):
-                        lu.interaction_count = "1"
-                    if event_type == "follow":
-                        lu.is_followed = True
-                    elif event_type == "unfollow":
-                        lu.is_followed = False
+            if not lu:
+                # 取用戶資料（避免阻塞，放入 thread）
+                profile = await asyncio.to_thread(self.get_user_profile, user_id)
+                lu = LineBotUser(
+                    bot_id=bot_uuid,
+                    line_user_id=user_id,
+                    display_name=(profile or {}).get("display_name"),
+                    picture_url=(profile or {}).get("picture_url"),
+                    status_message=(profile or {}).get("status_message"),
+                    language=(profile or {}).get("language"),
+                    is_followed=True if event_type != "unfollow" else False,
+                    interaction_count="1",
+                )
+                db_session.add(lu)
+            else:
+                from sqlalchemy.sql import func as _func
+                lu.last_interaction = _func.now()
+                try:
+                    current_count = int(lu.interaction_count or "0")
+                    lu.interaction_count = str(current_count + 1)
+                except (ValueError, TypeError):
+                    lu.interaction_count = "1"
+                if event_type == "follow":
+                    lu.is_followed = True
+                elif event_type == "unfollow":
+                    lu.is_followed = False
 
-                db_session.commit()
-
-            await asyncio.to_thread(_upsert_and_commit)
+            await db_session.commit()
 
             # 使用 ConversationService 記錄到 MongoDB
             from app.services.conversation_service import ConversationService
@@ -857,37 +855,12 @@ class LineBotService:
             import traceback
             logger.error(f"詳細錯誤信息: {traceback.format_exc()}")
             try:
-                db_session.rollback()
-            except:
+                await db_session.rollback()
+            except Exception:
                 pass
             return None
     
-    def _process_media_background(self, interaction_id: str, line_user_id: str, message_type: str, 
-                                  line_message_id: str):
-        """背景任務處理媒體檔案上傳到 MinIO（同步版本）"""
-        from app.services.minio_service import get_minio_service
-        # TODO: LineBotUserInteraction 已遷移到 MongoDB
-        from uuid import UUID as PyUUID
-        from app.database import SessionLocal
-        import asyncio
-        
-        db_session = SessionLocal()
-        try:
-            # 運行異步媒體處理
-            asyncio.run(self._process_media_async(
-                interaction_id, line_user_id, message_type, line_message_id, db_session
-            ))
-        except Exception as e:
-            logger.error(f"背景媒體處理失敗: {e}")
-            try:
-                db_session.rollback()
-            except:
-                pass
-        finally:
-            try:
-                db_session.close()
-            except:
-                pass
+    # 已移除未使用的同步背景媒體處理版本（請使用 _process_media_async）
     
     async def _process_media_async(self, interaction_id: str, line_user_id: str, message_type: str,
                                   line_message_id: str, db_session):
@@ -984,88 +957,3 @@ class LineBotService:
     # 此方法已移除，請使用 ConversationService.get_usage_stats() 替代
     
     # 此方法已移除，請使用 ConversationService.get_bot_activities() 替代
-    
-    @staticmethod
-    async def get_message_content_url(
-        channel_token: str, 
-        interaction_id: str, 
-        db_session, 
-        line_user_id: str, 
-        message_type: str
-    ) -> str:
-        """
-        從資料庫獲取媒體檔案 URL，如果不存在則從 LINE API 下載並存儲到 MinIO
-        
-        Args:
-            channel_token: LINE Bot channel token
-            interaction_id: 互動記錄 ID (作為 LINE message ID)
-            db_session: 資料庫會話
-            line_user_id: LINE 用戶 ID
-            message_type: 消息類型 (image, video, audio)
-        
-        Returns:
-            媒體檔案的公開訪問 URL
-        """
-        # TODO: LineBotUserInteraction 已遷移到 MongoDB
-        from app.services.minio_service import get_minio_service
-        from uuid import UUID as PyUUID
-        
-        try:
-            # 獲取 MinIO 服務
-            minio_service = get_minio_service()
-            if not minio_service:
-                raise Exception("MinIO 服務未初始化")
-            
-            # 查詢資料庫中的媒體記錄
-            interaction_uuid = PyUUID(interaction_id)
-            interaction = await asyncio.to_thread(
-                lambda: db_session.query(LineBotUserInteraction)
-                .filter(LineBotUserInteraction.id == interaction_uuid)
-                .first()
-            )
-            
-            if not interaction:
-                raise Exception(f"找不到互動記錄: {interaction_id}")
-            
-            # 如果已有媒體 URL 且文件存在，直接返回
-            if interaction.media_url and interaction.media_path:
-                exists = await asyncio.to_thread(minio_service.object_exists, interaction.media_path)
-                if exists:
-                    # 重新生成預簽名 URL（確保未過期）
-                    new_url = minio_service.get_presigned_url(interaction.media_path)
-                    if new_url:
-                        # 更新資料庫中的 URL
-                        interaction.media_url = new_url
-                        await asyncio.to_thread(db_session.commit)
-                        return new_url
-            
-            # 從 message_content 中獲取 LINE 的原始 message ID
-            line_message_id = None
-            if interaction.message_content and isinstance(interaction.message_content, dict):
-                line_message_id = interaction.message_content.get('line_message_id') or interaction.message_content.get('id')
-            
-            if not line_message_id:
-                raise Exception("找不到 LINE 原始 message ID")
-            
-            # 從 LINE API 下載並上傳到 MinIO
-            media_path, media_url = await minio_service.upload_media_from_line(
-                line_user_id=line_user_id,
-                message_type=message_type,
-                channel_token=channel_token,
-                line_message_id=line_message_id
-            )
-            
-            if not media_path or not media_url:
-                raise Exception("媒體檔案上傳失敗")
-            
-            # 更新資料庫記錄
-            interaction.media_path = media_path
-            interaction.media_url = media_url
-            await asyncio.to_thread(db_session.commit)
-            
-            logger.info(f"媒體檔案處理成功: {media_path}")
-            return media_url
-            
-        except Exception as e:
-            logger.error(f"獲取媒體檔案失敗: {e}")
-            raise Exception(f"媒體檔案處理失敗: {str(e)}")

@@ -8,10 +8,11 @@ import asyncio
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from fastapi.responses import Response
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Dict, Any
 
-from app.database import get_db
+from app.database_async import get_async_db
+from sqlalchemy import select
 from app.models.bot import Bot
 from app.services.line_bot_service import LineBotService
 from app.models.line_user import LineBotUser
@@ -39,7 +40,7 @@ async def test_webhook_connection(bot_id: str):
 async def handle_webhook_event(
     bot_id: str,
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     x_line_signature: Optional[str] = Header(None, alias="X-Line-Signature")
 ):
     """
@@ -61,7 +62,8 @@ async def handle_webhook_event(
         logger.info(f"📥 收到 Webhook 請求: Bot ID = {bot_id}, 內容長度 = {len(body)}")
 
         # 查找對應的 Bot
-        bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id).first())
+        result = await db.execute(select(Bot).where(Bot.id == bot_id))
+        bot = result.scalars().first()
         if not bot:
             logger.error(f"Bot 不存在: {bot_id}")
             raise HTTPException(status_code=404, detail="Bot 不存在")
@@ -131,7 +133,7 @@ async def handle_webhook_event(
 @router.get("/webhooks/{bot_id}/info")
 async def get_webhook_info(
     bot_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     獲取 Webhook 配置信息
@@ -145,7 +147,8 @@ async def get_webhook_info(
     """
     try:
         # 查找對應的 Bot
-        bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id).first())
+        result = await db.execute(select(Bot).where(Bot.id == bot_id))
+        bot = result.scalars().first()
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
         
@@ -168,7 +171,7 @@ async def get_webhook_info(
 @router.get("/webhooks/{bot_id}/status")
 async def get_webhook_status(
     bot_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     獲取 Webhook 綁定狀態
@@ -182,7 +185,8 @@ async def get_webhook_status(
     """
     try:
         # 查找對應的 Bot
-        bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id).first())
+        result = await db.execute(select(Bot).where(Bot.id == bot_id))
+        bot = result.scalars().first()
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
         
@@ -256,7 +260,7 @@ async def get_webhook_status(
 @router.get("/webhooks/{bot_id}/debug")
 async def debug_webhook_config(
     bot_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     除錯 Webhook 配置
@@ -270,7 +274,8 @@ async def debug_webhook_config(
     """
     try:
         # 查找對應的 Bot
-        bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id).first())
+        result = await db.execute(select(Bot).where(Bot.id == bot_id))
+        bot = result.scalars().first()
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
         
@@ -296,7 +301,7 @@ async def debug_webhook_config(
 @router.post("/webhooks/{bot_id}/test")
 async def test_webhook_connection(
     bot_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     測試 Webhook 連接
@@ -310,7 +315,9 @@ async def test_webhook_connection(
     """
     try:
         # 查找對應的 Bot
-        bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id).first())
+        from sqlalchemy import select
+        result = await db.execute(select(Bot).where(Bot.id == bot_id))
+        bot = result.scalars().first()
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
         
@@ -338,7 +345,7 @@ async def process_single_event(
     event: Dict[str, Any],
     bot_id: str,
     line_bot_service: LineBotService,
-    db: Session
+    db: AsyncSession
 ) -> Optional[Dict[str, Any]]:
     """
     處理單個 LINE 事件（含重複檢查）
@@ -395,12 +402,14 @@ async def process_single_event(
                 bot_uuid = None
 
             if bot_uuid is not None:
-                existing = await asyncio.to_thread(
-                    lambda: db.query(LineBotUser).filter(
+                from sqlalchemy import select as _select
+                res_existing = await db.execute(
+                    _select(LineBotUser).where(
                         LineBotUser.bot_id == bot_uuid,
-                        LineBotUser.line_user_id == user_id
-                    ).first()
+                        LineBotUser.line_user_id == user_id,
+                    )
                 )
+                existing = res_existing.scalars().first()
 
                 if not existing:
                     profile = await asyncio.to_thread(line_bot_service.get_user_profile, user_id)
@@ -412,27 +421,23 @@ async def process_single_event(
                         status_message=(profile or {}).get("status_message"),
                         language=(profile or {}).get("language"),
                         is_followed=True if event_type != 'unfollow' else False,
-                        interaction_count="1"
+                        interaction_count="1",
                     )
-                    def _insert():
-                        db.add(new_user)
-                        db.commit()
-                    await asyncio.to_thread(_insert)
+                    db.add(new_user)
+                    await db.commit()
                 else:
                     # 更新互動次數與最後互動時間
-                    def _update_existing():
-                        existing.last_interaction = func.now()
-                        try:
-                            cnt = int(existing.interaction_count or "0")
-                            existing.interaction_count = str(cnt + 1)
-                        except Exception:
-                            existing.interaction_count = "1"
-                        if event_type == 'unfollow':
-                            existing.is_followed = False
-                        elif event_type == 'follow':
-                            existing.is_followed = True
-                        db.commit()
-                    await asyncio.to_thread(_update_existing)
+                    existing.last_interaction = func.now()
+                    try:
+                        cnt = int(existing.interaction_count or "0")
+                        existing.interaction_count = str(cnt + 1)
+                    except Exception:
+                        existing.interaction_count = "1"
+                    if event_type == 'unfollow':
+                        existing.is_followed = False
+                    elif event_type == 'follow':
+                        existing.is_followed = True
+                    await db.commit()
         except Exception as upsert_err:
             logger.warning(f"同步用戶資料至 PostgreSQL 失敗: {upsert_err}")
 
@@ -495,7 +500,8 @@ async def process_single_event(
         if event_type in ['message', 'postback', 'follow']:
             try:
                 from app.models.bot import Bot as BotModel
-                bot = await asyncio.to_thread(lambda: db.query(BotModel).filter(BotModel.id == bot_id).first())
+                result = await db.execute(select(BotModel).where(BotModel.id == bot_id))
+                bot = result.scalars().first()
                 if bot:
                     from app.services.logic_engine_service import LogicEngineService
                     await LogicEngineService.evaluate_and_reply(

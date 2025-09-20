@@ -1,11 +1,13 @@
 """
 Bot 管理服務模組
-處理 Bot 的 CRUD 操作、Flex 訊息管理、程式碼管理等
+處理 Bot 的 CRUD 操作、Flex 訊息管理、程式碼管理等（已全面改為 AsyncSession）
 """
 import logging
 from typing import List, Dict, Any
 from uuid import UUID
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func
 from fastapi import HTTPException, status
 import json
 
@@ -21,30 +23,31 @@ from app.schemas.bot import (
 )
 
 class BotService:
-    """Bot 管理服務類別"""
+    """Bot 管理服務類別（async）"""
     
     @staticmethod
-    def create_bot(db: Session, user_id: UUID, bot_data: BotCreate) -> BotResponse:
+    async def create_bot(db: AsyncSession, user_id: UUID, bot_data: BotCreate) -> BotResponse:
         """建立新的 Bot"""
         # 檢查用戶 Bot 數量限制
-        bot_count = db.query(Bot).filter(Bot.user_id == user_id).count()
+        res_cnt = await db.execute(select(func.count()).select_from(Bot).where(Bot.user_id == user_id))
+        bot_count = res_cnt.scalar() or 0
         if bot_count >= 3:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="每個用戶最多只能建立 3 個 Bot"
             )
-        
+
         # 檢查 Bot 名稱是否重複
-        existing_bot = db.query(Bot).filter(
-            Bot.user_id == user_id,
-            Bot.name == bot_data.name
-        ).first()
+        res_exist = await db.execute(
+            select(Bot).where(Bot.user_id == user_id, Bot.name == bot_data.name)
+        )
+        existing_bot = res_exist.scalars().first()
         if existing_bot:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Bot 名稱已存在"
             )
-        
+
         # 建立新的 Bot
         db_bot = Bot(
             user_id=user_id,
@@ -52,10 +55,10 @@ class BotService:
             channel_token=bot_data.channel_token,
             channel_secret=bot_data.channel_secret
         )
-        
+
         db.add(db_bot)
-        db.commit()
-        db.refresh(db_bot)
+        await db.commit()
+        await db.refresh(db_bot)
         
         return BotResponse(
             id=str(db_bot.id),
@@ -68,17 +71,20 @@ class BotService:
         )
     
     @staticmethod
-    def get_user_bots(db: Session, user_id: UUID) -> List[BotResponse]:
+    async def get_user_bots(db: AsyncSession, user_id: UUID) -> List[BotResponse]:
         """取得用戶的所有 Bot (優化查詢：使用 eager loading)"""
         # 使用 selectinload 預載入相關資料，避免 N+1 問題
-        bots = db.query(Bot)\
+        stmt = (
+            select(Bot)
             .options(
-                selectinload(Bot.logic_templates),  # 預載入邏輯模板
-                selectinload(Bot.bot_code)          # 預載入 Bot 程式碼
-            )\
-            .filter(Bot.user_id == user_id)\
-            .order_by(Bot.created_at.desc())\
-            .all()
+                selectinload(Bot.logic_templates),
+                selectinload(Bot.bot_code),
+            )
+            .where(Bot.user_id == user_id)
+            .order_by(Bot.created_at.desc())
+        )
+        result = await db.execute(stmt)
+        bots = result.scalars().all()
             
         return [
             BotResponse(
@@ -94,7 +100,7 @@ class BotService:
         ]
     
     @staticmethod
-    def get_bot(db: Session, bot_id: str, user_id: UUID) -> BotResponse:
+    async def get_bot(db: AsyncSession, bot_id: str, user_id: UUID) -> BotResponse:
         """取得特定 Bot (優化查詢：使用 eager loading)"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -105,17 +111,18 @@ class BotService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="無效的 Bot ID 格式"
             )
-        
+
         # 使用 eager loading 預載入相關資料
-        bot = db.query(Bot)\
+        stmt = (
+            select(Bot)
             .options(
                 selectinload(Bot.logic_templates),
-                selectinload(Bot.bot_code)
-            )\
-            .filter(
-                Bot.id == bot_uuid,
-                Bot.user_id == user_id
-            ).first()
+                selectinload(Bot.bot_code),
+            )
+            .where(Bot.id == bot_uuid, Bot.user_id == user_id)
+        )
+        result = await db.execute(stmt)
+        bot = result.scalars().first()
         
         if not bot:
             raise HTTPException(
@@ -134,7 +141,7 @@ class BotService:
         )
     
     @staticmethod
-    def update_bot(db: Session, bot_id: str, user_id: UUID, bot_data: BotUpdate) -> BotResponse:
+    async def update_bot(db: AsyncSession, bot_id: str, user_id: UUID, bot_data: BotUpdate) -> BotResponse:
         """更新 Bot"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -145,11 +152,9 @@ class BotService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="無效的 Bot ID 格式"
             )
-        
-        bot = db.query(Bot).filter(
-            Bot.id == bot_uuid,
-            Bot.user_id == user_id
-        ).first()
+
+        res_bot = await db.execute(select(Bot).where(Bot.id == bot_uuid, Bot.user_id == user_id))
+        bot = res_bot.scalars().first()
         
         if not bot:
             raise HTTPException(
@@ -159,11 +164,10 @@ class BotService:
         
         # 檢查名稱重複（如果要更新名稱）
         if bot_data.name and bot_data.name != bot.name:
-            existing_bot = db.query(Bot).filter(
-                Bot.user_id == user_id,
-                Bot.name == bot_data.name,
-                Bot.id != bot_uuid
-            ).first()
+            res_exist = await db.execute(
+                select(Bot).where(Bot.user_id == user_id, Bot.name == bot_data.name, Bot.id != bot_uuid)
+            )
+            existing_bot = res_exist.scalars().first()
             if existing_bot:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -175,8 +179,8 @@ class BotService:
         for field, value in update_data.items():
             setattr(bot, field, value)
         
-        db.commit()
-        db.refresh(bot)
+        await db.commit()
+        await db.refresh(bot)
         
         return BotResponse(
             id=str(bot.id),
@@ -189,7 +193,7 @@ class BotService:
         )
     
     @staticmethod
-    def delete_bot(db: Session, bot_id: str, user_id: UUID) -> Dict[str, str]:
+    async def delete_bot(db: AsyncSession, bot_id: str, user_id: UUID) -> Dict[str, str]:
         """刪除 Bot"""
         logger.info(f"嘗試刪除 Bot: bot_id={bot_id}, user_id={user_id}")
         
@@ -205,10 +209,8 @@ class BotService:
                 detail="無效的 Bot ID 格式"
             )
         
-        bot = db.query(Bot).filter(
-            Bot.id == bot_uuid,
-            Bot.user_id == user_id
-        ).first()
+        res_bot = await db.execute(select(Bot).where(Bot.id == bot_uuid, Bot.user_id == user_id))
+        bot = res_bot.scalars().first()
         
         if not bot:
             logger.warning(f"Bot 不存在: bot_uuid={bot_uuid}, user_id={user_id}")
@@ -222,18 +224,19 @@ class BotService:
         try:
             # 手動刪除相關的 BotCode 記錄（如果存在）
             from app.models.bot import BotCode
-            bot_codes = db.query(BotCode).filter(BotCode.bot_id == bot_uuid).all()
+            res_codes = await db.execute(select(BotCode).where(BotCode.bot_id == bot_uuid))
+            bot_codes = res_codes.scalars().all()
             for code in bot_codes:
                 logger.debug(f"刪除相關的 BotCode: {code.id}")
                 db.delete(code)
             
             # 刪除 Bot 本身
             db.delete(bot)
-            db.commit()
+            await db.commit()
             logger.info(f"Bot 刪除成功: bot_id={bot_id}")
         except Exception as e:
             logger.error(f"刪除 Bot 時發生錯誤: {e}")
-            db.rollback()
+            await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"刪除 Bot 時發生錯誤: {str(e)}"
@@ -242,13 +245,13 @@ class BotService:
         return {"message": "Bot 已成功刪除"}
     
     @staticmethod
-    def create_flex_message(db: Session, user_id: UUID, message_data: FlexMessageCreate) -> FlexMessageResponse:
+    async def create_flex_message(db: AsyncSession, user_id: UUID, message_data: FlexMessageCreate) -> FlexMessageResponse:
         """建立 Flex 訊息"""
         # 檢查同名 Flex 訊息是否已存在
-        existing_message = db.query(FlexMessage).filter(
-            FlexMessage.user_id == user_id,
-            FlexMessage.name == message_data.name
-        ).first()
+        res_exist = await db.execute(
+            select(FlexMessage).where(FlexMessage.user_id == user_id, FlexMessage.name == message_data.name)
+        )
+        existing_message = res_exist.scalars().first()
         
         if existing_message:
             raise HTTPException(
@@ -279,10 +282,10 @@ class BotService:
             content=compiled_contents,
             design_blocks=design_blocks
         )
-        
+
         db.add(db_message)
-        db.commit()
-        db.refresh(db_message)
+        await db.commit()
+        await db.refresh(db_message)
         
         return FlexMessageResponse(
             id=str(db_message.id),
@@ -295,10 +298,11 @@ class BotService:
         )
     
     @staticmethod
-    def get_user_flex_messages(db: Session, user_id: UUID) -> List[FlexMessageResponse]:
+    async def get_user_flex_messages(db: AsyncSession, user_id: UUID) -> List[FlexMessageResponse]:
         """取得用戶的所有 Flex 訊息"""
         try:
-            messages = db.query(FlexMessage).filter(FlexMessage.user_id == user_id).all()
+            res = await db.execute(select(FlexMessage).where(FlexMessage.user_id == user_id))
+            messages = res.scalars().all()
             result = []
             
             for msg in messages:
@@ -329,12 +333,10 @@ class BotService:
             )
     
     @staticmethod
-    def get_flex_message(db: Session, message_id: str, user_id: UUID) -> FlexMessageResponse:
+    async def get_flex_message(db: AsyncSession, message_id: str, user_id: UUID) -> FlexMessageResponse:
         """取得特定 Flex 訊息"""
-        message = db.query(FlexMessage).filter(
-            FlexMessage.id == message_id,
-            FlexMessage.user_id == user_id
-        ).first()
+        res = await db.execute(select(FlexMessage).where(FlexMessage.id == message_id, FlexMessage.user_id == user_id))
+        message = res.scalars().first()
         
         if not message:
             raise HTTPException(
@@ -353,13 +355,11 @@ class BotService:
         )
     
     @staticmethod
-    def create_bot_code(db: Session, user_id: UUID, code_data: BotCodeCreate) -> BotCodeResponse:
+    async def create_bot_code(db: AsyncSession, user_id: UUID, code_data: BotCodeCreate) -> BotCodeResponse:
         """建立 Bot 程式碼"""
         # 檢查 Bot 是否屬於該用戶
-        bot = db.query(Bot).filter(
-            Bot.id == code_data.bot_id,
-            Bot.user_id == user_id
-        ).first()
+        res_bot = await db.execute(select(Bot).where(Bot.id == code_data.bot_id, Bot.user_id == user_id))
+        bot = res_bot.scalars().first()
         
         if not bot:
             raise HTTPException(
@@ -368,7 +368,8 @@ class BotService:
             )
         
         # 檢查是否已存在程式碼
-        existing_code = db.query(BotCode).filter(BotCode.bot_id == code_data.bot_id).first()
+        res_exist = await db.execute(select(BotCode).where(BotCode.bot_id == code_data.bot_id))
+        existing_code = res_exist.scalars().first()
         if existing_code:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -382,8 +383,8 @@ class BotService:
         )
         
         db.add(db_code)
-        db.commit()
-        db.refresh(db_code)
+        await db.commit()
+        await db.refresh(db_code)
         
         return BotCodeResponse(
             id=str(db_code.id),
@@ -395,9 +396,12 @@ class BotService:
         )
     
     @staticmethod
-    def get_user_bots_summary(db: Session, user_id: UUID) -> List[BotSummary]:
+    async def get_user_bots_summary(db: AsyncSession, user_id: UUID) -> List[BotSummary]:
         """取得用戶 Bot 摘要列表"""
-        bots = db.query(Bot).filter(Bot.user_id == user_id).order_by(Bot.created_at.desc()).all()
+        res = await db.execute(
+            select(Bot).where(Bot.user_id == user_id).order_by(Bot.created_at.desc())
+        )
+        bots = res.scalars().all()
         return [
             BotSummary(
                 id=str(bot.id),
@@ -408,8 +412,8 @@ class BotService:
         ]
     
     @staticmethod
-    def save_visual_editor_data(
-        db: Session, 
+    async def save_visual_editor_data(
+        db: AsyncSession, 
         bot_id: str, 
         user_id: UUID, 
         editor_data: VisualEditorData
@@ -426,10 +430,8 @@ class BotService:
             )
         
         # 驗證 Bot 是否屬於該用戶
-        bot = db.query(Bot).filter(
-            Bot.id == bot_uuid,
-            Bot.user_id == user_id
-        ).first()
+        res_bot = await db.execute(select(Bot).where(Bot.id == bot_uuid, Bot.user_id == user_id))
+        bot = res_bot.scalars().first()
         
         if not bot:
             raise HTTPException(
@@ -443,12 +445,13 @@ class BotService:
             flex_blocks_data = editor_data.flex_blocks
             
             # 更新或創建 BotCode 記錄（儲存生成的程式碼）
-            existing_code = db.query(BotCode).filter(BotCode.bot_id == bot_uuid).first()
+            res_code = await db.execute(select(BotCode).where(BotCode.bot_id == bot_uuid))
+            existing_code = res_code.scalars().first()
             if existing_code:
                 if editor_data.generated_code:
                     existing_code.code = editor_data.generated_code
-                    db.commit()
-                    db.refresh(existing_code)
+                    await db.commit()
+                    await db.refresh(existing_code)
             else:
                 if editor_data.generated_code:
                     new_code = BotCode(
@@ -457,22 +460,25 @@ class BotService:
                         code=editor_data.generated_code
                     )
                     db.add(new_code)
-                    db.commit()
-                    db.refresh(new_code)
+                    await db.commit()
+                    await db.refresh(new_code)
             
             # 儲存 Flex 訊息（如果有 flex_blocks）
             if editor_data.flex_blocks:
                 # 創建新的 FlexMessage 記錄或更新現有的
                 flex_message_name = f"{bot.name}_visual_editor_flex"
-                existing_flex = db.query(FlexMessage).filter(
-                    FlexMessage.user_id == user_id,
-                    FlexMessage.name == flex_message_name
-                ).first()
-                
+                res_flex = await db.execute(
+                    select(FlexMessage).where(
+                        FlexMessage.user_id == user_id,
+                        FlexMessage.name == flex_message_name,
+                    )
+                )
+                existing_flex = res_flex.scalars().first()
+
                 if existing_flex:
                     existing_flex.content = flex_blocks_data
-                    db.commit()
-                    db.refresh(existing_flex)
+                    await db.commit()
+                    await db.refresh(existing_flex)
                 else:
                     new_flex = FlexMessage(
                         user_id=user_id,
@@ -480,8 +486,8 @@ class BotService:
                         content=flex_blocks_data
                     )
                     db.add(new_flex)
-                    db.commit()
-                    db.refresh(new_flex)
+                    await db.commit()
+                    await db.refresh(new_flex)
             
             return VisualEditorResponse(
                 bot_id=str(bot_uuid),
@@ -494,14 +500,14 @@ class BotService:
             
         except Exception as e:
             logger.error(f"儲存視覺化編輯器數據時發生錯誤: {e}")
-            db.rollback()
+            await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"儲存數據時發生錯誤: {str(e)}"
             )
     
     @staticmethod
-    def get_visual_editor_data(db: Session, bot_id: str, user_id: UUID) -> VisualEditorResponse:
+    async def get_visual_editor_data(db: AsyncSession, bot_id: str, user_id: UUID) -> VisualEditorResponse:
         """取得視覺化編輯器數據"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -514,10 +520,8 @@ class BotService:
             )
         
         # 驗證 Bot 是否屬於該用戶
-        bot = db.query(Bot).filter(
-            Bot.id == bot_uuid,
-            Bot.user_id == user_id
-        ).first()
+        res_bot = await db.execute(select(Bot).where(Bot.id == bot_uuid, Bot.user_id == user_id))
+        bot = res_bot.scalars().first()
         
         if not bot:
             raise HTTPException(
@@ -526,15 +530,19 @@ class BotService:
             )
         
         # 取得 Bot 程式碼
-        bot_code = db.query(BotCode).filter(BotCode.bot_id == bot_uuid).first()
+        res_code = await db.execute(select(BotCode).where(BotCode.bot_id == bot_uuid))
+        bot_code = res_code.scalars().first()
         generated_code = bot_code.code if bot_code else None
         
         # 取得 Flex 訊息
         flex_message_name = f"{bot.name}_visual_editor_flex"
-        flex_message = db.query(FlexMessage).filter(
-            FlexMessage.user_id == user_id,
-            FlexMessage.name == flex_message_name
-        ).first()
+        res_flex = await db.execute(
+            select(FlexMessage).where(
+                FlexMessage.user_id == user_id,
+                FlexMessage.name == flex_message_name,
+            )
+        )
+        flex_message = res_flex.scalars().first()
         
         # 默認空的積木數據
         logic_blocks = []
@@ -556,7 +564,7 @@ class BotService:
     # ===== 邏輯模板相關方法 =====
     
     @staticmethod
-    def create_logic_template(db: Session, user_id: UUID, template_data: LogicTemplateCreate) -> LogicTemplateResponse:
+    async def create_logic_template(db: AsyncSession, user_id: UUID, template_data: LogicTemplateCreate) -> LogicTemplateResponse:
         """創建邏輯模板"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -569,10 +577,8 @@ class BotService:
             )
         
         # 驗證 Bot 是否屬於該用戶
-        bot = db.query(Bot).filter(
-            Bot.id == bot_uuid,
-            Bot.user_id == user_id
-        ).first()
+        res_bot = await db.execute(select(Bot).where(Bot.id == bot_uuid, Bot.user_id == user_id))
+        bot = res_bot.scalars().first()
         
         if not bot:
             raise HTTPException(
@@ -581,10 +587,10 @@ class BotService:
             )
         
         # 檢查同名邏輯模板是否已存在
-        existing_template = db.query(LogicTemplate).filter(
-            LogicTemplate.bot_id == bot_uuid,
-            LogicTemplate.name == template_data.name
-        ).first()
+        res_exist = await db.execute(
+            select(LogicTemplate).where(LogicTemplate.bot_id == bot_uuid, LogicTemplate.name == template_data.name)
+        )
+        existing_template = res_exist.scalars().first()
         
         if existing_template:
             raise HTTPException(
@@ -603,8 +609,8 @@ class BotService:
         )
         
         db.add(db_template)
-        db.commit()
-        db.refresh(db_template)
+        await db.commit()
+        await db.refresh(db_template)
         
         return LogicTemplateResponse(
             id=str(db_template.id),
@@ -620,7 +626,7 @@ class BotService:
         )
     
     @staticmethod
-    def get_bot_logic_templates(db: Session, bot_id: str, user_id: UUID) -> List[LogicTemplateResponse]:
+    async def get_bot_logic_templates(db: AsyncSession, bot_id: str, user_id: UUID) -> List[LogicTemplateResponse]:
         """取得Bot的所有邏輯模板"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -633,10 +639,8 @@ class BotService:
             )
         
         # 驗證 Bot 是否屬於該用戶
-        bot = db.query(Bot).filter(
-            Bot.id == bot_uuid,
-            Bot.user_id == user_id
-        ).first()
+        res_bot = await db.execute(select(Bot).where(Bot.id == bot_uuid, Bot.user_id == user_id))
+        bot = res_bot.scalars().first()
         
         if not bot:
             raise HTTPException(
@@ -644,9 +648,10 @@ class BotService:
                 detail="Bot 不存在"
             )
         
-        templates = db.query(LogicTemplate).filter(
-            LogicTemplate.bot_id == bot_uuid
-        ).order_by(LogicTemplate.created_at.desc()).all()
+        res_tpl = await db.execute(
+            select(LogicTemplate).where(LogicTemplate.bot_id == bot_uuid).order_by(LogicTemplate.created_at.desc())
+        )
+        templates = res_tpl.scalars().all()
         
         return [
             LogicTemplateResponse(
@@ -665,7 +670,7 @@ class BotService:
         ]
     
     @staticmethod
-    def get_bot_logic_templates_summary(db: Session, bot_id: str, user_id: UUID) -> List[LogicTemplateSummary]:
+    async def get_bot_logic_templates_summary(db: AsyncSession, bot_id: str, user_id: UUID) -> List[LogicTemplateSummary]:
         """取得Bot邏輯模板摘要列表"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -678,10 +683,8 @@ class BotService:
             )
         
         # 驗證 Bot 是否屬於該用戶
-        bot = db.query(Bot).filter(
-            Bot.id == bot_uuid,
-            Bot.user_id == user_id
-        ).first()
+        res_bot = await db.execute(select(Bot).where(Bot.id == bot_uuid, Bot.user_id == user_id))
+        bot = res_bot.scalars().first()
         
         if not bot:
             raise HTTPException(
@@ -689,9 +692,10 @@ class BotService:
                 detail="Bot 不存在"
             )
         
-        templates = db.query(LogicTemplate).filter(
-            LogicTemplate.bot_id == bot_uuid
-        ).order_by(LogicTemplate.created_at.desc()).all()
+        res_tpl = await db.execute(
+            select(LogicTemplate).where(LogicTemplate.bot_id == bot_uuid).order_by(LogicTemplate.created_at.desc())
+        )
+        templates = res_tpl.scalars().all()
         
         return [
             LogicTemplateSummary(
@@ -705,7 +709,7 @@ class BotService:
         ]
     
     @staticmethod
-    def get_logic_template(db: Session, template_id: str, user_id: UUID) -> LogicTemplateResponse:
+    async def get_logic_template(db: AsyncSession, template_id: str, user_id: UUID) -> LogicTemplateResponse:
         """取得特定邏輯模板"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -717,10 +721,10 @@ class BotService:
                 detail="無效的邏輯模板 ID 格式"
             )
         
-        template = db.query(LogicTemplate).filter(
-            LogicTemplate.id == template_uuid,
-            LogicTemplate.user_id == user_id
-        ).first()
+        res_tpl = await db.execute(
+            select(LogicTemplate).where(LogicTemplate.id == template_uuid, LogicTemplate.user_id == user_id)
+        )
+        template = res_tpl.scalars().first()
         
         if not template:
             raise HTTPException(
@@ -742,7 +746,7 @@ class BotService:
         )
     
     @staticmethod
-    def update_logic_template(db: Session, template_id: str, user_id: UUID, template_data: LogicTemplateUpdate) -> LogicTemplateResponse:
+    async def update_logic_template(db: AsyncSession, template_id: str, user_id: UUID, template_data: LogicTemplateUpdate) -> LogicTemplateResponse:
         """更新邏輯模板"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -754,10 +758,10 @@ class BotService:
                 detail="無效的邏輯模板 ID 格式"
             )
         
-        template = db.query(LogicTemplate).filter(
-            LogicTemplate.id == template_uuid,
-            LogicTemplate.user_id == user_id
-        ).first()
+        res_tpl = await db.execute(
+            select(LogicTemplate).where(LogicTemplate.id == template_uuid, LogicTemplate.user_id == user_id)
+        )
+        template = res_tpl.scalars().first()
         
         if not template:
             raise HTTPException(
@@ -767,11 +771,14 @@ class BotService:
         
         # 檢查名稱重複（如果要更新名稱）
         if template_data.name and template_data.name != template.name:
-            existing_template = db.query(LogicTemplate).filter(
-                LogicTemplate.bot_id == template.bot_id,
-                LogicTemplate.name == template_data.name,
-                LogicTemplate.id != template_uuid
-            ).first()
+            res_exist = await db.execute(
+                select(LogicTemplate).where(
+                    LogicTemplate.bot_id == template.bot_id,
+                    LogicTemplate.name == template_data.name,
+                    LogicTemplate.id != template_uuid,
+                )
+            )
+            existing_template = res_exist.scalars().first()
             if existing_template:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -784,8 +791,8 @@ class BotService:
         for field, value in update_data.items():
             setattr(template, field, value)
         
-        db.commit()
-        db.refresh(template)
+        await db.commit()
+        await db.refresh(template)
         
         return LogicTemplateResponse(
             id=str(template.id),
@@ -801,7 +808,7 @@ class BotService:
         )
     
     @staticmethod
-    def delete_logic_template(db: Session, template_id: str, user_id: UUID) -> Dict[str, str]:
+    async def delete_logic_template(db: AsyncSession, template_id: str, user_id: UUID) -> Dict[str, str]:
         """刪除邏輯模板"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -813,10 +820,10 @@ class BotService:
                 detail="無效的邏輯模板 ID 格式"
             )
         
-        template = db.query(LogicTemplate).filter(
-            LogicTemplate.id == template_uuid,
-            LogicTemplate.user_id == user_id
-        ).first()
+        res_tpl = await db.execute(
+            select(LogicTemplate).where(LogicTemplate.id == template_uuid, LogicTemplate.user_id == user_id)
+        )
+        template = res_tpl.scalars().first()
         
         if not template:
             raise HTTPException(
@@ -826,11 +833,11 @@ class BotService:
         
         try:
             db.delete(template)
-            db.commit()
+            await db.commit()
             logger.info(f"邏輯模板刪除成功: template_id={template_id}")
         except Exception as e:
             logger.error(f"刪除邏輯模板時發生錯誤: {e}")
-            db.rollback()
+            await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"刪除邏輯模板時發生錯誤: {str(e)}"
@@ -839,7 +846,7 @@ class BotService:
         return {"message": "邏輯模板已成功刪除"}
     
     @staticmethod
-    def activate_logic_template(db: Session, template_id: str, user_id: UUID) -> Dict[str, str]:
+    async def activate_logic_template(db: AsyncSession, template_id: str, user_id: UUID) -> Dict[str, str]:
         """激活邏輯模板（設為活躍狀態）"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -851,10 +858,10 @@ class BotService:
                 detail="無效的邏輯模板 ID 格式"
             )
         
-        template = db.query(LogicTemplate).filter(
-            LogicTemplate.id == template_uuid,
-            LogicTemplate.user_id == user_id
-        ).first()
+        res_tpl = await db.execute(
+            select(LogicTemplate).where(LogicTemplate.id == template_uuid, LogicTemplate.user_id == user_id)
+        )
+        template = res_tpl.scalars().first()
         
         if not template:
             raise HTTPException(
@@ -865,12 +872,12 @@ class BotService:
         try:
             # 設定目標模板為活躍（允許多個模板同時運行）
             template.is_active = "true"
-            
-            db.commit()
+
+            await db.commit()
             logger.info(f"邏輯模板激活成功: template_id={template_id}")
         except Exception as e:
             logger.error(f"激活邏輯模板時發生錯誤: {e}")
-            db.rollback()
+            await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"激活邏輯模板時發生錯誤: {str(e)}"
@@ -879,7 +886,7 @@ class BotService:
         return {"message": "邏輯模板已成功激活"}
     
     @staticmethod
-    def deactivate_logic_template(db: Session, template_id: str, user_id: UUID) -> Dict[str, str]:
+    async def deactivate_logic_template(db: AsyncSession, template_id: str, user_id: UUID) -> Dict[str, str]:
         """停用邏輯模板"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -891,10 +898,10 @@ class BotService:
                 detail="無效的邏輯模板 ID 格式"
             )
         
-        template = db.query(LogicTemplate).filter(
-            LogicTemplate.id == template_uuid,
-            LogicTemplate.user_id == user_id
-        ).first()
+        res_tpl = await db.execute(
+            select(LogicTemplate).where(LogicTemplate.id == template_uuid, LogicTemplate.user_id == user_id)
+        )
+        template = res_tpl.scalars().first()
         
         if not template:
             raise HTTPException(
@@ -905,12 +912,12 @@ class BotService:
         try:
             # 設定目標模板為非活躍
             template.is_active = "false"
-            
-            db.commit()
+
+            await db.commit()
             logger.info(f"邏輯模板停用成功: template_id={template_id}")
         except Exception as e:
             logger.error(f"停用邏輯模板時發生錯誤: {e}")
-            db.rollback()
+            await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"停用邏輯模板時發生錯誤: {str(e)}"
@@ -921,7 +928,7 @@ class BotService:
     # ===== FLEX訊息增強方法 =====
     
     @staticmethod
-    def update_flex_message(db: Session, message_id: str, user_id: UUID, message_data: FlexMessageUpdate) -> FlexMessageResponse:
+    async def update_flex_message(db: AsyncSession, message_id: str, user_id: UUID, message_data: FlexMessageUpdate) -> FlexMessageResponse:
         """更新 Flex 訊息"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -933,10 +940,10 @@ class BotService:
                 detail="無效的訊息 ID 格式"
             )
         
-        message = db.query(FlexMessage).filter(
-            FlexMessage.id == message_uuid,
-            FlexMessage.user_id == user_id
-        ).first()
+        res_msg = await db.execute(
+            select(FlexMessage).where(FlexMessage.id == message_uuid, FlexMessage.user_id == user_id)
+        )
+        message = res_msg.scalars().first()
         
         if not message:
             raise HTTPException(
@@ -946,11 +953,14 @@ class BotService:
         
         # 檢查名稱重複（如果要更新名稱）
         if message_data.name and message_data.name != message.name:
-            existing_message = db.query(FlexMessage).filter(
-                FlexMessage.user_id == user_id,
-                FlexMessage.name == message_data.name,
-                FlexMessage.id != message_uuid
-            ).first()
+            res_exist = await db.execute(
+                select(FlexMessage).where(
+                    FlexMessage.user_id == user_id,
+                    FlexMessage.name == message_data.name,
+                    FlexMessage.id != message_uuid,
+                )
+            )
+            existing_message = res_exist.scalars().first()
             if existing_message:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -985,8 +995,8 @@ class BotService:
                 if content_changed:
                     message.content = update_data['content']
 
-        db.commit()
-        db.refresh(message)
+        await db.commit()
+        await db.refresh(message)
         
         return FlexMessageResponse(
             id=str(message.id),
@@ -999,7 +1009,7 @@ class BotService:
         )
     
     @staticmethod
-    def delete_flex_message(db: Session, message_id: str, user_id: UUID) -> Dict[str, str]:
+    async def delete_flex_message(db: AsyncSession, message_id: str, user_id: UUID) -> Dict[str, str]:
         """刪除 Flex 訊息"""
         try:
             # 將字符串 UUID 轉換為 UUID 對象
@@ -1011,10 +1021,10 @@ class BotService:
                 detail="無效的訊息 ID 格式"
             )
         
-        message = db.query(FlexMessage).filter(
-            FlexMessage.id == message_uuid,
-            FlexMessage.user_id == user_id
-        ).first()
+        res_msg = await db.execute(
+            select(FlexMessage).where(FlexMessage.id == message_uuid, FlexMessage.user_id == user_id)
+        )
+        message = res_msg.scalars().first()
         
         if not message:
             raise HTTPException(
@@ -1024,11 +1034,11 @@ class BotService:
         
         try:
             db.delete(message)
-            db.commit()
+            await db.commit()
             logger.info(f"Flex 訊息刪除成功: message_id={message_id}")
         except Exception as e:
             logger.error(f"刪除 Flex 訊息時發生錯誤: {e}")
-            db.rollback()
+            await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"刪除 Flex 訊息時發生錯誤: {str(e)}"
@@ -1037,11 +1047,12 @@ class BotService:
         return {"message": "Flex 訊息已成功刪除"}
     
     @staticmethod
-    def get_user_flex_messages_summary(db: Session, user_id: UUID) -> List[FlexMessageSummary]:
+    async def get_user_flex_messages_summary(db: AsyncSession, user_id: UUID) -> List[FlexMessageSummary]:
         """取得用戶FLEX訊息摘要列表"""
-        messages = db.query(FlexMessage).filter(
-            FlexMessage.user_id == user_id
-        ).order_by(FlexMessage.created_at.desc()).all()
+        res = await db.execute(
+            select(FlexMessage).where(FlexMessage.user_id == user_id).order_by(FlexMessage.created_at.desc())
+        )
+        messages = res.scalars().all()
         
         return [
             FlexMessageSummary(

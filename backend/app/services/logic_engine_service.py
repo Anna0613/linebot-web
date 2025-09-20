@@ -18,7 +18,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 import asyncio
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.models.bot import LogicTemplate, FlexMessage, Bot
 from app.services.conversation_service import ConversationService
@@ -265,20 +266,18 @@ class LogicEngineService:
         return None
 
     @staticmethod
-    async def evaluate_and_reply(db: Session, bot: Bot, line_bot_service, user_id: str,
+    async def evaluate_and_reply(db: AsyncSession, bot: Bot, line_bot_service, user_id: str,
                                  event: Dict[str, Any]) -> List[Dict[str, Any]]:
         """根據啟用中的邏輯模板嘗試匹配並回覆。返回已執行的回覆結果。"""
         results: List[Dict[str, Any]] = []
         try:
             # 取得啟用中的模板，按 updated_at desc
-            def _load_templates():
-                return (
-                    db.query(LogicTemplate)
-                    .filter(LogicTemplate.bot_id == bot.id, LogicTemplate.is_active == "true")
-                    .order_by(LogicTemplate.updated_at.desc())
-                    .all()
-                )
-            templates: List[LogicTemplate] = await asyncio.to_thread(_load_templates)
+            result = await db.execute(
+                select(LogicTemplate)
+                .where(LogicTemplate.bot_id == bot.id, LogicTemplate.is_active == "true")
+                .order_by(LogicTemplate.updated_at.desc())
+            )
+            templates: List[LogicTemplate] = result.scalars().all()
 
             if not templates:
                 logger.info("沒有啟用中的邏輯模板，跳過自動回覆")
@@ -348,11 +347,10 @@ class LogicEngineService:
 
                         flex_id = bdata.get("flexMessageId")
                         if flex_id:
-                            fm: Optional[FlexMessage] = await asyncio.to_thread(
-                                lambda: db.query(FlexMessage)
-                                .filter(FlexMessage.id == flex_id, FlexMessage.user_id == bot.user_id)
-                                .first()
+                            result_fm = await db.execute(
+                                select(FlexMessage).where(FlexMessage.id == flex_id, FlexMessage.user_id == bot.user_id)
                             )
+                            fm: Optional[FlexMessage] = result_fm.scalars().first()
                             if fm:
                                 contents = LogicEngineService._to_flex_contents(fm.content)
 

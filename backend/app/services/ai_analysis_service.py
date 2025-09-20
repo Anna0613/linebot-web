@@ -9,13 +9,13 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-import requests
+import httpx
 
 from app.config import settings
 from app.models.mongodb.conversation import ConversationDocument
 from app.services.groq_service import GroqService
 from app.services.context_formatter import ContextFormatter
-from app.services.redis_cache_service import cache_service
+from app.config.redis_config import CacheService as AsyncCache, redis_manager
 
 logger = logging.getLogger(__name__)
 
@@ -140,13 +140,20 @@ class AIAnalysisService:
         - 使用 ContextFormatter 進行格式優化以減少 token 消耗。
         """
         try:
-            # 先嘗試從快取獲取對話歷史
-            cached_messages = cache_service.get_conversation_cache(bot_id, line_user_id)
+            # 先嘗試從快取獲取對話歷史（改為非同步 Redis 方案）
+            messages = None
+            if redis_manager.is_connected:
+                try:
+                    cache_key = f"conversation:{bot_id}:{line_user_id}"
+                    cached_obj = await AsyncCache.get(cache_key)
+                    if isinstance(cached_obj, dict):
+                        messages = cached_obj.get('messages')
+                        if messages is not None:
+                            logger.debug(f"使用快取的對話歷史: {bot_id}:{line_user_id}")
+                except Exception as cache_err:
+                    logger.warning(f"讀取對話快取失敗: {cache_err}")
 
-            if cached_messages is not None:
-                logger.debug(f"使用快取的對話歷史: {bot_id}:{line_user_id}")
-                messages = cached_messages
-            else:
+            if messages is None:
                 # 快取不存在，從 MongoDB 讀取
                 logger.debug(f"從 MongoDB 讀取對話歷史: {bot_id}:{line_user_id}")
                 conversation = await ConversationDocument.find_one(
@@ -166,8 +173,18 @@ class AIAnalysisService:
                     }
                     messages.append(message_dict)
 
-                # 設定快取（30 分鐘）
-                cache_service.set_conversation_cache(bot_id, line_user_id, messages, 1800)
+                # 設定快取（30 分鐘，非同步 Redis）
+                if redis_manager.is_connected:
+                    try:
+                        cache_key = f"conversation:{bot_id}:{line_user_id}"
+                        cache_data = {
+                            'messages': messages,
+                            'cached_at': datetime.now().isoformat(),
+                            'message_count': len(messages)
+                        }
+                        await AsyncCache.set(cache_key, cache_data, ttl=1800)
+                    except Exception as cache_err:
+                        logger.warning(f"設定對話快取失敗: {cache_err}")
 
             # 依時間範圍過濾
             if time_range_days and time_range_days > 0:
@@ -273,16 +290,11 @@ class AIAnalysisService:
         params = {"key": api_key}
         payload = AIAnalysisService._build_contents_for_gemini(question, context_text, history, system_prompt)
 
-        def _post() -> requests.Response:
-            return requests.post(endpoint, params=params, json=payload, timeout=30)
-
         try:
-            resp: requests.Response = await asyncio.to_thread(_post)
-            if resp.status_code >= 400:
-                logger.error(f"Gemini API 錯誤: {resp.status_code} {resp.text}")
-                raise RuntimeError(f"Gemini API 呼叫失敗: HTTP {resp.status_code}")
-
-            data = resp.json()
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.post(endpoint, params=params, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
             # 依據 Google Generative Language API 結構抽取文字
             # data.candidates[0].content.parts[0].text
             candidates = (data or {}).get("candidates") or []
@@ -294,6 +306,9 @@ class AIAnalysisService:
                 if isinstance(p, dict) and p.get("text"):
                     return str(p["text"]).strip()
             return "(未解析到文字回應)"
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Gemini API 錯誤: {e.response.status_code} {e.response.text}")
+            raise RuntimeError(f"Gemini API 呼叫失敗: HTTP {e.response.status_code}")
         except Exception as e:
             logger.error(f"Gemini 呼叫失敗: {e}")
             raise

@@ -10,7 +10,7 @@ from bson import ObjectId
 from app.models.mongodb.conversation import ConversationDocument, MessageDocument, AdminUserInfo
 from app.database_mongo import get_mongodb
 from app.models.user import User
-from app.services.redis_cache_service import cache_service
+from app.config.redis_config import CacheService as AsyncCache, redis_manager
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,28 @@ logger = logging.getLogger(__name__)
 class ConversationService:
     """對話服務類"""
     
+    @staticmethod
+    async def _append_message_cache(bot_id: str, line_user_id: str, message_dict: Dict[str, Any]) -> None:
+        """將單筆訊息追加到 Redis 對話快取（非同步）。"""
+        if not redis_manager.is_connected:
+            return
+        try:
+            cache_key = f"conversation:{bot_id}:{line_user_id}"
+            cached = await AsyncCache.get(cache_key)
+            if isinstance(cached, dict):
+                messages = cached.get('messages') or []
+                messages.append(message_dict)
+                # 限制快取大小（保留最新的 500 筆訊息）
+                if len(messages) > 500:
+                    messages = messages[-500:]
+                cached['messages'] = messages
+                cached['message_count'] = len(messages)
+                cached['updated_at'] = datetime.now().isoformat()
+                # 重新寫入（TTL 無法讀取，採用預設 30 分鐘）
+                await AsyncCache.set(cache_key, cached, ttl=1800)
+        except Exception as e:
+            logger.warning(f"更新對話快取失敗: {e}")
+
     @staticmethod
     async def get_or_create_conversation(
         bot_id: str, 
@@ -339,16 +361,13 @@ class ConversationService:
             message = await conversation.add_message(message_data)
 
             # 更新 Redis 快取
-            try:
-                message_dict = {
-                    'sender_type': message.sender_type,
-                    'content': message.content,
-                    'timestamp': message.timestamp,
-                    'message_type': message.message_type
-                }
-                cache_service.update_conversation_cache(bot_id, line_user_id, message_dict)
-            except Exception as cache_error:
-                logger.warning(f"更新對話快取失敗: {cache_error}")
+            message_dict = {
+                'sender_type': message.sender_type,
+                'content': message.content,
+                'timestamp': message.timestamp,
+                'message_type': message.message_type
+            }
+            await ConversationService._append_message_cache(bot_id, line_user_id, message_dict)
 
             logger.info(f"用戶訊息已添加: bot_id={bot_id}, line_user_id={line_user_id}, message_id={message.id}, line_message_id={line_message_id}")
             return message, True  # 返回新訊息，標記為新訊息
@@ -399,16 +418,13 @@ class ConversationService:
             message = await conversation.add_message(message_data)
 
             # 更新 Redis 快取
-            try:
-                message_dict = {
-                    'sender_type': message.sender_type,
-                    'content': message.content,
-                    'timestamp': message.timestamp,
-                    'message_type': message.message_type
-                }
-                cache_service.update_conversation_cache(bot_id, line_user_id, message_dict)
-            except Exception as cache_error:
-                logger.warning(f"更新對話快取失敗: {cache_error}")
+            message_dict = {
+                'sender_type': message.sender_type,
+                'content': message.content,
+                'timestamp': message.timestamp,
+                'message_type': message.message_type
+            }
+            await ConversationService._append_message_cache(bot_id, line_user_id, message_dict)
 
             logger.info(
                 f"機器人訊息已添加: bot_id={bot_id}, line_user_id={line_user_id}, message_id={message.id}, type={message_type}"

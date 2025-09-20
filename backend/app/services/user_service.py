@@ -5,7 +5,9 @@
 from datetime import datetime
 from typing import Dict, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 import re
 import base64
@@ -19,10 +21,12 @@ class UserService:
     """用戶管理服務類別"""
     
     @staticmethod
-    def get_user_profile(db: Session, user_id: UUID) -> UserProfile:
+    async def get_user_profile(db: AsyncSession, user_id: UUID) -> UserProfile:
         """取得用戶個人檔案"""
         # 查詢用戶並預載 line_account 關係
-        user = db.query(User).options(joinedload(User.line_account)).filter(User.id == user_id).first()
+        stmt = select(User).options(joinedload(User.line_account)).where(User.id == user_id)
+        result = await db.execute(stmt)
+        user = result.scalars().first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -56,9 +60,10 @@ class UserService:
         return UserProfile(**profile_data)
     
     @staticmethod
-    def update_user_profile(db: Session, user_id: UUID, user_data: UserUpdate) -> UserProfile:
+    async def update_user_profile(db: AsyncSession, user_id: UUID, user_data: UserUpdate) -> UserProfile:
         """更新用戶個人檔案"""
-        user = db.query(User).filter(User.id == user_id).first()
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalars().first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -67,10 +72,8 @@ class UserService:
         
         # 檢查用戶名稱重複
         if user_data.username and user_data.username != user.username:
-            existing_user = db.query(User).filter(
-                User.username == user_data.username,
-                User.id != user_id
-            ).first()
+            res = await db.execute(select(User).where(User.username == user_data.username, User.id != user_id))
+            existing_user = res.scalars().first()
             if existing_user:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -79,10 +82,8 @@ class UserService:
         
         # 檢查郵箱重複
         if user_data.email and user_data.email != user.email:
-            existing_user = db.query(User).filter(
-                User.email == user_data.email,
-                User.id != user_id
-            ).first()
+            res = await db.execute(select(User).where(User.email == user_data.email, User.id != user_id))
+            existing_user = res.scalars().first()
             if existing_user:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -96,8 +97,8 @@ class UserService:
         for field, value in update_data.items():
             setattr(user, field, value)
         
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
         
         return UserProfile(
             id=str(user.id),
@@ -110,9 +111,10 @@ class UserService:
         )
     
     @staticmethod
-    def get_user_avatar(db: Session, user_id: UUID) -> Dict[str, any]:
+    async def get_user_avatar(db: AsyncSession, user_id: UUID) -> Dict[str, any]:
         """取得用戶頭像"""
-        user = db.query(User).filter(User.id == user_id).first()
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalars().first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -132,9 +134,10 @@ class UserService:
         }
     
     @staticmethod
-    def update_user_avatar(db: Session, user_id: UUID, avatar_data: AvatarUpload) -> Dict[str, str]:
+    async def update_user_avatar(db: AsyncSession, user_id: UUID, avatar_data: AvatarUpload) -> Dict[str, str]:
         """更新用戶頭像"""
-        user = db.query(User).filter(User.id == user_id).first()
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalars().first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -145,14 +148,15 @@ class UserService:
         user.avatar_base64 = avatar_data.avatar_base64
         user.avatar_updated_at = datetime.utcnow()
         
-        db.commit()
+        await db.commit()
         
         return {"message": "頭像更新成功"}
     
     @staticmethod
-    def delete_user_avatar(db: Session, user_id: UUID) -> Dict[str, str]:
+    async def delete_user_avatar(db: AsyncSession, user_id: UUID) -> Dict[str, str]:
         """刪除用戶頭像"""
-        user = db.query(User).filter(User.id == user_id).first()
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalars().first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -168,14 +172,15 @@ class UserService:
         user.avatar_base64 = None
         user.avatar_updated_at = None
         
-        db.commit()
+        await db.commit()
         
         return {"message": "頭像已成功刪除"}
     
     @staticmethod
-    def change_password(db: Session, user_id: UUID, password_data: PasswordChange) -> Dict[str, str]:
+    async def change_password(db: AsyncSession, user_id: UUID, password_data: PasswordChange) -> Dict[str, str]:
         """變更用戶密碼"""
-        user = db.query(User).filter(User.id == user_id).first()
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalars().first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -198,14 +203,15 @@ class UserService:
         
         # 更新密碼
         user.password = get_password_hash(password_data.new_password)
-        db.commit()
+        await db.commit()
         
         return {"message": "密碼變更成功"}
     
     @staticmethod
-    def delete_user_account(db: Session, user_id: UUID) -> Dict[str, str]:
+    async def delete_user_account(db: AsyncSession, user_id: UUID) -> Dict[str, str]:
         """刪除用戶帳號"""
-        user = db.query(User).filter(User.id == user_id).first()
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalars().first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -213,8 +219,8 @@ class UserService:
             )
         
         # 刪除用戶帳號
-        db.delete(user)
-        db.commit()
+        await db.delete(user)
+        await db.commit()
         
         return {"message": "帳號已成功刪除"}
     

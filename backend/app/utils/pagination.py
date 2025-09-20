@@ -1,12 +1,11 @@
 """
-分頁工具和懶加載機制
-提供高效的資料分頁和懶加載支援
+分頁工具和懶加載機制（Async 版本）
+僅保留 AsyncSession 相關方法，移除同步 Session 版本以避免阻塞。
 """
 from typing import Dict, List, Any, Optional, TypeVar, Generic
-from sqlalchemy.orm import Session, Query
-from sqlalchemy import func, desc, asc
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select
 from pydantic import BaseModel, Field
-import math
 
 T = TypeVar('T')
 
@@ -30,106 +29,48 @@ class PaginatedResponse(BaseModel, Generic[T]):
     prev_page: Optional[int] = None
 
 class LazyLoader:
-    """懶加載工具"""
-    
+    """懶加載工具（Async）"""
+
     @staticmethod
-    def paginate_query(
-        db: Session,
-        query: Query,
+    async def paginate_bot_users_async(
+        db: AsyncSession,
+        bot_id: str,
         page: int = 1,
         limit: int = 20,
-        sort_column=None,
-        sort_order: str = "desc"
+        search: Optional[str] = None,
+        active_only: bool = False,
     ) -> Dict[str, Any]:
-        """
-        對查詢進行分頁處理
-        
-        Args:
-            db: 資料庫會話
-            query: SQLAlchemy 查詢物件
-            page: 頁碼
-            limit: 每頁項目數
-            sort_column: 排序欄位
-            sort_order: 排序方式 (asc/desc)
-        
-        Returns:
-            分頁結果字典
-        """
-        # 計算總數（優化：使用 count 查詢而非 len(query.all())）
-        total = query.count()
-        
-        # 計算分頁資訊
-        pages = math.ceil(total / limit) if total > 0 else 0
-        has_next = page < pages
-        has_prev = page > 1
-        
-        # 應用排序
-        if sort_column:
-            if sort_order.lower() == "asc":
-                query = query.order_by(asc(sort_column))
-            else:
-                query = query.order_by(desc(sort_column))
-        
-        # 應用分頁
+        from app.models.line_user import LineBotUser
         offset = (page - 1) * limit
-        items = query.offset(offset).limit(limit).all()
-        
+        # total
+        total_res = await db.execute(
+            select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id)
+        )
+        total = total_res.scalar() or 0
+        # base stmt
+        stmt = select(LineBotUser).where(LineBotUser.bot_id == bot_id)
+        if search:
+            search_pattern = f"%{search}%"
+            stmt = stmt.where(
+                LineBotUser.display_name.ilike(search_pattern) | LineBotUser.line_user_id.ilike(search_pattern)
+            )
+        if active_only:
+            stmt = stmt.where(LineBotUser.is_followed == True)
+        stmt = stmt.order_by(LineBotUser.last_interaction.desc()).offset(offset).limit(limit)
+        res = await db.execute(stmt)
+        items = res.scalars().all()
+        pages = (total + limit - 1) // limit if total else 0
         return {
             "items": items,
             "total": total,
             "page": page,
             "limit": limit,
             "pages": pages,
-            "has_next": has_next,
-            "has_prev": has_prev,
-            "next_page": page + 1 if has_next else None,
-            "prev_page": page - 1 if has_prev else None
+            "has_next": page < pages,
+            "has_prev": page > 1,
+            "next_page": page + 1 if page < pages else None,
+            "prev_page": page - 1 if page > 1 else None,
         }
-    
-    @staticmethod
-    def paginate_bot_users(
-        db: Session,
-        bot_id: str,
-        page: int = 1,
-        limit: int = 20,
-        search: Optional[str] = None,
-        active_only: bool = False
-    ) -> Dict[str, Any]:
-        """
-        分頁獲取 Bot 用戶列表
-        
-        Args:
-            db: 資料庫會話
-            bot_id: Bot ID
-            page: 頁碼
-            limit: 每頁項目數
-            search: 搜尋關鍵字
-            active_only: 只顯示活躍用戶
-        """
-        from app.models.line_user import LineBotUser
-        
-        query = db.query(LineBotUser).filter(LineBotUser.bot_id == bot_id)
-        
-        # 應用搜尋條件
-        if search:
-            search_pattern = f"%{search}%"
-            query = query.filter(
-                LineBotUser.display_name.ilike(search_pattern) |
-                LineBotUser.line_user_id.ilike(search_pattern)
-            )
-        
-        # 只顯示活躍用戶
-        if active_only:
-            query = query.filter(LineBotUser.is_followed == True)
-        
-        return LazyLoader.paginate_query(
-            db=db,
-            query=query,
-            page=page,
-            limit=limit,
-            sort_column=LineBotUser.last_interaction,
-            sort_order="desc"
-        )
     
     @staticmethod
     async def paginate_interactions(
@@ -167,83 +108,66 @@ class LazyLoader:
             "has_prev": page > 1
         }
     
+    # 同步版本已移除（請使用 async 方法）
+
     @staticmethod
-    def paginate_logic_templates(
-        db: Session,
+    async def paginate_logic_templates_async(
+        db: AsyncSession,
         bot_id: str,
         page: int = 1,
         limit: int = 10,
-        active_only: bool = False
+        active_only: bool = False,
     ) -> Dict[str, Any]:
-        """
-        分頁獲取邏輯模板
-        
-        Args:
-            db: 資料庫會話
-            bot_id: Bot ID  
-            page: 頁碼
-            limit: 每頁項目數
-            active_only: 只顯示啟用的模板
-        """
         from app.models.bot import LogicTemplate
-        
-        query = db.query(LogicTemplate).filter(LogicTemplate.bot_id == bot_id)
-        
+        offset = (page - 1) * limit
+        base = select(LogicTemplate).where(LogicTemplate.bot_id == bot_id)
         if active_only:
-            query = query.filter(LogicTemplate.is_active == "true")
-        
-        return LazyLoader.paginate_query(
-            db=db,
-            query=query,
-            page=page,
-            limit=limit,
-            sort_column=LogicTemplate.updated_at,
-            sort_order="desc"
+            base = base.where(LogicTemplate.is_active == "true")
+        # total
+        total_res = await db.execute(
+            select(func.count()).select_from(LogicTemplate).where(LogicTemplate.bot_id == bot_id)
         )
-    
+        total = total_res.scalar() or 0
+        stmt = base.order_by(LogicTemplate.updated_at.desc()).offset(offset).limit(limit)
+        res = await db.execute(stmt)
+        items = res.scalars().all()
+        pages = (total + limit - 1) // limit if total else 0
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": pages,
+            "has_next": page < pages,
+            "has_prev": page > 1,
+            "next_page": page + 1 if page < pages else None,
+            "prev_page": page - 1 if page > 1 else None,
+        }
+
     @staticmethod
-    def get_summary_stats(db: Session, bot_id: str) -> Dict[str, Any]:
-        """
-        獲取概要統計資料（不分頁）
-        快速載入關鍵指標
-        """
+    async def get_summary_stats_async(db: AsyncSession, bot_id: str) -> Dict[str, Any]:
         from app.models.line_user import LineBotUser
-        # TODO: LineBotUserInteraction 已遷移到 MongoDB
         from app.models.bot import LogicTemplate
-        from datetime import datetime, timedelta
-        
-        # 今日開始時間
+        from datetime import datetime
         today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        try:
-            # 使用單一查詢獲取多項統計
-            from sqlalchemy import text
-            
-            stats_query = text("""
-                SELECT 
-                    -- 用戶統計
-                    COUNT(DISTINCT lbu.id) as total_users,
-                    COUNT(DISTINCT CASE WHEN lbu.is_followed = true THEN lbu.id END) as active_users,
-                    
-                    -- 今日統計
-                    COUNT(DISTINCT CASE WHEN lbui.timestamp >= :today_start THEN lbui.id END) as today_interactions,
-                    COUNT(DISTINCT CASE WHEN lbui.timestamp >= :today_start THEN lbu.id END) as today_active_users,
-                    
-                    -- 邏輯模板統計
-                    COUNT(DISTINCT lt.id) as total_templates,
-                    COUNT(DISTINCT CASE WHEN lt.is_active = 'true' THEN lt.id END) as active_templates
-                    
-                FROM line_bot_users lbu
-                LEFT JOIN line_bot_user_interactions lbui ON lbu.id = lbui.line_user_id
-                LEFT JOIN logic_templates lt ON lt.bot_id = lbu.bot_id
-                WHERE lbu.bot_id = :bot_id
-            """)
-            
-            result = db.execute(stats_query, {
-                "bot_id": bot_id,
-                "today_start": today_start
-            }).fetchone()
-            
+        from sqlalchemy import text
+        stats_query = text(
+            """
+            SELECT 
+                COUNT(DISTINCT lbu.id) as total_users,
+                COUNT(DISTINCT CASE WHEN lbu.is_followed = true THEN lbu.id END) as active_users,
+                COUNT(DISTINCT CASE WHEN lbui.timestamp >= :today_start THEN lbui.id END) as today_interactions,
+                COUNT(DISTINCT CASE WHEN lbui.timestamp >= :today_start THEN lbu.id END) as today_active_users,
+                COUNT(DISTINCT lt.id) as total_templates,
+                COUNT(DISTINCT CASE WHEN lt.is_active = 'true' THEN lt.id END) as active_templates
+            FROM line_bot_users lbu
+            LEFT JOIN line_bot_user_interactions lbui ON lbu.id = lbui.line_user_id
+            LEFT JOIN logic_templates lt ON lt.bot_id = lbu.bot_id
+            WHERE lbu.bot_id = :bot_id
+            """
+        )
+        result = (await db.execute(stats_query, {"bot_id": bot_id, "today_start": today_start})).fetchone()
+        if result:
             return {
                 "total_users": result.total_users or 0,
                 "active_users": result.active_users or 0,
@@ -251,19 +175,16 @@ class LazyLoader:
                 "today_active_users": result.today_active_users or 0,
                 "total_templates": result.total_templates or 0,
                 "active_templates": result.active_templates or 0,
-                "generated_at": datetime.now().isoformat()
-            }
-            
-        except Exception as e:
-            # 如果原生查詢失敗，回退到個別查詢
-            total_users = db.query(LineBotUser).filter(LineBotUser.bot_id == bot_id).count()
-            return {
-                "total_users": total_users,
-                "active_users": 0,
-                "today_interactions": 0,
-                "today_active_users": 0,
-                "total_templates": 0,
-                "active_templates": 0,
                 "generated_at": datetime.now().isoformat(),
-                "fallback": True
             }
+        return {
+            "total_users": 0,
+            "active_users": 0,
+            "today_interactions": 0,
+            "today_active_users": 0,
+            "total_templates": 0,
+            "active_templates": 0,
+            "generated_at": datetime.now().isoformat(),
+        }
+    
+    # 同步 summary 已移除（請使用 get_summary_stats_async）

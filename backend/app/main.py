@@ -30,6 +30,7 @@ from app.api.api_v1.api import api_router
 from app.config.redis_config import init_redis, close_redis
 from app.services.background_tasks import get_task_manager, PerformanceOptimizer
 from app.services.cache_service import get_cache
+from app.services.minio_service import init_minio_service
 
 # 配置日誌
 logging.basicConfig(
@@ -65,6 +66,16 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"MongoDB 初始化失敗: {e}")
             logger.warning("繼續啟動服務器，但 MongoDB 功能將不可用")
+        
+        # 預先初始化 MinIO（避免首個請求同步阻塞）
+        try:
+            svc, err = await asyncio.to_thread(init_minio_service, False)
+            if err:
+                logger.warning(f"MinIO 初始化警告: {err}")
+            else:
+                logger.info("MinIO 初始化完成")
+        except Exception as e:
+            logger.warning(f"MinIO 預先初始化失敗（將在首次使用時再嘗試）: {e}")
         
         # 初始化多層快取
         cache = get_cache()

@@ -3,17 +3,18 @@ WebSocket API 路由
 提供即時數據更新功能
 """
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Optional
 import json
 import asyncio
 import logging
 
-from app.database import get_db
+from app.database_async import get_async_db
 from app.models.bot import Bot
 from app.models.user import User
 from app.services.websocket_manager import websocket_manager
 from app.api.dependencies import get_current_user_websocket
+from sqlalchemy import select
 from app.core.security import verify_token
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ async def websocket_bot_endpoint(
     websocket: WebSocket,
     bot_id: str,
     ws_token: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Bot 專用 WebSocket 端點"""
 
@@ -43,7 +44,8 @@ async def websocket_bot_endpoint(
             await websocket.close(code=4001, reason="Invalid token")
             return
 
-        user = await asyncio.to_thread(lambda: db.query(User).filter(User.username == username).first())
+        result = await db.execute(select(User).where(User.username == username))
+        user = result.scalars().first()
         if not user:
             await websocket.close(code=4001, reason="User not found")
             return
@@ -54,12 +56,8 @@ async def websocket_bot_endpoint(
         return
 
     # 驗證 Bot 存在且屬於該用戶
-    bot = await asyncio.to_thread(
-        lambda: db.query(Bot).filter(
-            Bot.id == bot_id,
-            Bot.user_id == user.id
-        ).first()
-    )
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == user.id))
+    bot = result.scalars().first()
     if not bot:
         await websocket.close(code=4004, reason="Bot not found or access denied")
         return
@@ -102,7 +100,7 @@ async def websocket_dashboard_endpoint(
     websocket: WebSocket,
     user_id: str,
     ws_token: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """用戶儀表板 WebSocket 端點"""
 
@@ -121,7 +119,8 @@ async def websocket_dashboard_endpoint(
             await websocket.close(code=4001, reason="Invalid token or user mismatch")
             return
 
-        user = await asyncio.to_thread(lambda: db.query(User).filter(User.username == user_id).first())
+        result = await db.execute(select(User).where(User.username == user_id))
+        user = result.scalars().first()
         if not user:
             await websocket.close(code=4004, reason="User not found")
             return
@@ -152,7 +151,7 @@ async def websocket_dashboard_endpoint(
     finally:
         await websocket_manager.disconnect_user_dashboard(user_id, websocket)
 
-async def handle_websocket_message(bot_id: str, message: dict, websocket: WebSocket, db: Session):
+async def handle_websocket_message(bot_id: str, message: dict, websocket: WebSocket, db: AsyncSession):
     """處理 Bot WebSocket 消息"""
     
     message_type = message.get('type')
@@ -195,7 +194,7 @@ async def handle_websocket_message(bot_id: str, message: dict, websocket: WebSoc
             'message': 'Failed to process message'
         }))
 
-async def handle_dashboard_message(user_id: str, message: dict, websocket: WebSocket, db: Session):
+async def handle_dashboard_message(user_id: str, message: dict, websocket: WebSocket, db: AsyncSession):
     """處理儀表板 WebSocket 消息"""
     
     message_type = message.get('type')
@@ -209,7 +208,8 @@ async def handle_dashboard_message(user_id: str, message: dict, websocket: WebSo
             
         elif message_type == 'subscribe_user_bots':
             # 訂閱用戶所有 Bot 的更新
-            user_bots = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.user_id == user_id).all())
+            result = await db.execute(select(Bot).where(Bot.user_id == user_id))
+            user_bots = result.scalars().all()
             bot_ids = [str(bot.id) for bot in user_bots]
             
             await websocket.send_text(json.dumps({
@@ -231,11 +231,12 @@ async def handle_dashboard_message(user_id: str, message: dict, websocket: WebSo
             'message': 'Failed to process dashboard message'
         }))
 
-async def send_initial_data(bot_id: str, websocket: WebSocket, db: Session):
+async def send_initial_data(bot_id: str, websocket: WebSocket, db: AsyncSession):
     """發送初始數據"""
     try:
         # 獲取 Bot 基本信息
-        bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id).first())
+        result = await db.execute(select(Bot).where(Bot.id == bot_id))
+        bot = result.scalars().first()
         if not bot:
             return
         
@@ -272,18 +273,14 @@ async def get_websocket_stats():
 async def broadcast_to_bot(
     bot_id: str,
     message: dict,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_websocket)
 ):
     """向特定 Bot 的所有 WebSocket 連接廣播消息"""
     try:
         # 驗證 Bot 所有權（避免阻塞事件圈）
-        bot = await asyncio.to_thread(
-            lambda: db.query(Bot).filter(
-                Bot.id == bot_id,
-                Bot.user_id == current_user.id
-            ).first()
-        )
+        result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+        bot = result.scalars().first()
         
         if not bot:
             raise HTTPException(status_code=404, detail="Bot not found")

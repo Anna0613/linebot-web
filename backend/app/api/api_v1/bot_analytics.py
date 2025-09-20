@@ -3,25 +3,26 @@ LINE Bot 分析 API 路由
 提供 Bot 數據分析、統計和監控功能
 """
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import json
 import logging
 import asyncio
 
-from app.database import get_db
-from app.dependencies import get_current_user
+from app.database_async import get_async_db
+from app.dependencies import get_current_user_async
 from app.models.user import User
 from app.models.bot import Bot
 from app.services.line_bot_service import LineBotService
+from sqlalchemy import select, func
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-async def sync_users_from_line_api(db: Session, bot: Bot, line_user_ids: List[str], conversations: List[Dict]) -> List:
+async def sync_users_from_line_api(db: AsyncSession, bot: Bot, line_user_ids: List[str], conversations: List[Dict]) -> List:
     """
     從 LINE API 獲取用戶資料並同步到 PostgreSQL
 
@@ -108,23 +109,21 @@ async def sync_users_from_line_api(db: Session, bot: Bot, line_user_ids: List[st
                     )
 
                     # 保存到資料庫
-                    def _save_user():
-                        db.add(user_record)
-                        db.commit()
-                        db.refresh(user_record)
-                        return user_record
-                    user_record = await asyncio.to_thread(_save_user)
+                    db.add(user_record)
+                    await db.commit()
+                    await db.refresh(user_record)
+                    
 
                     synced_users.append(user_record)
 
                 except Exception as e:
                     logger.error(f"同步用戶 {line_user_id} 失敗: {e}")
-                    db.rollback()
+                    await db.rollback()
                     continue
 
     except Exception as e:
         logger.error(f"LINE API 初始化失敗: {e}")
-        db.rollback()
+        await db.rollback()
         raise
 
     return synced_users
@@ -133,13 +132,14 @@ async def sync_users_from_line_api(db: Session, bot: Bot, line_user_ids: List[st
 async def get_bot_analytics(
     bot_id: str,
     period: Optional[str] = "week",  # day, week, month
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取 Bot 分析數據"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -176,13 +176,14 @@ async def get_bot_analytics(
 async def get_message_stats(
     bot_id: str,
     days: Optional[int] = 7,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取訊息統計數據"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -202,13 +203,14 @@ async def get_message_stats(
 @router.get("/{bot_id}/users/activity")
 async def get_user_activity(
     bot_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取用戶活躍度數據"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -228,13 +230,14 @@ async def get_user_activity(
 @router.get("/{bot_id}/usage/stats")
 async def get_usage_stats(
     bot_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取功能使用統計"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -255,13 +258,14 @@ async def get_usage_stats(
 async def send_test_message(
     bot_id: str,
     message_data: Dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """發送測試訊息"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -281,7 +285,8 @@ async def send_test_message(
             from app.models.line_user import LineBotUser
             from uuid import UUID as PyUUID
             bot_uuid = PyUUID(bot_id)
-            existing = await asyncio.to_thread(lambda: db.query(LineBotUser).filter(LineBotUser.bot_id == bot_uuid, LineBotUser.line_user_id == user_id).first())
+            res = await db.execute(select(LineBotUser).where(LineBotUser.bot_id == bot_uuid, LineBotUser.line_user_id == user_id))
+            existing = res.scalars().first()
             if not existing:
                 profile = await asyncio.to_thread(line_bot_service.get_user_profile, user_id)
                 new_user = LineBotUser(
@@ -294,7 +299,8 @@ async def send_test_message(
                     is_followed=True,
                     interaction_count="1"
                 )
-                await asyncio.to_thread(lambda: (db.add(new_user), db.commit()))
+                db.add(new_user)
+                await db.commit()
         except Exception:
             db.rollback()
 
@@ -354,13 +360,14 @@ async def send_test_message(
 @router.get("/{bot_id}/profile")
 async def get_bot_profile(
     bot_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取 Bot 資料"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -397,13 +404,14 @@ async def get_bot_profile(
 @router.get("/{bot_id}/health")
 async def check_bot_health(
     bot_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """檢查 Bot 健康狀態"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -435,13 +443,14 @@ async def get_bot_users(
     bot_id: str,
     limit: int = 50,
     offset: int = 0,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取 Bot 的用戶列表（從 MongoDB 和 PostgreSQL 組合數據）"""
 
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
 
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -461,26 +470,42 @@ async def get_bot_users(
         line_user_ids = [conv["line_user_id"] for conv in conversations]
 
         if not line_user_ids:
-            # 如果 MongoDB 中沒有對話記錄，回退到 PostgreSQL
-            def _pg_list_all():
-                users_query = db.query(LineBotUser).filter(LineBotUser.bot_id == bot_id).order_by(LineBotUser.last_interaction.desc())
-                return users_query.count(), users_query.offset(offset).limit(limit).all()
-            total_count, users = await asyncio.to_thread(_pg_list_all)
+            # 如果 MongoDB 中沒有對話記錄，回退到 PostgreSQL（async）
+            # Count
+            res_cnt = await db.execute(select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id))
+            total_count = res_cnt.scalar() or 0
+            # Page items
+            res_users = await db.execute(
+                select(LineBotUser)
+                .where(LineBotUser.bot_id == bot_id)
+                .order_by(LineBotUser.last_interaction.desc())
+                .offset(offset)
+                .limit(limit)
+            )
+            users = res_users.scalars().all()
             use_mongodb_data = False
         else:
             # 從 PostgreSQL 獲取這些用戶的基本信息
-            def _pg_list_subset():
-                users_query = db.query(LineBotUser).filter(
-                    LineBotUser.bot_id == bot_id,
-                    LineBotUser.line_user_id.in_(line_user_ids)
-                ).order_by(LineBotUser.last_interaction.desc())
-                return users_query.count(), users_query.offset(offset).limit(limit).all()
-            total_count, users = await asyncio.to_thread(_pg_list_subset)
+            res_cnt = await db.execute(
+                select(func.count()).select_from(LineBotUser).where(
+                    LineBotUser.bot_id == bot_id, LineBotUser.line_user_id.in_(line_user_ids)
+                )
+            )
+            total_count = res_cnt.scalar() or 0
+            res_users = await db.execute(
+                select(LineBotUser)
+                .where(LineBotUser.bot_id == bot_id, LineBotUser.line_user_id.in_(line_user_ids))
+                .order_by(LineBotUser.last_interaction.desc())
+                .offset(offset)
+                .limit(limit)
+            )
+            users = res_users.scalars().all()
 
             # 如果 PostgreSQL 中沒有對應的用戶記錄，從 LINE API 獲取並同步
             if len(users) == 0 and len(line_user_ids) > 0:
                 # 獲取 Bot 的 LINE 配置
-                bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id).first())
+                res_bot = await db.execute(select(Bot).where(Bot.id == bot_id))
+                bot = res_bot.scalars().first()
                 if bot and bot.channel_token:
                     try:
                         # 同步用戶資料到 PostgreSQL
@@ -575,13 +600,14 @@ async def get_user_interactions(
     bot_id: str,
     line_user_id: str,
     limit: int = 20,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取特定用戶的互動歷史（使用 MongoDB）"""
 
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
 
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -612,13 +638,14 @@ async def get_user_interactions(
 async def broadcast_message(
     bot_id: str,
     message_data: Dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """廣播訊息給所有關注者"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -643,13 +670,8 @@ async def broadcast_message(
             if user_ids:
                 targets = list(user_ids)
             else:
-                def _list_targets():
-                    return [
-                        u.line_user_id for u in db.query(LineBotUser)
-                        .filter(LineBotUser.bot_id == bot.id, LineBotUser.is_followed == True)
-                        .all()
-                    ]
-                targets = await asyncio.to_thread(_list_targets)
+                res_targets = await db.execute(select(LineBotUser.line_user_id).where(LineBotUser.bot_id == bot.id, LineBotUser.is_followed == True))
+                targets = [row[0] for row in res_targets.all()]
 
             # 對每位用戶記錄 admin 訊息到 MongoDB
             for uid in targets:
@@ -708,13 +730,14 @@ async def send_message_to_user(
     bot_id: str,
     line_user_id: str,
     message_data: Dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """發送訊息給特定用戶（使用 MongoDB 儲存聊天記錄）"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -742,7 +765,8 @@ async def send_message_to_user(
             sent_status="sent" if result.get("success") else "failed",
             line_message_id=result.get("message_id")
         )
-        await asyncio.to_thread(lambda: (db.add(admin_message), db.commit()))
+        db.add(admin_message)
+        await db.commit()
         
         # 同時記錄到 MongoDB 聊天記錄並推送到 WebSocket（增量更新）
         try:
@@ -793,7 +817,7 @@ async def send_message_to_user(
         }
         
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error(f"發送訊息失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"發送訊息失敗: {str(e)}")
 
@@ -801,13 +825,14 @@ async def send_message_to_user(
 async def selective_broadcast_message(
     bot_id: str,
     message_data: Dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """選擇性廣播訊息給指定用戶"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -842,6 +867,7 @@ async def selective_broadcast_message(
                 sent_status="sent" if result.get("success") else "failed"
             )
             db.add(admin_message)
+            await db.commit()
             # MongoDB 對話紀錄（新增）
             try:
                 await ConversationService.add_admin_message(
@@ -873,13 +899,14 @@ async def get_chat_history(
     limit: int = 50,
     offset: int = 0,
     sender_type: Optional[str] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取用戶與管理者的聊天記錄（使用 MongoDB）"""
     
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -922,13 +949,14 @@ async def get_bot_activities(
     bot_id: str,
     limit: int = 20,
     offset: int = 0,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
 ):
     """獲取 Bot 活動記錄"""
 
     # 驗證 Bot 所有權
-    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+    bot = result.scalars().first()
 
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
