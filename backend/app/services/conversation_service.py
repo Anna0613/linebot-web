@@ -1049,47 +1049,38 @@ class ConversationService:
     @staticmethod
     async def get_user_activity(bot_id: str) -> List[Dict[str, Any]]:
         """
-        獲取用戶活躍度數據（從 MongoDB）
+        近一週用戶活躍度（依小時聚合，回傳 0~23 共 24 筆）
 
-        Args:
-            bot_id: Bot ID
-
-        Returns:
-            List[Dict]: 24小時活躍度數據
+        - 來源：Mongo conversations.messages
+        - 指標：每小時活躍用戶數（去重 line_user_id）
+        - 時區：UTC
         """
         try:
-            activity = []
+            from datetime import timedelta
+            now = datetime.utcnow()
+            week_ago = now - timedelta(days=7)
 
-            # 24小時數據，每3小時一個點
-            for hour in [0, 6, 9, 12, 15, 18, 21, 23]:
-                hour_start = datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)
-                hour_end = hour_start.replace(hour=(hour+3) % 24 if hour != 23 else 23, minute=59, second=59)
+            pipeline = [
+                {"$match": {"bot_id": bot_id}},
+                {"$unwind": "$messages"},
+                {"$match": {"messages.timestamp": {"$gte": week_ago, "$lt": now}}},
+                {"$group": {"_id": {"$hour": "$messages.timestamp"}, "users": {"$addToSet": "$line_user_id"}}},
+                {"$project": {"hour": "$_id", "activeUsers": {"$size": "$users"}, "_id": 0}},
+                {"$sort": {"hour": 1}},
+            ]
 
-                # 獲取這個時間段的活躍用戶數
-                conversations = await ConversationDocument.find({
-                    "bot_id": bot_id,
-                    "messages.timestamp": {
-                        "$gte": hour_start,
-                        "$lte": hour_end
-                    }
-                }).to_list()
-
-                active_users = set()
-                for conversation in conversations:
-                    for message in conversation.messages:
-                        if hour_start <= message.timestamp <= hour_end:
-                            active_users.add(conversation.line_user_id)
-
+            agg = await ConversationDocument.aggregate(pipeline).to_list()
+            by_hour = {int(doc.get("hour", 0)): int(doc.get("activeUsers", 0)) for doc in agg}
+            activity: List[Dict[str, Any]] = []
+            for h in range(24):
                 activity.append({
-                    "hour": f"{hour:02d}",
-                    "activeUsers": len(active_users)
+                    "hour": f"{h:02d}",
+                    "activeUsers": by_hour.get(h, 0),
                 })
-
             return activity
-
         except Exception as e:
             logger.error(f"獲取用戶活躍度失敗: {e}")
-            return []
+            return [{"hour": f"{h:02d}", "activeUsers": 0} for h in range(24)]
 
     @staticmethod
     async def get_usage_stats(bot_id: str) -> List[Dict[str, Any]]:
