@@ -140,10 +140,10 @@ const MetricCard: React.FC<MetricCardProps> = ({
 }) => {
   const variantStyles = {
     default: "border-border bg-card hover:shadow-lg",
-    success: "border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-green-100 hover:shadow-lg",
-    warning: "border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 hover:shadow-orange-100 hover:shadow-lg",
-    error: "border-red-200 bg-gradient-to-br from-red-50 to-rose-50 hover:shadow-red-100 hover:shadow-lg",
-    info: "border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-blue-100 hover:shadow-lg"
+    success: "border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-green-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
+    warning: "border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 hover:shadow-orange-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
+    error: "border-red-200 bg-gradient-to-br from-red-50 to-rose-50 hover:shadow-red-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
+    info: "border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-blue-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon"
   };
 
   const iconVariantStyles = {

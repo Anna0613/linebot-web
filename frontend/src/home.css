@@ -13,6 +13,10 @@
     --line-green-soft:  145 30% 92%;  /* #EAF3EF */
     --line-green-muted: 145 18% 52%;  /* #6F9E8B */
     --line-blue: 200 90% 55%;
+    /* Web3 accent tokens */
+    --web3-cyan: 190 95% 55%;
+    --web3-purple: 265 85% 70%;
+    --web3-indigo: 230 85% 62%;
     --warning: 38 92% 56%;
     --background: 0 0% 97%;
     --foreground: 222.2 84% 4.9%;
@@ -58,8 +62,8 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 222.2 84% 5.5%;
+    --foreground: 210 40% 96%;
 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
@@ -70,11 +74,11 @@
     --primary: var(--line-green);
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 222 45% 12%;
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 223 35% 16%;
+    --muted-foreground: 215 20% 70%;
 
     --accent: var(--line-green);
     --accent-foreground: 0 0% 100%;
@@ -82,8 +86,8 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 223 30% 22%;
+    --input: 223 30% 22%;
     --ring: var(--line-green);
     
     --sidebar-background: 240 5.9% 10%;
@@ -109,11 +113,11 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white bg-opacity-70 backdrop-blur-lg border border-white border-opacity-30 rounded-2xl shadow-glass;
+    @apply bg-white bg-opacity-70 dark:bg-white/10 backdrop-blur-lg border border-white border-opacity-30 dark:border-white/10 rounded-2xl shadow-glass;
   }
   
   .glass-button {
-    @apply bg-white bg-opacity-70 hover:bg-opacity-100 transition-all duration-300 backdrop-blur-lg border border-white border-opacity-30 rounded-full px-6 py-3 text-sm font-medium shadow-glass-sm hover:shadow-glass;
+    @apply bg-white bg-opacity-70 dark:bg-white/10 hover:bg-opacity-100 dark:hover:bg-white/20 transition-all duration-300 backdrop-blur-lg border border-white border-opacity-30 dark:border-white/10 rounded-full px-6 py-3 text-sm font-medium shadow-glass-sm hover:shadow-glass;
   }
   
   .primary-button {
@@ -182,6 +186,10 @@ html {
   background-image: radial-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px);
   background-size: 20px 20px;
 }
+/* Dark-friendly dot pattern */
+.dark .dot-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+}
 
 /* Animated underlines */
 .hover-underline {
@@ -239,6 +247,47 @@ body {
   font-family:Times, serif;
   float: right;
   min-width: 80px;             /* 控制寬度，改小一點也不會太窄 */
+}
+
+/* Web3 dark background accents */
+.dark body::before {
+  content: "";
+  position: fixed;
+  inset: -30% -10% -10% -10%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(40rem 25rem at 10% 10%, hsla(var(--web3-purple), 0.08), transparent 40%),
+    radial-gradient(32rem 20rem at 85% 15%, hsla(var(--web3-cyan), 0.08), transparent 45%),
+    radial-gradient(28rem 18rem at 50% 80%, hsla(var(--web3-indigo), 0.07), transparent 50%);
+  filter: blur(10px);
+}
+
+.dark .section-title {
+  text-shadow: 0 0 18px rgba(168, 85, 247, 0.15), 0 0 28px rgba(14, 165, 233, 0.12);
+}
+
+.neon-ring {
+  box-shadow: 0 0 0 2px hsla(var(--web3-cyan), 0.25), 0 0 20px hsla(var(--web3-purple), 0.25), inset 0 0 30px hsla(var(--web3-indigo), 0.12);
+}
+
+/* Dark mode text readability overrides for legacy classes */
+@layer utilities {
+  /* Background/border overrides for light-only classes */
+  .dark .bg-white { background-color: hsl(var(--card)) !important; color: hsl(var(--card-foreground)) !important; }
+  .dark .bg-gray-50, .dark .bg-gray-100, .dark .bg-gray-200 { background-color: hsl(var(--secondary)) !important; }
+  .dark .border-gray-200, .dark .border-gray-300 { border-color: hsl(var(--border)) !important; }
+  .dark .hover\:bg-gray-100:hover, .dark .hover\:bg-gray-200:hover { background-color: hsl(var(--secondary)) !important; }
+  /* Map common gray text utilities to lighter tones in dark */
+  .dark .text-gray-900, .dark .text-gray-800 { color: #e5e7eb !important; }
+  .dark .text-gray-700, .dark .text-gray-600 { color: #d1d5db !important; }
+  .dark .text-gray-500, .dark .text-gray-400 { color: #9ca3af !important; }
+  .dark .text-black { color: #f9fafb !important; }
+  /* Arbitrary hex text colors like text-[#475569] */
+  .dark [class*="text-[#"] { color: #e5e7eb !important; }
+  /* Arbitrary hex fills often used on SVG icons */
+  .dark [class*="fill-[#"] { fill: #e5e7eb !important; }
+  .dark ::placeholder { color: #9ca3af; }
 }
 
 .custom-joinus {

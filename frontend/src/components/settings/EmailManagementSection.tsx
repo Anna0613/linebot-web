@@ -73,7 +73,7 @@ const EmailManagementSection = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div className="bg-card text-card-foreground border border-border rounded-lg shadow-md p-6 mb-6">
       <div className="flex items-center gap-2 mb-4">
         <Mail className="w-5 h-5 text-[#1a1a40]" />
         <h2 className="text-xl font-bold text-[#1a1a40]">電子郵件管理</h2>
@@ -84,13 +84,13 @@ const EmailManagementSection = ({
         <div className="space-y-2">
           <Label htmlFor="email">電子郵件地址</Label>
           <div className="flex gap-2">
-            <Input
-              id="email"
+          <Input
+            id="email"
               type="email"
               value={email}
               onChange={(e) => onEmailChange(e.target.value)}
               disabled={!isEditingEmail}
-              className={!isEditingEmail ? "bg-gray-50" : ""}
+            className={!isEditingEmail ? "bg-secondary" : ""}
               placeholder="請輸入您的電子郵件地址"
             />
             <Button
@@ -119,7 +119,7 @@ const EmailManagementSection = ({
 
         {/* 驗證狀態 */}
         {email && (
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
             <div className="flex items-center gap-3">
               <div className="text-sm">
                 <span className="font-medium">驗證狀態：</span>
@@ -152,7 +152,7 @@ const EmailManagementSection = ({
         )}
 
         {/* 說明文字 */}
-        <div className="text-sm text-gray-500 space-y-1">
+          <div className="text-sm text-muted-foreground space-y-1">
           <p>• 驗證的電子郵件將用於重要通知和密碼重設</p>
           <p>• 更改電子郵件後需要重新驗證</p>
           {!emailVerified && email && (

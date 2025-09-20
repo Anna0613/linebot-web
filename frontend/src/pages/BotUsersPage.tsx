@@ -262,9 +262,9 @@ const BotUsersPage: React.FC = () => {
               📷 網路錯誤，無法載入
             </div>
           ) : messageId ? (
-            <div className="text-sm text-gray-500 mb-2">📷 圖片載入中...</div>
+            <div className="text-sm text-muted-foreground mb-2">📷 圖片載入中...</div>
           ) : (
-            <div className="text-sm text-gray-500 mb-2">📷 圖片</div>
+            <div className="text-sm text-muted-foreground mb-2">📷 圖片</div>
           )}
           <div className="hidden text-sm">📷 圖片載入失敗</div>
           <div className="text-xs opacity-75">圖片訊息</div>
@@ -306,9 +306,9 @@ const BotUsersPage: React.FC = () => {
               🎥 網路錯誤，無法載入
             </div>
           ) : messageId ? (
-            <div className="text-sm text-gray-500 mb-2">🎥 影片載入中...</div>
+            <div className="text-sm text-muted-foreground mb-2">🎥 影片載入中...</div>
           ) : (
-            <div className="text-sm text-gray-500 mb-2">🎥 影片</div>
+            <div className="text-sm text-muted-foreground mb-2">🎥 影片</div>
           )}
           <div className="hidden text-sm">🎥 影片載入失敗</div>
           <div className="text-xs opacity-75">影片訊息</div>
@@ -349,9 +349,9 @@ const BotUsersPage: React.FC = () => {
               🎵 網路錯誤，無法載入
             </div>
           ) : messageId ? (
-            <div className="text-sm text-gray-500 mb-2">🎵 音訊載入中...</div>
+            <div className="text-sm text-muted-foreground mb-2">🎵 音訊載入中...</div>
           ) : (
-            <div className="text-sm text-gray-500 mb-2">🎵 音訊</div>
+            <div className="text-sm text-muted-foreground mb-2">🎵 音訊</div>
           )}
           <div className="hidden text-sm">🎵 音訊載入失敗</div>
           <div className="text-xs opacity-75">音訊訊息</div>
@@ -679,7 +679,7 @@ const BotUsersPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-background">
       <DashboardNavbar user={user} />
       
       <div className="flex-1 mt-20 mb-20">
@@ -695,8 +695,8 @@ const BotUsersPage: React.FC = () => {
               返回管理中心
             </Button>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">用戶管理</h1>
-              <p className="text-gray-600">管理 LINE Bot 的關注者和互動記錄</p>
+              <h1 className="text-3xl font-bold text-foreground mb-2">用戶管理</h1>
+              <p className="text-muted-foreground">管理 LINE Bot 的關注者和互動記錄</p>
             </div>
             
             {/* WebSocket 連接狀態 */}
@@ -785,7 +785,7 @@ const BotUsersPage: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="搜尋用戶名稱或 ID..."
                       autoComplete="off"
@@ -799,15 +799,15 @@ const BotUsersPage: React.FC = () => {
                   <div className="space-y-3">
                     {filteredUsers.length === 0 ? (
                       <div className="text-center py-8">
-                        <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-500">尚無關注者</p>
+                        <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">尚無關注者</p>
                       </div>
                     ) : (
                       filteredUsers.map((user) => (
                         <div
                           key={user.id}
-                          className={`p-4 border rounded-lg transition-colors hover:bg-gray-50 ${
-                            selectedUser?.id === user.id ? "border-blue-500 bg-blue-50" : ""
+                          className={`p-4 border rounded-lg transition-colors hover:bg-secondary ${
+                            selectedUser?.id === user.id ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10" : ""
                           }`}
                         >
                           <div className="flex items-center gap-3">
@@ -828,10 +828,10 @@ const BotUsersPage: React.FC = () => {
                               />
                             ) : (
                               <div 
-                                className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center cursor-pointer"
+                                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center cursor-pointer"
                                 onClick={() => handleUserSelect(user)}
                               >
-                                <User className="h-5 w-5 text-gray-600" />
+                                <User className="h-5 w-5 text-muted-foreground" />
                               </div>
                             )}
                             
@@ -840,14 +840,14 @@ const BotUsersPage: React.FC = () => {
                               className="flex-1 min-w-0 cursor-pointer"
                               onClick={() => handleUserSelect(user)}
                             >
-                              <h3 className="font-medium text-gray-900 truncate">
+                              <h3 className="font-medium text-foreground truncate">
                                 {user.display_name || "未設定名稱"}
                               </h3>
-                              <p className="text-sm text-gray-500 truncate">
+                              <p className="text-sm text-muted-foreground truncate">
                                 {user.line_user_id}
                               </p>
                               {user.status_message && (
-                                <p className="text-xs text-gray-400 truncate">
+                                <p className="text-xs text-muted-foreground truncate">
                                   {user.status_message}
                                 </p>
                               )}
@@ -859,7 +859,7 @@ const BotUsersPage: React.FC = () => {
                                 <Hash className="h-3 w-3 mr-1" />
                                 {user.interaction_count}
                               </Badge>
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 {new Date(user.last_interaction).toLocaleDateString("zh-TW")}
                               </p>
                             </div>
@@ -907,7 +907,7 @@ const BotUsersPage: React.FC = () => {
                         <ChevronLeft className="h-4 w-4 mr-2" />
                         上一頁
                       </Button>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-muted-foreground">
                         {pagination.offset + 1} - {Math.min(pagination.offset + pagination.limit, totalCount)} / {totalCount}
                       </span>
                       <Button

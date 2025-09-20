@@ -158,11 +158,11 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white bg-opacity-100`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-background/90 supports-[backdrop-filter]:backdrop-blur-md border-b border-border`}
       >
         <div className="w-full px-6 flex items-center justify-between h-16 md:h-20">
           <div className="flex items-center gap-4">
-            <button className="text-[#1a1a40]" onClick={toggleMobileMenu}>
+            <button className="text-foreground" onClick={toggleMobileMenu}>
               <Menu size={28} />
             </button>
             <Link
@@ -173,7 +173,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                 <source srcSet="/assets/images/webp/LOGO.webp" type="image/webp" />
                 <img src="/assets/images/origin/LOGO.png" alt="Logo" loading="eager" decoding="async" fetchpriority="high" width="48" height="48" className="h-12 w-auto" />
               </picture>
-              <h6 className="text-[28px] font-bold pl-4 text-[#1a1a40] tracking-wide mt-1">
+              <h6 className="text-[28px] font-bold pl-4 text-foreground tracking-wide mt-1">
                 LINE Bot 製作輔助系統
               </h6>
             </Link>
@@ -230,7 +230,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               </button>
 
               {showDropdown && (
-                <div className="absolute right-0 mt-3 w-[260px] bg-white border shadow-xl rounded-lg z-50 p-4">
+                <div className="absolute right-0 mt-3 w-[260px] bg-card text-card-foreground border border-border shadow-xl rounded-lg z-50 p-4">
                   <button
                     onClick={() => setShowDropdown(false)}
                     className="absolute top-2 right-2 text-gray-500 text-xl"
@@ -259,7 +259,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                     <span className="font-medium">
                       {user?.display_name || "未登入"}
                     </span>
-                    <small className="text-gray-500">
+                    <small className="text-muted-foreground">
                       {user?.line_id || user?.username || "未登入"}
                     </small>
                     <input
@@ -271,11 +271,11 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                     />
                   </div>
 
-                  <nav className="space-y-2 text-sm text-[#1a1a40]">
-                    <hr className="my-2 border-gray-300" />
+                  <nav className="space-y-2 text-sm text-foreground">
+                    <hr className="my-2 border-border" />
                     <button
                       onClick={toggleTheme}
-                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px] w-full text-left"
+                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary text-[16px] w-full text-left"
                     >
                       {isDarkMode ? (
                         <svg
@@ -314,7 +314,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                     </Link>
                     <Link
                       to="/language"
-                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]"
+                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary text-[16px]"
                     >
                       <img
                         src="/assets/images/language setting.svg"
@@ -325,7 +325,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                     </Link>
                     <Link
                       to="/suggest"
-                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]"
+                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary text-[16px]"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -336,10 +336,10 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                       </svg>
                       建議
                     </Link>
-                    <hr className="my-2 border-gray-300" />
+                    <hr className="my-2 border-border" />
                     <Link
                       to="/"
-                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 font-bold text-red-600 text-[16px]"
+                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary font-bold text-red-600 text-[16px]"
                       onClick={handleLogout}
                     >
                       <svg
@@ -360,12 +360,12 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
 
         {mobileMenuOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-30 z-40"
+            className="fixed inset-0 bg-black bg-opacity-30 z-30"
             onClick={toggleMobileMenu}
           />
         )}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
+          className={`fixed top-0 left-0 h-full w-64 bg-card text-card-foreground z-40 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
         >
           <div className="flex justify-end">
             <button
@@ -375,12 +375,12 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               <X />
             </button>
           </div>
-          <ul className="mt-8 space-y-4 text-[#1a1a40] text-lg">
+          <ul className="mt-8 space-y-4 text-foreground text-lg">
             <li>
               <Link
                 to="/dashboard"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 首頁
               </Link>
@@ -389,7 +389,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               <Link
                 to="/how-to-establish"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 如何建立LINE Bot
               </Link>
@@ -398,7 +398,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               <Link
                 to="/bots/create"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 建立LINE Bot
               </Link>
@@ -407,7 +407,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               <Link
                 to="/bots/editor"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 開始設計LINE Bot
               </Link>
@@ -416,7 +416,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               <Link
                 to="/bots/management"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 LINE Bot 管理
               </Link>
@@ -425,7 +425,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               <Link
                 to="/about"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 關於
               </Link>
@@ -454,7 +454,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
         rel="noopener noreferrer"
         className="fixed right-5 bottom-5 z-[1001]"
       >
-        <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center hover:scale-110 transition">
+        <div className="w-12 h-12 rounded-full overflow-hidden bg-card border border-border shadow-lg flex items-center justify-center hover:scale-110 transition">
           <img
             src="/assets/images/line-logo.svg"
             alt="Line icon"

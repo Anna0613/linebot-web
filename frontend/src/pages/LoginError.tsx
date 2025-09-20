@@ -29,7 +29,7 @@ const LoginError: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
@@ -38,7 +38,7 @@ const LoginError: React.FC = () => {
           <CardTitle className="text-2xl text-red-600">登入失敗</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
-          <p className="text-gray-600">LINE 登入過程中發生錯誤</p>
+          <p className="text-muted-foreground">LINE 登入過程中發生錯誤</p>
           {errorMessage && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3">
               <p className="text-sm text-red-700">錯誤詳情：{errorMessage}</p>

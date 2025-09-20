@@ -478,9 +478,9 @@ export const VisualBotEditor: React.FC = () => {
 
   return (
     <DragDropProvider>
-      <div className="h-screen flex flex-col bg-gray-50">
+      <div className="h-screen flex flex-col bg-background">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-card border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* 返回按鈕 */}
@@ -488,13 +488,13 @@ export const VisualBotEditor: React.FC = () => {
                 variant="ghost" 
                 size="icon"
                 onClick={handleGoBack}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-muted-foreground hover:text-foreground"
                 title="返回上一頁"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               
-              <h1 className="text-xl font-semibold text-gray-800">
+              <h1 className="text-xl font-semibold text-foreground">
                 LINE Bot 視覺化編輯器
               </h1>
               <div className="flex items-center space-x-2">
@@ -523,10 +523,10 @@ export const VisualBotEditor: React.FC = () => {
         {/* Main Content */}
         <div className="flex-1 overflow-hidden relative">
           {isLoadingData && (
-            <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-              <div className="flex items-center space-x-2 bg-white p-4 rounded-lg shadow-lg">
+            <div className="absolute inset-0 bg-white/50 dark:bg-black/40 flex items-center justify-center z-10">
+              <div className="flex items-center space-x-2 bg-card p-4 rounded-lg shadow-lg border border-border">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <span className="text-gray-700">載入 Bot 數據中...</span>
+                <span className="text-muted-foreground">載入 Bot 數據中...</span>
               </div>
             </div>
           )}

@@ -165,12 +165,12 @@ const VirtualizedBlockPalette: React.FC<VirtualizedBlockPaletteProps> = memo(({
   const CONTAINER_HEIGHT = Math.min(600, Math.max(200, flatBlockItems.length * ITEM_HEIGHT));
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-80 bg-card text-card-foreground border-r border-border flex flex-col">
       {/* 標題區域 */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-800">積木面板</h2>
-          <div className="text-xs text-gray-500">
+          <h2 className="text-lg font-semibold text-foreground">積木面板</h2>
+          <div className="text-xs text-muted-foreground">
             {flatBlockItems.length} 個積木
           </div>
         </div>
@@ -182,15 +182,15 @@ const VirtualizedBlockPalette: React.FC<VirtualizedBlockPaletteProps> = memo(({
             id="showAllBlocks"
             checked={showAllBlocks}
             onChange={(e) => onShowAllBlocksChange(e.target.checked)}
-            className="rounded border-gray-300"
+            className="rounded border-border"
           />
-          <label htmlFor="showAllBlocks" className="text-sm text-gray-600">
+          <label htmlFor="showAllBlocks" className="text-sm text-muted-foreground">
             顯示所有積木
           </label>
         </div>
         
         {/* 當前上下文指示器 */}
-        <div className="mt-2 text-xs text-gray-500">
+        <div className="mt-2 text-xs text-muted-foreground">
           當前模式: {currentContext === WorkspaceContext.LOGIC ? '邏輯編輯器' : 'Flex 設計器'}
         </div>
       </div>
@@ -208,7 +208,7 @@ const VirtualizedBlockPalette: React.FC<VirtualizedBlockPaletteProps> = memo(({
             {BlockItem}
           </List>
         ) : (
-          <div className="flex items-center justify-center h-32 text-gray-500">
+          <div className="flex items-center justify-center h-32 text-muted-foreground">
             <div className="text-center">
               <div className="text-sm">沒有可用的積木</div>
               <div className="text-xs mt-1">請切換顯示模式或工作區</div>
@@ -218,7 +218,7 @@ const VirtualizedBlockPalette: React.FC<VirtualizedBlockPaletteProps> = memo(({
       </div>
 
       {/* 效能指示器 */}
-      <div className="p-2 border-t border-gray-100 text-xs text-gray-400">
+      <div className="p-2 border-t border-border text-xs text-muted-foreground">
         <div className="flex justify-between">
           <span>虛擬化: 已啟用</span>
           <span>渲染: {Math.min(10, flatBlockItems.length)} / {flatBlockItems.length}</span>

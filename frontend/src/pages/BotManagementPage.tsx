@@ -1060,7 +1060,7 @@ const BotManagementPage: React.FC = () => {
                   <Card>
                     <CardContent className="text-center py-8">
                       <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">請先選擇一個 Bot 來查看分析數據</p>
+                      <p className="text-muted-foreground">請先選擇一個 Bot 來查看分析數據</p>
                     </CardContent>
                   </Card>
                 ) : analyticsLoading && !analytics ? (
@@ -1308,7 +1308,7 @@ const BotManagementPage: React.FC = () => {
                   <Card>
                     <CardContent className="text-center py-8">
                       <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">請先選擇一個 Bot 來查看控制選項</p>
+                      <p className="text-muted-foreground">請先選擇一個 Bot 來查看控制選項</p>
                     </CardContent>
                   </Card>
                 ) : (
@@ -1382,12 +1382,12 @@ const BotManagementPage: React.FC = () => {
                       </CardContent>
                     </Card>
 
-                    {/* 快速操作 */}
+                    {/* 用戶管理 */}
                     <Card className="shadow-sm hover:shadow-md transition">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Send className="h-5 w-5" />
-                          快速操作
+                          用戶管理
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
@@ -1426,7 +1426,7 @@ const BotManagementPage: React.FC = () => {
                             }
                             className={
                               webhookStatus.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 
-                              webhookStatus.status === 'not_configured' ? 'bg-gray-100 text-gray-800 border-gray-200' : 
+                              webhookStatus.status === 'not_configured' ? 'bg-secondary text-foreground border-border' : 
                               'bg-red-100 text-red-800 border-red-200'
                             }
                           >
@@ -1489,13 +1489,13 @@ const BotManagementPage: React.FC = () => {
                               </span>
                             </div>
                             <div>
-                              <span className="text-gray-500">LINE API:</span>
+                              <span className="text-muted-foreground">LINE API:</span>
                               <span className={`ml-1 ${webhookStatus.line_api_accessible ? 'text-green-600' : 'text-red-600'} font-medium`}>
                                 {webhookStatus.line_api_accessible ? '✓ 可連接' : '✗ 連接失敗'}
                               </span>
                             </div>
                             <div className="col-span-2">
-                              <span className="text-gray-500">Webhook 端點:</span>
+                              <span className="text-muted-foreground">Webhook 端點:</span>
                               {(webhookStatus as {webhook_endpoint_info?: {is_set?: boolean; active?: boolean; endpoint?: string}})?.webhook_endpoint_info?.is_set ? (
                                 <span className={`ml-1 ${(webhookStatus as {webhook_endpoint_info?: {active?: boolean}})?.webhook_endpoint_info?.active ? 'text-green-600' : 'text-orange-600'} font-medium`}>
                                   {(webhookStatus as {webhook_endpoint_info?: {active?: boolean}})?.webhook_endpoint_info?.active ? '✓ 已啟用' : '⚠ 已設定但未啟用'}
@@ -1509,7 +1509,7 @@ const BotManagementPage: React.FC = () => {
                             {(webhookStatus as {webhook_endpoint_info?: {endpoint?: string}})?.webhook_endpoint_info?.endpoint && (
                               <div className="col-span-2">
                                 <span className="text-muted-foreground">設定的端點:</span>
-                                <div className="text-xs text-gray-700 mt-1 break-all">
+                                <div className="text-xs text-muted-foreground mt-1 break-all">
                                   {(webhookStatus as {webhook_endpoint_info?: {endpoint?: string}})?.webhook_endpoint_info?.endpoint}
                                 </div>
                               </div>
@@ -1561,7 +1561,7 @@ const BotManagementPage: React.FC = () => {
                   <Card>
                     <CardContent className="text-center py-8">
                       <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">請先選擇一個 Bot 來管理邏輯</p>
+                      <p className="text-muted-foreground">請先選擇一個 Bot 來管理邏輯</p>
                     </CardContent>
                   </Card>
                 ) : (
@@ -1588,7 +1588,7 @@ const BotManagementPage: React.FC = () => {
                     ) : logicTemplates.length === 0 ? (
                       <div className="text-center py-8">
                         <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-500 mb-4">尚無邏輯模板</p>
+                        <p className="text-muted-foreground mb-4">尚無邏輯模板</p>
                         <Button onClick={() => navigate("/bots/visual-editor")}>
                           建立第一個邏輯
                         </Button>
@@ -1624,7 +1624,7 @@ const BotManagementPage: React.FC = () => {
                                     </>
                                   )}
                                 </Badge>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-muted-foreground">
                                   更新時間: {new Date(template.updated_at).toLocaleDateString("zh-TW")}
                                 </span>
                               </div>
@@ -1651,7 +1651,7 @@ const BotManagementPage: React.FC = () => {
             <Card>
               <CardContent className="text-center py-8">
                 <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 mb-4">尚無 LINE Bot</p>
+                <p className="text-muted-foreground mb-4">尚無 LINE Bot</p>
                 <Button onClick={() => navigate("/bots/create")}>
                   建立第一個 Bot
                 </Button>

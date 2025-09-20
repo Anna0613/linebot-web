@@ -234,7 +234,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
               }}
             />
           ) : (
-            <div className="text-gray-500">📷 圖片</div>
+            <div className="text-muted-foreground">📷 圖片</div>
           )}
         </div>
       );
@@ -244,12 +244,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         const flexContent = content as { contents?: unknown };
         const fm = { type: 'flex', contents: flexContent?.contents } as unknown;
         return (
-          <div className="bg-white border rounded p-2 max-w-xl">
+          <div className="bg-card text-card-foreground border rounded p-2 max-w-xl">
             <FlexMessagePreview json={fm} />
           </div>
         );
       } catch (_err) {
-        return <div className="text-gray-500">Flex 訊息</div>;
+        return <div className="text-muted-foreground">Flex 訊息</div>;
       }
     } else if (message.message_type === "sticker") {
       // 嘗試以 LINE 官方貼圖圖檔顯示（以 stickerId 組 URL）
@@ -257,7 +257,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       const pkg = stickerContent?.packageId || '';
       const sid = stickerContent?.stickerId || '';
       if (!sid) {
-        return <div className="text-gray-600">😊 貼圖</div>;
+        return <div className="text-muted-foreground">😊 貼圖</div>;
       }
       const androidUrl = `https://stickershop.line-scdn.net/stickershop/v1/sticker/${sid}/android/sticker.png`;
       const iphoneUrl = `https://stickershop.line-scdn.net/stickershop/v1/sticker/${sid}/iPhone/sticker.png`;
@@ -278,7 +278,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                 const parent = el.parentElement;
                 if (parent) {
                   const fallback = document.createElement('div');
-                  fallback.className = 'text-gray-600';
+                  fallback.className = 'text-muted-foreground';
                   fallback.innerText = `😊 貼圖（${pkg}-${sid})`;
                   parent.appendChild(fallback);
                 }
@@ -288,10 +288,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         </div>
       );
     } else if (message.message_type === "location") {
-      return <div className="text-gray-600">📍 位置訊息</div>;
+      return <div className="text-muted-foreground">📍 位置訊息</div>;
     }
 
-    return <div className="text-gray-500">{message.message_type}</div>;
+    return <div className="text-muted-foreground">{message.message_type}</div>;
   };
 
   // 格式化時間
@@ -389,7 +389,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         <CardContent className="flex items-center justify-center h-full">
           <div className="text-center">
             <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">請選擇一個用戶開始聊天</p>
+            <p className="text-muted-foreground">請選擇一個用戶開始聊天</p>
           </div>
         </CardContent>
       </Card>
@@ -412,7 +412,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
               <CardTitle className="text-lg">
                 {selectedUser.display_name || "未設定名稱"}
               </CardTitle>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 <span>最後活動: {formatTime(selectedUser.last_interaction)}</span>
                 {/* WebSocket 連接狀態 */}
@@ -452,7 +452,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
           ) : chatHistory.length === 0 ? (
             <div className="text-center py-8">
               <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">尚無對話記錄</p>
+              <p className="text-muted-foreground">尚無對話記錄</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -473,10 +473,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                           <AvatarFallback className="bg-blue-500 text-white text-xs">用戶</AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="bg-gray-100 text-gray-800 rounded-2xl rounded-tl-md px-4 py-2 max-w-xs lg:max-w-md">
+                          <div className="bg-secondary text-foreground rounded-2xl rounded-tl-md px-4 py-2 max-w-xs lg:max-w-md">
                             {renderMessageContent(msg)}
                           </div>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                             <span>{formatTime(msg.timestamp)}</span>
                             {msg.event_type !== "message" && (
                               <Badge variant="outline" className="text-xs">{msg.event_type}</Badge>
@@ -493,7 +493,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                           <div className="bg-green-500 text-white rounded-2xl rounded-tr-md px-4 py-2 max-w-xs lg:max-w-md">
                             {renderMessageContent(msg)}
                           </div>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 justify-end">
+                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground justify-end">
                             <span>{formatTime(msg.timestamp)}</span>
                             <CheckCheck className="h-3 w-3 text-green-500" />
                           </div>
@@ -512,7 +512,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                           <div className="bg-purple-500 text-white rounded-2xl rounded-tr-md px-4 py-2 max-w-xs lg:max-w-md">
                             {renderMessageContent(msg)}
                           </div>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 justify-end">
+                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground justify-end">
                             <span>{formatTime(msg.timestamp)}</span>
                             <Badge variant="outline" className="text-xs">Bot</Badge>
                           </div>

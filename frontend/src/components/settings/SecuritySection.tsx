@@ -138,7 +138,7 @@ const SecuritySection = ({
   const passwordStrength = getPasswordStrength(passwordForm.newPassword);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div className="bg-card text-card-foreground border border-border rounded-lg shadow-md p-6 mb-6">
       <div className="flex items-center gap-2 mb-4">
         <Shield className="w-5 h-5 text-[#1a1a40]" />
         <h2 className="text-xl font-bold text-[#1a1a40]">安全設定</h2>
@@ -341,7 +341,7 @@ const SecuritySection = ({
           </CardHeader>
 
           <CardContent>
-            <Alert className="border-red-200 bg-red-50 mb-4">
+            <Alert className="mb-4">
               <AlertTriangle className="w-4 h-4 text-red-600" />
               <AlertDescription className="text-red-800">
                 刪除帳號將永久移除您的所有資料，包括創建的機器人、對話紀錄等。此操作無法復原。

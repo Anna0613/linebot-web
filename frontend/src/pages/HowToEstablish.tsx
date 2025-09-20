@@ -197,9 +197,9 @@ const HowToEstablish = () => {
                       {step === 4 && "完成設定"}
                     </div>
                   </div>
-                  {step === currentStep && <div className="w-3 h-3 bg-white rounded-full"></div>}
+                  {step === currentStep && <div className="w-3 h-3 bg-card border border-border rounded-full"></div>}
                   {step < currentStep && (
-                    <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                    <div className="w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center dark:neon-ring">
                       <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                         <path
                           fillRule="evenodd"
@@ -215,7 +215,7 @@ const HowToEstablish = () => {
 
             {/* 進度條 */}
             <div className="mt-4 sm:mt-6">
-              <div className="bg-gray-200 rounded-full h-2 sm:h-3 overflow-hidden">
+              <div className="bg-secondary rounded-full h-2 sm:h-3 overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out 
                              bg-gradient-to-r from-[#3D5A80] to-[#98C1D9]"
@@ -245,7 +245,7 @@ const HowToEstablish = () => {
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center max-w-md mx-auto">
                 <button
                   onClick={() => navigate("/bots/create")}
-                  className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-[#383A45] font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                  className="px-6 sm:px-8 py-3 sm:py-4 bg-card text-foreground font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all border border-border dark:neon-ring"
                 >
                   立即建立 Bot
                 </button>

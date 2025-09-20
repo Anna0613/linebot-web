@@ -144,12 +144,12 @@ const CodeControlPanel: React.FC<CodeControlPanelProps> = ({
   };
 
   return (
-    <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+    <div className="w-80 bg-secondary border-r border-border flex flex-col h-full">
       {/* 標題區域 */}
-      <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
+      <div className="p-4 bg-card border-b border-border flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Code className="w-5 h-5 text-purple-500" />
-          <h3 className="text-lg font-semibold text-gray-800">程式碼工具</h3>
+          <h3 className="text-lg font-semibold text-foreground">程式碼工具</h3>
         </div>
       </div>
 

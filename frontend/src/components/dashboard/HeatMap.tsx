@@ -49,36 +49,36 @@ const getTimeSlot = (hour: number) => {
 
 const colorSchemes = {
   blue: {
-    0: "bg-blue-50",
-    1: "bg-blue-100", 
-    2: "bg-blue-200",
-    3: "bg-blue-300",
-    4: "bg-blue-400",
-    5: "bg-blue-500"
+    0: "bg-blue-50 dark:bg-blue-950/20",
+    1: "bg-blue-100 dark:bg-blue-900/25", 
+    2: "bg-blue-200 dark:bg-blue-900/35",
+    3: "bg-blue-300 dark:bg-blue-800/45",
+    4: "bg-blue-400 dark:bg-blue-700/55",
+    5: "bg-blue-500 dark:bg-blue-600/65"
   },
   green: {
-    0: "bg-green-50",
-    1: "bg-green-100",
-    2: "bg-green-200", 
-    3: "bg-green-300",
-    4: "bg-green-400",
-    5: "bg-green-500"
+    0: "bg-green-50 dark:bg-green-950/20",
+    1: "bg-green-100 dark:bg-green-900/25",
+    2: "bg-green-200 dark:bg-green-900/35", 
+    3: "bg-green-300 dark:bg-green-800/45",
+    4: "bg-green-400 dark:bg-green-700/55",
+    5: "bg-green-500 dark:bg-green-600/65"
   },
   purple: {
-    0: "bg-purple-50",
-    1: "bg-purple-100",
-    2: "bg-purple-200",
-    3: "bg-purple-300", 
-    4: "bg-purple-400",
-    5: "bg-purple-500"
+    0: "bg-purple-50 dark:bg-purple-950/20",
+    1: "bg-purple-100 dark:bg-purple-900/25",
+    2: "bg-purple-200 dark:bg-purple-900/35",
+    3: "bg-purple-300 dark:bg-purple-800/45", 
+    4: "bg-purple-400 dark:bg-purple-700/55",
+    5: "bg-purple-500 dark:bg-purple-600/65"
   },
   orange: {
-    0: "bg-orange-50",
-    1: "bg-orange-100",
-    2: "bg-orange-200",
-    3: "bg-orange-300",
-    4: "bg-orange-400", 
-    5: "bg-orange-500"
+    0: "bg-orange-50 dark:bg-orange-950/20",
+    1: "bg-orange-100 dark:bg-orange-900/25",
+    2: "bg-orange-200 dark:bg-orange-900/35",
+    3: "bg-orange-300 dark:bg-orange-800/45",
+    4: "bg-orange-400 dark:bg-orange-700/55", 
+    5: "bg-orange-500 dark:bg-orange-600/65"
   }
 };
 

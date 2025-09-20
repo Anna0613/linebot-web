@@ -210,7 +210,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
           歡迎回來，{user?.display_name || user?.username || "用戶"}！
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-muted-foreground">
           管理您的 LINE Bot，創建智能對話體驗
         </p>
       </div>
@@ -224,7 +224,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
             <Plus className="h-6 w-6 text-blue-700" />
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               快速創建一個新的 LINE Bot 專案
             </p>
             <Button asChild className="w-full">
@@ -239,7 +239,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
             <Bot className="h-6 w-6 text-green-700" />
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               設計和編輯您的 Bot 對話流程
             </p>
             <Button asChild variant="outline" className="w-full">
@@ -254,7 +254,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
             <Settings className="h-6 w-6 text-purple-700" />
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               監控和控制您的 LINE Bot
             </p>
             <Button asChild variant="outline" className="w-full">
@@ -265,9 +265,9 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
       </div>
 
       {/* Bot List Section */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">我的 Bot</h2>
+          <h2 className="text-xl font-semibold text-foreground">我的 Bot</h2>
           <Button asChild size="sm">
             <Link to="/bots/create">
               <Plus className="h-4 w-4 mr-2" />
@@ -318,8 +318,8 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
           </div>
         ) : bots.length === 0 ? (
           <div className="text-center py-8">
-            <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">還沒有任何 Bot</p>
+            <Bot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground mb-4">還沒有任何 Bot</p>
             <Button asChild>
               <Link to="/bots/create">創建第一個 Bot</Link>
             </Button>
@@ -356,7 +356,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeleteClick(bot.id, bot.name)}
-                              className="text-gray-500 hover:text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                              className="text-muted-foreground hover:text-foreground border-border hover:border-foreground/40 hover:bg-secondary"
                               aria-label="刪除 Bot"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -385,7 +385,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                     </div>
                   </div>
                   {bot.description && (
-                    <p className="text-sm text-gray-600 mt-2">
+                    <p className="text-sm text-muted-foreground mt-2">
                       {bot.description}
                     </p>
                   )}
@@ -393,18 +393,18 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                 <CardContent>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">狀態:</span>
+                      <span className="text-muted-foreground">狀態:</span>
                       <span className="font-medium text-green-700">啟用</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">建立時間:</span>
-                      <span className="text-gray-800">
+                      <span className="text-muted-foreground">建立時間:</span>
+                      <span className="text-foreground">
                         {new Date(bot.created_at).toLocaleDateString("zh-TW")}
                       </span>
                     </div>
                     {bot.channel_token && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">頻道已設定:</span>
+                        <span className="text-muted-foreground">頻道已設定:</span>
                         <span className="text-green-700 font-medium">是</span>
                       </div>
                     )}
@@ -458,18 +458,18 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
       </Suspense>
 
       {/* Help Section */}
-      <div className="mt-8 bg-blue-50 rounded-lg p-6">
+      <div className="mt-8 bg-secondary rounded-lg p-6 border border-border">
         <div className="flex items-center mb-4">
-          <FileText className="h-6 w-6 text-blue-600 mr-2" />
-          <h3 className="text-lg font-semibold text-blue-900">需要幫助？</h3>
+          <FileText className="h-6 w-6 text-foreground mr-2" />
+          <h3 className="text-lg font-semibold text-foreground">需要幫助？</h3>
         </div>
-        <p className="text-blue-700 mb-4">
+        <p className="text-muted-foreground mb-4">
           查看我們的建立教學，了解如何快速開始您的 LINE Bot 開發之旅。
         </p>
         <Button
           asChild
           variant="outline"
-          className="border-blue-300 text-blue-700 hover:bg-blue-100"
+          className="border-border text-foreground hover:bg-secondary"
         >
           <Link to="/how-to-establish">查看教學</Link>
         </Button>

@@ -183,7 +183,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
   );
 
   return (
-    <div className="w-full max-w-4xl mx-auto h-[400px] sm:h-[450px] md:h-[520px] rounded-[15px] sm:rounded-[20px] md:rounded-[25px] bg-white border border-black shadow-[-8px_8px_0_hsl(var(--line-green))] sm:shadow-[-12px_12px_0_hsl(var(--line-green))] md:shadow-[-15px_15px_0_hsl(var(--line-green))] p-3 sm:p-4 md:p-5 flex-shrink-0 flex flex-col transition-all duration-300">
+    <div className="w-full max-w-4xl mx-auto h-[400px] sm:h-[450px] md:h-[520px] rounded-[15px] sm:rounded-[20px] md:rounded-[25px] bg-card text-card-foreground border border-border shadow-[-8px_8px_0_hsl(var(--line-green))] sm:shadow-[-12px_12px_0_hsl(var(--line-green))] md:shadow-[-15px_15px_0_hsl(var(--line-green))] p-3 sm:p-4 md:p-5 flex-shrink-0 flex flex-col transition-all duration-300 dark:shadow-neon">
       <h2 className="text-center text-lg sm:text-xl md:text-[26px] font-bold text-foreground mb-3 sm:mb-4">
         我的LINE Bot
       </h2>
@@ -193,7 +193,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
         placeholder="搜尋Bot名稱..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full p-2 sm:p-3 border border-gray-300 rounded-lg mb-3 sm:mb-4 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition text-sm sm:text-base"
+        className="w-full p-2 sm:p-3 border border-border rounded-lg mb-3 sm:mb-4 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition text-sm sm:text-base bg-background text-foreground"
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
@@ -203,7 +203,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
           </div>
         ) : filteredBots.length === 0 ? (
           <div className="flex items-center justify-center h-32">
-            <div className="text-gray-500 text-center text-sm sm:text-base">
+            <div className="text-muted-foreground text-center text-sm sm:text-base">
               {botList.length === 0 ? "尚無Bot資料" : "沒有找到符合的Bot"}
             </div>
           </div>
@@ -212,7 +212,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
             {filteredBots.map((bot, index) => (
               <div
                 key={bot.id}
-                className="border border-gray-200 rounded-lg overflow-hidden bg-gradient-to-r from-white to-[hsl(var(--line-green-soft))] hover:shadow-md transition-all duration-200"
+                className="border border-border rounded-lg overflow-hidden bg-gradient-to-r from-card to-[hsl(var(--line-green-soft))] hover:shadow-md transition-all duration-200"
               >
                 {/* Bot 基本資訊 */}
                 <div className="p-3 sm:p-4">
@@ -225,7 +225,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                         <h3 className="font-bold text-foreground text-sm sm:text-base md:text-lg truncate">
                           {bot.name}
                         </h3>
-                        <p className="text-xs sm:text-sm text-gray-600 truncate">
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
                           ID: {bot.id}
                         </p>
                       </div>
@@ -265,7 +265,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
 
                 {/* 展開的詳細操作區域 */}
                 {expandedBot === bot.id && (
-                  <div className="border-t border-gray-300 bg-white p-3 sm:p-4 animate-slide-down">
+                  <div className="border-t border-border bg-card p-3 sm:p-4 animate-slide-down">
                     {/* 手機版按鈕組 */}
                     <div className="lg:hidden mb-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
@@ -300,11 +300,11 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                             </button>
                           </div>
 
-                          <div className="p-4 bg-gray-50 rounded-lg">
+                          <div className="p-4 bg-secondary rounded-lg">
                             <h5 className="font-medium text-foreground text-sm mb-3 text-center">
                               Bot 資訊
                             </h5>
-                            <div className="text-sm text-gray-600 space-y-2">
+                            <div className="text-sm text-muted-foreground space-y-2">
                               <div className="flex justify-between">
                                 <span className="font-medium">Bot ID:</span>
                                 <span className="text-xs font-mono">

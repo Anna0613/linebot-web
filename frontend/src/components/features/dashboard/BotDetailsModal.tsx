@@ -24,27 +24,27 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({
   if (!isOpen || !bot) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* 標題區域 */}
-        <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 rounded-t-lg">
+        <div className="sticky top-0 bg-card px-6 py-4 border-b border-border rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                 <BotIcon className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-foreground">
                   Bot 詳細資訊
                 </h3>
-                <p className="text-sm text-gray-600">{bot.name}</p>
+                <p className="text-sm text-muted-foreground">{bot.name}</p>
               </div>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -55,34 +55,34 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({
         <div className="p-6 space-y-6">
           {/* 基本資訊 */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2 text-sm font-medium text-gray-900">
-              <Settings className="w-4 h-4 text-gray-600" />
+            <div className="flex items-center space-x-2 text-sm font-medium text-foreground">
+              <Settings className="w-4 h-4 text-muted-foreground" />
               <span>基本資訊</span>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <div className="bg-secondary rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <span className="text-sm font-medium text-gray-600">
+                <span className="text-sm font-medium text-muted-foreground">
                   Bot 名稱:
                 </span>
-                <span className="text-sm text-gray-900 text-right">
+                <span className="text-sm text-foreground text-right">
                   {bot.name}
                 </span>
               </div>
 
               {bot.description && (
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-gray-600">
+                  <span className="text-sm font-medium text-muted-foreground">
                     描述:
                   </span>
-                  <span className="text-sm text-gray-900 text-right max-w-[200px]">
+                  <span className="text-sm text-foreground text-right max-w-[200px]">
                     {bot.description}
                   </span>
                 </div>
               )}
 
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">狀態:</span>
+                <span className="text-sm font-medium text-muted-foreground">狀態:</span>
                 <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
                   啟用
                 </span>
@@ -92,26 +92,26 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({
 
           {/* 技術資訊 */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2 text-sm font-medium text-gray-900">
-              <Key className="w-4 h-4 text-gray-600" />
+            <div className="flex items-center space-x-2 text-sm font-medium text-foreground">
+              <Key className="w-4 h-4 text-muted-foreground" />
               <span>技術資訊</span>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <div className="bg-secondary rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <span className="text-sm font-medium text-gray-600">
+                <span className="text-sm font-medium text-muted-foreground">
                   Bot ID:
                 </span>
-                <span className="text-xs font-mono text-gray-900 bg-white px-2 py-1 rounded border break-all">
+                <span className="text-xs font-mono text-foreground bg-card px-2 py-1 rounded border break-all">
                   {bot.id}
                 </span>
               </div>
 
               <div className="flex justify-between items-start">
-                <span className="text-sm font-medium text-gray-600">
+                <span className="text-sm font-medium text-muted-foreground">
                   使用者 ID:
                 </span>
-                <span className="text-xs font-mono text-gray-900 bg-white px-2 py-1 rounded border">
+                <span className="text-xs font-mono text-foreground bg-card px-2 py-1 rounded border">
                   {bot.user_id}
                 </span>
               </div>
@@ -120,14 +120,14 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({
 
           {/* 設定狀態 */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2 text-sm font-medium text-gray-900">
-              <Shield className="w-4 h-4 text-gray-600" />
+            <div className="flex items-center space-x-2 text-sm font-medium text-foreground">
+              <Shield className="w-4 h-4 text-muted-foreground" />
               <span>設定狀態</span>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <div className="bg-secondary rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">
+                <span className="text-sm font-medium text-muted-foreground">
                   Channel Access Token:
                 </span>
                 <span
@@ -142,7 +142,7 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-600">
+                <span className="text-sm font-medium text-muted-foreground">
                   Channel Secret:
                 </span>
                 <span
@@ -160,17 +160,17 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({
 
           {/* 時間資訊 */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2 text-sm font-medium text-gray-900">
-              <Calendar className="w-4 h-4 text-gray-600" />
+            <div className="flex items-center space-x-2 text-sm font-medium text-foreground">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
               <span>時間資訊</span>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <div className="bg-secondary rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <span className="text-sm font-medium text-gray-600">
+                <span className="text-sm font-medium text-muted-foreground">
                   建立時間:
                 </span>
-                <span className="text-sm text-gray-900 text-right">
+                <span className="text-sm text-foreground text-right">
                   {new Date(bot.created_at).toLocaleString("zh-TW", {
                     year: "numeric",
                     month: "2-digit",
@@ -184,10 +184,10 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({
 
               {bot.updated_at && (
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-gray-600">
+                  <span className="text-sm font-medium text-muted-foreground">
                     更新時間:
                   </span>
-                  <span className="text-sm text-gray-900 text-right">
+                  <span className="text-sm text-foreground text-right">
                     {new Date(bot.updated_at).toLocaleString("zh-TW", {
                       year: "numeric",
                       month: "2-digit",
@@ -204,7 +204,7 @@ const BotDetailsModal: React.FC<BotDetailsModalProps> = ({
         </div>
 
         {/* 底部按鈕 */}
-        <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-gray-200 rounded-b-lg">
+        <div className="sticky bottom-0 bg-card px-6 py-4 border-t border-border rounded-b-lg">
           <Button
             onClick={onClose}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"

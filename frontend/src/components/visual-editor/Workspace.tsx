@@ -506,7 +506,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
         {renderLeftPanel()}
 
         {/* 主工作區 */}
-        <div className="flex-1 bg-gray-100 flex flex-col">
+        <div className="flex-1 bg-background flex flex-col">
         <Tabs 
           value={activeTab} 
           onValueChange={(value) => {
@@ -634,7 +634,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
                       onChange={(e) => setUseEnhancedSimulator(e.target.checked)}
                       className="rounded"
                     />
-                    <span className="text-sm text-gray-700">使用增強版模擬器</span>
+                    <span className="text-sm text-muted-foreground">使用增強版模擬器</span>
                   </label>
                   {useEnhancedSimulator && (
                     <label className="flex items-center space-x-2">
@@ -644,7 +644,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
                         onChange={(e) => setShowDebugInfo(e.target.checked)}
                         className="rounded"
                       />
-                      <span className="text-sm text-gray-700">顯示調試資訊</span>
+                      <span className="text-sm text-muted-foreground">顯示調試資訊</span>
                     </label>
                   )}
                 </div>

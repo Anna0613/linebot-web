@@ -232,8 +232,8 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white rounded-[15px] p-6 w-full max-w-md mx-4 shadow-[-8px_8px_0_hsl(var(--line-green))] animate-scale-in border border-black">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 animate-fade-in">
+      <div className="bg-card text-card-foreground border border-border rounded-[15px] p-6 w-full max-w-md mx-4 shadow-[-8px_8px_0_hsl(var(--line-green))] animate-scale-in">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-foreground">{getTitle()}</h2>
           <button
@@ -261,7 +261,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all duration-200"
+                  className="w-full p-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all duration-200"
                   placeholder="請輸入Bot名稱"
                   required
                 />
@@ -279,7 +279,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, channel_token: e.target.value })
                   }
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all duration-200"
+                  className="w-full p-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all duration-200"
                   placeholder="請輸入Channel Token"
                   required
                 />
@@ -297,7 +297,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   onChange={(e) =>
                     setFormData({ ...formData, channel_secret: e.target.value })
                   }
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all duration-200"
+                  className="w-full p-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all duration-200"
                   placeholder="請輸入Channel Secret"
                   required
                 />
@@ -312,7 +312,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
                   檢測到資料變化
                 </div>
               ) : (
-                <div className="flex items-center text-xs text-gray-500">
+                <div className="flex items-center text-xs text-muted-foreground">
                   <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
                   資料無變化
                 </div>

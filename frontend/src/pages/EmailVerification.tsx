@@ -59,7 +59,7 @@ const EmailVerification = () => {
         return (
           <div className="flex flex-col items-center">
             <Loader fullPage={false} />
-            <p className="mt-4 text-lg">正在驗證您的電子郵件...</p>
+            <p className="mt-4 text-lg text-muted-foreground">正在驗證您的電子郵件...</p>
           </div>
         );
       case "success":
@@ -71,7 +71,7 @@ const EmailVerification = () => {
             <h2 className="text-2xl font-bold text-green-600 mb-4">
               驗證成功！
             </h2>
-            <p className="text-gray-600 text-center mb-8">
+            <p className="text-muted-foreground text-center mb-8">
               您的電子郵件已經成功驗證。
               <br />
               現在可以使用您的帳號登入了。
@@ -91,7 +91,7 @@ const EmailVerification = () => {
               <XCircle className="w-12 h-12 text-red-500" />
             </div>
             <h2 className="text-2xl font-bold text-red-600 mb-4">驗證失敗</h2>
-            <p className="text-gray-600 text-center mb-4">
+            <p className="text-muted-foreground text-center mb-4">
               {message}
             </p>
             
@@ -110,7 +110,8 @@ const EmailVerification = () => {
             <div className="space-y-4 w-full">
               <Button
                 onClick={() => window.location.reload()}
-                className="rounded-full bg-gray-200 text-gray-800 font-bold hover:bg-gray-300 px-8 w-full"
+                variant="outline"
+                className="rounded-full px-8 w-full"
               >
                 重試
               </Button>
@@ -129,7 +130,7 @@ const EmailVerification = () => {
             </div>
             
             <div className="mt-6 text-center">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 如果問題持續存在，請聯繫我們的客服團隊尋求協助
               </p>
             </div>
@@ -145,7 +146,7 @@ const EmailVerification = () => {
       <Navbar />
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
         <div className="max-w-md w-full">
-          <div className="bg-white p-8 rounded-lg shadow-lg">
+          <div className="bg-card text-card-foreground p-8 rounded-lg shadow-lg border border-border">
             {renderContent()}
           </div>
         </div>

@@ -2,10 +2,10 @@ const _parentType = "container";
 
 const MiddlePanel = () => {
   return (
-    <div className="relative w-full xs:w-[520px] sm:w-[580px] md:w-[624px] h-[360px] xs:h-[400px] sm:h-[460px] md:h-[520px] rounded-[12px] xs:rounded-[15px] sm:rounded-[20px] md:rounded-[25px] bg-white border border-black shadow-[-6px_6px_0_#819780] xs:shadow-[-8px_8px_0_#819780] sm:shadow-[-12px_12px_0_#819780] md:shadow-[-15px_15px_0_#819780] p-2 xs:p-3 sm:p-4 md:p-5 flex-shrink-0 flex flex-col transition-all duration-300">
+    <div className="relative w-full xs:w-[520px] sm:w-[580px] md:w-[624px] h-[360px] xs:h-[400px] sm:h-[460px] md:h-[520px] rounded-[12px] xs:rounded-[15px] sm:rounded-[20px] md:rounded-[25px] bg-card text-card-foreground border border-border shadow-[-6px_6px_0_#819780] xs:shadow-[-8px_8px_0_#819780] sm:shadow-[-12px_12px_0_#819780] md:shadow-[-15px_15px_0_#819780] p-2 xs:p-3 sm:p-4 md:p-5 flex-shrink-0 flex flex-col transition-all duration-300 dark:shadow-neon">
       {/* 儲存按鈕 */}
       <button
-        className="absolute top-2 xs:top-3 sm:top-4 left-2 xs:left-3 sm:left-4 p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:bg-gray-50 group"
+        className="absolute top-2 xs:top-3 sm:top-4 left-2 xs:left-3 sm:left-4 p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-card rounded-lg shadow-sm hover:shadow-md hover:bg-secondary group"
         title="儲存設計"
       >
         <svg
@@ -22,7 +22,7 @@ const MiddlePanel = () => {
 
       {/* 清空按鈕 */}
       <button
-        className="absolute top-2 xs:top-3 sm:top-4 right-2 xs:right-3 sm:right-4 p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:bg-red-50 group"
+        className="absolute top-2 xs:top-3 sm:top-4 right-2 xs:right-3 sm:right-4 p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-card rounded-lg shadow-sm hover:shadow-md hover:bg-secondary group"
         title="清空設計"
       >
         <svg
@@ -40,7 +40,7 @@ const MiddlePanel = () => {
       {/* 放大縮小 */}
       <div className="absolute bottom-2 xs:bottom-3 sm:bottom-4 right-2 xs:right-3 sm:right-4 flex flex-col space-y-2 xs:space-y-3">
         <button
-          className="p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:bg-gray-50 group"
+          className="p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-card rounded-lg shadow-sm hover:shadow-md hover:bg-secondary group"
           title="放大"
         >
           <svg
@@ -55,7 +55,7 @@ const MiddlePanel = () => {
           </svg>
         </button>
         <button
-          className="p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:bg-gray-50 group"
+          className="p-1.5 xs:p-2 touch-manipulation hover:scale-110 transition-all duration-200 bg-card rounded-lg shadow-sm hover:shadow-md hover:bg-secondary group"
           title="縮小"
         >
           <svg

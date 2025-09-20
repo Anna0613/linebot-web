@@ -113,7 +113,7 @@ const Suggest = () => {
 
         {/* 回饋表單區域 */}
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 sm:p-12">
+          <div className="bg-card text-card-foreground rounded-lg shadow-lg p-8 sm:p-12 border border-border">
             <form className="space-y-8">
               {/* 意見類型 */}
               <div>
@@ -121,19 +121,19 @@ const Suggest = () => {
                   意見類型
                 </label>
                 <div className="grid md:grid-cols-3 gap-4">
-                  <div className="p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-soft))] transition-colors">
+                  <div className="p-4 border-2 border-border rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-soft))] dark:hover:bg-white/5 transition-colors">
                     <div className="text-center">
                       <div className="text-2xl mb-2">🐛</div>
                       <p className="text-foreground font-medium">錯誤回報</p>
                     </div>
                   </div>
-                  <div className="p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-soft))] transition-colors">
+                  <div className="p-4 border-2 border-border rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-soft))] dark:hover:bg-white/5 transition-colors">
                     <div className="text-center">
                       <div className="text-2xl mb-2">💡</div>
                       <p className="text-foreground font-medium">功能建議</p>
                     </div>
                   </div>
-                  <div className="p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-soft))] transition-colors">
+                  <div className="p-4 border-2 border-border rounded-lg cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-soft))] dark:hover:bg-white/5 transition-colors">
                     <div className="text-center">
                       <div className="text-2xl mb-2">💬</div>
                       <p className="text-foreground font-medium">一般意見</p>
@@ -150,7 +150,7 @@ const Suggest = () => {
                 <textarea
                   placeholder="請詳細描述您的意見或建議..."
                   rows={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] outline-none transition-colors text-foreground/80 resize-none"
+                  className="w-full px-4 py-3 border border-border bg-background rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] outline-none transition-colors text-foreground/80 resize-none"
                 />
               </div>
 
@@ -163,7 +163,7 @@ const Suggest = () => {
                   <input
                     type="text"
                     placeholder="請輸入您的姓名"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] outline-none transition-colors text-foreground/80"
+                    className="w-full px-4 py-3 border border-border bg-background rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] outline-none transition-colors text-foreground/80"
                   />
                 </div>
                 <div>
@@ -173,7 +173,7 @@ const Suggest = () => {
                   <input
                     type="email"
                     placeholder="example@email.com"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] outline-none transition-colors text-foreground/80"
+                    className="w-full px-4 py-3 border border-border bg-background rounded-lg focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] outline-none transition-colors text-foreground/80"
                   />
                 </div>
               </div>

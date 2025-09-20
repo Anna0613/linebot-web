@@ -42,9 +42,9 @@ const LeftPanel = () => {
   };
 
   return (
-    <div className="w-full sm:w-[352px] h-[400px] sm:h-[520px] rounded-[15px] sm:rounded-[25px] bg-white border border-black shadow-[-8px_8px_0_#819780] sm:shadow-[-15px_15px_0_#819780] p-3 sm:p-5 flex-shrink-0 relative flex">
+    <div className="w-full sm:w-[352px] h-[400px] sm:h-[520px] rounded-[15px] sm:rounded-[25px] bg-card text-card-foreground border border-border shadow-[-8px_8px_0_#819780] sm:shadow-[-15px_15px_0_#819780] p-3 sm:p-5 flex-shrink-0 relative flex dark:shadow-neon">
       <div className="flex flex-col relative mt-3 sm:mt-5 ml-[2px] items-center">
-        <div className="absolute top-0 left-[40px] sm:left-[50px] w-[2px] h-[340px] sm:h-[440px] bg-black"></div>
+        <div className="absolute top-0 left-[40px] sm:left-[50px] w-[2px] h-[340px] sm:h-[440px] bg-border"></div>
       </div>
 
       <div

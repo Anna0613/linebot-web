@@ -135,7 +135,7 @@ const ResetPassword = () => {
             </p>
           </div>
 
-          <div className="bg-white p-8 rounded-lg shadow-lg">
+          <div className="bg-card text-card-foreground p-8 rounded-lg shadow-lg border border-border">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="password">新密碼：</Label>
@@ -149,7 +149,7 @@ const ResetPassword = () => {
                   required
                   className="rounded-lg h-11"
                 />
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   密碼至少需要8位，包含字母和數字
                 </p>
               </div>

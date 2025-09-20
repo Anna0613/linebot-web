@@ -29,19 +29,19 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-xl max-w-md w-full">
         {/* 標題 */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-border">
           <h3 className="text-lg font-semibold text-foreground">選擇編輯類型</h3>
-          <p className="text-sm text-gray-600 mt-1">請選擇您要編輯的內容</p>
+          <p className="text-sm text-muted-foreground mt-1">請選擇您要編輯的內容</p>
         </div>
 
         {/* 選項按鈕 */}
         <div className="p-6 space-y-4">
           <button
             onClick={handleEditBasicInfo}
-            className="w-full p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+            className="w-full p-4 border border-border rounded-lg hover:bg-secondary transition-all duration-200 group"
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center">
@@ -72,7 +72,7 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
 
           <button
             onClick={handleEditFunction}
-            className="w-full p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+            className="w-full p-4 border border-border rounded-lg hover:bg-secondary transition-all duration-200 group"
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center">
@@ -103,7 +103,7 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
         </div>
 
         {/* 底部按鈕 */}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+        <div className="px-6 py-4 border-t border-border flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] rounded-md font-bold hover:opacity-90 transition-all duration-200"

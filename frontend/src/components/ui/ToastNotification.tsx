@@ -41,7 +41,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
 
   const getToastStyles = () => {
     const baseStyles =
-      "fixed top-4 right-4 z-50 max-w-md w-full bg-white border-l-4 rounded-lg shadow-lg p-4 transition-all duration-300 transform";
+      "fixed top-4 right-4 z-50 max-w-md w-full bg-card text-card-foreground border-l-4 border-border rounded-lg shadow-lg p-4 transition-all duration-300 transform";
 
     if (!isVisible) {
       return `${baseStyles} translate-x-full opacity-0`;
@@ -149,7 +149,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
         <div className="ml-4 flex-shrink-0">
           <button
             onClick={handleClose}
-            className={`inline-flex rounded-md p-1 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 ${getTextColor()}`}
+            className={`inline-flex rounded-md p-1 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] ${getTextColor()}`}
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path

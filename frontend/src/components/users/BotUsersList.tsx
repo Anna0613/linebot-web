@@ -115,7 +115,7 @@ const BotUsersList: React.FC<BotUsersListProps> = ({
             {/* 搜尋框 */}
             <form onSubmit={handleSearchSubmit} className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="搜尋用戶名稱或 LINE ID..."
                   value={searchInput}
@@ -143,7 +143,7 @@ const BotUsersList: React.FC<BotUsersListProps> = ({
 
             {/* 活躍用戶篩選 */}
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
+              <Filter className="h-4 w-4 text-muted-foreground" />
               <label className="text-sm font-medium">只顯示活躍用戶</label>
               <Switch
                 checked={activeOnly}
@@ -193,11 +193,11 @@ const BotUsersList: React.FC<BotUsersListProps> = ({
           ) : !usersData?.items?.length ? (
             // 空狀態
             <div className="p-8 text-center">
-              <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">
                 {search || activeOnly ? '沒有符合條件的用戶' : '尚未有用戶互動'}
               </h3>
-              <p className="text-gray-500 mb-4">
+              <p className="text-muted-foreground mb-4">
                 {search || activeOnly 
                   ? '請嘗試調整搜尋條件或篩選設定'
                   : '當有用戶與 Bot 互動時，他們會出現在這裡'
@@ -219,7 +219,7 @@ const BotUsersList: React.FC<BotUsersListProps> = ({
             // 用戶列表
             <div className="divide-y">
               {usersData.items.map((user: BotUser) => (
-                <div key={user.id} className={`p-4 hover:bg-gray-50 ${isFetching ? 'opacity-75' : ''}`}>
+                <div key={user.id} className={`p-4 hover:bg-secondary ${isFetching ? 'opacity-75' : ''}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <Avatar>

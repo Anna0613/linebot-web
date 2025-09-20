@@ -8,14 +8,14 @@ const DashboardFooter = () => {
     <div aria-hidden className="h-[20vh] md:h-[24vh] lg:h-[28vh]"></div>
     <footer
       id="contact"
-      className="bg-white pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-[#E6EEF6]"
+      className="bg-background text-foreground pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-border"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* 主要內容區域 */}
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-8 sm:gap-12 lg:gap-[120px] mb-8 sm:mb-12">
           {/* 品牌資訊區域 */}
           <div className="space-y-4 text-center md:text-left">
-            <span className="text-xl sm:text-2xl font-bold text-[#0B346E] block">
+            <span className="text-xl sm:text-2xl font-bold text-foreground block">
               LINE Bot 製作輔助系統
             </span>
             <div className="space-y-2">
@@ -33,14 +33,14 @@ const DashboardFooter = () => {
 
           {/* 快速連結區域 */}
           <div className="w-full flex flex-col text-center md:text-left">
-            <h3 className="font-medium text-lg mb-4 text-[#0B346E]">
+            <h3 className="font-medium text-lg mb-4 text-foreground">
               快速連結
             </h3>
             <ul className="space-y-2">
               <li>
                 <Link
                   to="/dashboard"
-                  className="text-[#64748B] hover:text-[#3D5A80] transition-colors text-sm block py-1"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
                 >
                   首頁
                 </Link>
@@ -48,7 +48,7 @@ const DashboardFooter = () => {
               <li>
                 <Link
                   to="/how-to-establish"
-                  className="text-[#64748B] hover:text-[#3D5A80] transition-colors text-sm block py-1"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
                 >
                   如何建立LINE Bot
                 </Link>
@@ -56,7 +56,7 @@ const DashboardFooter = () => {
               <li>
                 <Link
                   to="/bots/create"
-                  className="text-[#64748B] hover:text-[#3D5A80] transition-colors text-sm block py-1"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
                 >
                   建立LINE Bot
                 </Link>
@@ -64,7 +64,7 @@ const DashboardFooter = () => {
               <li>
                 <Link
                   to="/bots/editor"
-                  className="text-[#64748B] hover:text-[#3D5A80] transition-colors text-sm block py-1"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
                 >
                   開始設計LINE Bot
                 </Link>
@@ -82,17 +82,17 @@ const DashboardFooter = () => {
 
           {/* 聯絡資訊區域 */}
           <div className="w-full flex flex-col text-center md:text-left">
-            <h3 className="font-medium text-lg mb-4 text-[#0B346E]">
+            <h3 className="font-medium text-lg mb-4 text-foreground">
               聯絡我們
             </h3>
             <ul className="space-y-2">
-              <li className="text-[#475569] text-sm py-1">
+              <li className="text-muted-foreground text-sm py-1">
                 Taoyuan, Taiwan
               </li>
               <li>
                 <a
                   href="mailto:info@mail.mcu.edu.tw"
-                  className="text-[#64748B] hover:text-[#3D5A80] transition-colors text-sm block py-1 break-all"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1 break-all"
                 >
                   info@mail.mcu.edu.tw
                 </a>
@@ -100,7 +100,7 @@ const DashboardFooter = () => {
               <li>
                 <a
                   href="tel:03-350-7001"
-                  className="text-[#64748B] hover:text-[#3D5A80] transition-colors text-sm block py-1"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
                 >
                   03-350-7001
                 </a>
@@ -110,10 +110,10 @@ const DashboardFooter = () => {
         </div>
 
         {/* 版權和社交媒體區域 */}
-        <div className="border-t border-gray-200 pt-6 sm:pt-8">
+        <div className="border-t border-border pt-6 sm:pt-8">
           <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
             {/* 版權資訊 */}
-            <p className="text-xs sm:text-sm text-[#64748B] text-center md:text-left">
+            <p className="text-xs sm:text-sm text-muted-foreground text-center md:text-left">
               © {new Date().getFullYear()} 銘傳大學 Ming Chuan University
             </p>
 
@@ -123,7 +123,7 @@ const DashboardFooter = () => {
                 href="https://www.facebook.com/MCU1957"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#64748B] hover:text-[#3D5A80] transition-colors p-2 rounded-full hover:bg-[#3D5A80]/10"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-foreground/10"
                 aria-label="Facebook"
               >
                 <svg
@@ -139,7 +139,7 @@ const DashboardFooter = () => {
                 href="https://www.instagram.com/mcu1957/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#64748B] hover:text-[#3D5A80] transition-colors p-2 rounded-full hover:bg-[#3D5A80]/10"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-foreground/10"
                 aria-label="Instagram"
               >
                 <svg
@@ -155,7 +155,7 @@ const DashboardFooter = () => {
                 href="https://www.youtube.com/mcu1957"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#64748B] hover:text-[#3D5A80] transition-colors p-2 rounded-full hover:bg-[#3D5A80]/10"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-foreground/10"
                 aria-label="YouTube"
               >
                 <svg
@@ -171,7 +171,7 @@ const DashboardFooter = () => {
                 href="https://www.weibo.com/welcomemcu"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#64748B] hover:text-[#3D5A80] transition-colors p-2 rounded-full hover:bg-[#3D5A80]/10"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-foreground/10"
                 aria-label="weibo"
               >
                 <svg

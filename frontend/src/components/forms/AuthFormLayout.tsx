@@ -26,7 +26,7 @@ const AuthFormLayout = ({
 
       <div className="flex-1 flex items-center justify-center px-4 py-8 pt-28 sm:pt-24 md:pt-28 pb-8">
         <div className="w-full max-w-md">
-          <Card className="shadow-lg border-0 bg-white">
+      <Card className="shadow-lg border border-border bg-card text-card-foreground">
             <CardHeader className="text-center pb-6">
             <CardTitle className="text-2xl font-bold text-foreground">
                 {title}

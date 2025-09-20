@@ -25,7 +25,7 @@ const Navbar = () => {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white ${isScrolled ? "bg-opacity-90 backdrop-blur-md shadow-sm" : "bg-opacity-100"}`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-background ${isScrolled ? "bg-opacity-90 backdrop-blur-md shadow-sm" : "bg-opacity-100"}`}
       >
         <div className="w-full px-4 sm:px-6 flex items-center justify-between h-14 sm:h-16 md:h-20">
           {/* 左側：漢堡選單和Logo */}
@@ -87,28 +87,28 @@ const Navbar = () => {
 
           {/* 手機版選單按鈕 */}
           <button
-            className="sm:hidden p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="sm:hidden p-2 hover:bg-secondary rounded-md transition-colors"
             onClick={toggleMobileMenu}
             aria-label="切換選單"
           >
             {mobileMenuOpen ? (
-              <X className="h-5 w-5 text-gray-600" />
+              <X className="h-5 w-5 text-muted-foreground" />
             ) : (
-              <Menu className="h-5 w-5 text-gray-600" />
+              <Menu className="h-5 w-5 text-muted-foreground" />
             )}
           </button>
         </div>
 
         {/* 手機版下拉選單 */}
         <div
-          className={`sm:hidden bg-white border-t border-gray-200 fixed w-full top-14 left-0 right-0 transform transition-all duration-300 ease-in-out ${
+          className={`sm:hidden bg-card text-card-foreground border-t border-border fixed w-full top-14 left-0 right-0 transform transition-all duration-300 ease-in-out ${
             mobileMenuOpen
               ? "translate-y-0 opacity-100 shadow-lg"
               : "-translate-y-full opacity-0"
           } z-40`}
         >
           <div className="px-4 py-4 space-y-3">
-            <div className="pb-2 border-b border-gray-100">
+            <div className="pb-2 border-b border-border/60">
               <LanguageToggle />
             </div>
             <div className="space-y-2">
@@ -140,27 +140,27 @@ const Navbar = () => {
         {/* 側邊選單遮罩 */}
         {mobileMenuOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-30 z-40"
+            className="fixed inset-0 bg-black bg-opacity-30 z-30"
             onClick={toggleMobileMenu}
           />
         )}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
+          className={`fixed top-0 left-0 h-full w-64 bg-card text-card-foreground z-40 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
         >
           <div className="flex justify-end">
             <button
               onClick={toggleMobileMenu}
-              className="text-2xl text-gray-700"
+              className="text-2xl text-foreground"
             >
               <X />
             </button>
           </div>
-          <ul className="mt-8 space-y-4 text-[#1a1a40] text-lg">
+          <ul className="mt-8 space-y-4 text-foreground text-lg">
             <li>
             <Link
               to="/"
               onClick={toggleMobileMenu}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-[#1a1a40] transition-colors"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
             >
               首頁
             </Link>
@@ -169,7 +169,7 @@ const Navbar = () => {
             <Link
               to="/about"
               onClick={toggleMobileMenu}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-[#1a1a40] transition-colors"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
             >
               關於
             </Link>
@@ -178,7 +178,7 @@ const Navbar = () => {
             <Link
               to="/login"
               onClick={toggleMobileMenu}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-[#1a1a40] transition-colors"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
             >
               登入
             </Link>
@@ -187,7 +187,7 @@ const Navbar = () => {
             <Link
               to="/register"
               onClick={toggleMobileMenu}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-[#1a1a40] transition-colors"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
             >
               註冊
             </Link>

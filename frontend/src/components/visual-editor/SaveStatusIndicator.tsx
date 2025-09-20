@@ -22,21 +22,21 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
           icon: <CheckCircle className="w-4 h-4 text-green-600" />,
           text: '已儲存',
           textClass: 'text-green-700',
-          bgClass: 'bg-green-50 border-green-200'
+          bgClass: 'bg-green-50 border-green-200 dark:bg-secondary dark:border-border'
         };
       case SaveStatus.PENDING:
         return {
           icon: <Clock className="w-4 h-4 text-yellow-600" />,
           text: '有未儲存變更',
           textClass: 'text-yellow-700',
-          bgClass: 'bg-yellow-50 border-yellow-200'
+          bgClass: 'bg-yellow-50 border-yellow-200 dark:bg-secondary dark:border-border'
         };
       case SaveStatus.SAVING:
         return {
           icon: <Save className="w-4 h-4 text-blue-600 animate-pulse" />,
           text: '儲存中...',
           textClass: 'text-blue-700',
-          bgClass: 'bg-blue-50 border-blue-200'
+          bgClass: 'bg-blue-50 border-blue-200 dark:bg-secondary dark:border-border'
         };
       case SaveStatus.ERROR:
         return {
@@ -47,10 +47,10 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
         };
       default:
         return {
-          icon: <Save className="w-4 h-4 text-gray-600" />,
+          icon: <Save className="w-4 h-4 text-muted-foreground" />,
           text: '未知狀態',
-          textClass: 'text-gray-700',
-          bgClass: 'bg-gray-50 border-gray-200'
+          textClass: 'text-muted-foreground',
+          bgClass: 'bg-secondary border-border'
         };
     }
   };
@@ -88,7 +88,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
       </span>
       
       {status === SaveStatus.SAVED && lastSavedTime && (
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-muted-foreground">
           ({formatLastSavedTime(lastSavedTime)})
         </span>
       )}

@@ -52,7 +52,7 @@ const LoginSuccess: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
@@ -61,8 +61,8 @@ const LoginSuccess: React.FC = () => {
           <CardTitle className="text-2xl text-[#425B4F]">登入成功！</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
-          <p className="text-gray-600">您已成功登入</p>
-          <p className="text-sm text-gray-500">
+          <p className="text-muted-foreground">您已成功登入</p>
+          <p className="text-sm text-muted-foreground">
             {countdown > 0
               ? `${countdown} 秒後將自動跳轉到主頁面...`
               : "正在跳轉..."}

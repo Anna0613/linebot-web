@@ -166,7 +166,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white bg-opacity-100`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-background/90 supports-[backdrop-filter]:backdrop-blur-md border-b border-border`}
       >
         <div className="w-full px-4 sm:px-6 flex items-center justify-between h-14 sm:h-16 md:h-20">
           {/* 左側：漢堡選單和Logo */}
@@ -208,7 +208,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               <LanguageToggle />
             </div>
             <Link to="/how-to-establish">
-              <div className="circle-question p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <div className="circle-question p-2 hover:bg-secondary rounded-full transition-colors">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 512 512"
@@ -248,10 +248,10 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               </button>
 
               {showDropdown && (
-                <div className="absolute right-0 mt-3 w-[240px] lg:w-[260px] bg-white border shadow-xl rounded-lg z-50 p-4">
+                <div className="absolute right-0 mt-3 w-[240px] lg:w-[260px] bg-card text-card-foreground border border-border shadow-xl rounded-lg z-50 p-4">
                   <button
                     onClick={() => setShowDropdown(false)}
-                    className="absolute top-2 right-2 text-gray-500 text-xl hover:bg-gray-100 rounded-full w-6 h-6 flex items-center justify-center"
+                    className="absolute top-2 right-2 text-muted-foreground text-xl hover:bg-secondary rounded-full w-6 h-6 flex items-center justify-center"
                   >
                     ×
                   </button>
@@ -277,7 +277,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                     <span className="font-medium text-sm lg:text-base">
                       {user?.display_name || user?.username || "未登入"}
                     </span>
-                    <small className="text-gray-500 text-xs lg:text-sm">
+                    <small className="text-muted-foreground text-xs lg:text-sm">
                       {user?.line_id || user?.username || ""}
                     </small>
                     <input
@@ -290,10 +290,10 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   </div>
 
                   <nav className="space-y-2 text-sm text-foreground">
-                    <hr className="my-2 border-gray-300" />
+                    <hr className="my-2 border-border" />
                     <button
                       onClick={toggleTheme}
-                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px] w-full text-left"
+                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary text-[16px] w-full text-left"
                     >
                       {isDarkMode ? (
                         <svg
@@ -332,7 +332,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                     </Link>
                     <Link
                       to="/language"
-                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary text-[16px]"
                     >
                       <img
                         src="/images/language setting.svg"
@@ -343,7 +343,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                     </Link>
                     <Link
                       to="/suggest"
-                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 text-[16px]"
+                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary text-[16px]"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -354,10 +354,10 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                       </svg>
                       建議
                     </Link>
-                    <hr className="my-2 border-gray-300" />
+                    <hr className="my-2 border-border" />
                     <Link
                       to="/"
-                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-gray-100 font-bold text-red-600 text-[16px]"
+                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary font-bold text-red-600 text-[16px]"
                       onClick={handleLogout}
                     >
                       <svg
@@ -378,27 +378,27 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
 
         {mobileMenuOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-30 z-40"
+            className="fixed inset-0 bg-black bg-opacity-30 z-30"
             onClick={toggleMobileMenu}
           />
         )}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
+          className={`fixed top-0 left-0 h-full w-64 bg-card text-card-foreground z-40 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
         >
           <div className="flex justify-end">
             <button
               onClick={toggleMobileMenu}
-              className="text-2xl text-gray-700"
+              className="text-2xl text-foreground"
             >
               <X />
             </button>
           </div>
-          <ul className="mt-8 space-y-4 text-[#1a1a40] text-lg">
+          <ul className="mt-8 space-y-4 text-foreground text-lg">
             <li>
               <Link
                 to="/dashboard"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 首頁
               </Link>
@@ -407,7 +407,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               <Link
                 to="/how-to-establish"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 如何建立LINE Bot
               </Link>
@@ -416,7 +416,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               <Link
                 to="/bots/create"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 建立LINE Bot
               </Link>
@@ -425,7 +425,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               <Link
                 to="/bots/create"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 開始設計LINE Bot
               </Link>
@@ -434,7 +434,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               <Link
                 to="/bots/management"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 LINE Bot 管理
               </Link>
@@ -443,7 +443,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               <Link
                 to="/about"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100"
+                className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >
                 關於
               </Link>

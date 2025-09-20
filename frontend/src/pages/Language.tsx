@@ -113,25 +113,25 @@ const Language = () => {
 
         {/* 語言選項區域 */}
         <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
-          <div className="bg-white rounded-lg shadow-lg p-8 sm:p-12">
-            <h2 className="text-[#383A45] text-[24px] font-bold mb-8 text-center">
+          <div className="bg-card text-card-foreground rounded-lg shadow-lg p-8 sm:p-12 border border-border">
+            <h2 className="text-foreground text-[24px] font-bold mb-8 text-center">
               選擇語言
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
-              <div className="p-6 border-2 border-[#8ECAE6] rounded-lg cursor-pointer hover:bg-[#8ECAE6]/10 transition-colors">
+              <div className="p-6 border-2 border-[#8ECAE6] dark:border-[hsl(var(--border))] rounded-lg cursor-pointer hover:bg-[#8ECAE6]/10 dark:hover:bg-secondary transition-colors">
                 <div className="text-center">
                   <div className="text-4xl mb-4">🇹🇼</div>
                   <h3 className="text-foreground font-bold text-xl mb-2">
                     繁體中文
                   </h3>
-                  <p className="text-[#5A2C1D]">Traditional Chinese</p>
+                  <p className="text-muted-foreground">Traditional Chinese</p>
                 </div>
               </div>
 
-              <div className="p-6 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <div className="p-6 border-2 border-border rounded-lg cursor-pointer hover:bg-secondary transition-colors">
                 <div className="text-center">
                   <div className="text-4xl mb-4">🇺🇸</div>
-                  <h3 className="text-[#383A45] font-bold text-xl mb-2">
+                  <h3 className="text-foreground font-bold text-xl mb-2">
                     English
                   </h3>
                   <p className="text-muted-foreground">English (US)</p>

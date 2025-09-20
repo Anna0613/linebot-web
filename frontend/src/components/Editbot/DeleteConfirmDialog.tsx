@@ -18,8 +18,8 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white rounded-[15px] p-6 w-full max-w-md mx-4 shadow-[-8px_8px_0_hsl(var(--line-green))] animate-scale-in border border-black">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 animate-fade-in">
+      <div className="bg-card text-card-foreground border border-border rounded-[15px] p-6 w-full max-w-md mx-4 shadow-[-8px_8px_0_hsl(var(--line-green))] animate-scale-in">
         {/* 標題區域 */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -40,7 +40,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
           <h2 className="text-xl font-bold text-foreground mb-2">
             確認刪除機器人
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             您即將刪除機器人「
             <span className="font-semibold text-foreground">{botName}</span>」
           </p>

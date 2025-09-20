@@ -60,7 +60,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
     if (num >= 100) return { level: "非常活躍", color: "bg-green-500", text: "text-green-700" };
     if (num >= 50) return { level: "活躍", color: "bg-blue-500", text: "text-blue-700" };
     if (num >= 20) return { level: "一般", color: "bg-yellow-500", text: "text-yellow-700" };
-    if (num >= 5) return { level: "偶爾", color: "bg-gray-500", text: "text-gray-700" };
+    if (num >= 5) return { level: "偶爾", color: "bg-gray-500", text: "text-foreground" };
     return { level: "很少", color: "bg-red-500", text: "text-red-700" };
   };
 
@@ -117,11 +117,11 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
               <h3 className="font-semibold text-lg">
                 {user.display_name || "未設定名稱"}
               </h3>
-              <p className="text-sm text-gray-500 font-mono">
+              <p className="text-sm text-muted-foreground font-mono">
                 {user.line_user_id}
               </p>
               {user.status_message && (
-                <p className="text-sm text-gray-600 mt-1 italic">
+                <p className="text-sm text-muted-foreground mt-1 italic">
                   "{user.status_message}"
                 </p>
               )}
@@ -132,8 +132,8 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
 
           {/* 活動統計 */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+            <div className="bg-secondary rounded-lg p-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <Hash className="h-4 w-4" />
                 <span>互動次數</span>
               </div>
@@ -147,14 +147,14 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+            <div className="bg-secondary rounded-lg p-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <Activity className="h-4 w-4" />
                 <span>使用天數</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-bold">{daysFromFirst}</span>
-                <span className="text-sm text-gray-500">天</span>
+                <span className="text-sm text-muted-foreground">天</span>
               </div>
             </div>
           </div>
@@ -164,7 +164,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
           {/* 詳細資訊 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Globe className="h-4 w-4" />
                 <span>語言偏好</span>
               </div>
@@ -174,7 +174,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
             </div>
 
             <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
                 <span>首次互動</span>
               </div>
@@ -186,7 +186,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
             </div>
 
             <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
                 <span>最後活動</span>
               </div>
@@ -194,7 +194,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
                 <div className="text-sm font-medium">
                   {formatDateTime(user.last_interaction)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-muted-foreground mt-1">
                   {(() => {
                     const lastActive = new Date(user.last_interaction);
                     const now = new Date();

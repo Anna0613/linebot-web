@@ -333,7 +333,7 @@ const FlexMessagePreview: React.FC<FlexMessagePreviewProps> = ({ json }) => {
 
   return (
     <div
-      className="w-full h-full p-2 bg-white rounded relative flex items-center justify-center"
+      className="w-full h-full p-2 bg-card text-card-foreground rounded relative flex items-center justify-center border border-border"
       style={{ maxHeight: 600, maxWidth: "100%", overflow: "auto" }}
     >
       {contents.type === "carousel" ? (

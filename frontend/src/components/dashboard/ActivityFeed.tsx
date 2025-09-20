@@ -57,12 +57,12 @@ const getActivityIcon = (type: string) => {
 
 const getActivityColor = (type: string) => {
   const colorMap: { [key: string]: string } = {
-    message: "text-blue-600 bg-blue-50 border-blue-200",
-    user_join: "text-green-600 bg-green-50 border-green-200",
-    user_leave: "text-orange-600 bg-orange-50 border-orange-200",
-    error: "text-red-600 bg-red-50 border-red-200",
-    success: "text-green-600 bg-green-50 border-green-200",
-    info: "text-gray-600 bg-gray-50 border-gray-200",
+    message: "text-blue-600 bg-blue-50 border-blue-200 dark:text-foreground dark:bg-secondary dark:border-border",
+    user_join: "text-green-600 bg-green-50 border-green-200 dark:text-foreground dark:bg-secondary dark:border-border",
+    user_leave: "text-orange-600 bg-orange-50 border-orange-200 dark:text-foreground dark:bg-secondary dark:border-border",
+    error: "text-red-600 bg-red-50 border-red-200 dark:text-foreground dark:bg-secondary dark:border-border",
+    success: "text-green-600 bg-green-50 border-green-200 dark:text-foreground dark:bg-secondary dark:border-border",
+    info: "text-muted-foreground bg-secondary border-border",
   };
   
   return colorMap[type] || "text-gray-600 bg-gray-50 border-gray-200";
@@ -281,7 +281,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
               <>
                 {/* 調試信息 */}
                 {process.env.NODE_ENV === 'development' && (
-                  <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                  <div className="mb-4 p-2 bg-secondary border border-border rounded text-xs text-muted-foreground">
                     <p><strong>調試信息:</strong></p>
                     <p>原始活動數量: {activities.length}</p>
                     <p>顯示活動數量: {displayedActivities.length}</p>
@@ -306,7 +306,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
                 
                 {/* 調試信息 */}
                 {process.env.NODE_ENV === 'development' && (
-                  <div className="mt-4 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
+                  <div className="mt-4 p-2 bg-secondary border border-border rounded text-xs text-muted-foreground">
                     <p><strong>調試信息:</strong></p>
                     <p>原始活動數量: {activities.length}</p>
                     <p>載入狀態: {isLoading ? '載入中' : '已載入'}</p>

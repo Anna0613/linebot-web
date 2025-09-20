@@ -53,7 +53,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 // 優化的載入指示器組件 - 使用 CSS 動畫而非 JavaScript
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-screen bg-gray-50">
+  <div className="flex items-center justify-center min-h-screen bg-background">
     <div className="text-center">
       <div
         className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-3"
@@ -61,7 +61,7 @@ const LoadingFallback = () => (
           animation: 'spin 1s linear infinite'
         }}
       ></div>
-      <div className="text-sm text-gray-500">載入中...</div>
+      <div className="text-sm text-muted-foreground">載入中...</div>
     </div>
     <style>{`
       @keyframes spin {

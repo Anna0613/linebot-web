@@ -223,7 +223,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
             <div
               className={`
                 relative w-full border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
-                ${dragOver ? "border-primary bg-primary/5" : "border-gray-300 hover:border-gray-400"}
+                ${dragOver ? "border-primary bg-primary/5" : "border-border hover:border-foreground/40"}
                 ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
               `}
               onDragOver={handleDragOver}
@@ -231,17 +231,17 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
               onDrop={handleDrop}
               onClick={openFileSelector}
             >
-              <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm text-gray-600 mb-1">
+              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground mb-1">
                 點擊或拖拽圖片到此處上傳
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 支援 JPG、PNG、GIF，最大 {maxSize}KB
               </p>
 
               {isUploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-lg">
-                  <div className="text-sm text-gray-600">處理中...</div>
+                <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/40 rounded-lg">
+                  <div className="text-sm text-muted-foreground">處理中...</div>
                 </div>
               )}
             </div>

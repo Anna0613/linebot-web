@@ -57,18 +57,18 @@ const EmailVerificationPending = () => {
       <Navbar />
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
         <div className="max-w-md w-full">
-          <div className="bg-white p-8 rounded-lg shadow-lg">
+          <div className="bg-card text-card-foreground p-8 rounded-lg shadow-lg border border-border">
             <div className="flex flex-col items-center">
-              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mb-6">
-                <Mail className="w-12 h-12 text-blue-500" />
+              <div className="w-20 h-20 rounded-full bg-[hsl(var(--accent))]/15 dark:bg-[hsl(var(--accent))]/25 flex items-center justify-center mb-6">
+                <Mail className="w-12 h-12 text-[hsl(var(--accent))]" />
               </div>
               
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              <h2 className="text-2xl font-bold text-foreground mb-4 text-center">
                 註冊成功！
               </h2>
               
               <div className="text-center space-y-4 mb-8">
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   我們已經向您的電子郵件地址發送了驗證連結。
                 </p>
                 
@@ -86,7 +86,7 @@ const EmailVerificationPending = () => {
                   </div>
                 </div>
                 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   驗證連結將在 24 小時後失效
                 </p>
               </div>
@@ -105,7 +105,7 @@ const EmailVerificationPending = () => {
                 <Button
                   onClick={handleResendEmail}
                   disabled={isResending}
-                  className="w-full bg-gray-200 text-gray-800 font-bold hover:bg-gray-300 border"
+                  className="w-full font-bold"
                   variant="outline"
                 >
                   {isResending ? (
@@ -130,7 +130,7 @@ const EmailVerificationPending = () => {
               </div>
               
               <div className="mt-6 text-center">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   如果您遇到任何問題，請聯繫我們的客服團隊
                 </p>
               </div>

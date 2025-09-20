@@ -33,7 +33,7 @@ const SocialAccountSection = ({
   const isLineLinked = user?.isLineUser || !!user?.line_id;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div className="bg-card text-card-foreground border border-border rounded-lg shadow-md p-6 mb-6">
       <div className="flex items-center gap-2 mb-4">
         <LinkIcon className="w-5 h-5 text-[#1a1a40]" />
         <h2 className="text-xl font-bold text-[#1a1a40]">社群帳號連結</h2>
@@ -115,11 +115,11 @@ const SocialAccountSection = ({
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
+                <div className="p-3 bg-secondary rounded-lg">
+                  <p className="text-sm text-muted-foreground">
                     尚未連結 LINE 帳號。連結後您可以：
                   </p>
-                  <ul className="text-sm text-gray-600 mt-2 space-y-1">
+                  <ul className="text-sm text-muted-foreground mt-2 space-y-1">
                     <li>• 使用 LINE 帳號快速登入</li>
                     <li>• 同步 LINE 個人資料照片</li>
                     <li>• 享受更便捷的使用體驗</li>
@@ -139,14 +139,14 @@ const SocialAccountSection = ({
         </Card>
 
         {/* 其他社群平台預留位置 */}
-        <Card className="border-2 border-gray-100 opacity-60">
+        <Card className="border-2 border-border opacity-60">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-300 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-xs">...</span>
               </div>
               <div>
-                <CardTitle className="text-lg text-gray-500">
+                <CardTitle className="text-lg text-muted-foreground">
                   其他平台
                 </CardTitle>
                 <CardDescription>更多社群平台連結功能即將推出</CardDescription>

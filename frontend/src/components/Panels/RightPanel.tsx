@@ -45,20 +45,20 @@ const RightPanel = () => {
   };
 
   return (
-    <div className="w-full sm:w-[288px] h-[400px] sm:h-[520px] rounded-[15px] sm:rounded-[25px] bg-white border border-black shadow-[-8px_8px_0_#819780] sm:shadow-[-15px_15px_0_#819780] p-3 sm:p-5 flex-shrink-0 flex flex-col justify-between">
+    <div className="w-full sm:w-[288px] h-[400px] sm:h-[520px] rounded-[15px] sm:rounded-[25px] bg-card text-card-foreground border border-border shadow-[-8px_8px_0_#819780] sm:shadow-[-15px_15px_0_#819780] p-3 sm:p-5 flex-shrink-0 flex flex-col justify-between">
       <div>
-        <h2 className="text-center text-[20px] sm:text-[26px] font-bold text-[#383A45] mb-3 sm:mb-4">
+        <h2 className="text-center text-[20px] sm:text-[26px] font-bold text-foreground mb-3 sm:mb-4">
           預覽畫面
         </h2>
 
         <div
-          className="h-[280px] sm:h-[360px] flex items-center justify-center bg-gray-50 rounded-lg overflow-auto"
+          className="h-[280px] sm:h-[360px] flex items-center justify-center bg-background rounded-lg overflow-auto"
           style={{ position: "relative" }}
         >
           {isValid && flexJson ? (
             <FlexMessagePreview json={flexJson} />
           ) : (
-            <p className="text-gray-400 text-sm sm:text-base">
+            <p className="text-muted-foreground text-sm sm:text-base">
               無有效 Flex JSON
             </p>
           )}

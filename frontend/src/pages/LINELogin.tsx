@@ -44,7 +44,7 @@ const LINELogin: React.FC = () => {
   }, [navigate]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-background">
       {loading && <Loader fullPage />}
       <Card className="w-full max-w-md">
         <CardHeader>
@@ -57,8 +57,8 @@ const LINELogin: React.FC = () => {
                 <AvatarImage src={user.picture_url} alt={user.display_name} />
                 <AvatarFallback>{user.display_name[0]}</AvatarFallback>
               </Avatar>
-              <h2 className="text-xl font-semibold">{user.display_name}</h2>
-              <p className="text-gray-600">Welcome back!</p>
+              <h2 className="text-xl font-semibold text-foreground">{user.display_name}</h2>
+              <p className="text-muted-foreground">Welcome back!</p>
             </div>
           ) : error ? (
             <p className="text-red-500">{error}</p>

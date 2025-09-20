@@ -140,11 +140,11 @@ export const BlockContainer: React.FC<BlockContainerProps> = ({
         className="flex items-center justify-between mb-2 cursor-pointer"
         onClick={onToggleCollapse}
       >
-        <div className="flex items-center text-sm font-medium text-gray-700">
+        <div className="flex items-center text-sm font-medium text-foreground">
           <Icon className="w-4 h-4 mr-2" />
           {title}
           {!isCompatible && (
-            <div className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+            <div className="ml-2 px-2 py-1 text-xs bg-secondary text-muted-foreground rounded">
               其他模式專用
             </div>
           )}
@@ -153,7 +153,7 @@ export const BlockContainer: React.FC<BlockContainerProps> = ({
         {/* 摺疊指示器 */}
         {onToggleCollapse && (
           <div className={`transition-transform duration-200 ${collapsed ? '' : 'rotate-90'}`}>
-            <ArrowRight className="w-3 h-3 text-gray-400" />
+            <ArrowRight className="w-3 h-3 text-muted-foreground" />
           </div>
         )}
       </div>

@@ -77,8 +77,8 @@ const WebhookStatusPanel: React.FC<WebhookStatusPanelProps> = ({
       default:
         return { 
           icon: AlertCircle, 
-          color: 'text-gray-600', 
-          bgColor: 'bg-gray-50 border-gray-200',
+          color: 'text-muted-foreground', 
+          bgColor: 'bg-secondary border-border',
           variant: 'outline' as const
         };
     }
