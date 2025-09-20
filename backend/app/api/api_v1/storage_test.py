@@ -6,6 +6,7 @@ import io
 import uuid
 import time
 import logging
+import asyncio
 from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
@@ -26,7 +27,7 @@ async def minio_ping():
         # 回傳更完整的錯誤資訊
         raise HTTPException(status_code=500, detail=f"MinIO 服務未初始化: {err or get_minio_last_error() or 'unknown error'}")
     try:
-        exists = svc.client.bucket_exists(svc.bucket_name)
+        exists = await asyncio.to_thread(svc.client.bucket_exists, svc.bucket_name)
         return {
             # 避免讀取 MinIO 私有屬性，使用設定值回傳
             "endpoint": settings.MINIO_ENDPOINT,
@@ -50,15 +51,21 @@ async def minio_list(prefix: str = "", limit: int = 20):
             raise HTTPException(status_code=500, detail=f"MinIO 服務未初始化: {err or get_minio_last_error() or 'unknown error'}")
         minio_service = svc
     try:
-        objects = []
-        for i, obj in enumerate(minio_service.client.list_objects(minio_service.bucket_name, prefix=prefix, recursive=True)):
-            objects.append({
-                "object_name": obj.object_name,
-                "size": getattr(obj, "size", None),
-                "last_modified": getattr(obj, "last_modified", None).isoformat() if getattr(obj, "last_modified", None) else None,
-            })
-            if i + 1 >= max(1, min(100, limit)):
-                break
+        async def _list_objs():
+            def _run():
+                results = []
+                for i, obj in enumerate(minio_service.client.list_objects(minio_service.bucket_name, prefix=prefix, recursive=True)):
+                    results.append({
+                        "object_name": obj.object_name,
+                        "size": getattr(obj, "size", None),
+                        "last_modified": getattr(obj, "last_modified", None).isoformat() if getattr(obj, "last_modified", None) else None,
+                    })
+                    if i + 1 >= max(1, min(100, limit)):
+                        break
+                return results
+            return await asyncio.to_thread(_run)
+
+        objects = await _list_objs()
         return {"bucket": minio_service.bucket_name, "prefix": prefix, "count": len(objects), "objects": objects}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"List 失敗: {type(e).__name__}: {e}")
@@ -107,12 +114,13 @@ async def minio_test_upload(
     length = len(data)
 
     try:
-        minio_service.client.put_object(
-            bucket_name=minio_service.bucket_name,
-            object_name=object_name,
-            data=bytes_stream,
-            length=length,
-            content_type=content_type,
+        await asyncio.to_thread(
+            minio_service.client.put_object,
+            minio_service.bucket_name,
+            object_name,
+            bytes_stream,
+            length,
+            content_type,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"上傳失敗: {e}")
@@ -123,7 +131,7 @@ async def minio_test_upload(
     # 簡單讀取驗證（stat）
     size: Optional[int] = None
     try:
-        stat = minio_service.client.stat_object(minio_service.bucket_name, object_name)
+        stat = await asyncio.to_thread(minio_service.client.stat_object, minio_service.bucket_name, object_name)
         size = getattr(stat, "size", None)
     except Exception:
         pass
@@ -190,17 +198,19 @@ async def get_minio_file_proxy(object_path: str = Query(..., description="MinIO 
             logger.info(f"嘗試獲取 MinIO 文件: {object_path} (第 {attempt + 1} 次)")
 
             # 檢查對象是否存在
-            if not minio_service.object_exists(object_path):
+            exists = await asyncio.to_thread(minio_service.object_exists, object_path)
+            if not exists:
                 raise HTTPException(status_code=404, detail="文件不存在")
 
             # 直接從 MinIO 獲取對象
-            response = minio_service.client.get_object(
-                bucket_name=minio_service.bucket_name,
-                object_name=object_path
+            response = await asyncio.to_thread(
+                minio_service.client.get_object,
+                minio_service.bucket_name,
+                object_path,
             )
 
             # 讀取文件內容
-            file_data = response.read()
+            file_data = await asyncio.to_thread(response.read)
 
             if not file_data:
                 raise Exception("文件內容為空")
@@ -252,8 +262,8 @@ async def get_minio_file_proxy(object_path: str = Query(..., description="MinIO 
             # 確保響應對象被正確關閉
             if response:
                 try:
-                    response.close()
-                    response.release_conn()
+                    await asyncio.to_thread(response.close)
+                    await asyncio.to_thread(response.release_conn)
                 except:
                     pass
 

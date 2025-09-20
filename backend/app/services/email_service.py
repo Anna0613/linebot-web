@@ -68,9 +68,8 @@ class EmailService:
                 loop.close()
         
         # 在新線程中運行異步代碼
-        thread = threading.Thread(target=run_async)
+        thread = threading.Thread(target=run_async, daemon=True)
         thread.start()
-        thread.join()  # 等待線程完成
     
     @staticmethod
     def send_verification_email(email: str) -> None:

@@ -3,6 +3,7 @@ MinIO 文件儲存服務
 處理 LINE Bot 媒體文件的上傳、存儲和管理
 """
 import logging
+import asyncio
 from typing import Optional, Tuple
 from io import BytesIO
 from pathlib import Path
@@ -165,7 +166,9 @@ class MinIOService:
             try:
                 with ApiClient(configuration) as api_client:
                     line_bot_blob_api = MessagingApiBlob(api_client)
-                    file_data = line_bot_blob_api.get_message_content(message_id=line_message_id)
+                    file_data = await asyncio.to_thread(
+                        lambda: line_bot_blob_api.get_message_content(message_id=line_message_id)
+                    )
 
                     if not file_data:
                         logger.error("從 LINE API 獲取的文件數據為空")
@@ -188,12 +191,13 @@ class MinIOService:
             # 根據消息類型設置 content_type
             content_type = self._get_content_type_by_type(message_type)
 
-            self.client.put_object(
-                bucket_name=self.bucket_name,
-                object_name=object_path,
-                data=file_stream,
-                length=file_size,
-                content_type=content_type
+            await asyncio.to_thread(
+                self.client.put_object,
+                self.bucket_name,
+                object_path,
+                file_stream,
+                file_size,
+                content_type=content_type,
             )
 
             # 生成代理訪問 URL
@@ -327,12 +331,13 @@ class MinIOService:
             file_stream = BytesIO(file_data)
             file_size = len(file_data)
 
-            self.client.put_object(
-                bucket_name=self.bucket_name,
-                object_name=object_path,
-                data=file_stream,
-                length=file_size,
-                content_type=content_type
+            await asyncio.to_thread(
+                self.client.put_object,
+                self.bucket_name,
+                object_path,
+                file_stream,
+                file_size,
+                content_type=content_type,
             )
 
             # 生成代理訪問 URL

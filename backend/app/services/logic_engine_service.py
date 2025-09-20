@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional, Tuple
+import asyncio
 from sqlalchemy.orm import Session
 
 from app.models.bot import LogicTemplate, FlexMessage, Bot
@@ -270,12 +271,14 @@ class LogicEngineService:
         results: List[Dict[str, Any]] = []
         try:
             # 取得啟用中的模板，按 updated_at desc
-            templates: List[LogicTemplate] = (
-                db.query(LogicTemplate)
-                .filter(LogicTemplate.bot_id == bot.id, LogicTemplate.is_active == "true")
-                .order_by(LogicTemplate.updated_at.desc())
-                .all()
-            )
+            def _load_templates():
+                return (
+                    db.query(LogicTemplate)
+                    .filter(LogicTemplate.bot_id == bot.id, LogicTemplate.is_active == "true")
+                    .order_by(LogicTemplate.updated_at.desc())
+                    .all()
+                )
+            templates: List[LogicTemplate] = await asyncio.to_thread(_load_templates)
 
             if not templates:
                 logger.info("沒有啟用中的邏輯模板，跳過自動回覆")
@@ -326,7 +329,7 @@ class LogicEngineService:
                         text = str(bdata.get("text") or "")
                         if not text:
                             text = "我還不知道如何回應您的訊息"
-                        send_result = line_bot_service.send_text_message(user_id, text)
+                        send_result = await asyncio.to_thread(line_bot_service.send_text_message, user_id, text)
                         try:
                             await ConversationService.add_bot_message(
                                 bot_id=str(bot.id),
@@ -345,8 +348,8 @@ class LogicEngineService:
 
                         flex_id = bdata.get("flexMessageId")
                         if flex_id:
-                            fm: Optional[FlexMessage] = (
-                                db.query(FlexMessage)
+                            fm: Optional[FlexMessage] = await asyncio.to_thread(
+                                lambda: db.query(FlexMessage)
                                 .filter(FlexMessage.id == flex_id, FlexMessage.user_id == bot.user_id)
                                 .first()
                             )
@@ -359,7 +362,7 @@ class LogicEngineService:
                         if not contents:
                             contents = {"type": "bubble", "body": {"type": "box", "layout": "vertical", "contents": [{"type": "text", "text": "Flex 無內容"}]}}
 
-                        send_result = line_bot_service.send_flex_message(user_id, alt_text, contents)
+                        send_result = await asyncio.to_thread(line_bot_service.send_flex_message, user_id, alt_text, contents)
                         try:
                             await ConversationService.add_bot_message(
                                 bot_id=str(bot.id),
@@ -376,7 +379,7 @@ class LogicEngineService:
                         image_url = bdata.get("originalContentUrl") or bdata.get("url")
                         preview_url = bdata.get("previewImageUrl") or image_url
                         if image_url:
-                            send_result = line_bot_service.send_image_message(user_id, image_url, preview_url)
+                            send_result = await asyncio.to_thread(line_bot_service.send_image_message, user_id, image_url, preview_url)
                             try:
                                 await ConversationService.add_bot_message(
                                     bot_id=str(bot.id),
@@ -393,7 +396,7 @@ class LogicEngineService:
                         package_id = str(bdata.get("packageId") or "").strip()
                         sticker_id = str(bdata.get("stickerId") or "").strip()
                         if package_id and sticker_id:
-                            send_result = line_bot_service.send_sticker_message(user_id, package_id, sticker_id)
+                            send_result = await asyncio.to_thread(line_bot_service.send_sticker_message, user_id, package_id, sticker_id)
                             try:
                                 await ConversationService.add_bot_message(
                                     bot_id=str(bot.id),

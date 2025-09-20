@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from typing import Dict
+import asyncio
 
 from app.database import get_db
 from app.services.auth_service import AuthService
@@ -17,7 +18,7 @@ from app.models.user import User
 router = APIRouter()
 
 @router.post("/register", response_model=Dict[str, str])
-async def register(
+def register(
     user_data: UserRegister,
     db: Session = Depends(get_db)
 ):
@@ -25,7 +26,7 @@ async def register(
     return AuthService.register_user(db, user_data)
 
 @router.post("/login", response_model=Token)
-async def login(
+def login(
     response: Response,
     login_data: UserLogin,
     db: Session = Depends(get_db)
@@ -101,7 +102,7 @@ async def login(
         )
 
 @router.post("/line-login", response_model=Dict[str, str])
-async def line_login():
+def line_login():
     """取得 LINE 登入 URL"""
     return AuthService.get_line_login_url()
 
@@ -114,7 +115,7 @@ async def line_callback(
 ):
     """LINE 登入回調"""
     try:
-        result = AuthService.handle_line_callback(db, code, state)
+        result = await AuthService.handle_line_callback(db, code, state)
         
         # 重導向到前端，並透過 URL 參數傳遞 token
         from app.config import settings
@@ -140,7 +141,7 @@ async def line_callback(
         return RedirectResponse(url=f"{settings.FRONTEND_URL}/login-error?error={e.detail}")
 
 @router.post("/verify-email", response_model=Dict[str, str])
-async def verify_email(
+def verify_email(
     verification_data: EmailVerification,
     db: Session = Depends(get_db)
 ):
@@ -148,7 +149,7 @@ async def verify_email(
     return AuthService.verify_email_token(db, verification_data.token)
 
 @router.get("/verify_email/{token}")
-async def verify_email_redirect(token: str, db: Session = Depends(get_db)):
+def verify_email_redirect(token: str, db: Session = Depends(get_db)):
     """郵箱驗證重導向（相容舊版）"""
     try:
         result = AuthService.verify_email_token(db, token)
@@ -159,7 +160,7 @@ async def verify_email_redirect(token: str, db: Session = Depends(get_db)):
         return RedirectResponse(url=f"{settings.FRONTEND_URL}/email-verify-error?error={e.detail}")
 
 @router.post("/resend-verification", response_model=Dict[str, str])
-async def resend_verification(
+def resend_verification(
     email_data: ForgotPassword,  # 重用 email 欄位
     db: Session = Depends(get_db)
 ):
@@ -167,7 +168,7 @@ async def resend_verification(
     return AuthService.resend_verification_email(db, email_data.email)
 
 @router.post("/forgot_password", response_model=Dict[str, str])
-async def forgot_password(
+def forgot_password(
     email_data: ForgotPassword,
     db: Session = Depends(get_db)
 ):
@@ -175,7 +176,7 @@ async def forgot_password(
     return AuthService.send_password_reset_email(db, email_data.email)
 
 @router.post("/reset_password/{token}", response_model=Dict[str, str])
-async def reset_password(
+def reset_password(
     token: str,
     password_data: dict,
     db: Session = Depends(get_db)
@@ -197,7 +198,7 @@ async def reset_password(
     return AuthService.reset_password(db, token, new_password)
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(
+def refresh_token(
     response: Response,
     request: Request,
     db: Session = Depends(get_db)
@@ -235,21 +236,21 @@ async def refresh_token(
     return new_token
 
 @router.post("/logout")
-async def logout(response: Response):
+def logout(response: Response):
     """用戶登出"""
     response.delete_cookie(key="token")
     response.delete_cookie(key="refresh_token")
     return {"message": "登出成功"}
 
 @router.get("/check-login")
-async def check_login(
+def check_login(
     request: Request,
     db: Session = Depends(get_db)
 ):
     """檢查登入狀態"""
     from app.dependencies import get_current_user
     try:
-        user = await get_current_user(request, db)
+        user = get_current_user(request, db)
         return {
             "authenticated": True,
             "user": {
@@ -262,7 +263,7 @@ async def check_login(
         return {"authenticated": False}
 
 @router.post("/test-cookie")
-async def test_cookie(response: Response):
+def test_cookie(response: Response):
     """測試 cookie 設定"""
     from app.core.security import get_cookie_settings
     cookie_settings = get_cookie_settings()
@@ -311,7 +312,7 @@ async def verify_token_compatibility(
                 )
             
             # 查找用戶
-            user = db.query(User).filter(User.username == username).first()
+            user = await asyncio.to_thread(lambda: db.query(User).filter(User.username == username).first())
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,

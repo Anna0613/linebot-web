@@ -250,8 +250,9 @@ async def health_check():
 async def database_status():
     """資料庫狀態檢查（相容舊版）"""
     from app.database import check_database_connection
+    import asyncio
     try:
-        check_database_connection()
+        await asyncio.to_thread(check_database_connection)
         return {
             "connection": "successful",
             "status": "healthy"

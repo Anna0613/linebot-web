@@ -16,7 +16,7 @@ from app.services.auth_service import AuthService
 router = APIRouter()
 
 @router.get("/profile", response_model=UserProfile)
-async def get_profile(
+def get_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -24,7 +24,7 @@ async def get_profile(
     return UserService.get_user_profile(db, current_user.id)
 
 @router.put("/profile", response_model=UserProfile)
-async def update_profile(
+def update_profile(
     user_data: UserUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -33,7 +33,7 @@ async def update_profile(
     return UserService.update_user_profile(db, current_user.id, user_data)
 
 @router.get("/avatar")
-async def get_avatar(
+def get_avatar(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -41,7 +41,7 @@ async def get_avatar(
     return UserService.get_user_avatar(db, current_user.id)
 
 @router.put("/avatar", response_model=Dict[str, str])
-async def update_avatar(
+def update_avatar(
     avatar_data: AvatarUpload,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -50,7 +50,7 @@ async def update_avatar(
     return UserService.update_user_avatar(db, current_user.id, avatar_data)
 
 @router.delete("/avatar", response_model=Dict[str, str])
-async def delete_avatar(
+def delete_avatar(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -58,7 +58,7 @@ async def delete_avatar(
     return UserService.delete_user_avatar(db, current_user.id)
 
 @router.post("/change-password", response_model=Dict[str, str])
-async def change_password(
+def change_password(
     password_data: PasswordChange,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -67,7 +67,7 @@ async def change_password(
     return UserService.change_password(db, current_user.id, password_data)
 
 @router.delete("/delete-account", response_model=Dict[str, str])
-async def delete_account(
+def delete_account(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -75,7 +75,7 @@ async def delete_account(
     return UserService.delete_user_account(db, current_user.id)
 
 @router.post("/resend-email-verification", response_model=Dict[str, str])
-async def resend_email_verification(
+def resend_email_verification(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -83,7 +83,7 @@ async def resend_email_verification(
     return AuthService.resend_verification_email(db, current_user.email)
 
 @router.get("/check-email-verification", response_model=Dict[str, bool])
-async def check_email_verification(
+def check_email_verification(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):

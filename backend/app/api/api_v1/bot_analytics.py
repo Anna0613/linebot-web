@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import json
 import logging
+import asyncio
 
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -51,7 +52,7 @@ async def sync_users_from_line_api(db: Session, bot: Bot, line_user_ids: List[st
             for line_user_id in line_user_ids:
                 try:
                     # 從 LINE API 獲取用戶資料
-                    profile = line_bot_api.get_profile(line_user_id)
+                    profile = await asyncio.to_thread(line_bot_api.get_profile, line_user_id)
 
                     # 從對話記錄中獲取互動統計
                     user_conversation = next(
@@ -107,9 +108,12 @@ async def sync_users_from_line_api(db: Session, bot: Bot, line_user_ids: List[st
                     )
 
                     # 保存到資料庫
-                    db.add(user_record)
-                    db.commit()
-                    db.refresh(user_record)
+                    def _save_user():
+                        db.add(user_record)
+                        db.commit()
+                        db.refresh(user_record)
+                        return user_record
+                    user_record = await asyncio.to_thread(_save_user)
 
                     synced_users.append(user_record)
 
@@ -135,10 +139,7 @@ async def get_bot_analytics(
     """獲取 Bot 分析數據"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -181,10 +182,7 @@ async def get_message_stats(
     """獲取訊息統計數據"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -210,10 +208,7 @@ async def get_user_activity(
     """獲取用戶活躍度數據"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -239,10 +234,7 @@ async def get_usage_stats(
     """獲取功能使用統計"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -269,10 +261,7 @@ async def send_test_message(
     """發送測試訊息"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -292,12 +281,9 @@ async def send_test_message(
             from app.models.line_user import LineBotUser
             from uuid import UUID as PyUUID
             bot_uuid = PyUUID(bot_id)
-            existing = db.query(LineBotUser).filter(
-                LineBotUser.bot_id == bot_uuid,
-                LineBotUser.line_user_id == user_id
-            ).first()
+            existing = await asyncio.to_thread(lambda: db.query(LineBotUser).filter(LineBotUser.bot_id == bot_uuid, LineBotUser.line_user_id == user_id).first())
             if not existing:
-                profile = line_bot_service.get_user_profile(user_id)
+                profile = await asyncio.to_thread(line_bot_service.get_user_profile, user_id)
                 new_user = LineBotUser(
                     bot_id=bot_uuid,
                     line_user_id=user_id,
@@ -308,13 +294,12 @@ async def send_test_message(
                     is_followed=True,
                     interaction_count="1"
                 )
-                db.add(new_user)
-                db.commit()
+                await asyncio.to_thread(lambda: (db.add(new_user), db.commit()))
         except Exception:
             db.rollback()
 
         # 發送
-        result = line_bot_service.send_text_message(user_id, message)
+        result = await asyncio.to_thread(line_bot_service.send_text_message, user_id, message)
 
         # 記錄到 MongoDB 對話（admin 訊息）並即時通知前端
         try:
@@ -375,10 +360,7 @@ async def get_bot_profile(
     """獲取 Bot 資料"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -421,10 +403,7 @@ async def check_bot_health(
     """檢查 Bot 健康狀態"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -432,8 +411,8 @@ async def check_bot_health(
     try:
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
         
-        # 檢查連接狀態
-        is_healthy = line_bot_service.check_connection()
+        # 檢查連接狀態（改用異步版本）
+        is_healthy = await line_bot_service.async_check_connection()
         
         return {
             "bot_id": bot_id,
@@ -462,10 +441,7 @@ async def get_bot_users(
     """獲取 Bot 的用戶列表（從 MongoDB 和 PostgreSQL 組合數據）"""
 
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
 
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -486,27 +462,25 @@ async def get_bot_users(
 
         if not line_user_ids:
             # 如果 MongoDB 中沒有對話記錄，回退到 PostgreSQL
-            users_query = db.query(LineBotUser).filter(
-                LineBotUser.bot_id == bot_id
-            ).order_by(LineBotUser.last_interaction.desc())
-
-            total_count = users_query.count()
-            users = users_query.offset(offset).limit(limit).all()
+            def _pg_list_all():
+                users_query = db.query(LineBotUser).filter(LineBotUser.bot_id == bot_id).order_by(LineBotUser.last_interaction.desc())
+                return users_query.count(), users_query.offset(offset).limit(limit).all()
+            total_count, users = await asyncio.to_thread(_pg_list_all)
             use_mongodb_data = False
         else:
             # 從 PostgreSQL 獲取這些用戶的基本信息
-            users_query = db.query(LineBotUser).filter(
-                LineBotUser.bot_id == bot_id,
-                LineBotUser.line_user_id.in_(line_user_ids)
-            ).order_by(LineBotUser.last_interaction.desc())
-
-            total_count = users_query.count()
-            users = users_query.offset(offset).limit(limit).all()
+            def _pg_list_subset():
+                users_query = db.query(LineBotUser).filter(
+                    LineBotUser.bot_id == bot_id,
+                    LineBotUser.line_user_id.in_(line_user_ids)
+                ).order_by(LineBotUser.last_interaction.desc())
+                return users_query.count(), users_query.offset(offset).limit(limit).all()
+            total_count, users = await asyncio.to_thread(_pg_list_subset)
 
             # 如果 PostgreSQL 中沒有對應的用戶記錄，從 LINE API 獲取並同步
             if len(users) == 0 and len(line_user_ids) > 0:
                 # 獲取 Bot 的 LINE 配置
-                bot = db.query(Bot).filter(Bot.id == bot_id).first()
+                bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id).first())
                 if bot and bot.channel_token:
                     try:
                         # 同步用戶資料到 PostgreSQL
@@ -607,10 +581,7 @@ async def get_user_interactions(
     """獲取特定用戶的互動歷史（使用 MongoDB）"""
 
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
 
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -647,10 +618,7 @@ async def broadcast_message(
     """廣播訊息給所有關注者"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -664,7 +632,7 @@ async def broadcast_message(
         if not message:
             raise HTTPException(status_code=400, detail="需要提供訊息內容")
         
-        result = line_bot_service.broadcast_message(message, user_ids)
+        result = await asyncio.to_thread(line_bot_service.broadcast_message, message, user_ids)
 
         # 取得廣播對象清單（若未指定 user_ids，取該 Bot 的所有關注者）
         try:
@@ -675,11 +643,13 @@ async def broadcast_message(
             if user_ids:
                 targets = list(user_ids)
             else:
-                targets = [
-                    u.line_user_id for u in db.query(LineBotUser)
-                    .filter(LineBotUser.bot_id == bot.id, LineBotUser.is_followed == True)
-                    .all()
-                ]
+                def _list_targets():
+                    return [
+                        u.line_user_id for u in db.query(LineBotUser)
+                        .filter(LineBotUser.bot_id == bot.id, LineBotUser.is_followed == True)
+                        .all()
+                    ]
+                targets = await asyncio.to_thread(_list_targets)
 
             # 對每位用戶記錄 admin 訊息到 MongoDB
             for uid in targets:
@@ -744,10 +714,7 @@ async def send_message_to_user(
     """發送訊息給特定用戶（使用 MongoDB 儲存聊天記錄）"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -763,7 +730,7 @@ async def send_message_to_user(
             raise HTTPException(status_code=400, detail="需要提供訊息內容")
         
         # 發送訊息到 LINE
-        result = line_bot_service.send_message_to_user(line_user_id, message)
+        result = await asyncio.to_thread(line_bot_service.send_message_to_user, line_user_id, message)
         
         # 記錄管理者發送的訊息到 admin_messages 表（PostgreSQL）
         admin_message = AdminMessage(
@@ -775,8 +742,7 @@ async def send_message_to_user(
             sent_status="sent" if result.get("success") else "failed",
             line_message_id=result.get("message_id")
         )
-        db.add(admin_message)
-        db.commit()
+        await asyncio.to_thread(lambda: (db.add(admin_message), db.commit()))
         
         # 同時記錄到 MongoDB 聊天記錄並推送到 WebSocket（增量更新）
         try:
@@ -841,10 +807,7 @@ async def selective_broadcast_message(
     """選擇性廣播訊息給指定用戶"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -864,7 +827,7 @@ async def selective_broadcast_message(
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
         
         # 發送訊息到 LINE
-        result = line_bot_service.broadcast_message(message, selected_user_ids)
+        result = await asyncio.to_thread(line_bot_service.broadcast_message, message, selected_user_ids)
         
         # 為每個選中的用戶記錄管理者發送的訊息（PostgreSQL + MongoDB）
         from app.services.conversation_service import ConversationService
@@ -916,10 +879,7 @@ async def get_chat_history(
     """獲取用戶與管理者的聊天記錄（使用 MongoDB）"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -968,10 +928,7 @@ async def get_bot_activities(
     """獲取 Bot 活動記錄"""
 
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
 
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")

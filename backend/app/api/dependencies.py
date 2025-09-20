@@ -14,7 +14,7 @@ from app.core.security import verify_token
 
 logger = logging.getLogger(__name__)
 
-async def get_current_user_websocket(
+def get_current_user_websocket(
     token: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ) -> User:

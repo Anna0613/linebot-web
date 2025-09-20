@@ -8,7 +8,6 @@ import json
 import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-import requests
 import asyncio
 import aiohttp
 from linebot import LineBotApi, WebhookHandler
@@ -230,23 +229,7 @@ class LineBotService:
                 "error": f"API 調用失敗: {str(e)}"
             }
     
-    def check_connection(self) -> bool:
-        """
-        檢查與 LINE API 的連接狀態
-        
-        Returns:
-            bool: 連接是否正常
-        """
-        if not self.is_configured():
-            return False
-            
-        try:
-            # 嘗試獲取 Bot 資訊來測試連接
-            self.get_bot_info()
-            return True
-        except Exception as e:
-            logger.error(f"連接檢查失敗: {e}")
-            return False
+    
     
     async def async_check_connection(self) -> bool:
         """
@@ -266,62 +249,7 @@ class LineBotService:
             logger.error(f"異步連接檢查失敗: {e}")
             return False
     
-    def check_webhook_endpoint(self) -> Dict:
-        """
-        檢查 Webhook 端點設定狀態
-        
-        Returns:
-            Dict: Webhook 設定資訊
-        """
-        if not self.is_configured():
-            return {
-                "is_set": False,
-                "endpoint": None,
-                "active": False,
-                "error": "Bot 未配置"
-            }
-            
-        try:
-            # 使用 LINE API 檢查 Webhook 端點
-            headers = {
-                "Authorization": f"Bearer {self.channel_token}",
-                "Content-Type": "application/json"
-            }
-            
-            response = requests.get(
-                "https://api.line.me/v2/bot/channel/webhook/endpoint",
-                headers=headers,
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                endpoint = data.get("endpoint")
-                active = data.get("active", False)
-                
-                return {
-                    "is_set": bool(endpoint),
-                    "endpoint": endpoint,
-                    "active": active,
-                    "error": None
-                }
-            else:
-                logger.error(f"檢查 Webhook 端點失敗: {response.status_code} - {response.text}")
-                return {
-                    "is_set": False,
-                    "endpoint": None,
-                    "active": False,
-                    "error": f"API 錯誤: {response.status_code}"
-                }
-                
-        except Exception as e:
-            logger.error(f"檢查 Webhook 端點失敗: {e}")
-            return {
-                "is_set": False,
-                "endpoint": None,
-                "active": False,
-                "error": str(e)
-            }
+    
     
     async def async_check_webhook_endpoint(self) -> Dict:
         """
@@ -1010,60 +938,7 @@ class LineBotService:
             import traceback
             logger.error(f"詳細錯誤: {traceback.format_exc()}")
     
-    def get_bot_followers(self, db_session, bot_id: str, limit: int = 50, offset: int = 0) -> Dict:
-        """獲取 Bot 的關注者列表"""
-        from app.models.line_user import LineBotUser
-        from uuid import UUID as PyUUID
-        
-        try:
-            bot_uuid = PyUUID(bot_id)
-            
-            # 查詢關注者
-            query = db_session.query(LineBotUser).filter(
-                LineBotUser.bot_id == bot_uuid,
-                LineBotUser.is_followed == True
-            ).order_by(LineBotUser.last_interaction.desc())
-            
-            total_count = query.count()
-            followers = query.offset(offset).limit(limit).all()
-            
-            followers_data = []
-            for follower in followers:
-                followers_data.append({
-                    "id": str(follower.id),
-                    "line_user_id": follower.line_user_id,
-                    "display_name": follower.display_name,
-                    "picture_url": follower.picture_url,
-                    "status_message": follower.status_message,
-                    "language": follower.language,
-                    "first_interaction": follower.first_interaction.isoformat(),
-                    "last_interaction": follower.last_interaction.isoformat(),
-                    "interaction_count": follower.interaction_count
-                })
-            
-            return {
-                "followers": followers_data,
-                "total_count": total_count,
-                "page_info": {
-                    "limit": limit,
-                    "offset": offset,
-                    "has_next": (offset + limit) < total_count,
-                    "has_prev": offset > 0
-                }
-            }
-            
-        except Exception as e:
-            logger.error(f"獲取關注者列表失敗: {e}")
-            return {
-                "followers": [],
-                "total_count": 0,
-                "page_info": {
-                    "limit": limit,
-                    "offset": offset,
-                    "has_next": False,
-                    "has_prev": False
-                }
-            }
+    # 已移除未使用的同步 I/O 輔助：get_bot_followers（請改用現有查詢或新增 async 版本）
     
     async def get_user_interaction_history(self, db_session, bot_id: str, line_user_id: str,
                                    limit: int = 20) -> List[Dict]:
@@ -1090,198 +965,13 @@ class LineBotService:
                 pass
             return []
     
-    def create_rich_menu_real(self, db_session, bot_id: str, rich_menu_data: Dict) -> Optional[Dict]:
-        """創建真實的 Rich Menu"""
-        from app.models.line_user import RichMenu
-        from uuid import UUID as PyUUID
-        from linebot.models import RichMenu as LineRichMenu, RichMenuSize, RichMenuArea, RichMenuBounds
-        from linebot.models.actions import URIAction, PostbackAction, MessageAction
-        
-        try:
-            if not self.is_configured():
-                return None
-                
-            bot_uuid = PyUUID(bot_id)
-            
-            # 構建 LINE Rich Menu 物件
-            size = RichMenuSize(**rich_menu_data["size"])
-            
-            areas = []
-            for area_data in rich_menu_data["areas"]:
-                bounds = RichMenuBounds(**area_data["bounds"])
-                
-                # 根據動作類型創建相應的動作
-                action_data = area_data["action"]
-                if action_data["type"] == "uri":
-                    action = URIAction(uri=action_data["uri"])
-                elif action_data["type"] == "postback":
-                    action = PostbackAction(data=action_data["data"], text=action_data.get("text"))
-                elif action_data["type"] == "message":
-                    action = MessageAction(text=action_data["text"])
-                else:
-                    continue  # 跳過不支援的動作類型
-                
-                areas.append(RichMenuArea(bounds=bounds, action=action))
-            
-            # 創建 Rich Menu
-            rich_menu = LineRichMenu(
-                size=size,
-                selected=rich_menu_data.get("selected", False),
-                name=rich_menu_data["name"],
-                chat_bar_text=rich_menu_data["chat_bar_text"],
-                areas=areas
-            )
-            
-            # 通過 LINE API 創建 Rich Menu
-            rich_menu_id = self.line_bot_api.create_rich_menu(rich_menu)
-            
-            # 如果有圖片，上傳圖片
-            if rich_menu_data.get("image_url"):
-                # 這裡需要下載圖片並上傳到 LINE
-                # 實際實作需要處理圖片下載和上傳
-                pass
-            
-            # 儲存到資料庫
-            db_rich_menu = RichMenu(
-                bot_id=bot_uuid,
-                line_rich_menu_id=rich_menu_id,
-                name=rich_menu_data["name"],
-                chat_bar_text=rich_menu_data["chat_bar_text"],
-                selected=rich_menu_data.get("selected", False),
-                size=rich_menu_data["size"],
-                areas=rich_menu_data["areas"],
-                image_url=rich_menu_data.get("image_url")
-            )
-            
-            db_session.add(db_rich_menu)
-            db_session.commit()
-            
-            return {
-                "id": str(db_rich_menu.id),
-                "line_rich_menu_id": rich_menu_id,
-                "name": rich_menu_data["name"],
-                "chat_bar_text": rich_menu_data["chat_bar_text"],
-                "selected": rich_menu_data.get("selected", False)
-            }
-            
-        except LineBotApiError as e:
-            logger.error(f"創建 Rich Menu 失敗: {e}")
-            db_session.rollback()
-            return None
-        except Exception as e:
-            logger.error(f"創建 Rich Menu 失敗: {e}")
-            db_session.rollback()
-            return None
+    # 已移除未使用的同步 I/O 輔助：create_rich_menu_real（請改用 v3 AsyncMessagingApi）
     
-    def get_rich_menus(self, db_session, bot_id: str) -> List[Dict]:
-        """獲取 Bot 的 Rich Menu 列表"""
-        from app.models.line_user import RichMenu
-        from uuid import UUID as PyUUID
-        
-        try:
-            bot_uuid = PyUUID(bot_id)
-            
-            rich_menus = db_session.query(RichMenu).filter(
-                RichMenu.bot_id == bot_uuid
-            ).order_by(RichMenu.created_at.desc()).all()
-            
-            menus_data = []
-            for menu in rich_menus:
-                menus_data.append({
-                    "id": str(menu.id),
-                    "line_rich_menu_id": menu.line_rich_menu_id,
-                    "name": menu.name,
-                    "chat_bar_text": menu.chat_bar_text,
-                    "selected": menu.selected,
-                    "size": menu.size,
-                    "areas": menu.areas,
-                    "image_url": menu.image_url,
-                    "created_at": menu.created_at.isoformat()
-                })
-            
-            return menus_data
-            
-        except Exception as e:
-            logger.error(f"獲取 Rich Menu 列表失敗: {e}")
-            return []
+    # 已移除未使用的同步 I/O 輔助：get_rich_menus
     
-    def set_default_rich_menu(self, db_session, bot_id: str, rich_menu_id: str) -> bool:
-        """設定預設 Rich Menu"""
-        from app.models.line_user import RichMenu
-        from uuid import UUID as PyUUID
-        
-        try:
-            if not self.is_configured():
-                return False
-                
-            bot_uuid = PyUUID(bot_id)
-            menu_uuid = PyUUID(rich_menu_id)
-            
-            # 找到要設定的 Rich Menu
-            target_menu = db_session.query(RichMenu).filter(
-                RichMenu.id == menu_uuid,
-                RichMenu.bot_id == bot_uuid
-            ).first()
-            
-            if not target_menu:
-                return False
-            
-            # 設定為 LINE 的預設 Rich Menu
-            self.line_bot_api.set_default_rich_menu(target_menu.line_rich_menu_id)
-            
-            # 更新資料庫中的狀態
-            # 先將同個 Bot 的其他 Rich Menu 設為非選中
-            db_session.query(RichMenu).filter(
-                RichMenu.bot_id == bot_uuid
-            ).update({RichMenu.selected: False})
-            
-            # 設定目標 Rich Menu 為選中
-            target_menu.selected = True
-            
-            db_session.commit()
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"設定預設 Rich Menu 失敗: {e}")
-            db_session.rollback()
-            return False
+    # 已移除未使用的同步 I/O 輔助：set_default_rich_menu
     
-    def delete_rich_menu(self, db_session, bot_id: str, rich_menu_id: str) -> bool:
-        """刪除 Rich Menu"""
-        from app.models.line_user import RichMenu
-        from uuid import UUID as PyUUID
-        
-        try:
-            if not self.is_configured():
-                return False
-                
-            bot_uuid = PyUUID(bot_id)
-            menu_uuid = PyUUID(rich_menu_id)
-            
-            # 找到要刪除的 Rich Menu
-            target_menu = db_session.query(RichMenu).filter(
-                RichMenu.id == menu_uuid,
-                RichMenu.bot_id == bot_uuid
-            ).first()
-            
-            if not target_menu:
-                return False
-            
-            # 從 LINE 刪除 Rich Menu
-            if target_menu.line_rich_menu_id:
-                self.line_bot_api.delete_rich_menu(target_menu.line_rich_menu_id)
-            
-            # 從資料庫刪除
-            db_session.delete(target_menu)
-            db_session.commit()
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"刪除 Rich Menu 失敗: {e}")
-            db_session.rollback()
-            return False
+    # 已移除未使用的同步 I/O 輔助：delete_rich_menu
     
     # 此方法已移除，請使用 ConversationService.get_bot_analytics() 替代
     
@@ -1326,22 +1016,25 @@ class LineBotService:
             
             # 查詢資料庫中的媒體記錄
             interaction_uuid = PyUUID(interaction_id)
-            interaction = db_session.query(LineBotUserInteraction).filter(
-                LineBotUserInteraction.id == interaction_uuid
-            ).first()
+            interaction = await asyncio.to_thread(
+                lambda: db_session.query(LineBotUserInteraction)
+                .filter(LineBotUserInteraction.id == interaction_uuid)
+                .first()
+            )
             
             if not interaction:
                 raise Exception(f"找不到互動記錄: {interaction_id}")
             
             # 如果已有媒體 URL 且文件存在，直接返回
             if interaction.media_url and interaction.media_path:
-                if minio_service.object_exists(interaction.media_path):
+                exists = await asyncio.to_thread(minio_service.object_exists, interaction.media_path)
+                if exists:
                     # 重新生成預簽名 URL（確保未過期）
                     new_url = minio_service.get_presigned_url(interaction.media_path)
                     if new_url:
                         # 更新資料庫中的 URL
                         interaction.media_url = new_url
-                        db_session.commit()
+                        await asyncio.to_thread(db_session.commit)
                         return new_url
             
             # 從 message_content 中獲取 LINE 的原始 message ID
@@ -1366,7 +1059,7 @@ class LineBotService:
             # 更新資料庫記錄
             interaction.media_path = media_path
             interaction.media_url = media_url
-            db_session.commit()
+            await asyncio.to_thread(db_session.commit)
             
             logger.info(f"媒體檔案處理成功: {media_path}")
             return media_url

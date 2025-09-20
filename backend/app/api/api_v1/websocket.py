@@ -42,7 +42,7 @@ async def websocket_bot_endpoint(
             await websocket.close(code=4001, reason="Invalid token")
             return
 
-        user = db.query(User).filter(User.username == username).first()
+        user = await asyncio.to_thread(lambda: db.query(User).filter(User.username == username).first())
         if not user:
             await websocket.close(code=4001, reason="User not found")
             return
@@ -53,10 +53,12 @@ async def websocket_bot_endpoint(
         return
 
     # 驗證 Bot 存在且屬於該用戶
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == user.id
-    ).first()
+    bot = await asyncio.to_thread(
+        lambda: db.query(Bot).filter(
+            Bot.id == bot_id,
+            Bot.user_id == user.id
+        ).first()
+    )
     if not bot:
         await websocket.close(code=4004, reason="Bot not found or access denied")
         return
@@ -117,7 +119,7 @@ async def websocket_dashboard_endpoint(
             await websocket.close(code=4001, reason="Invalid token or user mismatch")
             return
 
-        user = db.query(User).filter(User.username == user_id).first()
+        user = await asyncio.to_thread(lambda: db.query(User).filter(User.username == user_id).first())
         if not user:
             await websocket.close(code=4004, reason="User not found")
             return
@@ -205,7 +207,7 @@ async def handle_dashboard_message(user_id: str, message: dict, websocket: WebSo
             
         elif message_type == 'subscribe_user_bots':
             # 訂閱用戶所有 Bot 的更新
-            user_bots = db.query(Bot).filter(Bot.user_id == user_id).all()
+            user_bots = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.user_id == user_id).all())
             bot_ids = [str(bot.id) for bot in user_bots]
             
             await websocket.send_text(json.dumps({
@@ -231,7 +233,7 @@ async def send_initial_data(bot_id: str, websocket: WebSocket, db: Session):
     """發送初始數據"""
     try:
         # 獲取 Bot 基本信息
-        bot = db.query(Bot).filter(Bot.id == bot_id).first()
+        bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id).first())
         if not bot:
             return
         
@@ -273,11 +275,13 @@ async def broadcast_to_bot(
 ):
     """向特定 Bot 的所有 WebSocket 連接廣播消息"""
     try:
-        # 驗證 Bot 所有權
-        bot = db.query(Bot).filter(
-            Bot.id == bot_id,
-            Bot.user_id == current_user.id
-        ).first()
+        # 驗證 Bot 所有權（避免阻塞事件圈）
+        bot = await asyncio.to_thread(
+            lambda: db.query(Bot).filter(
+                Bot.id == bot_id,
+                Bot.user_id == current_user.id
+            ).first()
+        )
         
         if not bot:
             raise HTTPException(status_code=404, detail="Bot not found")

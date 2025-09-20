@@ -71,10 +71,12 @@ async def get_bot_dashboard(
     """
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(
+        lambda: db.query(Bot).filter(
+            Bot.id == bot_id,
+            Bot.user_id == current_user.id
+        ).first()
+    )
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -241,15 +243,17 @@ async def _get_analytics_data(bot_id: str, period: str, db: Session) -> Dict[str
         month_start = end_date - timedelta(days=30)
         
         # 執行聯合查詢
-        result = db.execute(analytics_query, {
-            'bot_id': bot_id,
-            'period_start': start_date,
-            'period_end': end_date,
-            'today_start': today_start,
-            'today_end': today_end,
-            'week_start': week_start,
-            'month_start': month_start
-        }).fetchone()
+        def _exec_analytics():
+            return db.execute(analytics_query, {
+                'bot_id': bot_id,
+                'period_start': start_date,
+                'period_end': end_date,
+                'today_start': today_start,
+                'today_end': today_end,
+                'week_start': week_start,
+                'month_start': month_start
+            }).fetchone()
+        result = await asyncio.to_thread(_exec_analytics)
         
         if result:
             active_users = result.active_users or 0
@@ -279,11 +283,13 @@ async def _get_analytics_data(bot_id: str, period: str, db: Session) -> Dict[str
         ORDER BY hour;
         """)
         
-        activity_result = db.execute(activity_query, {
-            'bot_id': bot_id,
-            'start_date': start_date,
-            'end_date': end_date
-        }).fetchall()
+        def _exec_activity():
+            return db.execute(activity_query, {
+                'bot_id': bot_id,
+                'start_date': start_date,
+                'end_date': end_date
+            }).fetchall()
+        activity_result = await asyncio.to_thread(_exec_activity)
         
         activity_distribution = [
             {"hour": f"{int(row.hour):02d}:00", "activeUsers": row.count}
@@ -428,23 +434,19 @@ async def get_bot_dashboard_light(
     """
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
-    # 基本統計
-    total_users = db.query(LineBotUser).filter(LineBotUser.bot_id == bot_id).count()
+    # 基本統計（避免阻塞事件圈）
+    total_users = await asyncio.to_thread(lambda: db.query(LineBotUser).filter(LineBotUser.bot_id == bot_id).count())
     
     # 今日互動數（快速查詢）
     today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + timedelta(days=1)
     
-    # 優化查詢：使用子查詢避免 JOIN
-    bot_user_ids = db.query(LineBotUser.id).filter(LineBotUser.bot_id == bot_id).subquery()
+    # 去除未使用的同步子查詢，避免不必要的阻塞
     
     # 使用 MongoDB 獲取今日訊息數量
     from app.services.conversation_service import ConversationService
@@ -473,10 +475,7 @@ async def clear_bot_cache(
     """清除 Bot 快取"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
@@ -524,16 +523,13 @@ async def get_bot_users_paginated(
     """分頁獲取 Bot 用戶列表"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
     try:
-        result = LazyLoader.paginate_bot_users(
+        result = await asyncio.to_thread(LazyLoader.paginate_bot_users,
             db=db,
             bot_id=bot_id,
             page=page,
@@ -575,17 +571,13 @@ async def get_bot_interactions_paginated(
     """分頁獲取 Bot 互動記錄"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
     try:
-        result = LazyLoader.paginate_interactions(
-            db=db,
+        result = await LazyLoader.paginate_interactions(
             bot_id=bot_id,
             page=page,
             limit=limit,
@@ -626,16 +618,13 @@ async def get_logic_templates_paginated(
     """分頁獲取邏輯模板"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
     try:
-        result = LazyLoader.paginate_logic_templates(
+        result = await asyncio.to_thread(LazyLoader.paginate_logic_templates,
             db=db,
             bot_id=bot_id,
             page=page,
@@ -671,16 +660,13 @@ async def get_bot_summary(
     """獲取 Bot 概要統計（用於首次快速載入）"""
     
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
     
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
     try:
-        stats = LazyLoader.get_summary_stats(db, bot_id)
+        stats = await asyncio.to_thread(LazyLoader.get_summary_stats, db, bot_id)
         
         return {
             "bot_info": {
@@ -705,10 +691,7 @@ async def get_bot_analytics_incremental(
     """獲取增量分析數據"""
 
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
 
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在")
@@ -769,10 +752,7 @@ async def get_bot_status_quick(
         return json.loads(cached_status)
 
     # 驗證 Bot 所有權
-    bot = db.query(Bot).filter(
-        Bot.id == bot_id,
-        Bot.user_id == current_user.id
-    ).first()
+    bot = await asyncio.to_thread(lambda: db.query(Bot).filter(Bot.id == bot_id, Bot.user_id == current_user.id).first())
 
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在")

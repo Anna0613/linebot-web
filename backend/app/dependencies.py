@@ -14,7 +14,7 @@ from .config import settings
 # OAuth2 方案
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
 
-async def get_current_user(
+def get_current_user(
     request: Request,
     db: Session = Depends(get_db)
 ) -> User:

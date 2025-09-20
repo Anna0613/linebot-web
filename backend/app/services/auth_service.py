@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-import requests
+import aiohttp
 import secrets
 import string
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
@@ -175,44 +175,44 @@ class AuthService:
         }
     
     @staticmethod
-    def handle_line_callback(db: Session, code: str, state: str) -> Dict[str, str]:
+    async def handle_line_callback(db: Session, code: str, state: str) -> Dict[str, str]:
         """處理 LINE 登入回調"""
         try:
-            # 取得 access token
-            token_response = requests.post(
-                "https://api.line.me/oauth2/v2.1/token",
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-                data={
-                    "grant_type": "authorization_code",
-                    "code": code,
-                    "redirect_uri": settings.LINE_REDIRECT_URI,
-                    "client_id": settings.LINE_CHANNEL_ID,
-                    "client_secret": settings.LINE_CHANNEL_SECRET
-                }
-            )
-            
-            if token_response.status_code != 200:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="LINE 授權失敗"
-                )
-            
-            token_data = token_response.json()
-            access_token = token_data.get("access_token")
-            
-            # 取得用戶資料
-            profile_response = requests.get(
-                "https://api.line.me/v2/profile",
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
-            
-            if profile_response.status_code != 200:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="無法取得 LINE 用戶資料"
-                )
-            
-            profile_data = profile_response.json()
+            # 取得 access token（改為非同步 HTTP 請求）
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    "https://api.line.me/oauth2/v2.1/token",
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                    data={
+                        "grant_type": "authorization_code",
+                        "code": code,
+                        "redirect_uri": settings.LINE_REDIRECT_URI,
+                        "client_id": settings.LINE_CHANNEL_ID,
+                        "client_secret": settings.LINE_CHANNEL_SECRET,
+                    },
+                    timeout=aiohttp.ClientTimeout(total=15),
+                ) as token_response:
+                    if token_response.status != 200:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="LINE 授權失敗",
+                        )
+                    token_data = await token_response.json()
+
+                access_token = token_data.get("access_token")
+
+                # 取得用戶資料（非同步）
+                async with session.get(
+                    "https://api.line.me/v2/profile",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as profile_response:
+                    if profile_response.status != 200:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="無法取得 LINE 用戶資料",
+                        )
+                    profile_data = await profile_response.json()
             line_id = profile_data.get("userId")
             display_name = profile_data.get("displayName")
             picture_url = profile_data.get("pictureUrl")
