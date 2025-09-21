@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
@@ -45,7 +45,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
 
   const canOperate = !!botId;
 
-  const loadToggle = async () => {
+  const loadToggle = useCallback(async () => {
     if (!botId) return;
     try {
       const s = await AIKnowledgeApi.getAIToggle(botId);
@@ -56,12 +56,12 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
       setRagTopK(s.rag_top_k);
       setHistoryN(s.history_messages);
       setSystemPrompt(s.system_prompt || '你是一個對話助理。若提供了知識片段，請優先引用並準確回答；若未提供或不足，也可依一般常識與推理能力完整作答。');
-    } catch (e) {
+    } catch (_err) {
       // ignore
     }
-  };
+  }, [botId]);
 
-  const loadList = async () => {
+  const loadList = useCallback(async () => {
     if (!botId) return;
     setLoading(true);
     try {
@@ -75,33 +75,41 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [botId, scope, page, toast]);
 
   useEffect(() => {
     loadToggle();
-  }, [botId]);
+  }, [loadToggle]);
 
   useEffect(() => {
     loadList();
-  }, [botId, scope, page]);
+  }, [loadList]);
 
   // 載入 Groq 模型列表
   useEffect(() => {
+    const isModel = (m: unknown): m is { id: string; name?: string } =>
+      !!m && typeof m === 'object' && typeof (m as { id?: unknown }).id === 'string';
+
     (async () => {
       try {
         const res = await apiClient.getAIModels('groq');
-        if (res.success && Array.isArray((res.data as any).models)) {
-          const list = ((res.data as any).models as Array<any>).map(m => ({ id: m.id as string, name: (m.name as string) || (m.id as string) }));
+        if (res.success) {
+          const data = res.data as unknown;
+          const modelsRaw =
+            data && typeof data === 'object' && Array.isArray((data as { models?: unknown[] }).models)
+              ? (data as { models: unknown[] }).models
+              : [];
+          const list = modelsRaw.filter(isModel).map((m) => ({ id: m.id, name: m.name || m.id }));
           setModels(list);
           if (selectedModel === '' && list.length > 0) {
             setSelectedModel(list[0].id);
           }
         }
-      } catch (e) {
+      } catch (_err) {
         // ignore
       }
     })();
-  }, [botId]);
+  }, [botId, selectedModel]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [total]);
 

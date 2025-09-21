@@ -164,13 +164,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
   const { toast } = useToast();
 
   // Flex 訊息資料
-  const [savedFlexMessages, setSavedFlexMessages] = useState<Map<string, StoredFlexMessage>>(new Map());
+  const [_savedFlexMessages, setSavedFlexMessages] = useState<Map<string, StoredFlexMessage>>(new Map());
 
   // Flex 訊息生成器
   const flexMessageGenerator = useMemo(() => new FlexMessageGenerator(), []);
 
   // 轉換函數
-  const convertFlexBlocksToFlexMessage = useCallback((blocks: Block[]) => {
+  const _convertFlexBlocksToFlexMessage = useCallback((blocks: Block[]) => {
     return flexMessageGenerator.generateFlexMessage(blocks);
   }, [flexMessageGenerator]);
 
@@ -203,7 +203,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   }, [logicBlocks]);
 
   // 處理測試動作
-  const handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
+  const _handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
     setCurrentTestAction(action);
     // 清除動作狀態，讓下次同樣的動作也能觸發
     setTimeout(() => setCurrentTestAction(null), 100);

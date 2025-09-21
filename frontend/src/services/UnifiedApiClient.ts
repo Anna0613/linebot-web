@@ -316,7 +316,7 @@ export class UnifiedApiClient {
    * multipart/form-data 上傳
    */
   public async postFormData<T = unknown>(endpoint: string, form: FormData, options?: Omit<RequestOptions, 'method' | 'body' | 'headers'>): Promise<ApiResponse<T>> {
-    const { retries = this.defaultRetries, timeout = this.defaultTimeout } = options || {};
+    const { retries: _retries = this.defaultRetries, timeout = this.defaultTimeout } = options || {};
     const controller = new AbortController();
     try {
       const timeoutId = setTimeout(() => controller.abort(), timeout);

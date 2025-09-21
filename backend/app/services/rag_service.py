@@ -5,7 +5,7 @@ Implements retrieval over Postgres+pgvector and generation via existing AIAnalys
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text as sql_text
 
