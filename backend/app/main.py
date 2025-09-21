@@ -60,12 +60,11 @@ async def lifespan(app: FastAPI):
         logger.info("Redis 初始化完成")
         
         # 初始化 MongoDB 連接
-        try:
-            await init_mongodb()
-            logger.info("MongoDB 初始化完成")
-        except Exception as e:
-            logger.error(f"MongoDB 初始化失敗: {e}")
-            logger.warning("繼續啟動服務器，但 MongoDB 功能將不可用")
+        mongodb_success = await init_mongodb()
+        if mongodb_success:
+            logger.info("✅ MongoDB 初始化完成")
+        else:
+            logger.warning("⚠️  MongoDB 初始化失敗，繼續啟動服務器，但 MongoDB 功能將不可用")
         
         # 預先初始化 MinIO（避免首個請求同步阻塞）
         try:
@@ -118,11 +117,8 @@ async def lifespan(app: FastAPI):
         await close_redis()
         logger.info("Redis 連接已關閉")
         
-        try:
-            await close_mongodb()
-            logger.info("MongoDB 連接已關閉")
-        except Exception as e:
-            logger.error(f"MongoDB 關閉失敗: {e}")
+        await close_mongodb()
+        logger.info("MongoDB 連接處理完成")
     except Exception as e:
         logger.error(f"關閉服務失敗: {e}")
 

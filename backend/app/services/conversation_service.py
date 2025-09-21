@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from bson import ObjectId
 
 from app.models.mongodb.conversation import ConversationDocument, MessageDocument, AdminUserInfo
-from app.database_mongo import get_mongodb
+from app.database_mongo import get_mongodb, is_mongodb_available
 from app.models.user import User
 from app.config.redis_config import CacheService as AsyncCache, redis_manager
 
@@ -42,24 +42,28 @@ class ConversationService:
 
     @staticmethod
     async def get_or_create_conversation(
-        bot_id: str, 
+        bot_id: str,
         line_user_id: str
-    ) -> ConversationDocument:
+    ) -> Optional[ConversationDocument]:
         """
         獲取或創建對話記錄
-        
+
         Args:
             bot_id: Bot ID
             line_user_id: LINE 用戶 ID
-            
+
         Returns:
-            ConversationDocument: 對話文檔
+            ConversationDocument: 對話文檔，如果 MongoDB 不可用則返回 None
         """
+        if not is_mongodb_available():
+            logger.warning("MongoDB 不可用，無法獲取或創建對話")
+            return None
+
         try:
             return await ConversationDocument.get_or_create_conversation(bot_id, line_user_id)
         except Exception as e:
             logger.error(f"獲取或創建對話失敗: {e}")
-            raise
+            return None
     
     @staticmethod
     async def get_message_by_id(message_id: str) -> Optional[MessageDocument]:
@@ -307,7 +311,7 @@ class ConversationService:
         media_url: Optional[str] = None,
         media_path: Optional[str] = None,
         line_message_id: Optional[str] = None
-    ) -> tuple[MessageDocument, bool]:
+    ) -> tuple[Optional[MessageDocument], bool]:
         """
         添加用戶訊息（含重複檢查）
 
@@ -322,8 +326,12 @@ class ConversationService:
             line_message_id: LINE 原始訊息 ID
 
         Returns:
-            tuple[MessageDocument, bool]: (訊息文檔, 是否為新訊息)
+            tuple[Optional[MessageDocument], bool]: (訊息文檔, 是否為新訊息)，如果 MongoDB 不可用則返回 (None, False)
         """
+        if not is_mongodb_available():
+            logger.warning("MongoDB 不可用，無法添加用戶訊息")
+            return None, False
+
         try:
             # 如果有 line_message_id，先檢查是否已存在
             if line_message_id:
@@ -344,6 +352,9 @@ class ConversationService:
 
             # 獲取或創建對話
             conversation = await ConversationService.get_or_create_conversation(bot_id, line_user_id)
+            if conversation is None:
+                logger.warning("無法獲取或創建對話，MongoDB 可能不可用")
+                return None, False
 
             # 構建訊息資料
             message_data = {
@@ -371,10 +382,10 @@ class ConversationService:
 
             logger.info(f"用戶訊息已添加: bot_id={bot_id}, line_user_id={line_user_id}, message_id={message.id}, line_message_id={line_message_id}")
             return message, True  # 返回新訊息，標記為新訊息
-            
+
         except Exception as e:
             logger.error(f"添加用戶訊息失敗: {e}")
-            raise
+            return None, False
 
     @staticmethod
     async def add_bot_message(
