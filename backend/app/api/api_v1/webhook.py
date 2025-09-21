@@ -504,13 +504,41 @@ async def process_single_event(
                 bot = result.scalars().first()
                 if bot:
                     from app.services.logic_engine_service import LogicEngineService
-                    await LogicEngineService.evaluate_and_reply(
+                    results = await LogicEngineService.evaluate_and_reply(
                         db=db,
                         bot=bot,
                         line_bot_service=line_bot_service,
                         user_id=user_id,
                         event=event
                     )
+
+                    # RAG 備援：若無符合的積木回覆、AI 接管啟用、且為文字訊息
+                    if (
+                        (not results)
+                        and bool(getattr(bot, 'ai_takeover_enabled', False))
+                        and event_type == 'message'
+                        and event.get('message', {}).get('type') == 'text'
+                    ):
+                        try:
+                            from app.services.rag_service import RAGService
+                            user_query = event.get('message', {}).get('text') or ''
+                            provider = getattr(bot, 'ai_model_provider', None) or 'groq'
+                            model = getattr(bot, 'ai_model', None)
+                            answer = await RAGService.answer(db, bot_id, user_query, provider=provider, model=model)
+                            if answer:
+                                # 發送 AI 回覆
+                                send_result = await asyncio.to_thread(line_bot_service.send_text_message, user_id, answer)
+                                try:
+                                    await ConversationService.add_bot_message(
+                                        bot_id=str(bot_id),
+                                        line_user_id=user_id,
+                                        message_content={"text": answer},
+                                        message_type="text",
+                                    )
+                                except Exception as log_err:
+                                    logger.warning(f"寫入 AI 訊息至 Mongo 失敗: {log_err}")
+                        except Exception as rag_err:
+                            logger.error(f"RAG 備援失敗: {rag_err}")
             except Exception as le_err:
                 logger.error(f"邏輯引擎處理失敗: {le_err}")
 

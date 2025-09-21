@@ -8,7 +8,7 @@ import asyncio
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -83,17 +83,18 @@ async def ai_query_user(
 
 @router.get("/ai/models", response_model=AIModelsResponse)
 async def get_ai_models(
+    provider: str | None = Query(default=None, description="指定提供商，如 groq 或 gemini"),
     current_user: User = Depends(get_current_user_async),
 ) -> Any:
     """取得可用的 AI 模型列表。"""
 
     try:
-        models_data = AIAnalysisService.get_available_models()
+        models_data = AIAnalysisService.get_available_models(provider)
         models = [AIModelInfo(**model) for model in models_data]
 
         return AIModelsResponse(
             models=models,
-            current_provider=settings.AI_PROVIDER
+            current_provider=provider or settings.AI_PROVIDER
         )
     except Exception as e:
         logger.error(f"取得 AI 模型列表失敗: {e}")

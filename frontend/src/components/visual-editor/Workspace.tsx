@@ -3,13 +3,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import DropZone from './DropZone';
 import CodePreview from './CodePreview';
 import LineBotSimulator from './LineBotSimulator';
-import EnhancedLineBotSimulator from './EnhancedLineBotSimulator';
 import FlexMessagePreview from './FlexMessagePreview';
 import { BlockPalette } from './BlockPalette';
 import LogicTemplateSelector from './LogicTemplateSelector';
 import FlexMessageSelector from './FlexMessageSelector';
-import PreviewControlPanel from './PreviewControlPanel';
+// 已移除舊的預覽控制台（PreviewControlPanel）與增強模擬器（EnhancedLineBotSimulator）在 AI 知識庫頁面
 import CodeControlPanel from './CodeControlPanel';
+import AIKnowledgeBaseManager from '../ai/AIKnowledgeBaseManager';
 import { CodeDisplayProvider } from './CodeDisplayContext';
 import { 
   UnifiedBlock, 
@@ -150,8 +150,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('logic');
   const [showAllBlocks, setShowAllBlocks] = useState(true);
-  const [useEnhancedSimulator, setUseEnhancedSimulator] = useState(true);
-  const [showDebugInfo, setShowDebugInfo] = useState(false);
+  // 已移除舊的預覽模擬器控制狀態（useEnhancedSimulator / showDebugInfo）
 
   // 測試動作處理
   const [currentTestAction, setCurrentTestAction] = useState<'new-user' | 'test-message' | 'preview-dialog' | null>(null);
@@ -481,13 +480,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
           />
         );
       case 'preview':
-        return (
-          <PreviewControlPanel
-            blocks={logicBlocks}
-            flexBlocks={flexBlocks}
-            onTestAction={handleTestAction}
-          />
-        );
+        // AI 知識庫管理頁面不再顯示舊的預覽控制台
+        return null;
       case 'code':
         return (
           <CodeControlPanel
@@ -538,7 +532,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
                 <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
               )}
             </TabsTrigger>
-            <TabsTrigger value="preview">預覽與測試</TabsTrigger>
+            <TabsTrigger value="preview">AI 知識庫管理</TabsTrigger>
             <TabsTrigger value="code">程式碼</TabsTrigger>
           </TabsList>
           
@@ -624,49 +618,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           </TabsContent>
           
           <TabsContent value="preview" className="flex-1 overflow-hidden">
-            <div className="h-full p-4 overflow-auto">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={useEnhancedSimulator}
-                      onChange={(e) => setUseEnhancedSimulator(e.target.checked)}
-                      className="rounded"
-                    />
-                    <span className="text-sm text-muted-foreground">使用增強版模擬器</span>
-                  </label>
-                  {useEnhancedSimulator && (
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={showDebugInfo}
-                        onChange={(e) => setShowDebugInfo(e.target.checked)}
-                        className="rounded"
-                      />
-                      <span className="text-sm text-muted-foreground">顯示調試資訊</span>
-                    </label>
-                  )}
-                </div>
-              </div>
-              
-              {useEnhancedSimulator ? (
-                <EnhancedLineBotSimulator
-                  blocks={logicBlocks}
-                  savedFlexMessages={savedFlexMessages}
-                  flexBlocks={flexBlocks}
-                  testAction={currentTestAction}
-                  showDebugInfo={showDebugInfo}
-                  convertFlexBlocksToFlexMessage={convertFlexBlocksToFlexMessage}
-                />
-              ) : (
-                <LineBotSimulator
-                  blocks={logicBlocks}
-                  flexBlocks={flexBlocks}
-                  testAction={currentTestAction}
-                />
-              )}
-            </div>
+            <AIKnowledgeBaseManager botId={selectedBotId} />
           </TabsContent>
           
           <TabsContent value="code" className="flex-1 overflow-hidden">

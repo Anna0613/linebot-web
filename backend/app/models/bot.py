@@ -1,7 +1,7 @@
 """
 Bot 相關的資料模型
 """
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Index, UniqueConstraint
+from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Index, UniqueConstraint, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -18,6 +18,10 @@ class Bot(Base):
     channel_secret = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    # AI 接管開關（預設關閉），以及 AI 模型設定
+    ai_takeover_enabled = Column(Boolean, nullable=False, server_default='false')
+    ai_model_provider = Column(String(50), nullable=True, server_default='groq')
+    ai_model = Column(String(255), nullable=True)
     
     # 關聯關係
     user = relationship("User", back_populates="bots")

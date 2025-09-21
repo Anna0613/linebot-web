@@ -141,6 +141,11 @@ def init_database():
         # 啟用 uuid-ossp 擴展
         with engine.connect() as connection:
             connection.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
+            try:
+                connection.execute(text('CREATE EXTENSION IF NOT EXISTS vector;'))
+                logger.info("pgvector 擴展已啟用")
+            except Exception as _e:
+                logger.warning(f"啟用 pgvector 擴展失敗（可能未安裝）: {_e}")
             connection.commit()
             logger.info("uuid-ossp 擴展已啟用")
             

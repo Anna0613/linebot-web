@@ -75,6 +75,12 @@ class DatabaseInitializer:
             with self.engine.connect() as conn:
                 # 啟用 UUID 擴展
                 conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+                # 啟用 pgvector 擴展（若存在）
+                try:
+                    conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
+                    logger.info("✅ pgvector 擴展啟用成功")
+                except Exception as _e:
+                    logger.warning(f"pgvector 擴展未啟用或未安裝: {_e}")
                 conn.commit()
             logger.info("✅ 資料庫擴展啟用成功")
             return True

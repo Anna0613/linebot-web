@@ -312,6 +312,29 @@ export class UnifiedApiClient {
     return this.request<T>(endpoint, { ...options, method: 'PATCH', body: data });
   }
 
+  /**
+   * multipart/form-data 上傳
+   */
+  public async postFormData<T = unknown>(endpoint: string, form: FormData, options?: Omit<RequestOptions, 'method' | 'body' | 'headers'>): Promise<ApiResponse<T>> {
+    const { retries = this.defaultRetries, timeout = this.defaultTimeout } = options || {};
+    const controller = new AbortController();
+    try {
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        // 不要顯式設定 Content-Type，讓瀏覽器自動帶 boundary
+        headers: await this.buildHeaders({}, false).then(h => { delete h['Content-Type']; return h; }),
+        body: form,
+        credentials: 'include',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return await this.handleResponse<T>(response);
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : '上傳失敗', status: 0 };
+    }
+  }
+
   // 認證相關API
   public async login(username: string, password: string): Promise<ApiResponse> {
     return this.post(
@@ -637,9 +660,10 @@ export class UnifiedApiClient {
   }
 
   // 取得可用的 AI 模型列表
-  public async getAIModels(): Promise<ApiResponse> {
+  public async getAIModels(provider?: string): Promise<ApiResponse> {
+    const q = provider ? `?provider=${encodeURIComponent(provider)}` : '';
     return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, '/bots/ai/models')
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/ai/models${q}`)
     );
   }
 

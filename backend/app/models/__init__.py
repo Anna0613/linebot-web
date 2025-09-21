@@ -4,6 +4,7 @@
 """
 from app.models.user import User
 from app.models.bot import Bot, FlexMessage, BotCode, LogicTemplate
+from app.models.knowledge import KnowledgeDocument, KnowledgeChunk
 from app.models.line_user import LineBotUser, RichMenu
 
 __all__ = [
@@ -13,5 +14,7 @@ __all__ = [
     "BotCode",
     "LogicTemplate",
     "LineBotUser", 
+    "KnowledgeDocument",
+    "KnowledgeChunk",
     "RichMenu"
 ] 
