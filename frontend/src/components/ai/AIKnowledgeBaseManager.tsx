@@ -4,9 +4,9 @@ import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from '../ui/dialog';
 import { Settings } from 'lucide-react';
-import AIKnowledgeApi, { AIToggle, KnowledgeChunkItem, Scope } from '../../services/aiKnowledgeApi';
+import AIKnowledgeApi, { AIToggle, KnowledgeChunkItem, Scope, KnowledgeSearchItem } from '../../services/aiKnowledgeApi';
 import { apiClient } from '../../services/UnifiedApiClient';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 
@@ -21,7 +21,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   const [aiEnabled, setAiEnabled] = useState(false);
   const [provider, setProvider] = useState<string>('groq');
   const [models, setModels] = useState<Array<{ id: string; name: string }>>([]);
-  const [selectedModel, setSelectedModel] = useState<string | undefined>(undefined);
+  const [selectedModel, setSelectedModel] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [scope, setScope] = useState<Scope>('project');
   const [query, setQuery] = useState('');
@@ -29,6 +29,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   const [items, setItems] = useState<KnowledgeChunkItem[]>([]);
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [semanticItems, setSemanticItems] = useState<KnowledgeSearchItem[] | null>(null);
 
   // 文字輸入與切塊設定
   const [textInput, setTextInput] = useState('');
@@ -37,6 +38,10 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   const [overlap, setOverlap] = useState(80);
   const [uploading, setUploading] = useState(false);
   const [advOpen, setAdvOpen] = useState(false);
+  const [ragThreshold, setRagThreshold] = useState<number | undefined>(undefined);
+  const [ragTopK, setRagTopK] = useState<number | undefined>(undefined);
+  const [historyN, setHistoryN] = useState<number | undefined>(undefined);
+  const [systemPrompt, setSystemPrompt] = useState<string>('');
 
   const canOperate = !!botId;
 
@@ -46,7 +51,11 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
       const s = await AIKnowledgeApi.getAIToggle(botId);
       setAiEnabled(!!s.ai_takeover_enabled);
       setProvider(s.provider || 'groq');
-      setSelectedModel(s.model);
+      setSelectedModel(s.model || '');
+      setRagThreshold(s.rag_threshold);
+      setRagTopK(s.rag_top_k);
+      setHistoryN(s.history_messages);
+      setSystemPrompt(s.system_prompt || '你是一個對話助理。若提供了知識片段，請優先引用並準確回答；若未提供或不足，也可依一般常識與推理能力完整作答。');
     } catch (e) {
       // ignore
     }
@@ -56,10 +65,11 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     if (!botId) return;
     setLoading(true);
     try {
-      const res = await AIKnowledgeApi.list(botId, scope, query, page, pageSize);
+      const res = await AIKnowledgeApi.list(botId, scope, undefined, page, pageSize);
       setItems(res.items);
       setTotal(res.total);
       setSelected({});
+      setSemanticItems(null);
     } catch (e) {
       toast({ variant: 'destructive', title: '讀取失敗', description: String(e) });
     } finally {
@@ -83,7 +93,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
         if (res.success && Array.isArray((res.data as any).models)) {
           const list = ((res.data as any).models as Array<any>).map(m => ({ id: m.id as string, name: (m.name as string) || (m.id as string) }));
           setModels(list);
-          if (!selectedModel && list.length > 0) {
+          if (selectedModel === '' && list.length > 0) {
             setSelectedModel(list[0].id);
           }
         }
@@ -113,7 +123,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
       setSelectedModel(modelId);
       const s: AIToggle = await AIKnowledgeApi.setAIToggle(botId, aiEnabled, 'groq', modelId);
       setProvider(s.provider || 'groq');
-      setSelectedModel(s.model || modelId);
+      setSelectedModel(s.model || modelId || '');
       toast({ title: '已更新模型', description: modelId });
     } catch (e) {
       toast({ variant: 'destructive', title: '更新模型失敗', description: String(e) });
@@ -134,12 +144,32 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   };
 
   // 高級設定儲存（僅更新狀態即可生效）
-  const saveAdvanced = () => {
+  const saveAdvanced = async () => {
     // 基本檢核
     const size = Math.min(2000, Math.max(200, Number(chunkSize)));
     const ov = Math.min(400, Math.max(0, Number(overlap)));
     setChunkSize(size);
     setOverlap(ov);
+    // RAG 參數檢核
+    const th = ragThreshold === undefined ? undefined : Math.min(1, Math.max(0, Number(ragThreshold)));
+    const tk = ragTopK === undefined ? undefined : Math.max(1, Number(ragTopK));
+    const hn = historyN === undefined ? undefined : Math.max(0, Number(historyN));
+    if (botId) {
+      try {
+        await AIKnowledgeApi.setAIAdvanced(botId, {
+          rag_threshold: th,
+          rag_top_k: tk,
+          history_messages: hn,
+          provider,
+          model: selectedModel,
+          enabled: aiEnabled,
+          system_prompt: systemPrompt,
+        });
+        toast({ title: '已儲存高級設定' });
+      } catch (e) {
+        toast({ variant: 'destructive', title: '儲存失敗', description: String(e) });
+      }
+    }
     setAdvOpen(false);
   };
 
@@ -170,8 +200,24 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   };
 
   const doSearch = async () => {
-    setPage(1);
-    await loadList();
+    if (!botId) return;
+    const q = query.trim();
+    if (!q) {
+      setSemanticItems(null);
+      setPage(1);
+      await loadList();
+      return;
+    }
+    setLoading(true);
+    try {
+      const results = await AIKnowledgeApi.search(botId, q);
+      setSemanticItems(results);
+      setSelected({});
+    } catch (e) {
+      toast({ variant: 'destructive', title: '搜尋失敗', description: String(e) });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleSelect = (id: string) => {
@@ -227,6 +273,16 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
         </div>
       </div>
 
+      {/* 系統提示詞 */}
+      <div className="border rounded p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="font-medium">AI 系統提示詞</div>
+          <Button size="sm" variant="secondary" onClick={saveAdvanced}>儲存</Button>
+        </div>
+        <Textarea rows={4} value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} placeholder="輸入此 Bot 的 AI 系統提示詞…" />
+        <p className="text-xs text-muted-foreground mt-2">提示詞會影響此 Bot 的 AI 回覆風格與策略。</p>
+      </div>
+
       {/* 新增/上傳 */}
       <div className="grid grid-cols-2 gap-4">
         {/* 新增文字內容（單一區塊） */}
@@ -243,6 +299,9 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
                 <DialogHeader>
                   <DialogTitle>高級設定</DialogTitle>
                 </DialogHeader>
+                <DialogDescription>
+                  設定文本切塊、相似度門檻、TopK 以及歷史對話數量等參數，影響檢索與回答品質。
+                </DialogDescription>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="text-sm">自動切塊</label>
@@ -259,6 +318,22 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">建議：切塊 500-1000，重疊 50-100。</p>
+                  <div className="h-px bg-muted" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">相似度門檻</span>
+                      <Input type="number" step="0.05" min={0} max={1} className="w-24" value={ragThreshold ?? ''} onChange={(e) => setRagThreshold(e.target.value === '' ? undefined : Number(e.target.value))} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">TopK</span>
+                      <Input type="number" min={1} className="w-24" value={ragTopK ?? ''} onChange={(e) => setRagTopK(e.target.value === '' ? undefined : Number(e.target.value))} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">最近 N 則對話</span>
+                      <Input type="number" min={0} className="w-24" value={historyN ?? ''} onChange={(e) => setHistoryN(e.target.value === '' ? undefined : Number(e.target.value))} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">不填則使用預設：門檻 0.7、TopK 5、最近 0 則。</p>
                 </div>
                 <DialogFooter>
                   <Button variant="secondary" onClick={() => setAdvOpen(false)}>取消</Button>
@@ -294,39 +369,63 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
         </div>
       </div>
 
-      {/* 列表 */}
+      {/* 列表 / 語意搜尋結果 */}
       <div className="border rounded">
         <div className="grid grid-cols-12 px-3 py-2 text-xs text-muted-foreground border-b">
           <div className="col-span-1">選取</div>
           <div className="col-span-7">內容預覽</div>
-          <div className="col-span-2">來源</div>
-          <div className="col-span-2">更新時間</div>
+          {semanticItems ? (
+            <>
+              <div className="col-span-2">相關度</div>
+              <div className="col-span-2">—</div>
+            </>
+          ) : (
+            <>
+              <div className="col-span-2">來源</div>
+              <div className="col-span-2">更新時間</div>
+            </>
+          )}
         </div>
         <div className="divide-y max-h-[40vh] overflow-auto">
           {loading ? (
             <div className="p-4 text-sm">載入中…</div>
-          ) : items.length === 0 ? (
+          ) : (semanticItems ? semanticItems.length === 0 : items.length === 0) ? (
             <div className="p-4 text-sm text-muted-foreground">沒有資料</div>
           ) : (
-            items.map((it) => (
-              <div key={it.id} className="grid grid-cols-12 px-3 py-2 items-center">
-                <div className="col-span-1">
-                  <input type="checkbox" checked={!!selected[it.id]} onChange={() => toggleSelect(it.id)} />
-                </div>
-                <div className="col-span-7 text-sm pr-4 line-clamp-2">
-                  {it.content.length > 160 ? `${it.content.slice(0, 160)}…` : it.content}
-                </div>
-                <div className="col-span-2 text-xs">{it.source_type}</div>
-                <div className="col-span-2 text-xs">{it.updated_at?.slice(0, 19).replace('T', ' ')}</div>
-              </div>
-            ))
+            (semanticItems
+              ? semanticItems.map((it) => (
+                  <div key={it.id} className="grid grid-cols-12 px-3 py-2 items-center">
+                    <div className="col-span-1">
+                      <input type="checkbox" checked={!!selected[it.id]} onChange={() => toggleSelect(it.id)} />
+                    </div>
+                    <div className="col-span-7 text-sm pr-4 line-clamp-2">
+                      {it.content.length > 160 ? `${it.content.slice(0, 160)}…` : it.content}
+                    </div>
+                    <div className="col-span-2 text-xs">{it.score.toFixed(3)}</div>
+                    <div className="col-span-2 text-xs">—</div>
+                  </div>
+                ))
+              : items.map((it) => (
+                  <div key={it.id} className="grid grid-cols-12 px-3 py-2 items-center">
+                    <div className="col-span-1">
+                      <input type="checkbox" checked={!!selected[it.id]} onChange={() => toggleSelect(it.id)} />
+                    </div>
+                    <div className="col-span-7 text-sm pr-4 line-clamp-2">
+                      {it.content.length > 160 ? `${it.content.slice(0, 160)}…` : it.content}
+                    </div>
+                    <div className="col-span-2 text-xs">{it.source_type}</div>
+                    <div className="col-span-2 text-xs">{it.updated_at?.slice(0, 19).replace('T', ' ')}</div>
+                  </div>
+                )))
           )}
         </div>
-        <div className="flex items-center justify-end gap-2 p-2">
-          <span className="text-xs text-muted-foreground">{page}/{totalPages}</span>
-          <Button size="sm" variant="secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>上一頁</Button>
-          <Button size="sm" variant="secondary" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>下一頁</Button>
-        </div>
+        {!semanticItems && (
+          <div className="flex items-center justify-end gap-2 p-2">
+            <span className="text-xs text-muted-foreground">{page}/{totalPages}</span>
+            <Button size="sm" variant="secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>上一頁</Button>
+            <Button size="sm" variant="secondary" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>下一頁</Button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ LineBot-Web 統一 API 主應用程式
 """
 import logging
 from contextlib import asynccontextmanager
+import asyncio
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -136,6 +137,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origin_regex=getattr(settings, "ALLOWED_ORIGIN_REGEX", None),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
     allow_headers=["*"],
@@ -183,13 +185,20 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         msg = first_error.get('msg', '驗證失敗')
         error_detail = f"{field}: {msg}"
 
+    # 加入 CORS 回應標頭（即使發生錯誤時也回傳，以避免瀏覽器誤判 CORS 失敗）
+    cors_headers = {}
+    origin = request.headers.get("origin")
+    if origin and (origin in settings.ALLOWED_ORIGINS or getattr(settings, "is_origin_allowed", lambda o: False)(origin)):
+        cors_headers = {"Access-Control-Allow-Origin": origin, "Access-Control-Allow-Credentials": "true"}
+
     return JSONResponse(
         status_code=422,
         content={
             "detail": error_detail,
             "message": error_detail,  # 為了前端相容性
             "errors": exc.errors()
-        }
+        },
+        headers=cors_headers,
     )
 
 # Pydantic 驗證錯誤處理
@@ -206,22 +215,34 @@ async def pydantic_validation_exception_handler(request: Request, exc: Validatio
         msg = first_error.get('msg', '驗證失敗')
         error_detail = f"{field}: {msg}"
 
+    cors_headers = {}
+    origin = request.headers.get("origin")
+    if origin and (origin in settings.ALLOWED_ORIGINS or getattr(settings, "is_origin_allowed", lambda o: False)(origin)):
+        cors_headers = {"Access-Control-Allow-Origin": origin, "Access-Control-Allow-Credentials": "true"}
+
     return JSONResponse(
         status_code=422,
         content={
             "detail": error_detail,
             "message": error_detail,  # 為了前端相容性
             "errors": exc.errors()
-        }
+        },
+        headers=cors_headers,
     )
 
 # 全域異常處理
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"全域異常 - 請求 {request.method} {request.url}: {str(exc)}", exc_info=True)
+    cors_headers = {}
+    origin = request.headers.get("origin")
+    if origin and (origin in settings.ALLOWED_ORIGINS or getattr(settings, "is_origin_allowed", lambda o: False)(origin)):
+        cors_headers = {"Access-Control-Allow-Origin": origin, "Access-Control-Allow-Credentials": "true"}
+
     return JSONResponse(
         status_code=500,
-        content={"detail": "內部伺服器錯誤", "error_type": type(exc).__name__}
+        content={"detail": "內部伺服器錯誤", "error_type": type(exc).__name__},
+        headers=cors_headers,
     )
 
 # 包含 API 路由

@@ -1,53 +1,77 @@
 """
 Embedding service using sentence-transformers
+升級版本：使用新的 EmbeddingManager 提供更好的模型管理和效能
 """
 from __future__ import annotations
 
 import asyncio
 import logging
 from functools import lru_cache
-from typing import List, Sequence
+from typing import List, Sequence, Optional
+
+from app.services.embedding_manager import EmbeddingManager
 
 logger = logging.getLogger(__name__)
 
 
-class _ModelHolder:
-    model = None
+# 舊的實作已移除，所有功能已轉移到 EmbeddingManager
 
 
-def _load_model():
-    try:
-        from sentence_transformers import SentenceTransformer  # type: ignore
-    except Exception as e:  # pragma: no cover
-        raise ImportError("請安裝 sentence-transformers 套件以使用向量化功能") from e
+# === 新的 API（使用 EmbeddingManager）===
+async def embed_text(text: str, model_name: Optional[str] = None) -> List[float]:
+    """
+    嵌入單一文本（升級版本）
 
-    model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    logger.info(f"載入嵌入模型: {model_name}")
-    _ModelHolder.model = SentenceTransformer(model_name)
+    Args:
+        text: 要嵌入的文本
+        model_name: 模型名稱，預設使用 all-mpnet-base-v2
 
-
-@lru_cache(maxsize=4096)
-def _embed_sync_cached(text: str) -> List[float]:
-    if _ModelHolder.model is None:
-        _load_model()
-    emb = _ModelHolder.model.encode([text], normalize_embeddings=True)[0]
-    return emb.tolist()  # type: ignore
+    Returns:
+        嵌入向量
+    """
+    return await EmbeddingManager.embed_text(text, model_name)
 
 
-async def embed_text(text: str) -> List[float]:
-    """Embed a single text with caching."""
-    return await asyncio.to_thread(_embed_sync_cached, text)
+async def embed_texts(
+    texts: Sequence[str],
+    model_name: Optional[str] = None,
+    batch_size: int = 32
+) -> List[List[float]]:
+    """
+    批次嵌入文本（升級版本）
+
+    Args:
+        texts: 要嵌入的文本列表
+        model_name: 模型名稱，預設使用 all-mpnet-base-v2
+        batch_size: 批次大小
+
+    Returns:
+        嵌入向量列表
+    """
+    return await EmbeddingManager.embed_texts_batch(
+        list(texts),
+        model_name=model_name,
+        batch_size=batch_size
+    )
 
 
-async def embed_texts(texts: Sequence[str]) -> List[List[float]]:
-    """Batch embed texts. Uses threads; model call is CPU-bound."""
-    if _ModelHolder.model is None:
-        await asyncio.to_thread(_load_model)
+# === 新增的便利函數 ===
+def get_embedding_dimensions(model_name: Optional[str] = None) -> int:
+    """獲取嵌入維度"""
+    return EmbeddingManager.get_embedding_dimensions(model_name)
 
-    # Keep semantics same as single: normalize
-    def _run() -> List[List[float]]:
-        embs = _ModelHolder.model.encode(list(texts), normalize_embeddings=True)  # type: ignore
-        return [e.tolist() for e in embs]
 
-    return await asyncio.to_thread(_run)
+def list_available_models() -> List[dict]:
+    """列出可用的嵌入模型"""
+    return EmbeddingManager.list_available_models()
+
+
+def get_cache_info() -> dict:
+    """獲取快取資訊"""
+    return EmbeddingManager.get_cache_info()
+
+
+def clear_cache():
+    """清除快取"""
+    EmbeddingManager.clear_cache()
 

@@ -59,8 +59,12 @@ class KnowledgeChunk(Base):
     # duplicate bot_id for simpler filtering and to join without document table
     bot_id = Column(UUID(as_uuid=True), ForeignKey("bots.id", ondelete="SET NULL"), nullable=True)
     content = Column(Text, nullable=False)
-    # 384-dim embedding using pgvector
-    embedding = Column(Vector(384) if Vector else Text, nullable=True)  # fallback type if pgvector missing
+    # 768-dim embedding using pgvector (升級到 all-mpnet-base-v2)
+    # 注意：這需要資料庫遷移來更新現有資料
+    embedding = Column(Vector(768) if Vector else Text, nullable=True)  # fallback type if pgvector missing
+    # 儲存嵌入模型資訊
+    embedding_model = Column(String(64), nullable=True, server_default="all-mpnet-base-v2")
+    embedding_dimensions = Column(String(16), nullable=True, server_default="768")
     meta = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

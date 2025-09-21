@@ -1,7 +1,7 @@
 """
 Bot 相關的資料模型
 """
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Index, UniqueConstraint, Boolean
+from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Index, UniqueConstraint, Boolean, Integer, Float
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -22,6 +22,10 @@ class Bot(Base):
     ai_takeover_enabled = Column(Boolean, nullable=False, server_default='false')
     ai_model_provider = Column(String(50), nullable=True, server_default='groq')
     ai_model = Column(String(255), nullable=True)
+    ai_rag_threshold = Column(Float, nullable=True)  # 相似度門檻 0~1
+    ai_rag_top_k = Column(Integer, nullable=True)
+    ai_history_messages = Column(Integer, nullable=True)
+    ai_system_prompt = Column(Text, nullable=True)
     
     # 關聯關係
     user = relationship("User", back_populates="bots")

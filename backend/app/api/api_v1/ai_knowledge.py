@@ -54,6 +54,10 @@ async def get_ai_settings(
         ai_takeover_enabled=bool(bot.ai_takeover_enabled),
         provider=getattr(bot, 'ai_model_provider', None),
         model=getattr(bot, 'ai_model', None),
+        rag_threshold=getattr(bot, 'ai_rag_threshold', None),
+        rag_top_k=getattr(bot, 'ai_rag_top_k', None),
+        history_messages=getattr(bot, 'ai_history_messages', None),
+        system_prompt=getattr(bot, 'ai_system_prompt', None),
     )
 
 
@@ -79,6 +83,15 @@ async def set_ai_settings(
         except ImportError:
             pass
         bot.ai_model = payload.model
+    # RAG 參數
+    if payload.rag_threshold is not None:
+        bot.ai_rag_threshold = float(payload.rag_threshold)
+    if payload.rag_top_k is not None:
+        bot.ai_rag_top_k = int(payload.rag_top_k)
+    if payload.history_messages is not None:
+        bot.ai_history_messages = int(payload.history_messages)
+    if payload.system_prompt is not None:
+        bot.ai_system_prompt = str(payload.system_prompt)
     await db.commit()
     await db.refresh(bot)
     return AIToggleResponse(
@@ -86,6 +99,10 @@ async def set_ai_settings(
         ai_takeover_enabled=bool(bot.ai_takeover_enabled),
         provider=getattr(bot, 'ai_model_provider', None),
         model=getattr(bot, 'ai_model', None),
+        rag_threshold=getattr(bot, 'ai_rag_threshold', None),
+        rag_top_k=getattr(bot, 'ai_rag_top_k', None),
+        history_messages=getattr(bot, 'ai_history_messages', None),
+        system_prompt=getattr(bot, 'ai_system_prompt', None),
     )
 
 
@@ -174,7 +191,8 @@ async def add_text_knowledge(
     else:
         chunks = recursive_split(payload.content, chunk_size=payload.chunk_size, overlap=payload.overlap)
 
-    embs = await embed_texts(chunks)
+    # 使用 768 維度模型 all-mpnet-base-v2
+    embs = await embed_texts(chunks, model_name="all-mpnet-base-v2")
     created_chunk = None
     for i, (txt, emb) in enumerate(zip(chunks, embs)):
         kc = KnowledgeChunk(
@@ -182,6 +200,8 @@ async def add_text_knowledge(
             bot_id=scope_bot,
             content=txt,
             embedding=emb,
+            embedding_model="all-mpnet-base-v2",
+            embedding_dimensions="768",
             meta={"chunk_index": i, "source_type": "text"},
         )
         db.add(kc)
@@ -215,7 +235,8 @@ async def add_bulk_text(
     await db.flush()
 
     chunks = recursive_split(payload.content, chunk_size=payload.chunk_size, overlap=payload.overlap)
-    embs = await embed_texts(chunks)
+    # 使用 768 維度模型 all-mpnet-base-v2
+    embs = await embed_texts(chunks, model_name="all-mpnet-base-v2")
     created: list[KnowledgeChunkResponse] = []
     for i, (txt, emb) in enumerate(zip(chunks, embs)):
         kc = KnowledgeChunk(
@@ -223,6 +244,8 @@ async def add_bulk_text(
             bot_id=scope_bot,
             content=txt,
             embedding=emb,
+            embedding_model="all-mpnet-base-v2",
+            embedding_dimensions="768",
             meta={"chunk_index": i, "source_type": "bulk"},
         )
         db.add(kc)
@@ -294,13 +317,16 @@ async def add_file_knowledge(
 
     # Chunk and embed
     chunks = recursive_split(text, chunk_size=chunk_size, overlap=overlap)
-    embs = await embed_texts(chunks)
+    # 使用 768 維度模型 all-mpnet-base-v2
+    embs = await embed_texts(chunks, model_name="all-mpnet-base-v2")
     for i, (txt, emb) in enumerate(zip(chunks, embs)):
         kc = KnowledgeChunk(
             document_id=doc.id,
             bot_id=scope_bot,
             content=txt,
             embedding=emb,
+            embedding_model="all-mpnet-base-v2",
+            embedding_dimensions="768",
             meta={"chunk_index": i, "source_type": "file"},
         )
         db.add(kc)
@@ -324,7 +350,10 @@ async def update_chunk(
     if not kc:
         raise HTTPException(status_code=404, detail="知識片段不存在")
     kc.content = payload.content
-    kc.embedding = await embed_text(payload.content)
+    # 使用 768 維度模型 all-mpnet-base-v2
+    kc.embedding = await embed_text(payload.content, model_name="all-mpnet-base-v2")
+    kc.embedding_model = "all-mpnet-base-v2"
+    kc.embedding_dimensions = "768"
     await db.commit()
     await db.refresh(kc)
     # carry source_type via meta

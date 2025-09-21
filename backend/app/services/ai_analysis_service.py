@@ -58,7 +58,7 @@ class AIAnalysisService:
                     # 如果沒有可用模型，使用預設值
                     model = settings.GROQ_MODEL
 
-            answer = await GroqService.ask_groq(
+            answer = await GroqService.ask_groq_with_retry(
                 question,
                 context_text=context_text,
                 history=history,

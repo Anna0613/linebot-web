@@ -524,19 +524,34 @@ async def process_single_event(
                             user_query = event.get('message', {}).get('text') or ''
                             provider = getattr(bot, 'ai_model_provider', None) or 'groq'
                             model = getattr(bot, 'ai_model', None)
-                            answer = await RAGService.answer(db, bot_id, user_query, provider=provider, model=model)
-                            if answer:
-                                # 發送 AI 回覆
-                                send_result = await asyncio.to_thread(line_bot_service.send_text_message, user_id, answer)
-                                try:
-                                    await ConversationService.add_bot_message(
-                                        bot_id=str(bot_id),
-                                        line_user_id=user_id,
-                                        message_content={"text": answer},
-                                        message_type="text",
-                                    )
-                                except Exception as log_err:
-                                    logger.warning(f"寫入 AI 訊息至 Mongo 失敗: {log_err}")
+                            threshold = getattr(bot, 'ai_rag_threshold', None)
+                            top_k = getattr(bot, 'ai_rag_top_k', None)
+                            hist_n = getattr(bot, 'ai_history_messages', None)
+                            answer = await RAGService.answer(
+                                db,
+                                bot_id,
+                                user_query,
+                                provider=provider,
+                                model=model,
+                                threshold=threshold,
+                                top_k=top_k,
+                                line_user_id=user_id,
+                                history_messages=hist_n,
+                                system_prompt=getattr(bot, 'ai_system_prompt', None),
+                            )
+                            if not answer:
+                                answer = "我在這裡，請告訴我您的問題。"
+                            # 發送 AI 回覆（一定回覆）
+                            send_result = await asyncio.to_thread(line_bot_service.send_text_message, user_id, answer)
+                            try:
+                                await ConversationService.add_bot_message(
+                                    bot_id=str(bot_id),
+                                    line_user_id=user_id,
+                                    message_content={"text": answer},
+                                    message_type="text",
+                                )
+                            except Exception as log_err:
+                                logger.warning(f"寫入 AI 訊息至 Mongo 失敗: {log_err}")
                         except Exception as rag_err:
                             logger.error(f"RAG 備援失敗: {rag_err}")
             except Exception as le_err:

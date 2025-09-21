@@ -3,6 +3,7 @@
 包含所有環境變數和設定值的統一管理
 """
 import os
+import re
 from typing import List, Optional
 try:
     from pydantic_settings import BaseSettings
@@ -150,6 +151,26 @@ class Settings(BaseSettings):
             default_origins.extend(extra_origins)
         
         return list(set(default_origins))  # 去重
+
+    @property
+    def ALLOWED_ORIGIN_REGEX(self) -> Optional[str]:
+        """以正則表示式允許的 CORS 來源（用於開發與子網域）"""
+        # 可由環境變數覆蓋
+        regex = os.getenv("ALLOWED_ORIGIN_REGEX")
+        if regex:
+            return regex
+        # 允許 localhost/127.0.0.1 任意埠，以及 *.jkl921102.org
+        return r"^https?://((localhost|127\\.0\\.0\\.1)(:\\d+)?|([A-Za-z0-9-]+\\.)*jkl921102\\.org)$"
+
+    def is_origin_allowed(self, origin: str) -> bool:
+        """檢查輸入的 Origin 是否允許（清單或正則其一符合即可）"""
+        try:
+            if origin in self.ALLOWED_ORIGINS:
+                return True
+            pattern = self.ALLOWED_ORIGIN_REGEX
+            return bool(re.match(pattern, origin)) if pattern else False
+        except Exception:
+            return origin in self.ALLOWED_ORIGINS
     
     ALLOWED_HOSTS: List[str] = ["*"]  # 在生產環境中應該更嚴格
     

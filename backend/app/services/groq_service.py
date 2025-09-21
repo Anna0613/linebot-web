@@ -8,12 +8,30 @@ import asyncio
 import logging
 from typing import Any, Dict, List, Optional
 
-from groq import AsyncGroq
+from groq import AsyncGroq, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
 from groq.types.chat import ChatCompletion
 
 from app.config import settings
+from app.utils.retry_utils import async_retry, API_RETRY_CONFIG, CircuitBreaker
+from app.services.context_manager import ContextManager, MessageRole
 
 logger = logging.getLogger(__name__)
+
+
+# Groq 特定的異常類型
+GROQ_RETRYABLE_EXCEPTIONS = (
+    RateLimitError,
+    APIConnectionError,
+    APITimeoutError,
+    InternalServerError
+)
+
+# Groq API 熔斷器
+groq_circuit_breaker = CircuitBreaker(
+    failure_threshold=5,
+    recovery_timeout=60.0,
+    expected_exception=Exception
+)
 
 
 class GroqService:
@@ -192,7 +210,40 @@ class GroqService:
         max_tokens: Optional[int] = None,
     ) -> str:
         """
-        呼叫 Groq API 以取得答案。
+        呼叫 Groq API 以取得答案（舊版本，建議使用 ask_groq_with_retry）。
+        """
+        return await GroqService.ask_groq_with_retry(
+            question=question,
+            context_text=context_text,
+            history=history,
+            model=model,
+            api_key=api_key,
+            system_prompt=system_prompt,
+            max_tokens=max_tokens
+        )
+
+    @staticmethod
+    @async_retry(
+        max_attempts=API_RETRY_CONFIG["max_attempts"],
+        delay=API_RETRY_CONFIG["delay"],
+        backoff=API_RETRY_CONFIG["backoff"],
+        max_delay=API_RETRY_CONFIG["max_delay"],
+        jitter=API_RETRY_CONFIG["jitter"],
+        exceptions=GROQ_RETRYABLE_EXCEPTIONS
+    )
+    @groq_circuit_breaker
+    async def ask_groq_with_retry(
+        question: str,
+        *,
+        context_text: str,
+        history: Optional[List[Dict[str, str]]] = None,
+        model: Optional[str] = None,
+        api_key: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        """
+        帶重試機制和熔斷器的 Groq API 調用。
         """
         api_key = api_key or settings.GROQ_API_KEY
         model = model or settings.GROQ_MODEL
@@ -225,16 +276,16 @@ class GroqService:
             else:
                 raise RuntimeError("沒有可用的 Groq 模型配置")
 
-        try:
-            # 計算合適的 max_tokens 值
-            if max_tokens is None:
-                # 預設使用模型最大 tokens 的 80%，但至少 2048 tokens
-                default_max_tokens = max(2048, int(model_config["max_tokens"] * 0.8))
-                actual_max_tokens = min(default_max_tokens, model_config["max_tokens"])
-            else:
-                # 使用指定的 max_tokens，但不超過模型限制
-                actual_max_tokens = min(max_tokens, model_config["max_tokens"])
+        # 計算合適的 max_tokens 值
+        if max_tokens is None:
+            # 預設使用模型最大 tokens 的 80%，但至少 2048 tokens
+            default_max_tokens = max(2048, int(model_config["max_tokens"] * 0.8))
+            actual_max_tokens = min(default_max_tokens, model_config["max_tokens"])
+        else:
+            # 使用指定的 max_tokens，但不超過模型限制
+            actual_max_tokens = min(max_tokens, model_config["max_tokens"])
 
+        try:
             # 調用 Groq API
             completion: ChatCompletion = await client.chat.completions.create(
                 model=model,
@@ -253,9 +304,19 @@ class GroqService:
 
             return "(未取得模型回應)"
 
+        except RateLimitError as e:
+            logger.warning(f"Groq API 速率限制: {e}")
+            raise  # 重試裝飾器會處理
+        except (APIConnectionError, APITimeoutError) as e:
+            logger.warning(f"Groq API 連接問題: {e}")
+            raise  # 重試裝飾器會處理
+        except InternalServerError as e:
+            logger.warning(f"Groq API 內部錯誤: {e}")
+            raise  # 重試裝飾器會處理
         except Exception as e:
-            logger.error(f"Groq API 呼叫失敗: {e}")
-            raise RuntimeError(f"Groq API 呼叫失敗: {str(e)}")
+            logger.error(f"Groq API 未知錯誤: {e}")
+            # 非重試異常，直接拋出
+            raise RuntimeError(f"Groq API 調用失敗: {str(e)}")
 
     @staticmethod
     def validate_model(model: str) -> bool:
@@ -266,3 +327,123 @@ class GroqService:
     def get_model_info(model: str) -> Optional[Dict[str, Any]]:
         """取得模型資訊"""
         return GroqService.GROQ_MODELS.get(model)
+
+    @staticmethod
+    async def ask_groq_with_context_management(
+        question: str,
+        *,
+        context_text: str,
+        conversation_id: str,
+        model: Optional[str] = None,
+        api_key: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        use_conversation_history: bool = True
+    ) -> str:
+        """
+        使用上下文管理器的 Groq API 調用
+
+        Args:
+            question: 用戶問題
+            context_text: 知識庫上下文
+            conversation_id: 對話 ID
+            model: 模型名稱
+            api_key: API 金鑰
+            system_prompt: 系統提示詞
+            max_tokens: 最大 token 數
+            use_conversation_history: 是否使用對話歷史
+
+        Returns:
+            AI 回應
+        """
+        model = model or settings.GROQ_MODEL
+
+        # 初始化上下文管理器
+        context_manager = ContextManager(model_name=model)
+
+        # 構建系統提示詞
+        full_system_prompt = system_prompt or (
+            "你是一個對話助理。若提供了知識片段，請優先引用並準確回答；"
+            "若未提供或不足，也可依一般常識與推理能力完整作答。"
+        )
+
+        if context_text:
+            full_system_prompt += f"\n\n知識庫內容：\n{context_text}"
+
+        # 添加當前用戶問題到對話歷史
+        if use_conversation_history:
+            context_manager.add_message(
+                conversation_id,
+                MessageRole.USER,
+                question
+            )
+
+        # 獲取適合的上下文訊息
+        if use_conversation_history:
+            messages = context_manager.get_context_for_ai(
+                conversation_id,
+                system_prompt=full_system_prompt
+            )
+        else:
+            # 不使用歷史，只包含當前問題
+            messages = [
+                {"role": "system", "content": full_system_prompt},
+                {"role": "user", "content": question}
+            ]
+
+        # 調用 Groq API
+        try:
+            api_key = api_key or settings.GROQ_API_KEY
+            if not api_key:
+                raise RuntimeError("缺少 GROQ_API_KEY")
+
+            client = AsyncGroq(api_key=api_key)
+
+            # 獲取模型配置
+            model_config = GroqService.GROQ_MODELS.get(model)
+            if not model_config:
+                available_models = list(GroqService.GROQ_MODELS.keys())
+                if available_models:
+                    model = available_models[0]
+                    model_config = GroqService.GROQ_MODELS[model]
+                else:
+                    raise RuntimeError("沒有可用的 Groq 模型")
+
+            # 計算 max_tokens
+            if max_tokens is None:
+                default_max_tokens = max(2048, int(model_config["max_tokens"] * 0.8))
+                actual_max_tokens = min(default_max_tokens, model_config["max_tokens"])
+            else:
+                actual_max_tokens = min(max_tokens, model_config["max_tokens"])
+
+            # 調用 API
+            completion: ChatCompletion = await client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=0.3,
+                max_tokens=actual_max_tokens,
+                top_p=0.9,
+                stream=False
+            )
+
+            # 解析回應
+            if completion.choices and len(completion.choices) > 0:
+                choice = completion.choices[0]
+                if choice.message and choice.message.content:
+                    response = choice.message.content.strip()
+
+                    # 添加助手回應到對話歷史
+                    if use_conversation_history:
+                        context_manager.add_message(
+                            conversation_id,
+                            MessageRole.ASSISTANT,
+                            response
+                        )
+
+                    return response
+
+            return "(未取得模型回應)"
+
+        except Exception as e:
+            logger.error(f"上下文管理 Groq API 調用失敗: {e}")
+            raise RuntimeError(f"Groq API 調用失敗: {str(e)}")
