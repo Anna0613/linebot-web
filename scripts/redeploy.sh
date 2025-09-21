@@ -113,7 +113,7 @@ health_check() {
     sleep 10
     
     # 檢查後端健康狀態
-    if curl -f -s http://localhost:6000/health > /dev/null; then
+    if curl -f -s http://localhost:8001/health > /dev/null; then
         log_success "後端服務健康檢查通過"
     else
         log_error "後端服務健康檢查失敗"
@@ -137,8 +137,8 @@ show_deployment_info() {
     echo
     echo "=== 服務資訊 ==="
     echo "前端: http://localhost:3000"
-    echo "後端 API: http://localhost:6000"
-    echo "健康檢查: http://localhost:6000/health"
+    echo "後端 API: http://localhost:8001"
+    echo "健康檢查: http://localhost:8001/health"
     echo
     echo "=== 容器狀態 ==="
     docker ps --filter "name=linebot-web" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"

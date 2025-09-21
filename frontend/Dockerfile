@@ -12,7 +12,7 @@ COPY package*.json ./
 COPY pnpm-lock.yaml* ./
 
 # 安裝依賴
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # 複製源代碼
 COPY . .
