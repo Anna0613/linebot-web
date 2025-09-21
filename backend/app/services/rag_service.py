@@ -247,7 +247,7 @@ class RAGService:
                     "若未提供或不足，也可依一般常識與推理能力完整作答。"
                 )
             ),
-            max_tokens=512,
+            max_tokens=None,  # 移除硬編碼限制，讓 Groq 服務自動計算合適的 max_tokens
         )
         answer = (result or {}).get("answer", "")
         answer = (answer or "").strip()

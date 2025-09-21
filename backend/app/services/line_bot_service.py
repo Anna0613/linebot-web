@@ -317,9 +317,57 @@ class LineBotService:
                 "error": str(e)
             }
 
+    def split_long_text(self, text: str, max_length: int = 4500) -> List[str]:
+        """
+        將長文字分割成多個片段，避免超過 LINE API 限制
+
+        Args:
+            text: 原始文字
+            max_length: 每段最大長度（預設 4500，留 500 字元緩衝）
+
+        Returns:
+            List[str]: 分割後的文字片段
+        """
+        if len(text) <= max_length:
+            return [text]
+
+        chunks = []
+        current_pos = 0
+
+        while current_pos < len(text):
+            # 計算這一段的結束位置
+            end_pos = current_pos + max_length
+
+            if end_pos >= len(text):
+                # 最後一段
+                chunks.append(text[current_pos:])
+                break
+
+            # 尋找合適的分割點（優先順序：段落 > 句號 > 逗號 > 空格）
+            chunk_text = text[current_pos:end_pos]
+
+            # 尋找最佳分割點
+            split_chars = ['\n\n', '\n', '。', '！', '？', '，', '、', ' ']
+            best_split = -1
+
+            for split_char in split_chars:
+                last_occurrence = chunk_text.rfind(split_char)
+                if last_occurrence > max_length * 0.7:  # 至少要有 70% 的長度
+                    best_split = current_pos + last_occurrence + len(split_char)
+                    break
+
+            if best_split == -1:
+                # 找不到合適分割點，強制分割
+                best_split = end_pos
+
+            chunks.append(text[current_pos:best_split])
+            current_pos = best_split
+
+        return chunks
+
     def send_text_message(self, user_id: str, text: str) -> Dict:
         """
-        發送文字訊息
+        發送文字訊息（支援自動分割長訊息）
 
         Args:
             user_id: 用戶 ID
@@ -332,13 +380,27 @@ class LineBotService:
             raise ValueError("LINE Bot 未正確配置")
 
         try:
-            message = TextSendMessage(text=text)
-            self.line_bot_api.push_message(user_id, message)
+            # 分割長訊息
+            text_chunks = self.split_long_text(text)
+
+            if len(text_chunks) > 1:
+                logger.info(f"長訊息分割為 {len(text_chunks)} 段發送")
+
+            # 發送所有片段
+            for i, chunk in enumerate(text_chunks):
+                message = TextSendMessage(text=chunk)
+                self.line_bot_api.push_message(user_id, message)
+
+                # 多段訊息間稍微延遲，避免發送過快
+                if i < len(text_chunks) - 1:
+                    import time
+                    time.sleep(0.5)
 
             return {
                 "success": True,
-                "message": "訊息發送成功",
-                "timestamp": datetime.now().isoformat()
+                "message": f"訊息發送成功（{len(text_chunks)} 段）",
+                "timestamp": datetime.now().isoformat(),
+                "chunks_sent": len(text_chunks)
             }
         except LineBotApiError as e:
             # 更詳細的 LINE API 例外資訊（便於定位）
@@ -359,6 +421,7 @@ class LineBotService:
     def reply_text_message(self, reply_token: str, text: str) -> Dict:
         """
         回覆文字訊息（reply）— 優先用於 webhook 事件的即時回覆
+        注意：reply 只能發送一則訊息，長訊息會自動截斷到 5000 字元
 
         Args:
             reply_token: LINE 事件的 replyToken
@@ -370,12 +433,19 @@ class LineBotService:
         if not self.is_configured():
             raise ValueError("LINE Bot 未正確配置")
         try:
+            # reply 只能發送一則訊息，如果超長就截斷並提示
+            if len(text) > 5000:
+                truncated_text = text[:4900] + "\n\n...(訊息過長，已截斷，完整內容請稍後查看)"
+                logger.warning(f"Reply 訊息過長({len(text)}字元)，已截斷到 5000 字元")
+                text = truncated_text
+
             message = TextSendMessage(text=text)
             self.line_bot_api.reply_message(reply_token, message)
             return {
                 "success": True,
                 "message": "回覆訊息發送成功",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
+                "was_truncated": len(text) > 5000
             }
         except LineBotApiError as e:
             try:
@@ -394,13 +464,17 @@ class LineBotService:
     def send_text_or_reply(self, user_id: str, text: str, reply_token: Optional[str] = None) -> Dict:
         """
         智能選擇 reply 或 push 發送文字訊息：
-        - 若提供 reply_token，優先使用 reply_message
+        - 若提供 reply_token 且訊息不長，優先使用 reply_message
+        - 若訊息過長（>4500字元），直接使用 push（支援分割）
         - reply 失敗（例如 token 過期/已使用）則自動 fallback 為 push
         - 若沒有 reply_token，直接使用 push
         回傳統一結構，包含成功與否、使用方法、錯誤訊息等。
         """
         try:
-            if reply_token:
+            # 檢查訊息長度，決定發送策略
+            is_long_message = len(text) > 4500
+
+            if reply_token and not is_long_message:
                 try:
                     res = self.reply_text_message(reply_token, text)
                     # 正常回覆
@@ -416,7 +490,10 @@ class LineBotService:
                     )
                 except Exception as e:
                     logger.warning(f"reply 發送異常，改用 push：{e}")
-            # 無 reply_token 或 reply 失敗後的 fallback
+            elif reply_token and is_long_message:
+                logger.info(f"訊息過長({len(text)}字元)，跳過 reply 直接使用 push 分割發送")
+
+            # 無 reply_token、訊息過長、或 reply 失敗後的 fallback
             res = self.send_text_message(user_id, text)
             return {
                 **res,
