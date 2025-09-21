@@ -153,6 +153,28 @@ class GroqService:
         ]
 
     @staticmethod
+    def _get_client(api_key: Optional[str] = None) -> AsyncGroq:
+        """取得或建立可重用的 AsyncGroq 客戶端。"""
+        # 模組級快取
+        global _GROQ_CLIENT, _GROQ_CLIENT_KEY
+        if '_GROQ_CLIENT' not in globals():
+            _GROQ_CLIENT = None  # type: ignore[var-annotated]
+            _GROQ_CLIENT_KEY = None  # type: ignore[var-annotated]
+
+        key = api_key or settings.GROQ_API_KEY
+        if not key:
+            # 延後在呼叫端拋錯，避免 None 客戶端
+            return AsyncGroq(api_key=key)
+
+        # 若尚未建立或 API Key 改變，重建
+        if _GROQ_CLIENT is None or _GROQ_CLIENT_KEY != key:  # type: ignore[name-defined]
+            _GROQ_CLIENT = AsyncGroq(api_key=key)  # type: ignore[name-defined]
+            _GROQ_CLIENT_KEY = key  # type: ignore[name-defined]
+            logger.debug("建立新的 AsyncGroq 客戶端")
+
+        return _GROQ_CLIENT  # type: ignore[return-value]
+
+    @staticmethod
     def _build_messages_for_groq(
         question: str,
         context_text: str,
@@ -260,8 +282,8 @@ class GroqService:
             else:
                 raise RuntimeError("沒有可用的 Groq 模型")
 
-        # 建立 Groq 客戶端
-        client = AsyncGroq(api_key=api_key)
+        # 建立/重用 Groq 客戶端
+        client = GroqService._get_client(api_key)
 
         # 準備訊息
         messages = GroqService._build_messages_for_groq(question, context_text, history, system_prompt)
@@ -397,7 +419,7 @@ class GroqService:
             if not api_key:
                 raise RuntimeError("缺少 GROQ_API_KEY")
 
-            client = AsyncGroq(api_key=api_key)
+            client = GroqService._get_client(api_key)
 
             # 獲取模型配置
             model_config = GroqService.GROQ_MODELS.get(model)

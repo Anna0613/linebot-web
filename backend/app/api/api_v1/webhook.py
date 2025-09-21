@@ -19,6 +19,151 @@ from app.models.line_user import LineBotUser
 from uuid import UUID as PyUUID
 from sqlalchemy.sql import func
 from app.services.conversation_service import ConversationService
+from app.services.background_tasks import get_task_manager, TaskPriority
+from app.database_async import AsyncSessionLocal
+
+# 背景任務：AI 接管（RAG → 產生回答 → 發送 → 紀錄）
+async def _ai_takeover_background_task(
+    *,
+    bot_id: str,
+    user_id: str,
+    user_query: str,
+    reply_token: Optional[str],
+    provider: Optional[str],
+    model: Optional[str],
+    threshold: Optional[float],
+    top_k: Optional[int],
+    hist_n: Optional[int],
+    system_prompt: Optional[str],
+):
+    """在背景執行 AI 接管流程，避免阻塞 webhook 響應。"""
+    try:
+        # 延遲導入以避免循環相依
+        import importlib
+        rag_module = importlib.import_module('app.services.rag_service')
+        RAGService = getattr(rag_module, 'RAGService')
+
+        # 資料庫工作階段（獨立於請求生命週期）
+        async with AsyncSessionLocal() as db:
+            # 讀取 Bot 設定（channel token/secret 等）
+            from sqlalchemy import select as _select
+            from app.models.bot import Bot as BotModel
+            bot_res = await db.execute(_select(BotModel).where(BotModel.id == bot_id))
+            bot = bot_res.scalars().first()
+            if not bot:
+                logger.error(f"AI 背景任務：找不到 Bot: {bot_id}")
+                return
+
+            # 建立 LineBotService 以便回覆
+            line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+
+            # 產生 AI 回答
+            answer = await RAGService.answer(
+                db,
+                bot_id,
+                user_query,
+                provider=provider or getattr(bot, 'ai_model_provider', None),
+                model=model or getattr(bot, 'ai_model', None),
+                threshold=threshold or getattr(bot, 'ai_rag_threshold', None),
+                top_k=top_k or getattr(bot, 'ai_rag_top_k', None),
+                line_user_id=user_id,
+                history_messages=hist_n or getattr(bot, 'ai_history_messages', None),
+                system_prompt=system_prompt or getattr(bot, 'ai_system_prompt', None),
+            )
+
+            if not answer:
+                answer = "我在這裡，請告訴我您的問題。"
+
+            # 發送最終 AI 回覆（僅用 push，不使用 replyToken）
+            try:
+                send_result = await asyncio.to_thread(
+                    line_bot_service.send_text_message, user_id, answer
+                )
+                logger.info(f"AI 背景任務：訊息發送結果: {send_result}")
+            except Exception as send_err:
+                logger.error(f"AI 背景任務：發送 AI 回覆失敗: {send_err}")
+
+            # 紀錄到 MongoDB
+            try:
+                await ConversationService.add_bot_message(
+                    bot_id=str(bot_id),
+                    line_user_id=user_id,
+                    message_content={"text": answer},
+                    message_type="text",
+                )
+                logger.info("AI 背景任務：AI 訊息已記錄到 MongoDB")
+            except Exception as log_err:
+                logger.warning(f"AI 背景任務：寫入 AI 訊息至 Mongo 失敗: {log_err}")
+
+            # 推送到 WebSocket（方便前端就地更新）
+            try:
+                await websocket_manager.broadcast_to_bot(bot_id, {
+                    'type': 'chat_message',
+                    'bot_id': bot_id,
+                    'line_user_id': user_id,
+                    'data': {
+                        'line_user_id': user_id,
+                        'message': {
+                            'id': None,
+                            'event_type': 'message',
+                            'message_type': 'text',
+                            'message_content': {'text': answer},
+                            'sender_type': 'bot',
+                            'timestamp': datetime.now().isoformat(),
+                            'media_url': None,
+                            'media_path': None,
+                            'admin_user': None
+                        }
+                    }
+                })
+            except Exception as ws_err:
+                logger.warning(f"AI 背景任務：推送 WebSocket 失敗: {ws_err}")
+
+    except Exception as e:
+        logger.error(f"AI 背景任務失敗: {e}")
+
+async def _schedule_ai_takeover(
+    *,
+    bot_id: str,
+    user_id: str,
+    user_query: str,
+    reply_token: Optional[str],
+    provider: Optional[str],
+    model: Optional[str],
+    threshold: Optional[float],
+    top_k: Optional[int],
+    hist_n: Optional[int],
+    system_prompt: Optional[str],
+):
+    """將 AI 接管工作排入背景任務。"""
+    try:
+        task_manager = get_task_manager()
+        # 任務 ID 盡量唯一
+        import uuid
+        task_id = f"ai_takeover:{bot_id}:{user_id}:{uuid.uuid4().hex}"
+        await task_manager.add_task(
+            task_id,
+            "AI 接管回覆",
+            _ai_takeover_background_task,
+            kwargs={
+                'bot_id': bot_id,
+                'user_id': user_id,
+                'user_query': user_query,
+                'reply_token': reply_token,
+                'provider': provider,
+                'model': model,
+                'threshold': threshold,
+                'top_k': top_k,
+                'hist_n': hist_n,
+                'system_prompt': system_prompt,
+            },
+            priority=TaskPriority.HIGH,
+            delay=0,
+            max_retries=2,
+        )
+        logger.info(f"已排入 AI 接管背景任務: {task_id}")
+    except Exception as e:
+        logger.error(f"排入 AI 接管背景任務失敗: {e}")
 from app.services.websocket_manager import websocket_manager
 
 logger = logging.getLogger(__name__)
@@ -104,24 +249,33 @@ async def handle_webhook_event(
             logger.error(f"❌ 解析 webhook 內容失敗: {e}")
             raise HTTPException(status_code=400, detail="無效的 JSON 格式")
 
-        # 處理每個事件（含重複檢查）
-        processed_events = []
-        for i, event in enumerate(events):
-            try:
-                print(f"🔍 處理事件 {i+1}: type={event.get('type')}")
-                logger.info(f"🔍 處理事件 {i+1}: type={event.get('type')}")
-                result = await process_single_event(event, bot_id, line_bot_service, db)
-                if result:
-                    processed_events.append(result)
-                    print(f"✅ 事件 {i+1} 處理成功")
-                    logger.info(f"✅ 事件 {i+1} 處理成功")
-                else:
-                    print(f"⏭️ 事件 {i+1} 跳過（重複或無需處理）")
-                    logger.info(f"⏭️ 事件 {i+1} 跳過（重複或無需處理）")
-            except Exception as e:
-                print(f"❌ 處理事件 {i+1} 失敗: {e}")
-                logger.error(f"❌ 處理事件 {i+1} 失敗: {e}")
-                # 繼續處理其他事件，不中斷整個流程
+        # 以有限併發處理每個事件（含重複檢查），避免單一事件延遲拖慢整體
+        processed_results: list[Optional[dict]] = [None] * len(events)
+        concurrency = min(5, max(1, len(events)))  # 每次最多 5 個事件
+        sem = asyncio.Semaphore(concurrency)
+
+        async def _process_one(i: int, event: dict):
+            async with sem:
+                try:
+                    print(f"🔍 處理事件 {i+1}: type={event.get('type')}")
+                    logger.info(f"🔍 處理事件 {i+1}: type={event.get('type')}")
+                    # 為避免 AsyncSession 並發問題，每個事件使用獨立的 session
+                    async with AsyncSessionLocal() as event_db:
+                        result = await process_single_event(event, bot_id, line_bot_service, event_db)
+                    if result:
+                        processed_results[i] = result
+                        print(f"✅ 事件 {i+1} 處理成功")
+                        logger.info(f"✅ 事件 {i+1} 處理成功")
+                    else:
+                        print(f"⏭️ 事件 {i+1} 跳過（重複或無需處理）")
+                        logger.info(f"⏭️ 事件 {i+1} 跳過（重複或無需處理）")
+                except Exception as e:
+                    print(f"❌ 處理事件 {i+1} 失敗: {e}")
+                    logger.error(f"❌ 處理事件 {i+1} 失敗: {e}")
+
+        await asyncio.gather(*[asyncio.create_task(_process_one(i, ev)) for i, ev in enumerate(events)], return_exceptions=True)
+
+        processed_events = [r for r in processed_results if r]
 
         logger.info(f"✅ Webhook 處理完成，成功處理 {len(processed_events)} 個事件")
 
@@ -594,51 +748,23 @@ async def process_single_event(
                             logger.info(f"  - Top-K: {top_k}")
                             logger.info(f"  - 歷史訊息數: {hist_n}")
 
-                            print(f"🔧 準備呼叫 RAGService.answer...")
-                            answer = await RAGService.answer(
-                                db,
-                                bot_id,
-                                user_query,
+                            # 改為背景任務執行，避免阻塞 webhook 回應
+                            print(f"🧵 排程 AI 接管背景任務...")
+                            logger.info(f"🧵 排程 AI 接管背景任務...")
+                            await _schedule_ai_takeover(
+                                bot_id=str(bot_id),
+                                user_id=user_id,
+                                user_query=user_query,
+                                reply_token=reply_token,
                                 provider=provider,
                                 model=model,
                                 threshold=threshold,
                                 top_k=top_k,
-                                line_user_id=user_id,
-                                history_messages=hist_n,
+                                hist_n=hist_n,
                                 system_prompt=getattr(bot, 'ai_system_prompt', None),
                             )
-                            print(f"✅ RAGService.answer 完成")
-
-                            print(f"🤖 AI 回覆生成: '{answer[:100] if answer else 'None'}...'")
-                            logger.info(f"🤖 AI 回覆生成: '{answer[:100] if answer else 'None'}...'")
-
-                            if not answer:
-                                answer = "我在這裡，請告訴我您的問題。"
-                                print(f"🔄 使用預設回覆: '{answer}'")
-                                logger.info(f"🔄 使用預設回覆: '{answer}'")
-
-                            # 發送 AI 回覆（一定回覆）
-                            print(f"📤 發送 AI 回覆給用戶 {user_id}")
-                            logger.info(f"📤 發送 AI 回覆給用戶 {user_id}")
-                            send_result = await asyncio.to_thread(line_bot_service.send_text_or_reply, user_id, answer, reply_token)
-                            print(f"✅ AI 回覆發送結果: {send_result}")
-                            logger.info(f"✅ AI 回覆發送結果: {send_result}")
-                            if not (send_result or {}).get("success"):
-                                print(f"❌ AI 回覆未成功送達，method={(send_result or {}).get('method')}, replyToken={bool(reply_token)}, user_id={user_id}")
-                                logger.error(
-                                    f"❌ AI 回覆未成功送達，method={(send_result or {}).get('method')}, replyToken={bool(reply_token)}, user_id={user_id}"
-                                )
-
-                            try:
-                                await ConversationService.add_bot_message(
-                                    bot_id=str(bot_id),
-                                    line_user_id=user_id,
-                                    message_content={"text": answer},
-                                    message_type="text",
-                                )
-                                logger.info(f"💾 AI 訊息已記錄到 MongoDB")
-                            except Exception as log_err:
-                                logger.warning(f"寫入 AI 訊息至 Mongo 失敗: {log_err}")
+                            print(f"✅ AI 接管背景任務已排入")
+                            logger.info(f"✅ AI 接管背景任務已排入")
                         except Exception as rag_err:
                             print(f"❌ RAG 備援失敗: {rag_err}")
                             logger.error(f"❌ RAG 備援失敗: {rag_err}")
