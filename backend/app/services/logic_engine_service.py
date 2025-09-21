@@ -271,6 +271,9 @@ class LogicEngineService:
         """根據啟用中的邏輯模板嘗試匹配並回覆。返回已執行的回覆結果。"""
         results: List[Dict[str, Any]] = []
         try:
+            # 從事件中取出 replyToken（若存在，優先用 reply 回覆一次）
+            reply_token = event.get("replyToken")
+            used_reply = False
             # 取得啟用中的模板，按 updated_at desc
             result = await db.execute(
                 select(LogicTemplate)
@@ -296,6 +299,26 @@ class LogicEngineService:
                     continue
 
                 eb, rb = pair
+
+                # AI 接管優先規則：
+                # - 若 bot 啟用 AI 接管 且 事件為文字訊息，則下列事件不阻擋 AI：
+                #   a) message.text 且 無條件（無 condition/pattern）
+                #   b) 通用 message（未細分型別的事件）
+                # 如此可避免通用/無條件積木攔截，讓 AI 得以備援回覆。
+                try:
+                    ai_takeover_enabled = bool(getattr(bot, 'ai_takeover_enabled', False))
+                    is_text_message = event.get('type') == 'message' and event.get('message', {}).get('type') == 'text'
+                    eb_data = eb.get('blockData') or {}
+                    eb_event_type = eb_data.get('eventType')
+                    eb_cond = (eb_data.get('condition') or eb_data.get('pattern') or '').strip() if eb_event_type == 'message.text' else None
+                    if ai_takeover_enabled and is_text_message and (
+                        (eb_event_type == 'message.text' and not eb_cond) or
+                        (eb_event_type == 'message')
+                    ):
+                        logger.info("AI 接管已啟用且為文字訊息，略過無條件/通用 message 積木以觸發 AI 備援")
+                        continue
+                except Exception as _:
+                    pass
 
                 # 從事件積木後方開始，依序處理多個回覆積木，直到下一個事件或達到上限
                 try:
@@ -328,7 +351,12 @@ class LogicEngineService:
                         text = str(bdata.get("text") or "")
                         if not text:
                             text = "我還不知道如何回應您的訊息"
-                        send_result = await asyncio.to_thread(line_bot_service.send_text_message, user_id, text)
+                        # 優先以 reply 回覆一次，之後改用 push，避免 replyToken 重複使用
+                        if reply_token and (not used_reply):
+                            send_result = await asyncio.to_thread(line_bot_service.send_text_or_reply, user_id, text, reply_token)
+                            used_reply = True
+                        else:
+                            send_result = await asyncio.to_thread(line_bot_service.send_text_or_reply, user_id, text, None)
                         try:
                             await ConversationService.add_bot_message(
                                 bot_id=str(bot.id),

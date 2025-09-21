@@ -13,7 +13,6 @@ from sqlalchemy import text as sql_text, select
 
 from app.models.knowledge import KnowledgeChunk
 from app.services.embedding_service import embed_text
-from app.services.rag_service import RAGService
 
 logger = logging.getLogger(__name__)
 
@@ -145,12 +144,54 @@ class HybridSearchService:
         model_name: Optional[str] = None
     ) -> List[Tuple[KnowledgeChunk, float]]:
         """向量搜尋"""
-        return await RAGService.retrieve(
-            db, bot_id, query, 
-            threshold=threshold, 
-            top_k=top_k,
-            model_name=model_name
-        )
+        try:
+            # 生成查詢向量
+            query_embedding = await embed_text(query, model_name=model_name)
+            if not query_embedding:
+                logger.warning(f"無法為查詢生成向量: {query}")
+                return []
+
+            # 轉換為 pgvector 格式
+            embedding_str = "[" + ",".join(map(str, query_embedding)) + "]"
+
+            # 執行向量相似度搜尋
+            sql = sql_text("""
+                SELECT
+                    id, bot_id, title, content, metadata, created_at, updated_at,
+                    1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
+                FROM knowledge_chunks
+                WHERE bot_id = CAST(:bot_id AS UUID)
+                    AND (1 - (embedding <=> CAST(:embedding AS vector))) >= :threshold
+                ORDER BY similarity DESC
+                LIMIT :top_k
+            """)
+
+            result = await db.execute(sql, {
+                "embedding": embedding_str,
+                "bot_id": bot_id,
+                "threshold": threshold,
+                "top_k": top_k
+            })
+
+            chunks_with_scores = []
+            for row in result.fetchall():
+                chunk = KnowledgeChunk(
+                    id=row.id,
+                    bot_id=row.bot_id,
+                    title=row.title,
+                    content=row.content,
+                    metadata=row.metadata,
+                    created_at=row.created_at,
+                    updated_at=row.updated_at
+                )
+                chunks_with_scores.append((chunk, float(row.similarity)))
+
+            logger.info(f"向量搜尋找到 {len(chunks_with_scores)} 個相關片段")
+            return chunks_with_scores
+
+        except Exception as e:
+            logger.error(f"向量搜尋失敗: {e}")
+            return []
     
     async def _fulltext_search(
         self,

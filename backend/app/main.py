@@ -17,6 +17,11 @@ from pydantic import ValidationError
 import importlib.util
 import os
 
+# 避免 transformers 嘗試導入 TensorFlow/Flax，防止與本機 NumPy/TensorFlow 不相容造成啟動失敗
+os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
+os.environ.setdefault("TRANSFORMERS_NO_FLAX", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
 # 直接載入 config.py 檔案
 config_path = os.path.join(os.path.dirname(__file__), 'config.py')
 spec = importlib.util.spec_from_file_location("config", config_path)
@@ -156,12 +161,20 @@ app.add_middleware(
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """記錄所有請求"""
-    logger.info(f"收到請求: {request.method} {request.url}")
-    logger.info(f"請求標頭: {dict(request.headers)}")
+    # 特別標記 webhook 請求
+    if "/webhooks/" in str(request.url):
+        logger.info(f"🔥🔥🔥 WEBHOOK 請求: {request.method} {request.url}")
+        logger.info(f"🔥 Headers: {dict(request.headers)}")
+    else:
+        logger.info(f"收到請求: {request.method} {request.url}")
+        logger.info(f"請求標頭: {dict(request.headers)}")
 
     response = await call_next(request)
 
-    logger.info(f"回應狀態: {response.status_code}")
+    if "/webhooks/" in str(request.url):
+        logger.info(f"🔥🔥🔥 WEBHOOK 回應: {response.status_code}")
+    else:
+        logger.info(f"回應狀態: {response.status_code}")
     return response
 
 # 信任主機中間件

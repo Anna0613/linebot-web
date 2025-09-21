@@ -21,18 +21,18 @@ logger = logging.getLogger(__name__)
 
 class LineBotService:
     """LINE Bot API 服務類"""
-    
+
     def __init__(self, channel_token: str, channel_secret: str):
         """
         初始化 LINE Bot Service
-        
+
         Args:
             channel_token: LINE Bot 頻道存取權杖
             channel_secret: LINE Bot 頻道密鑰
         """
         self.channel_token = channel_token
         self.channel_secret = channel_secret
-        
+
         if channel_token and channel_secret:
             try:
                 self.line_bot_api = LineBotApi(channel_token)
@@ -44,63 +44,63 @@ class LineBotService:
         else:
             self.line_bot_api = None
             self.handler = None
-    
+
     def is_configured(self) -> bool:
         """檢查是否已正確配置"""
         return self.line_bot_api is not None and self.handler is not None
-    
+
     def verify_signature(self, body: bytes, signature: str) -> bool:
         """
         驗證 Webhook 簽名
-        
+
         Args:
             body: 請求內容 (bytes)
             signature: LINE 提供的簽名
-            
+
         Returns:
             bool: 簽名是否有效
         """
         if not signature:
             return False
-            
+
         if not self.channel_secret:
             return False
-            
+
         try:
             import base64
-            
+
             # LINE 平台使用 HMAC-SHA256 生成簽名，然後進行 base64 編碼
             hash_value = hmac.new(
                 self.channel_secret.encode('utf-8'),
                 body,
                 hashlib.sha256
             ).digest()
-            
+
             # 將計算出的 hash 進行 base64 編碼
             expected_signature = base64.b64encode(hash_value).decode('utf-8')
-            
+
             logger.debug(f"預期簽名: {expected_signature}")
             logger.debug(f"接收簽名: {signature}")
-            
+
             return hmac.compare_digest(expected_signature, signature)
         except Exception as e:
             logger.error(f"簽名驗證失敗: {e}")
             return False
-    
+
     def verify_webhook_signature(self, body: str, signature: str) -> bool:
         """
         驗證 Webhook 簽名
-        
+
         Args:
             body: 請求內容
             signature: LINE 提供的簽名
-            
+
         Returns:
             bool: 簽名是否有效
         """
         if not self.channel_secret:
             return False
-            
+
         try:
             hash_value = hmac.new(
                 self.channel_secret.encode('utf-8'),
@@ -108,33 +108,33 @@ class LineBotService:
                 hashlib.sha256
             ).digest()
             expected_signature = "sha256=" + hash_value.hex()
-            
+
             return hmac.compare_digest(expected_signature, signature)
         except Exception as e:
             logger.error(f"簽名驗證失敗: {e}")
             return False
-    
+
     def get_bot_info(self) -> Optional[Dict]:
         """
         獲取 Bot 基本資訊，包含 Channel ID
-        
+
         Returns:
             Dict: Bot 資訊
         """
         if not self.is_configured():
             return None
-            
+
         try:
             from linebot.v3.messaging import Configuration, ApiClient, MessagingApi
-            
+
             configuration = Configuration(access_token=self.channel_token)
             with ApiClient(configuration) as api_client:
                 line_bot_api = MessagingApi(api_client)
                 bot_info_response = line_bot_api.get_bot_info()
-                
+
                 # 記錄獲取到的資訊以便調試
                 logger.info(f"獲取到 Bot 資訊 - user_id: {bot_info_response.user_id}, basic_id: {bot_info_response.basic_id}")
-                
+
                 return {
                     "user_id": bot_info_response.user_id,  # 這就是 Channel ID
                     "channel_id": bot_info_response.user_id,  # 明確標示為 channel_id
@@ -156,24 +156,24 @@ class LineBotService:
                 "channel_id": None,
                 "error": f"API 調用失敗: {str(e)}"
             }
-    
+
     async def async_get_bot_info(self) -> Optional[Dict]:
         """
         異步獲取 Bot 基本資訊，包含 Channel ID
-        
+
         Returns:
             Dict: Bot 資訊
         """
         if not self.is_configured():
             return None
-            
+
         try:
             # 使用 aiohttp 進行異步 HTTP 請求
             headers = {
                 "Authorization": f"Bearer {self.channel_token}",
                 "Content-Type": "application/json"
             }
-            
+
             timeout = aiohttp.ClientTimeout(total=10)
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(
@@ -182,10 +182,10 @@ class LineBotService:
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
-                        
+
                         # 記錄獲取到的資訊以便調試
                         logger.info(f"異步獲取到 Bot 資訊 - userId: {data.get('userId')}, basicId: {data.get('basicId')}")
-                        
+
                         return {
                             "user_id": data.get("userId"),  # 這就是 Channel ID
                             "channel_id": data.get("userId"),  # 明確標示為 channel_id
@@ -207,7 +207,7 @@ class LineBotService:
                             "channel_id": None,
                             "error": f"API 調用失敗: {response.status}"
                         }
-                        
+
         except asyncio.TimeoutError:
             logger.error("異步獲取 Bot 資訊超時")
             return {
@@ -228,19 +228,19 @@ class LineBotService:
                 "channel_id": None,
                 "error": f"API 調用失敗: {str(e)}"
             }
-    
-    
-    
+
+
+
     async def async_check_connection(self) -> bool:
         """
         異步檢查與 LINE API 的連接狀態
-        
+
         Returns:
             bool: 連接是否正常
         """
         if not self.is_configured():
             return False
-            
+
         try:
             # 異步獲取 Bot 資訊來測試連接
             await self.async_get_bot_info()
@@ -248,13 +248,13 @@ class LineBotService:
         except Exception as e:
             logger.error(f"異步連接檢查失敗: {e}")
             return False
-    
-    
-    
+
+
+
     async def async_check_webhook_endpoint(self) -> Dict:
         """
         異步檢查 Webhook 端點設定狀態
-        
+
         Returns:
             Dict: Webhook 設定資訊
         """
@@ -265,13 +265,13 @@ class LineBotService:
                 "active": False,
                 "error": "Bot 未配置"
             }
-            
+
         try:
             headers = {
                 "Authorization": f"Bearer {self.channel_token}",
                 "Content-Type": "application/json"
             }
-            
+
             # 使用 aiohttp 進行異步請求
             timeout = aiohttp.ClientTimeout(total=10)
             async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -283,7 +283,7 @@ class LineBotService:
                         data = await response.json()
                         endpoint = data.get("endpoint")
                         active = data.get("active", False)
-                        
+
                         return {
                             "is_set": bool(endpoint),
                             "endpoint": endpoint,
@@ -299,7 +299,7 @@ class LineBotService:
                             "active": False,
                             "error": f"API 錯誤: {response.status}"
                         }
-                
+
         except asyncio.TimeoutError:
             logger.error("異步檢查 Webhook 端點超時")
             return {
@@ -316,62 +316,145 @@ class LineBotService:
                 "active": False,
                 "error": str(e)
             }
-    
+
     def send_text_message(self, user_id: str, text: str) -> Dict:
         """
         發送文字訊息
-        
+
         Args:
             user_id: 用戶 ID
             text: 訊息內容
-            
+
         Returns:
             Dict: 發送結果
         """
         if not self.is_configured():
             raise ValueError("LINE Bot 未正確配置")
-            
+
         try:
             message = TextSendMessage(text=text)
             self.line_bot_api.push_message(user_id, message)
-            
+
             return {
                 "success": True,
                 "message": "訊息發送成功",
                 "timestamp": datetime.now().isoformat()
             }
         except LineBotApiError as e:
-            logger.error(f"發送文字訊息失敗: {e}")
-            raise Exception(f"LINE API 錯誤: {e.message}")
+            # 更詳細的 LINE API 例外資訊（便於定位）
+            try:
+                err_msg = getattr(e, "message", None) or getattr(getattr(e, "error", None), "message", None)
+                details = getattr(getattr(e, "error", None), "details", None)
+                logger.error(
+                    f"發送文字訊息失敗(LineBotApiError): status={getattr(e, 'status_code', None)}, "
+                    f"request_id={getattr(e, 'request_id', None)}, message={err_msg}, details={details}"
+                )
+            finally:
+                # 保持原有流程：讓外層 send_text_or_reply 捕捉並回傳 {success: False}
+                raise
         except Exception as e:
-            logger.error(f"發送文字訊息失敗: {e}")
-            raise Exception(f"發送失敗: {str(e)}")
-    
-    def send_image_message(self, user_id: str, image_url: str, preview_url: Optional[str] = None) -> Dict:
+            logger.error(f"發送文字訊息失敗(Exception): {e}")
+            raise
+
+    def reply_text_message(self, reply_token: str, text: str) -> Dict:
         """
-        發送圖片訊息
-        
+        回覆文字訊息（reply）— 優先用於 webhook 事件的即時回覆
+
         Args:
-            user_id: 用戶 ID
-            image_url: 圖片 URL
-            preview_url: 預覽圖片 URL
-            
+            reply_token: LINE 事件的 replyToken
+            text: 訊息內容
+
         Returns:
             Dict: 發送結果
         """
         if not self.is_configured():
             raise ValueError("LINE Bot 未正確配置")
-            
+        try:
+            message = TextSendMessage(text=text)
+            self.line_bot_api.reply_message(reply_token, message)
+            return {
+                "success": True,
+                "message": "回覆訊息發送成功",
+                "timestamp": datetime.now().isoformat()
+            }
+        except LineBotApiError as e:
+            try:
+                err_msg = getattr(e, "message", None) or getattr(getattr(e, "error", None), "message", None)
+                details = getattr(getattr(e, "error", None), "details", None)
+                logger.error(
+                    f"回覆文字訊息失敗(LineBotApiError): status={getattr(e, 'status_code', None)}, "
+                    f"request_id={getattr(e, 'request_id', None)}, message={err_msg}, details={details}"
+                )
+            finally:
+                raise
+        except Exception as e:
+            logger.error(f"回覆文字訊息失敗(Exception): {e}")
+            raise
+
+    def send_text_or_reply(self, user_id: str, text: str, reply_token: Optional[str] = None) -> Dict:
+        """
+        智能選擇 reply 或 push 發送文字訊息：
+        - 若提供 reply_token，優先使用 reply_message
+        - reply 失敗（例如 token 過期/已使用）則自動 fallback 為 push
+        - 若沒有 reply_token，直接使用 push
+        回傳統一結構，包含成功與否、使用方法、錯誤訊息等。
+        """
+        try:
+            if reply_token:
+                try:
+                    res = self.reply_text_message(reply_token, text)
+                    # 正常回覆
+                    return {
+                        **res,
+                        "method": "reply",
+                    }
+                except LineBotApiError as e:
+                    err_msg = getattr(e, "message", None) or getattr(getattr(e, "error", None), "message", None)
+                    details = getattr(getattr(e, "error", None), "details", None)
+                    logger.warning(
+                        f"reply 失敗，改用 push：status={getattr(e, 'status_code', None)}, request_id={getattr(e, 'request_id', None)}, message={err_msg}, details={details}"
+                    )
+                except Exception as e:
+                    logger.warning(f"reply 發送異常，改用 push：{e}")
+            # 無 reply_token 或 reply 失敗後的 fallback
+            res = self.send_text_message(user_id, text)
+            return {
+                **res,
+                "method": "push",
+            }
+        except Exception as e:
+            logger.error(f"send_text_or_reply 失敗：{e}")
+            return {
+                "success": False,
+                "message": str(e),
+                "method": "unknown",
+            }
+
+    def send_image_message(self, user_id: str, image_url: str, preview_url: Optional[str] = None) -> Dict:
+        """
+        發送圖片訊息
+
+        Args:
+            user_id: 用戶 ID
+            image_url: 圖片 URL
+            preview_url: 預覽圖片 URL
+
+        Returns:
+            Dict: 發送結果
+        """
+        if not self.is_configured():
+            raise ValueError("LINE Bot 未正確配置")
+
         try:
             if not preview_url:
                 preview_url = image_url
-                
+
             message = ImageSendMessage(
                 original_content_url=image_url,
                 preview_image_url=preview_url
             )
             self.line_bot_api.push_message(user_id, message)
-            
+
             return {
                 "success": True,
                 "message": "圖片訊息發送成功",
@@ -383,29 +466,29 @@ class LineBotService:
         except Exception as e:
             logger.error(f"發送圖片訊息失敗: {e}")
             raise Exception(f"發送失敗: {str(e)}")
-    
+
     def send_flex_message(self, user_id: str, alt_text: str, flex_content: Dict) -> Dict:
         """
         發送 Flex 訊息
-        
+
         Args:
             user_id: 用戶 ID
             alt_text: 替代文字
             flex_content: Flex 訊息內容
-            
+
         Returns:
             Dict: 發送結果
         """
         if not self.is_configured():
             raise ValueError("LINE Bot 未正確配置")
-            
+
         try:
             message = FlexSendMessage(
                 alt_text=alt_text,
                 contents=flex_content
             )
             self.line_bot_api.push_message(user_id, message)
-            
+
             return {
                 "success": True,
                 "message": "Flex 訊息發送成功",
@@ -448,20 +531,20 @@ class LineBotService:
         except Exception as e:
             logger.error(f"發送貼圖訊息失敗: {e}")
             raise Exception(f"發送失敗: {str(e)}")
-    
+
     def get_user_profile(self, user_id: str) -> Optional[Dict]:
         """
         獲取用戶資料
-        
+
         Args:
             user_id: 用戶 ID
-            
+
         Returns:
             Dict: 用戶資料
         """
         if not self.is_configured():
             return None
-            
+
         try:
             profile = self.line_bot_api.get_profile(user_id)
             return {
@@ -477,20 +560,20 @@ class LineBotService:
         except Exception as e:
             logger.error(f"獲取用戶資料失敗: {e}")
             return None
-    
+
     def create_rich_menu(self, rich_menu_data: Dict) -> Optional[str]:
         """
         創建 Rich Menu
-        
+
         Args:
             rich_menu_data: Rich Menu 設定
-            
+
         Returns:
             str: Rich Menu ID
         """
         if not self.is_configured():
             return None
-            
+
         try:
             # 這裡需要根據實際的 RichMenu 模型來創建
             # 暫時返回模擬的 Rich Menu ID
@@ -498,14 +581,14 @@ class LineBotService:
         except Exception as e:
             logger.error(f"創建 Rich Menu 失敗: {e}")
             return None
-    
+
     def get_message_statistics(self, date_range: Dict) -> Dict:
         """
         獲取訊息統計
-        
+
         Args:
             date_range: 日期範圍
-            
+
         Returns:
             Dict: 統計數據
         """
@@ -518,11 +601,11 @@ class LineBotService:
             "other_messages": 100,
             "date_range": date_range
         }
-    
+
     def get_user_statistics(self) -> Dict:
         """
         獲取用戶統計
-        
+
         Returns:
             Dict: 用戶統計數據
         """
@@ -534,24 +617,24 @@ class LineBotService:
             "new_users_today": 5,
             "new_users_week": 12
         }
-    
+
     def broadcast_message(self, message: str, user_ids: Optional[List[str]] = None) -> Dict:
         """
         廣播訊息
-        
+
         Args:
             message: 訊息內容
             user_ids: 特定用戶 ID 列表（可選）
-            
+
         Returns:
             Dict: 廣播結果
         """
         if not self.is_configured():
             raise ValueError("LINE Bot 未正確配置")
-            
+
         try:
             text_message = TextSendMessage(text=message)
-            
+
             if user_ids:
                 # 多播訊息
                 self.line_bot_api.multicast(user_ids, text_message)
@@ -560,7 +643,7 @@ class LineBotService:
                 # 廣播訊息
                 self.line_bot_api.broadcast(text_message)
                 target = "所有用戶"
-            
+
             return {
                 "success": True,
                 "message": f"訊息已廣播至 {target}",
@@ -572,27 +655,27 @@ class LineBotService:
         except Exception as e:
             logger.error(f"廣播訊息失敗: {e}")
             raise Exception(f"廣播失敗: {str(e)}")
-    
+
     def send_message_to_user(self, user_id: str, message: str) -> Dict:
         """
         發送訊息給特定用戶
-        
+
         Args:
             user_id: LINE 用戶 ID
             message: 訊息內容
-            
+
         Returns:
             Dict: 發送結果
         """
         if not self.is_configured():
             raise ValueError("LINE Bot 未正確配置")
-            
+
         try:
             text_message = TextSendMessage(text=message)
-            
+
             # 發送訊息給特定用戶
             self.line_bot_api.push_message(user_id, text_message)
-            
+
             return {
                 "success": True,
                 "message": f"訊息已發送至用戶 {user_id}",
@@ -604,7 +687,7 @@ class LineBotService:
         except Exception as e:
             logger.error(f"發送訊息失敗: {e}")
             raise Exception(f"發送失敗: {str(e)}")
-    
+
     async def handle_webhook_event(self, body: bytes, db_session, bot_id: str) -> List[Dict]:
         """
         處理 Webhook 事件
@@ -635,7 +718,7 @@ class LineBotService:
         except Exception as e:
             logger.error(f"處理 Webhook 事件失敗: {e}")
             raise Exception(f"事件處理失敗: {str(e)}")
-    
+
     async def process_event(self, event_data: Dict, db_session, bot_id: str) -> Optional[Dict]:
         """
         處理單個事件
@@ -664,14 +747,14 @@ class LineBotService:
         except Exception as e:
             logger.error(f"處理事件失敗: {e}")
             return None
-    
+
     async def handle_message_event(self, event_data: Dict, db_session, bot_id: str) -> Dict:
         """處理訊息事件"""
         user_id = event_data.get('source', {}).get('userId')
         message_data = event_data.get('message', {})
         message_type = message_data.get('type')
         line_message_id = message_data.get('id')  # 獲取 LINE 原始 message ID
-        
+
         # 記錄用戶互動到數據庫（直接調用異步方法）
         try:
             interaction_id = await self.record_user_interaction(
@@ -690,19 +773,19 @@ class LineBotService:
             import traceback
             logger.error(f"詳細錯誤信息: {traceback.format_exc()}")
             interaction_id = None
-        
+
         # 如果是媒體訊息，使用背景任務處理媒體檔案上傳
         if message_type in ['image', 'video', 'audio'] and line_message_id and interaction_id:
             try:
                 from app.services.background_tasks import get_task_manager, TaskPriority
                 import asyncio
-                
+
                 # 獲取任務管理器
                 task_manager = get_task_manager()
-                
+
                 # 創建媒體處理任務 ID
                 task_id = f"media_upload_{interaction_id}_{line_message_id}"
-                
+
                 # 直接創建異步任務來處理媒體檔案
                 loop = asyncio.get_event_loop()
                 loop.create_task(self._process_media_async(
@@ -712,9 +795,9 @@ class LineBotService:
                     line_message_id=line_message_id,
                     db_session=db_session
                 ))
-                
+
                 logger.info(f"媒體處理任務已排程: {task_id} ({message_type})")
-                
+
             except Exception as e:
                 logger.error(f"排程媒體處理任務失敗: {e}")
                 # 如果背景任務失敗，嘗試同步處理
@@ -728,14 +811,14 @@ class LineBotService:
                     ))
                 except Exception as sync_error:
                     logger.error(f"同步媒體處理也失敗: {sync_error}")
-        
+
         return {
             "event_type": "message",
             "user_id": user_id,
             "message_type": message_type,
             "processed_at": datetime.now().isoformat()
         }
-    
+
     async def handle_follow_event(self, event_data: Dict, db_session, bot_id: str) -> Dict:
         """處理關注事件"""
         user_id = event_data.get('source', {}).get('userId')
@@ -756,7 +839,7 @@ class LineBotService:
             "user_id": user_id,
             "processed_at": datetime.now().isoformat()
         }
-    
+
     async def handle_unfollow_event(self, event_data: Dict, db_session, bot_id: str) -> Dict:
         """處理取消關注事件"""
         user_id = event_data.get('source', {}).get('userId')
@@ -777,7 +860,7 @@ class LineBotService:
             "user_id": user_id,
             "processed_at": datetime.now().isoformat()
         }
-    
+
     async def record_user_interaction(self, db_session, bot_id: str, user_id: str, event_type: str,
                                message_type: str = None, message_content: Dict = None, line_message_id: str = None):
         """記錄用戶互動到 MongoDB（替代舊的 PostgreSQL 方法）"""
@@ -859,9 +942,9 @@ class LineBotService:
             except Exception:
                 pass
             return None
-    
+
     # 已移除未使用的同步背景媒體處理版本（請使用 _process_media_async）
-    
+
     async def _process_media_async(self, interaction_id: str, line_user_id: str, message_type: str,
                                   line_message_id: str, db_session):
         """異步處理媒體檔案上傳到 MinIO"""
@@ -912,9 +995,9 @@ class LineBotService:
             logger.error(f"❌ 異步處理媒體檔案失敗: {e}")
             import traceback
             logger.error(f"詳細錯誤: {traceback.format_exc()}")
-    
+
     # 已移除未使用的同步 I/O 輔助：get_bot_followers（請改用現有查詢或新增 async 版本）
-    
+
     async def get_user_interaction_history(self, db_session, bot_id: str, line_user_id: str,
                                    limit: int = 20) -> List[Dict]:
         """獲取用戶的互動歷史（使用 MongoDB）"""
@@ -939,21 +1022,21 @@ class LineBotService:
             except:
                 pass
             return []
-    
+
     # 已移除未使用的同步 I/O 輔助：create_rich_menu_real（請改用 v3 AsyncMessagingApi）
-    
+
     # 已移除未使用的同步 I/O 輔助：get_rich_menus
-    
+
     # 已移除未使用的同步 I/O 輔助：set_default_rich_menu
-    
+
     # 已移除未使用的同步 I/O 輔助：delete_rich_menu
-    
+
     # 此方法已移除，請使用 ConversationService.get_bot_analytics() 替代
-    
+
     # 此方法已移除，請使用 ConversationService.get_message_stats() 替代
-    
+
     # 此方法已移除，請使用 ConversationService.get_user_activity() 替代
-    
+
     # 此方法已移除，請使用 ConversationService.get_usage_stats() 替代
-    
+
     # 此方法已移除，請使用 ConversationService.get_bot_activities() 替代

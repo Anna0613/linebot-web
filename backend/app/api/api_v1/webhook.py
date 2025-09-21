@@ -56,10 +56,16 @@ async def handle_webhook_event(
     Returns:
         200 OK 響應
     """
+    # 強制輸出到 stdout，確保能看到
+    print(f"🚀🚀🚀 WEBHOOK 開始處理: Bot ID = {bot_id}")
+    print(f"🔧 測試日誌：webhook.py 已載入最新版本 - {datetime.now()}")
+    logger.info(f"🚀🚀🚀 WEBHOOK 開始處理: Bot ID = {bot_id}")
+    logger.info(f"🔧 測試日誌：webhook.py 已載入最新版本 - {datetime.now()}")
     try:
         # 獲取請求體
         body = await request.body()
         logger.info(f"📥 收到 Webhook 請求: Bot ID = {bot_id}, 內容長度 = {len(body)}")
+        logger.info(f"📋 請求內容: {body.decode('utf-8') if body else 'Empty'}")
 
         # 查找對應的 Bot
         result = await db.execute(select(Bot).where(Bot.id == bot_id))
@@ -89,8 +95,12 @@ async def handle_webhook_event(
         try:
             webhook_data = json.loads(body.decode('utf-8'))
             events = webhook_data.get('events', [])
+            print(f"📋 收到 {len(events)} 個事件")
+            print(f"📋 事件內容: {events}")
             logger.info(f"📋 收到 {len(events)} 個事件")
+            logger.info(f"📋 事件內容: {events}")
         except Exception as e:
+            print(f"❌ 解析 webhook 內容失敗: {e}")
             logger.error(f"❌ 解析 webhook 內容失敗: {e}")
             raise HTTPException(status_code=400, detail="無效的 JSON 格式")
 
@@ -98,14 +108,18 @@ async def handle_webhook_event(
         processed_events = []
         for i, event in enumerate(events):
             try:
+                print(f"🔍 處理事件 {i+1}: type={event.get('type')}")
                 logger.info(f"🔍 處理事件 {i+1}: type={event.get('type')}")
                 result = await process_single_event(event, bot_id, line_bot_service, db)
                 if result:
                     processed_events.append(result)
+                    print(f"✅ 事件 {i+1} 處理成功")
                     logger.info(f"✅ 事件 {i+1} 處理成功")
                 else:
+                    print(f"⏭️ 事件 {i+1} 跳過（重複或無需處理）")
                     logger.info(f"⏭️ 事件 {i+1} 跳過（重複或無需處理）")
             except Exception as e:
+                print(f"❌ 處理事件 {i+1} 失敗: {e}")
                 logger.error(f"❌ 處理事件 {i+1} 失敗: {e}")
                 # 繼續處理其他事件，不中斷整個流程
 
@@ -120,7 +134,7 @@ async def handle_webhook_event(
 
         # 返回 200 OK，告知 LINE 平台事件已處理
         return Response(status_code=200)
-        
+
     except HTTPException:
         # 重新拋出 HTTP 異常
         raise
@@ -137,11 +151,11 @@ async def get_webhook_info(
 ):
     """
     獲取 Webhook 配置信息
-    
+
     Args:
         bot_id: Bot ID
         db: 數據庫會話
-    
+
     Returns:
         Webhook 配置信息
     """
@@ -151,19 +165,19 @@ async def get_webhook_info(
         bot = result.scalars().first()
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
-        
+
         # 構建完整的 Webhook URL
         import os
         webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
         webhook_url = f"{webhook_domain}/api/v1/webhooks/{bot_id}"
-        
+
         return {
             "bot_id": bot_id,
             "webhook_url": webhook_url,
             "configured": bool(bot.channel_token and bot.channel_secret),
             "status": "ready" if bot.channel_token and bot.channel_secret else "not_configured"
         }
-        
+
     except Exception as e:
         logger.error(f"獲取 Webhook 信息失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取 Webhook 信息失敗: {str(e)}")
@@ -175,11 +189,11 @@ async def get_webhook_status(
 ):
     """
     獲取 Webhook 綁定狀態
-    
+
     Args:
         bot_id: Bot ID
         db: 數據庫會話
-    
+
     Returns:
         Webhook 綁定狀態
     """
@@ -189,16 +203,16 @@ async def get_webhook_status(
         bot = result.scalars().first()
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
-        
+
         # 檢查基本配置
         is_configured = bool(bot.channel_token and bot.channel_secret)
-        
+
         # 嘗試檢查與 LINE API 的連接狀態和 Webhook 設定
         webhook_working = False
         line_api_accessible = False
         webhook_endpoint_info = None
         last_webhook_time = None
-        
+
         if is_configured:
             try:
                 # 初始化 LINE Bot Service 來測試連接（改用異步版本）
@@ -209,16 +223,16 @@ async def get_webhook_status(
                     return_exceptions=False,
                 )
                 webhook_working = (
-                    webhook_endpoint_info.get("is_set", False) and 
+                    webhook_endpoint_info.get("is_set", False) and
                     webhook_endpoint_info.get("active", False)
                 )
-                
+
             except Exception as e:
                 logger.error(f"檢查 LINE API 連接失敗: {e}")
                 line_api_accessible = False
                 webhook_working = False
                 webhook_endpoint_info = {"error": str(e)}
-        
+
         # 判斷整體狀態
         if not is_configured:
             status = "not_configured"
@@ -232,13 +246,13 @@ async def get_webhook_status(
         else:
             status = "inactive"
             status_text = "未綁定"
-        
+
         from datetime import datetime
-        
+
         # 獲取 webhook 域名
         import os
         webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
-        
+
         return {
             "bot_id": bot_id,
             "bot_name": bot.name,
@@ -252,7 +266,7 @@ async def get_webhook_status(
             "last_webhook_time": last_webhook_time,
             "checked_at": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"獲取 Webhook 狀態失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取狀態失敗: {str(e)}")
@@ -264,11 +278,11 @@ async def debug_webhook_config(
 ):
     """
     除錯 Webhook 配置
-    
+
     Args:
         bot_id: Bot ID
         db: 數據庫會話
-    
+
     Returns:
         除錯資訊
     """
@@ -278,11 +292,11 @@ async def debug_webhook_config(
         bot = result.scalars().first()
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
-        
+
         # 獲取 webhook 域名
         import os
         webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
-        
+
         return {
             "bot_id": bot_id,
             "bot_name": bot.name,
@@ -293,7 +307,7 @@ async def debug_webhook_config(
             "webhook_url": f"{webhook_domain}/api/v1/webhooks/{bot_id}",
             "status": "configured" if (bot.channel_token and bot.channel_secret) else "not_configured"
         }
-        
+
     except Exception as e:
         logger.error(f"除錯 Webhook 配置失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"除錯失敗: {str(e)}")
@@ -305,11 +319,11 @@ async def test_webhook_connection(
 ):
     """
     測試 Webhook 連接
-    
+
     Args:
         bot_id: Bot ID
         db: 數據庫會話
-    
+
     Returns:
         測試結果
     """
@@ -320,22 +334,22 @@ async def test_webhook_connection(
         bot = result.scalars().first()
         if not bot:
             raise HTTPException(status_code=404, detail="Bot 不存在")
-        
+
         if not bot.channel_token or not bot.channel_secret:
             raise HTTPException(status_code=400, detail="Bot 配置不完整")
-        
+
         # 初始化 LINE Bot Service
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
-        
+
         # 檢查連接狀態
         is_healthy = await line_bot_service.async_check_connection()
-        
+
         return {
             "bot_id": bot_id,
             "connection_status": "ok" if is_healthy else "failed",
             "timestamp": "2024-08-23T12:00:00Z"
         }
-        
+
     except Exception as e:
         logger.error(f"測試 Webhook 連接失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"測試連接失敗: {str(e)}")
@@ -365,11 +379,19 @@ async def process_single_event(
         source_type = source.get('type')
         user_id = source.get('userId')
 
-        logger.info(f"處理事件: type={event_type}, source={source_type}, user={user_id}")
+        reply_token = event.get('replyToken')
+        logger.info(f"📬 replyToken 存在: {bool(reply_token)}")
+
+
+        print(f"🔍 處理事件詳情: type={event_type}, source={source_type}, user={user_id}")
+        print(f"🔍 完整事件內容: {event}")
+        logger.info(f"🔍 處理事件詳情: type={event_type}, source={source_type}, user={user_id}")
+        logger.info(f"🔍 完整事件內容: {event}")
 
         # 僅處理來自 user 的事件
         if source_type != 'user' or not user_id:
-            logger.info(f"跳過非使用者來源事件: source_type={source_type}")
+            print(f"⏭️ 跳過非使用者來源事件: source_type={source_type}")
+            logger.info(f"⏭️ 跳過非使用者來源事件: source_type={source_type}")
             return None
 
         # 根據事件類型組裝通用欄位
@@ -391,7 +413,7 @@ async def process_single_event(
             message_type = event_type
             line_message_id = None
         else:
-            logger.info(f"跳過未支援事件: {event_type}")
+            logger.info(f"⏭️ 跳過未支援事件: {event_type}")
             return None
 
         # 保障：若 PostgreSQL 尚無此用戶紀錄，先建立/更新，確保不會出現未知用戶
@@ -497,36 +519,82 @@ async def process_single_event(
                 logger.warning(f"推送用戶聊天消息到 WebSocket 失敗: {ws_err}")
 
         # 進行邏輯模板匹配與回覆（僅針對部分事件觸發）
+        print(f"🎯 檢查是否需要邏輯處理: event_type={event_type}, 支援類型=['message', 'postback', 'follow']")
+        logger.info(f"🎯 檢查是否需要邏輯處理: event_type={event_type}, 支援類型=['message', 'postback', 'follow']")
         if event_type in ['message', 'postback', 'follow']:
+            print(f"✅ 事件類型符合，開始邏輯處理")
+            logger.info(f"✅ 事件類型符合，開始邏輯處理")
             try:
                 from app.models.bot import Bot as BotModel
                 result = await db.execute(select(BotModel).where(BotModel.id == bot_id))
                 bot = result.scalars().first()
                 if bot:
+                    print(f"🤖 開始處理 Bot {bot.name} 的事件: {event_type}")
+                    logger.info(f"🤖 開始處理 Bot {bot.name} 的事件: {event_type}")
                     from app.services.logic_engine_service import LogicEngineService
                     results = await LogicEngineService.evaluate_and_reply(
                         db=db,
                         bot=bot,
                         line_bot_service=line_bot_service,
                         user_id=user_id,
-                        event=event
+                        event=event,
                     )
+                    print(f"📋 邏輯模板匹配結果: {len(results) if results else 0} 個回覆")
+                    logger.info(f"📋 邏輯模板匹配結果: {len(results) if results else 0} 個回覆")
 
                     # RAG 備援：若無符合的積木回覆、AI 接管啟用、且為文字訊息
+                    ai_takeover_enabled = bool(getattr(bot, 'ai_takeover_enabled', False))
+                    is_text_message = event_type == 'message' and event.get('message', {}).get('type') == 'text'
+                    user_query = event.get('message', {}).get('text') or '' if is_text_message else ''
+
+                    print(f"🔍 AI 接管檢查:")
+                    print(f"  - 邏輯模板結果: {len(results) if results else 0} 個")
+                    print(f"  - AI 接管啟用: {ai_takeover_enabled}")
+                    print(f"  - 事件類型: {event_type}")
+                    print(f"  - 是文字訊息: {is_text_message}")
+                    print(f"  - 用戶訊息: '{user_query}'")
+                    logger.info(f"🔍 AI 接管檢查:")
+                    logger.info(f"  - 邏輯模板結果: {len(results) if results else 0} 個")
+                    logger.info(f"  - AI 接管啟用: {ai_takeover_enabled}")
+                    logger.info(f"  - 事件類型: {event_type}")
+                    logger.info(f"  - 是文字訊息: {is_text_message}")
+                    logger.info(f"  - 用戶訊息: '{user_query}'")
+
                     if (
                         (not results)
-                        and bool(getattr(bot, 'ai_takeover_enabled', False))
-                        and event_type == 'message'
-                        and event.get('message', {}).get('type') == 'text'
+                        and ai_takeover_enabled
+                        and is_text_message
                     ):
+                        print(f"🚀 觸發 AI 接管，開始 RAG 處理...")
+                        logger.info(f"🚀 觸發 AI 接管，開始 RAG 處理...")
                         try:
-                            from app.services.rag_service import RAGService
-                            user_query = event.get('message', {}).get('text') or ''
+                            print(f"🔧 開始導入 RAGService...")
+                            # 延遲導入避免循環導入問題
+                            import importlib
+                            rag_module = importlib.import_module('app.services.rag_service')
+                            RAGService = getattr(rag_module, 'RAGService')
+                            print(f"✅ RAGService 導入成功")
+
                             provider = getattr(bot, 'ai_model_provider', None) or 'groq'
                             model = getattr(bot, 'ai_model', None)
                             threshold = getattr(bot, 'ai_rag_threshold', None)
                             top_k = getattr(bot, 'ai_rag_top_k', None)
                             hist_n = getattr(bot, 'ai_history_messages', None)
+
+                            print(f"🔧 RAG 參數:")
+                            print(f"  - 提供商: {provider}")
+                            print(f"  - 模型: {model}")
+                            print(f"  - 門檻: {threshold}")
+                            print(f"  - Top-K: {top_k}")
+                            print(f"  - 歷史訊息數: {hist_n}")
+                            logger.info(f"🔧 RAG 參數:")
+                            logger.info(f"  - 提供商: {provider}")
+                            logger.info(f"  - 模型: {model}")
+                            logger.info(f"  - 門檻: {threshold}")
+                            logger.info(f"  - Top-K: {top_k}")
+                            logger.info(f"  - 歷史訊息數: {hist_n}")
+
+                            print(f"🔧 準備呼叫 RAGService.answer...")
                             answer = await RAGService.answer(
                                 db,
                                 bot_id,
@@ -539,10 +607,28 @@ async def process_single_event(
                                 history_messages=hist_n,
                                 system_prompt=getattr(bot, 'ai_system_prompt', None),
                             )
+                            print(f"✅ RAGService.answer 完成")
+
+                            print(f"🤖 AI 回覆生成: '{answer[:100] if answer else 'None'}...'")
+                            logger.info(f"🤖 AI 回覆生成: '{answer[:100] if answer else 'None'}...'")
+
                             if not answer:
                                 answer = "我在這裡，請告訴我您的問題。"
+                                print(f"🔄 使用預設回覆: '{answer}'")
+                                logger.info(f"🔄 使用預設回覆: '{answer}'")
+
                             # 發送 AI 回覆（一定回覆）
-                            send_result = await asyncio.to_thread(line_bot_service.send_text_message, user_id, answer)
+                            print(f"📤 發送 AI 回覆給用戶 {user_id}")
+                            logger.info(f"📤 發送 AI 回覆給用戶 {user_id}")
+                            send_result = await asyncio.to_thread(line_bot_service.send_text_or_reply, user_id, answer, reply_token)
+                            print(f"✅ AI 回覆發送結果: {send_result}")
+                            logger.info(f"✅ AI 回覆發送結果: {send_result}")
+                            if not (send_result or {}).get("success"):
+                                print(f"❌ AI 回覆未成功送達，method={(send_result or {}).get('method')}, replyToken={bool(reply_token)}, user_id={user_id}")
+                                logger.error(
+                                    f"❌ AI 回覆未成功送達，method={(send_result or {}).get('method')}, replyToken={bool(reply_token)}, user_id={user_id}"
+                                )
+
                             try:
                                 await ConversationService.add_bot_message(
                                     bot_id=str(bot_id),
@@ -550,12 +636,24 @@ async def process_single_event(
                                     message_content={"text": answer},
                                     message_type="text",
                                 )
+                                logger.info(f"💾 AI 訊息已記錄到 MongoDB")
                             except Exception as log_err:
                                 logger.warning(f"寫入 AI 訊息至 Mongo 失敗: {log_err}")
                         except Exception as rag_err:
-                            logger.error(f"RAG 備援失敗: {rag_err}")
+                            print(f"❌ RAG 備援失敗: {rag_err}")
+                            logger.error(f"❌ RAG 備援失敗: {rag_err}")
+                            import traceback
+                            print(f"RAG 錯誤詳情: {traceback.format_exc()}")
+                            logger.error(f"RAG 錯誤詳情: {traceback.format_exc()}")
+                    else:
+                        print(f"⏭️ 跳過 AI 接管 (條件不符合)")
+                        logger.info(f"⏭️ 跳過 AI 接管 (條件不符合)")
             except Exception as le_err:
+                print(f"❌ 邏輯引擎處理失敗: {le_err}")
                 logger.error(f"邏輯引擎處理失敗: {le_err}")
+        else:
+            print(f"⏭️ 事件類型不符合邏輯處理條件: {event_type}")
+            logger.info(f"⏭️ 事件類型不符合邏輯處理條件: {event_type}")
 
         return {
             'event_type': event_type,

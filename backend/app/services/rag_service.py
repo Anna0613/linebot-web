@@ -40,6 +40,9 @@ class RAGService:
         # 使用指定的模型生成查詢嵌入
         emb = await embed_text(query, model_name)
 
+        # 轉換為 pgvector 格式字串
+        embedding_str = "[" + ",".join(map(str, emb)) + "]"
+
         # pgvector cosine distance: embedding <=> query_embedding
         # distance = 1 - cosine_similarity
         # Filter by similarity >= MIN_SIMILARITY => distance <= (1 - MIN_SIMILARITY)
@@ -51,16 +54,16 @@ class RAGService:
         sql = sql_text(
             """
             SELECT kc.*,
-                   (1 - (kc.embedding <=> :q)) AS score
+                   (1 - (kc.embedding <=> CAST(:q AS vector))) AS score
             FROM knowledge_chunks kc
             WHERE (kc.bot_id = :bot_id OR kc.bot_id IS NULL)
-              AND (kc.embedding <=> :q) <= :maxd
-            ORDER BY (kc.embedding <=> :q)
+              AND (kc.embedding <=> CAST(:q AS vector)) <= :maxd
+            ORDER BY (kc.embedding <=> CAST(:q AS vector))
             LIMIT :k
             """
         )
 
-        rows = (await db.execute(sql, {"q": emb, "bot_id": bot_id, "maxd": max_distance, "k": k})).mappings().all()
+        rows = (await db.execute(sql, {"q": embedding_str, "bot_id": bot_id, "maxd": max_distance, "k": k})).mappings().all()
         items: List[Tuple[KnowledgeChunk, float]] = []
         for r in rows:
             # Build transient KnowledgeChunk-like object for return

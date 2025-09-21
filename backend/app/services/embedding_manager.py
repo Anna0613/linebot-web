@@ -2,15 +2,19 @@
 嵌入模型管理器
 提供多種嵌入模型的統一管理和批次處理能力。
 """
+from __future__ import annotations
+
 import os
 import asyncio
 import logging
 import hashlib
 from functools import lru_cache
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, TYPE_CHECKING
 import numpy as np
 
-from sentence_transformers import SentenceTransformer
+# 僅在型別檢查時匯入，避免執行期觸發重量級相依
+if TYPE_CHECKING:  # pragma: no cover
+    from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +22,7 @@ logger = logging.getLogger(__name__)
 class EmbeddingManager:
     """嵌入模型管理器，支援多種模型和批次處理"""
     
-    _models: Dict[str, SentenceTransformer] = {}
+    _models: Dict[str, "SentenceTransformer"] = {}
     _model_cache_size = 1000  # LRU 快取大小
     
     # 支援的嵌入模型配置
@@ -100,7 +104,7 @@ class EmbeddingManager:
         return models
     
     @classmethod
-    def get_model(cls, model_name: str = None) -> SentenceTransformer:
+    def get_model(cls, model_name: str = None) -> "SentenceTransformer":
         """獲取或載入嵌入模型"""
         model_name = model_name or cls.DEFAULT_MODEL
         
@@ -113,7 +117,14 @@ class EmbeddingManager:
             logger.info(f"載入嵌入模型: {model_config['name']}")
             
             try:
-                cls._models[model_name] = SentenceTransformer(model_config["name"])
+                # 在匯入 transformers/sentence-transformers 前，顯式停用 TensorFlow/Flax 後端以避免不必要的相依導入
+                os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
+                os.environ.setdefault("TRANSFORMERS_NO_FLAX", "1")
+                os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
+                from sentence_transformers import SentenceTransformer as _SentenceTransformer
+
+                cls._models[model_name] = _SentenceTransformer(model_config["name"])
                 logger.info(f"模型載入成功: {model_name}")
             except Exception as e:
                 logger.error(f"載入模型失敗: {model_name}, 錯誤: {e}")
@@ -124,7 +135,8 @@ class EmbeddingManager:
                     try:
                         logger.info(f"嘗試載入預設模型: {cls.DEFAULT_MODEL}")
                         default_config = cls.SUPPORTED_MODELS[cls.DEFAULT_MODEL]
-                        cls._models[cls.DEFAULT_MODEL] = SentenceTransformer(default_config["name"])
+                        from sentence_transformers import SentenceTransformer as _SentenceTransformer
+                        cls._models[cls.DEFAULT_MODEL] = _SentenceTransformer(default_config["name"])  # type: ignore
                         return cls._models[cls.DEFAULT_MODEL]
                     except Exception as e2:
                         logger.warning(f"預設模型載入失敗，啟用離線替代模型: {e2}")

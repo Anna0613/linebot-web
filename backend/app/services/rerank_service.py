@@ -57,6 +57,12 @@ class RerankService:
             logger.info(f"載入重排序模型: {model_config['name']}")
             
             try:
+                # 在匯入 transformers/sentence-transformers 前，顯式停用 TensorFlow/Flax 後端以避免不必要的相依導入
+                import os
+                os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
+                os.environ.setdefault("TRANSFORMERS_NO_FLAX", "1")
+                os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
                 from sentence_transformers import CrossEncoder
                 cls._models[model_name] = CrossEncoder(model_config["name"])
                 logger.info(f"重排序模型載入成功: {model_name}")
