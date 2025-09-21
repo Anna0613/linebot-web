@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Download, Upload, Save, Play, Loader2 } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
@@ -46,13 +45,20 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   onBotSelect,
   onSaveToBot
 }) => {
-  const [projectName, setProjectName] = useState('我的 LINE Bot 專案');
+  // 移除用戶輸入的專案名稱，改為自動生成
+  const getProjectName = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('zh-TW').replace(/\//g, '-');
+    const timeStr = now.toLocaleTimeString('zh-TW', { hour12: false }).replace(/:/g, '-');
+    return `LINE_Bot_專案_${dateStr}_${timeStr}`;
+  };
   const [bots, setBots] = useState<BotSummary[]>([]);
   const [isLoadingBots, setIsLoadingBots] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   const exportProject = () => {
+    const projectName = getProjectName();
     const projectData: ProjectData = {
       name: projectName,
       version: '1.0.0',
@@ -90,7 +96,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
             const result = e.target?.result as string;
             const projectData = JSON.parse(result) as ProjectData;
             if (projectData.logicBlocks && projectData.flexBlocks) {
-              setProjectName(projectData.name || '匯入的專案');
+              // 移除 setProjectName 調用，因為不再需要設定專案名稱
               if (onImport) {
                 onImport(projectData);
               }
@@ -223,16 +229,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
           {isLoadingBots && <Loader2 className="h-4 w-4 animate-spin" />}
         </div>
 
-        {/* 專案名稱（保留用於本地儲存） */}
-        <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">專案名稱:</span>
-          <Input
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            className="w-32"
-            placeholder="專案名稱"
-          />
-        </div>
+        {/* 移除專案名稱輸入欄位 */}
       
         <Button variant="outline" size="sm" onClick={importProject}>
           <Upload className="w-4 h-4 mr-2" />
