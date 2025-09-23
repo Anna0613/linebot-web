@@ -91,7 +91,7 @@ export default defineConfig(({ mode }) => ({
     // 開發環境提供 manifest.json，避免瀏覽器解析錯誤
     {
       name: 'manifest-middleware',
-      apply: 'serve',
+      apply: 'serve' as const,
       configureServer(server: ViteDevServer) {
         server.middlewares.use('/manifest.json', (_req: IncomingMessage, res: ServerResponse) => {
           const manifest = {

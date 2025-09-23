@@ -4,7 +4,7 @@ import { Progress } from '../ui/progress';
 import { useToast } from '../../hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { CheckCircle, XCircle, Clock, Loader2, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Play, AlertCircle } from 'lucide-react';
 import { API_CONFIG } from '../../config/apiConfig';
 
 interface ProcessingJob {
@@ -129,7 +129,7 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
       case 'pending':
         return <Clock className="w-4 h-4 text-yellow-500" />;
       case 'processing':
-        return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
+        return <Play className="w-4 h-4 text-blue-500" />;
       case 'completed':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'failed':
