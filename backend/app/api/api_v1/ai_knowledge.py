@@ -29,9 +29,33 @@ from app.services.embedding_service import embed_text, embed_texts
 from app.services.file_text_extractor import extract_text_by_mime
 from app.services.minio_service import get_minio_service
 
+# 導入 pgvector 支援
+try:
+    from pgvector.sqlalchemy import Vector
+except ImportError:
+    Vector = None
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _format_embedding_for_db(embedding: list[float]) -> any:
+    """
+    格式化嵌入向量以便儲存到資料庫
+
+    Args:
+        embedding: 嵌入向量列表
+
+    Returns:
+        適合資料庫儲存的格式
+    """
+    if Vector is not None:
+        # 如果有 pgvector，直接返回列表，SQLAlchemy 會自動處理
+        return embedding
+    else:
+        # 如果沒有 pgvector，轉換為字串格式
+        return str(embedding)
 
 
 async def _ensure_bot_owned(db: AsyncSession, bot_id: str, user_id) -> Bot:
@@ -199,7 +223,7 @@ async def add_text_knowledge(
             document_id=doc.id,
             bot_id=scope_bot,
             content=txt,
-            embedding=emb,
+            embedding=_format_embedding_for_db(emb),
             embedding_model="all-mpnet-base-v2",
             embedding_dimensions="768",
             meta={"chunk_index": i, "source_type": "text"},
@@ -243,7 +267,7 @@ async def add_bulk_text(
             document_id=doc.id,
             bot_id=scope_bot,
             content=txt,
-            embedding=emb,
+            embedding=_format_embedding_for_db(emb),
             embedding_model="all-mpnet-base-v2",
             embedding_dimensions="768",
             meta={"chunk_index": i, "source_type": "bulk"},
@@ -266,74 +290,116 @@ async def add_file_knowledge(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async),
 ):
-    await _ensure_bot_owned(db, bot_id, current_user.id)
-
-    # Validate file
-    data = await file.read()
-    if len(data) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="檔案大小超過 10MB 限制")
-
-    # Extract text
     try:
-        text = extract_text_by_mime(file.filename or "", file.content_type, data)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        await _ensure_bot_owned(db, bot_id, current_user.id)
 
-    # Upload to MinIO
-    minio = get_minio_service()
-    object_path = None
-    if minio:
+        # Validate file
+        data = await file.read()
+        if len(data) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="檔案大小超過 10MB 限制")
+
+        # Extract text
         try:
-            # store under knowledge path: {bot_or_global}/knowledge/{uuid}.{ext}
-            ext = (file.filename or "").split(".")[-1].lower() if file.filename else "bin"
-            user_folder = (bot_id if scope == "project" else "global")
-            # Reuse put_object directly
-            import uuid
-            object_path = f"{user_folder}/knowledge/{uuid.uuid4().hex}.{ext}"
-            await asyncio.to_thread(
-                minio.client.put_object,
-                minio.bucket_name,
-                object_path,
-                io.BytesIO(data),
-                len(data),
-                content_type=file.content_type or "application/octet-stream",
-            )
-        except Exception as e:  # store may fail; continue without object
-            logger.warning(f"MinIO 上傳知識檔案失敗: {e}")
+            text = extract_text_by_mime(file.filename or "", file.content_type, data)
+        except Exception as e:
+            logger.error(f"檔案文字提取失敗: {e}")
+            raise HTTPException(status_code=400, detail=f"檔案處理失敗: {str(e)}")
 
-    scope_bot = _scope_to_bot_id(scope, bot_id)
-    # Create document
-    doc = KnowledgeDocument(
-        bot_id=scope_bot,
-        source_type="file",
-        title=(file.filename or "上傳檔案"),
-        original_file_name=file.filename,
-        object_path=object_path,
-        chunked=True,
-        meta={"source_type": "file", "filename": file.filename, "content_type": file.content_type},
-    )
-    db.add(doc)
-    await db.flush()
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="檔案內容為空或無法提取文字")
 
-    # Chunk and embed
-    chunks = recursive_split(text, chunk_size=chunk_size, overlap=overlap)
-    # 使用 768 維度模型 all-mpnet-base-v2
-    embs = await embed_texts(chunks, model_name="all-mpnet-base-v2")
-    for i, (txt, emb) in enumerate(zip(chunks, embs)):
-        kc = KnowledgeChunk(
-            document_id=doc.id,
+        # Upload to MinIO
+        minio = get_minio_service()
+        object_path = None
+        if minio:
+            try:
+                # store under knowledge path: {bot_or_global}/knowledge/{uuid}.{ext}
+                ext = (file.filename or "").split(".")[-1].lower() if file.filename else "bin"
+                user_folder = (bot_id if scope == "project" else "global")
+                # Reuse put_object directly
+                import uuid
+                object_path = f"{user_folder}/knowledge/{uuid.uuid4().hex}.{ext}"
+                await asyncio.to_thread(
+                    minio.client.put_object,
+                    minio.bucket_name,
+                    object_path,
+                    io.BytesIO(data),
+                    len(data),
+                    content_type=file.content_type or "application/octet-stream",
+                )
+                logger.info(f"檔案上傳到 MinIO 成功: {object_path}")
+            except Exception as e:  # store may fail; continue without object
+                logger.warning(f"MinIO 上傳知識檔案失敗: {e}")
+
+        scope_bot = _scope_to_bot_id(scope, bot_id)
+
+        # Create document
+        doc = KnowledgeDocument(
             bot_id=scope_bot,
-            content=txt,
-            embedding=emb,
-            embedding_model="all-mpnet-base-v2",
-            embedding_dimensions="768",
-            meta={"chunk_index": i, "source_type": "file"},
+            source_type="file",
+            title=(file.filename or "上傳檔案"),
+            original_file_name=file.filename,
+            object_path=object_path,
+            chunked=True,
+            meta={"source_type": "file", "filename": file.filename, "content_type": file.content_type},
         )
-        db.add(kc)
-    await db.commit()
-    res = await db.execute(select(KnowledgeChunk).where(KnowledgeChunk.document_id == doc.id).order_by(KnowledgeChunk.created_at.asc()))
-    items = [_to_chunk_response(r) for r in res.scalars().all()]
-    return KnowledgeListResponse(items=items, total=len(items), page=1, page_size=len(items))
+        db.add(doc)
+        await db.flush()
+
+        # Chunk and embed
+        chunks = recursive_split(text, chunk_size=chunk_size, overlap=overlap)
+        if not chunks:
+            raise HTTPException(status_code=400, detail="檔案內容無法分割成有效的知識片段")
+
+        logger.info(f"開始處理 {len(chunks)} 個知識片段")
+
+        # 使用 768 維度模型 all-mpnet-base-v2
+        try:
+            embs = await embed_texts(chunks, model_name="all-mpnet-base-v2")
+        except Exception as e:
+            logger.error(f"嵌入向量生成失敗: {e}")
+            raise HTTPException(status_code=500, detail=f"嵌入向量生成失敗: {str(e)}")
+
+        # 批次插入知識片段
+        for i, (txt, emb) in enumerate(zip(chunks, embs)):
+            kc = KnowledgeChunk(
+                document_id=doc.id,
+                bot_id=scope_bot,
+                content=txt,
+                embedding=_format_embedding_for_db(emb),
+                embedding_model="all-mpnet-base-v2",
+                embedding_dimensions="768",
+                meta={"chunk_index": i, "source_type": "file"},
+            )
+            db.add(kc)
+
+        await db.commit()
+        logger.info(f"成功創建文檔和 {len(chunks)} 個知識片段")
+
+        # 獲取創建的知識片段
+        res = await db.execute(
+            select(KnowledgeChunk)
+            .where(KnowledgeChunk.document_id == doc.id)
+            .order_by(KnowledgeChunk.created_at.asc())
+        )
+        items = [_to_chunk_response(r) for r in res.scalars().all()]
+
+        return KnowledgeListResponse(
+            items=items,
+            total=len(items),
+            page=1,
+            page_size=len(items)
+        )
+
+    except HTTPException:
+        # 重新拋出 HTTP 異常
+        await db.rollback()
+        raise
+    except Exception as e:
+        # 處理其他未預期的錯誤
+        await db.rollback()
+        logger.error(f"檔案知識上傳失敗: {e}")
+        raise HTTPException(status_code=500, detail=f"檔案處理失敗: {str(e)}")
 
 
 @router.put("/{bot_id}/knowledge/chunks/{chunk_id}", response_model=KnowledgeChunkResponse)
@@ -351,7 +417,8 @@ async def update_chunk(
         raise HTTPException(status_code=404, detail="知識片段不存在")
     kc.content = payload.content
     # 使用 768 維度模型 all-mpnet-base-v2
-    kc.embedding = await embed_text(payload.content, model_name="all-mpnet-base-v2")
+    embedding = await embed_text(payload.content, model_name="all-mpnet-base-v2")
+    kc.embedding = _format_embedding_for_db(embedding)
     kc.embedding_model = "all-mpnet-base-v2"
     kc.embedding_dimensions = "768"
     await db.commit()
@@ -360,23 +427,24 @@ async def update_chunk(
     return _to_chunk_response(kc)
 
 
-@router.delete("/{bot_id}/knowledge/chunks/{chunk_id}")
-async def delete_chunk(
-    bot_id: str,
+async def _delete_chunk_logic(
+    db: AsyncSession,
     chunk_id: str,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user_async),
-):
-    await _ensure_bot_owned(db, bot_id, current_user.id)
+) -> bool:
+    """
+    刪除知識片段的核心邏輯
+    返回 True 表示成功，False 表示片段不存在
+    """
     res = await db.execute(select(KnowledgeChunk).where(KnowledgeChunk.id == chunk_id))
     kc = res.scalars().first()
     if not kc:
-        raise HTTPException(status_code=404, detail="知識片段不存在")
+        return False
 
     # find doc and check if last chunk
     doc_id = kc.document_id
     await db.delete(kc)
     await db.flush()
+
     # check if doc has remaining chunks
     remaining = (await db.execute(select(func.count()).where(KnowledgeChunk.document_id == doc_id))).scalar() or 0
     if remaining == 0:
@@ -392,6 +460,22 @@ async def delete_chunk(
                         await asyncio.to_thread(minio.client.remove_object, minio.bucket_name, object_path)
                 except Exception as e:
                     logger.warning(f"刪除 MinIO 檔案失敗: {e}")
+    return True
+
+
+@router.delete("/{bot_id}/knowledge/chunks/{chunk_id}")
+async def delete_chunk(
+    bot_id: str,
+    chunk_id: str,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async),
+):
+    await _ensure_bot_owned(db, bot_id, current_user.id)
+
+    success = await _delete_chunk_logic(db, chunk_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="知識片段不存在")
+
     await db.commit()
     return {"success": True}
 
@@ -404,13 +488,39 @@ async def batch_delete_chunks(
     current_user: User = Depends(get_current_user_async),
 ):
     await _ensure_bot_owned(db, bot_id, current_user.id)
-    # Loop delete using single transaction for integrity
-    for cid in payload.chunk_ids:
-        try:
-            await delete_chunk(bot_id, cid, db, current_user)  # reuse logic
-        except HTTPException:
-            continue
-    return {"success": True}
+
+    deleted_count = 0
+    failed_chunks = []
+
+    try:
+        # 在單一事務中處理所有刪除操作
+        for cid in payload.chunk_ids:
+            try:
+                success = await _delete_chunk_logic(db, cid)
+                if success:
+                    deleted_count += 1
+                else:
+                    failed_chunks.append(cid)
+                    logger.warning(f"知識片段不存在: {cid}")
+            except Exception as e:
+                failed_chunks.append(cid)
+                logger.error(f"刪除知識片段失敗 {cid}: {e}")
+
+        await db.commit()
+
+        result = {"success": True, "deleted_count": deleted_count}
+        if failed_chunks:
+            result["failed_chunks"] = failed_chunks
+            result["message"] = f"成功刪除 {deleted_count} 個片段，{len(failed_chunks)} 個失敗"
+        else:
+            result["message"] = f"成功刪除 {deleted_count} 個片段"
+
+        return result
+
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"批量刪除知識片段失敗: {e}")
+        raise HTTPException(status_code=500, detail=f"批量刪除失敗: {str(e)}")
 
 
 @router.get("/{bot_id}/knowledge/search", response_model=KnowledgeSearchResponse)

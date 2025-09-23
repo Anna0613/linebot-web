@@ -48,6 +48,13 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   const [historyN, setHistoryN] = useState<number | undefined>(undefined);
   const [systemPrompt, setSystemPrompt] = useState<string>('');
 
+  // 檔案上傳相關狀態
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 刪除操作狀態
+  const [deleting, setDeleting] = useState(false);
+
   const canOperate = !!botId;
 
   const loadToggle = useCallback(async () => {
@@ -129,6 +136,8 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
       }
       isOperatingRef.current = false;
       currentOperationRef.current = '';
+      setDeleting(false);
+      setUploading(false);
     };
   }, []);
 
@@ -264,50 +273,109 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     setAdvOpen(false);
   };
 
-  const onUploadFile: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
-    if (!botId || !e.target.files?.length || isOperatingRef.current) return;
+  // 檔案選擇處理（不立即上傳）
+  const onFileSelect: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    if (!e.target.files?.length) {
+      setSelectedFile(null);
+      return;
+    }
+
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
+
+    // 檔案格式驗證
     if (!/(txt|pdf|docx)$/i.test(file.name)) {
       toast({ variant: 'destructive', title: '格式不支援', description: '僅支援 .txt, .pdf, .docx' });
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
+
+    // 檔案大小驗證
     if (file.size > 10 * 1024 * 1024) {
       toast({ variant: 'destructive', title: '檔案過大', description: '限制 10MB' });
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
+
+    setSelectedFile(file);
+  };
+
+  // 執行檔案上傳
+  const handleFileUpload = async () => {
+    if (!botId || !selectedFile || isOperatingRef.current) return;
 
     setUploading(true);
     isOperatingRef.current = true;
-    try {
-      await AIKnowledgeApi.uploadFile(botId, scope, file, chunkSize, overlap);
-      toast({ title: '上傳成功' });
-      setPage(1);
-      // 延遲重新載入列表，給後端處理時間
-      setTimeout(() => {
-        loadList(true);
-        isOperatingRef.current = false;
-      }, 1000); // 文件上傳需要更長的處理時間
-    } catch (e) {
-      isOperatingRef.current = false;
-      const errorMessage = e instanceof Error ? e.message : String(e);
 
-      // 對於超時錯誤，提供更友好的提示
-      if (errorMessage.includes('超時') || errorMessage.includes('timeout') ||
-          errorMessage.includes('處理時間較長')) {
-        toast({
-          title: '上傳處理中',
-          description: '檔案正在處理中，請稍後重新整理頁面查看結果',
-          variant: 'default'
-        });
-        // 即使超時也嘗試重新載入列表
-        setTimeout(() => loadList(true), 3000);
-      } else {
-        toast({ variant: 'destructive', title: '上傳失敗', description: errorMessage });
+    const operationId = 'fileUpload';
+    currentOperationRef.current = operationId;
+
+    try {
+      await AIKnowledgeApi.uploadFile(botId, scope, selectedFile, chunkSize, overlap);
+
+      // 檢查操作是否仍然是當前操作（避免競態條件）
+      if (currentOperationRef.current === operationId) {
+        toast({ title: '上傳成功' });
+        setPage(1);
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+
+        // 延遲重新載入列表，給後端處理時間
+        setTimeout(() => {
+          if (currentOperationRef.current === operationId) {
+            loadList(true);
+            isOperatingRef.current = false;
+            currentOperationRef.current = '';
+          }
+        }, 1000); // 文件上傳需要更長的處理時間
+      }
+    } catch (e) {
+      if (currentOperationRef.current === operationId) {
+        isOperatingRef.current = false;
+        currentOperationRef.current = '';
+
+        const errorMessage = e instanceof Error ? e.message : String(e);
+
+        // 檢查是否為超時但實際成功的情況
+        const isTimeoutButMaybeSuccess = errorMessage.includes('超時') ||
+                                       errorMessage.includes('timeout') ||
+                                       errorMessage.includes('處理時間較長') ||
+                                       errorMessage.includes('檔案上傳處理時間較長');
+
+        if (isTimeoutButMaybeSuccess) {
+          // 清理檔案選擇狀態，因為上傳可能已經成功
+          setSelectedFile(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+
+          toast({
+            title: '上傳處理中',
+            description: '檔案正在處理中，請稍後重新整理頁面查看結果',
+            variant: 'default'
+          });
+
+          // 延遲重新載入列表，檢查是否實際成功
+          setTimeout(() => {
+            loadList(true);
+          }, 3000);
+        } else {
+          toast({ variant: 'destructive', title: '上傳失敗', description: errorMessage });
+        }
       }
     } finally {
       setUploading(false);
-      e.target.value = '';
     }
   };
 
@@ -336,12 +404,41 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     setSelected(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // 全選功能
+  const currentItems = semanticItems || items;
+  const selectedCount = currentItems.filter(item => selected[item.id]).length;
+  const isAllSelected = currentItems.length > 0 && selectedCount === currentItems.length;
+  const isPartialSelected = selectedCount > 0 && selectedCount < currentItems.length;
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      // 取消全選
+      setSelected(prev => {
+        const newSelected = { ...prev };
+        currentItems.forEach(item => {
+          delete newSelected[item.id];
+        });
+        return newSelected;
+      });
+    } else {
+      // 全選當前頁面
+      setSelected(prev => {
+        const newSelected = { ...prev };
+        currentItems.forEach(item => {
+          newSelected[item.id] = true;
+        });
+        return newSelected;
+      });
+    }
+  };
+
   const deleteSelected = async () => {
-    if (!botId || isOperatingRef.current) return;
+    if (!botId || isOperatingRef.current || deleting) return;
     const ids = Object.entries(selected).filter(([, v]) => v).map(([k]) => k);
     if (!ids.length) return;
 
     const operationId = 'deleteSelected';
+    setDeleting(true);
     isOperatingRef.current = true;
     currentOperationRef.current = operationId;
 
@@ -359,6 +456,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
             loadList(true);
             isOperatingRef.current = false;
             currentOperationRef.current = '';
+            setDeleting(false);
           }
         }, 500);
       }
@@ -366,6 +464,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
       if (currentOperationRef.current === operationId) {
         isOperatingRef.current = false;
         currentOperationRef.current = '';
+        setDeleting(false);
 
         const errorMessage = e instanceof Error ? e.message : String(e);
 
@@ -504,7 +603,32 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
         {/* 檔案上傳 */}
         <div className="border rounded p-3">
           <div className="font-medium mb-2">上傳檔案（.txt / .pdf / .docx）</div>
-          <Input type="file" accept=".txt,.pdf,.docx" onChange={onUploadFile} disabled={uploading} />
+          <div className="space-y-3">
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.pdf,.docx"
+              onChange={onFileSelect}
+              disabled={uploading}
+            />
+            {selectedFile && (
+              <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                <div className="font-medium">{selectedFile.name}</div>
+                <div className="text-xs">
+                  大小: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                onClick={handleFileUpload}
+                disabled={!selectedFile || uploading || isOperatingRef.current}
+              >
+                {uploading ? '上傳中...' : '上傳'}
+              </Button>
+            </div>
+          </div>
           <p className="text-xs text-muted-foreground mt-2">切塊大小與重疊使用「高級設定」。</p>
         </div>
       </div>
@@ -519,9 +643,9 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
           <Button
             variant="destructive"
             onClick={deleteSelected}
-            disabled={!Object.values(selected).some(Boolean) || isOperatingRef.current}
+            disabled={!Object.values(selected).some(Boolean) || isOperatingRef.current || deleting}
           >
-            {isOperatingRef.current ? '處理中...' : '批次刪除'}
+            {deleting ? '刪除中...' : '批次刪除'}
           </Button>
         </div>
       </div>
@@ -529,7 +653,21 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
       {/* 列表 / 語意搜尋結果 */}
       <div className="border rounded">
         <div className="grid grid-cols-12 px-3 py-2 text-xs text-muted-foreground border-b">
-          <div className="col-span-1">選取</div>
+          <div className="col-span-1 flex items-center">
+            <input
+              type="checkbox"
+              checked={isAllSelected}
+              ref={(el) => {
+                if (el) {
+                  el.indeterminate = isPartialSelected;
+                }
+              }}
+              onChange={toggleSelectAll}
+              disabled={currentItems.length === 0}
+              title={isAllSelected ? '取消全選' : '全選'}
+            />
+            <span className="ml-1">選取</span>
+          </div>
           <div className="col-span-7">內容預覽</div>
           {semanticItems ? (
             <>
