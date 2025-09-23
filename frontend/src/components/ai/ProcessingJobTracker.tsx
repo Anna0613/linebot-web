@@ -36,14 +36,12 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
 }) => {
   const { toast } = useToast();
   const [jobs, setJobs] = useState<ProcessingJob[]>([]);
-  const [loading, setLoading] = useState(false);
 
   // 獲取任務列表
   const fetchJobs = useCallback(async () => {
     if (!botId) return;
     
     try {
-      setLoading(true);
       const response = await fetch(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/jobs`, {
         credentials: 'include'
       });
@@ -76,8 +74,6 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
       }
     } catch (error) {
       console.error('獲取任務列表失敗:', error);
-    } finally {
-      setLoading(false);
     }
   }, [botId, jobs, onJobCompleted, onJobFailed, toast]);
 
@@ -148,7 +144,7 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
     const variants = {
       pending: 'secondary',
       processing: 'default',
-      completed: 'success',
+      completed: 'outline',
       failed: 'destructive'
     } as const;
     
@@ -184,10 +180,8 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
   return (
     <Card className="mt-4">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Loader2 className="w-5 h-5" />
+        <CardTitle>
           處理任務
-          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
         </CardTitle>
       </CardHeader>
       <CardContent>
