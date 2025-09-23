@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 
-from app.dependencies import get_async_db
+from app.database_async import get_async_db
+from app.dependencies import get_current_user_async
 from app.services.batch_processing_service import BatchProcessingService, BatchJob
 from app.services.embedding_manager import EmbeddingManager
 from app.services.rerank_service import RerankService

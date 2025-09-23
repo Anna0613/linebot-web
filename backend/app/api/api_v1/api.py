@@ -3,7 +3,7 @@ API v1 路由聚合器
 將所有 API 路由統一管理
 """
 from fastapi import APIRouter
-from app.api.api_v1 import auth, users, bots, bot_analytics, webhook, bot_dashboard, websocket, storage_test, ai_analysis, ai_knowledge, batch_operations
+from app.api.api_v1 import auth, users, bots, bot_analytics, webhook, bot_dashboard, websocket, storage_test, ai_analysis, ai_knowledge, batch_operations, knowledge_async
 
 api_router = APIRouter()
 
@@ -24,6 +24,9 @@ api_router.include_router(ai_analysis.router, prefix="/bots", tags=["AI 分析"]
 
 # AI 知識庫與接管
 api_router.include_router(ai_knowledge.router, prefix="/bots", tags=["AI 知識庫"])
+
+# AI 知識庫非同步處理
+api_router.include_router(knowledge_async.router, prefix="/bots", tags=["AI 知識庫非同步"])
 
 # 批次處理路由
 api_router.include_router(batch_operations.router, prefix="/batch", tags=["批次處理"])

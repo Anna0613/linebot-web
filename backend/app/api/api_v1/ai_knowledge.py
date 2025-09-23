@@ -7,10 +7,11 @@ import logging
 from typing import Optional
 import asyncio
 import io
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, insert
 from sqlalchemy.sql import text as sql_text
 
 from app.database_async import get_async_db
@@ -360,18 +361,24 @@ async def add_file_knowledge(
             logger.error(f"嵌入向量生成失敗: {e}")
             raise HTTPException(status_code=500, detail=f"嵌入向量生成失敗: {str(e)}")
 
-        # 批次插入知識片段
+        # 優化：使用批次插入提升效能
+        chunk_data = []
         for i, (txt, emb) in enumerate(zip(chunks, embs)):
-            kc = KnowledgeChunk(
-                document_id=doc.id,
-                bot_id=scope_bot,
-                content=txt,
-                embedding=_format_embedding_for_db(emb),
-                embedding_model="all-mpnet-base-v2",
-                embedding_dimensions="768",
-                meta={"chunk_index": i, "source_type": "file"},
-            )
-            db.add(kc)
+            chunk_data.append({
+                "id": uuid.uuid4(),
+                "document_id": doc.id,
+                "bot_id": scope_bot,
+                "content": txt,
+                "embedding": _format_embedding_for_db(emb),
+                "embedding_model": "all-mpnet-base-v2",
+                "embedding_dimensions": "768",
+                "meta": {"chunk_index": i, "source_type": "file"}
+            })
+
+        # 批次插入所有知識塊
+        if chunk_data:
+            from sqlalchemy import insert
+            await db.execute(insert(KnowledgeChunk).values(chunk_data))
 
         await db.commit()
         logger.info(f"成功創建文檔和 {len(chunks)} 個知識片段")
