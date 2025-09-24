@@ -1,6 +1,6 @@
 // 統一的 API 端點 - 現在所有服務都通過一個後端提供
 const UNIFIED_API_URL =
-  import.meta.env.VITE_UNIFIED_API_URL || "http://localhost:8001";
+  import.meta.env.VITE_UNIFIED_API_URL || "http://localhost:8000";
 
 // Webhook 域名配置
 const WEBHOOK_DOMAIN = 

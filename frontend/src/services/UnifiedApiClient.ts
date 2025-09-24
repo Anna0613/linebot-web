@@ -25,7 +25,8 @@ interface RequestOptions {
 
 export class UnifiedApiClient {
   private static instance: UnifiedApiClient;
-  private readonly defaultTimeout = 15000; // 15秒 (增加超時時間以避免請求被中止)
+  private readonly defaultTimeout = 15000; // 15秒 (一般請求)
+  private readonly knowledgeTimeout = 30000; // 30秒 (知識庫操作)
   private readonly defaultRetries = 1;
   private pendingRequests = new Map<string, AbortController>(); // 請求去重和取消
 
@@ -39,7 +40,7 @@ export class UnifiedApiClient {
   }
 
   /**
-   * 統一的請求方法 (優化版：包含去重、取消、防抖)
+   * 統一的請求方法 (優化版：修復 AbortController 問題)
    */
   private async request<T>(
     endpoint: string,
@@ -50,23 +51,24 @@ export class UnifiedApiClient {
       headers = {},
       body,
       retries = this.defaultRetries,
-      timeout = this.defaultTimeout,
+      timeout = this.getTimeoutForEndpoint(endpoint),
       skipAuth = false,
     } = options;
 
-    // 生成請求唯一標識符 (用於去重) - 暫時禁用去重功能
+    // 生成請求唯一標識符
     const requestKey = `${method}:${endpoint}:${JSON.stringify(body || {})}:${Date.now()}`;
 
-    // 暫時禁用請求去重邏輯以避免請求被意外中止
-    // TODO: 重新實現更穩定的請求去重邏輯
-
     let lastError: Error | null = null;
-    const controller = new AbortController();
-    this.pendingRequests.set(requestKey, controller);
+    let timeoutId: NodeJS.Timeout | null = null;
+    let controller: AbortController | null = null;
 
     try {
       // 重試邏輯
       for (let attempt = 0; attempt <= retries; attempt++) {
+        // 為每次嘗試創建新的 AbortController
+        controller = new AbortController();
+        this.pendingRequests.set(requestKey, controller);
+
         try {
           const requestHeaders = await this.buildHeaders(headers, skipAuth);
           const requestInit: RequestInit = {
@@ -77,10 +79,12 @@ export class UnifiedApiClient {
             ...(body && { body: JSON.stringify(body) }),
           };
 
-          // 超時控制
-          const timeoutId = setTimeout(() => {
-            secureLog(`請求超時，正在取消: ${method} ${endpoint}`, { timeout });
-            controller.abort();
+          // 超時控制 - 確保正確清理
+          timeoutId = setTimeout(() => {
+            if (controller && !controller.signal.aborted) {
+              secureLog(`請求超時，正在取消: ${method} ${endpoint}`, { timeout });
+              controller.abort('timeout');
+            }
           }, timeout);
 
           secureLog(`API請求: ${method} ${endpoint}`, {
@@ -90,7 +94,12 @@ export class UnifiedApiClient {
           });
 
           const response = await fetch(endpoint, requestInit);
-          clearTimeout(timeoutId);
+
+          // 請求成功，立即清理超時
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
 
           const result = await this.handleResponse<T>(response);
 
@@ -99,22 +108,37 @@ export class UnifiedApiClient {
 
           return result;
         } catch (_error) {
+          // 清理超時
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+
           lastError = _error instanceof Error ? _error : new Error('請求失敗');
 
           // 如果請求被取消，提供更詳細的錯誤信息
           if (_error instanceof Error && _error.name === 'AbortError') {
-            const abortReason = controller.signal.reason || '請求被取消或超時';
-            secureLog(`請求被中止: ${method} ${endpoint}`, { reason: abortReason });
-            lastError = new Error(`請求被中止: ${abortReason}`);
+            const isTimeout = controller?.signal.reason === 'timeout' ||
+                             _error.message.includes('timeout') ||
+                             _error.message.includes('超時');
+            const abortReason = isTimeout ? '請求超時' : (controller?.signal.reason || '請求被取消');
+            secureLog(`請求被中止: ${method} ${endpoint}`, { reason: abortReason, isTimeout });
+
+            // 對於知識庫操作的超時，提供更友好的錯誤信息
+            if (isTimeout && this.isKnowledgeEndpoint(endpoint)) {
+              lastError = new Error('知識庫操作處理時間較長，請稍後查看結果或重新整理頁面');
+            } else {
+              lastError = new Error(`請求${isTimeout ? '超時' : '被取消'}: ${abortReason}`);
+            }
             break;
           }
-          
+
           // 如果是 token 刷新成功，立即重試一次（不計入重試次數）
           if (_error instanceof Error && _error.message === 'TOKEN_REFRESHED') {
             secureLog('Token 已刷新，立即重試請求');
             continue;
           }
-          
+
           // 如果是最後一次嘗試或者是認證錯誤，不再重試
           if (
             attempt === retries ||
@@ -129,7 +153,10 @@ export class UnifiedApiClient {
         }
       }
     } finally {
-      // 確保清理 pending requests
+      // 確保清理所有資源
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       this.pendingRequests.delete(requestKey);
     }
 
@@ -240,7 +267,7 @@ export class UnifiedApiClient {
 
       // 成功響應
       return {
-        data,
+        data: data as T,
         status,
         success: true,
       };
@@ -285,6 +312,25 @@ export class UnifiedApiClient {
   }
 
   /**
+   * 根據端點判斷是否為知識庫相關操作
+   */
+  private isKnowledgeEndpoint(endpoint: string): boolean {
+    return endpoint.includes('/knowledge') ||
+           endpoint.includes('/ai/') ||
+           endpoint.includes('/chunks/');
+  }
+
+  /**
+   * 根據端點類型獲取適當的超時時間
+   */
+  private getTimeoutForEndpoint(endpoint: string): number {
+    if (this.isKnowledgeEndpoint(endpoint)) {
+      return this.knowledgeTimeout;
+    }
+    return this.defaultTimeout;
+  }
+
+  /**
    * 延遲函數
    */
   private delay(ms: number): Promise<void> {
@@ -313,13 +359,20 @@ export class UnifiedApiClient {
   }
 
   /**
-   * multipart/form-data 上傳
+   * multipart/form-data 上傳 (修復版)
    */
   public async postFormData<T = unknown>(endpoint: string, form: FormData, options?: Omit<RequestOptions, 'method' | 'body' | 'headers'>): Promise<ApiResponse<T>> {
-    const { retries: _retries = this.defaultRetries, timeout = this.defaultTimeout } = options || {};
+    const { retries: _retries = this.defaultRetries, timeout = this.getTimeoutForEndpoint(endpoint) } = options || {};
     const controller = new AbortController();
+    let timeoutId: NodeJS.Timeout | null = null;
+
     try {
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      timeoutId = setTimeout(() => {
+        if (!controller.signal.aborted) {
+          controller.abort('timeout');
+        }
+      }, timeout);
+
       const response = await fetch(endpoint, {
         method: 'POST',
         // 不要顯式設定 Content-Type，讓瀏覽器自動帶 boundary
@@ -328,10 +381,34 @@ export class UnifiedApiClient {
         credentials: 'include',
         signal: controller.signal,
       });
-      clearTimeout(timeoutId);
+
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+
       return await this.handleResponse<T>(response);
     } catch (e) {
-      return { error: e instanceof Error ? e.message : '上傳失敗', status: 0 };
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      const error = e instanceof Error ? e : new Error('上傳失敗');
+
+      // 處理超時錯誤
+      if (error.name === 'AbortError') {
+        const isTimeout = controller.signal.reason === 'timeout' ||
+                         error.message.includes('timeout') ||
+                         error.message.includes('超時');
+
+        if (isTimeout && this.isKnowledgeEndpoint(endpoint)) {
+          return { error: '檔案上傳處理時間較長，請稍後查看結果或重新整理頁面', status: 0 };
+        } else {
+          return { error: `上傳${isTimeout ? '超時' : '被取消'}`, status: 0 };
+        }
+      }
+
+      return { error: error.message, status: 0 };
     }
   }
 

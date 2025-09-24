@@ -1,14 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from '../ui/dialog';
-import { Settings } from 'lucide-react';
+import { Settings, Zap } from 'lucide-react';
 import AIKnowledgeApi, { AIToggle, KnowledgeChunkItem, Scope, KnowledgeSearchItem } from '../../services/aiKnowledgeApi';
 import { apiClient } from '../../services/UnifiedApiClient';
+import { API_CONFIG } from '../../config/apiConfig';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
+import ProcessingJobTracker from './ProcessingJobTracker';
 
 type Props = {
   botId?: string;
@@ -31,6 +33,11 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [semanticItems, setSemanticItems] = useState<KnowledgeSearchItem[] | null>(null);
 
+  // 防抖和請求管理
+  const loadListTimeoutRef = useRef<NodeJS.Timeout>();
+  const isOperatingRef = useRef(false);
+  const currentOperationRef = useRef<string>(''); // 追蹤當前操作類型
+
   // 文字輸入與切塊設定
   const [textInput, setTextInput] = useState('');
   const [autoChunk, setAutoChunk] = useState(true);
@@ -42,6 +49,27 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   const [ragTopK, setRagTopK] = useState<number | undefined>(undefined);
   const [historyN, setHistoryN] = useState<number | undefined>(undefined);
   const [systemPrompt, setSystemPrompt] = useState<string>('');
+
+  // 檔案上傳相關狀態
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 刪除操作狀態
+  const [deleting, setDeleting] = useState(false);
+
+  // 非同步處理模式
+  const [useAsyncProcessing, setUseAsyncProcessing] = useState(true);
+
+  // 處理任務完成回調
+  const handleJobCompleted = useCallback((jobId: string) => {
+    // 重新載入列表以顯示新的知識塊
+    loadList(true);
+  }, []);
+
+  const handleJobFailed = useCallback((jobId: string, error: string) => {
+    // 可以在這裡添加額外的錯誤處理邏輯
+    console.error(`任務 ${jobId} 失敗:`, error);
+  }, []);
 
   const canOperate = !!botId;
 
@@ -61,19 +89,50 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     }
   }, [botId]);
 
-  const loadList = useCallback(async () => {
+  const loadList = useCallback(async (immediate = false) => {
     if (!botId) return;
-    setLoading(true);
-    try {
-      const res = await AIKnowledgeApi.list(botId, scope, undefined, page, pageSize);
-      setItems(res.items);
-      setTotal(res.total);
-      setSelected({});
-      setSemanticItems(null);
-    } catch (e) {
-      toast({ variant: 'destructive', title: '讀取失敗', description: String(e) });
-    } finally {
-      setLoading(false);
+
+    // 清除之前的防抖計時器
+    if (loadListTimeoutRef.current) {
+      clearTimeout(loadListTimeoutRef.current);
+    }
+
+    const doLoad = async () => {
+      if (isOperatingRef.current && !immediate) {
+        // 如果正在進行其他操作且不是立即載入，則延遲執行
+        loadListTimeoutRef.current = setTimeout(() => doLoad(), 1000);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await AIKnowledgeApi.list(botId, scope, undefined, page, pageSize);
+        setItems(res.items);
+        setTotal(res.total);
+        setSelected({});
+        setSemanticItems(null);
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        // 對於超時錯誤，提供更友好的提示
+        if (errorMessage.includes('超時') || errorMessage.includes('timeout')) {
+          toast({
+            variant: 'destructive',
+            title: '載入超時',
+            description: '知識庫載入時間較長，請稍後重新整理頁面查看最新內容'
+          });
+        } else {
+          toast({ variant: 'destructive', title: '讀取失敗', description: errorMessage });
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (immediate) {
+      await doLoad();
+    } else {
+      // 防抖延遲
+      loadListTimeoutRef.current = setTimeout(doLoad, 300);
     }
   }, [botId, scope, page, toast]);
 
@@ -84,6 +143,19 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   useEffect(() => {
     loadList();
   }, [loadList]);
+
+  // 組件清理
+  useEffect(() => {
+    return () => {
+      if (loadListTimeoutRef.current) {
+        clearTimeout(loadListTimeoutRef.current);
+      }
+      isOperatingRef.current = false;
+      currentOperationRef.current = '';
+      setDeleting(false);
+      setUploading(false);
+    };
+  }, []);
 
   // 載入 Groq 模型列表
   useEffect(() => {
@@ -139,15 +211,51 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   };
 
   const addText = async () => {
-    if (!botId || !textInput.trim()) return;
+    if (!botId || !textInput.trim() || isOperatingRef.current) return;
+
+    const operationId = 'addText';
+    isOperatingRef.current = true;
+    currentOperationRef.current = operationId;
+
     try {
       await AIKnowledgeApi.addText(botId, scope, textInput.trim(), autoChunk, chunkSize, overlap);
-      setTextInput('');
-      toast({ title: '已新增文字' });
-      setPage(1);
-      await loadList();
+
+      // 檢查操作是否仍然是當前操作（避免競態條件）
+      if (currentOperationRef.current === operationId) {
+        setTextInput('');
+        toast({ title: '已新增文字' });
+        setPage(1);
+
+        // 延遲重新載入列表，給後端處理時間
+        setTimeout(() => {
+          if (currentOperationRef.current === operationId) {
+            loadList(true);
+            isOperatingRef.current = false;
+            currentOperationRef.current = '';
+          }
+        }, 500);
+      }
     } catch (e) {
-      toast({ variant: 'destructive', title: '新增失敗', description: String(e) });
+      if (currentOperationRef.current === operationId) {
+        isOperatingRef.current = false;
+        currentOperationRef.current = '';
+
+        const errorMessage = e instanceof Error ? e.message : String(e);
+
+        // 對於超時錯誤，提供更友好的提示
+        if (errorMessage.includes('超時') || errorMessage.includes('timeout') ||
+            errorMessage.includes('處理時間較長')) {
+          toast({
+            title: '新增處理中',
+            description: '文字正在處理中，請稍後重新整理頁面查看結果',
+            variant: 'default'
+          });
+          // 即使超時也嘗試重新載入列表
+          setTimeout(() => loadList(true), 2000);
+        } else {
+          toast({ variant: 'destructive', title: '新增失敗', description: errorMessage });
+        }
+      }
     }
   };
 
@@ -181,29 +289,146 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     setAdvOpen(false);
   };
 
-  const onUploadFile: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
-    if (!botId || !e.target.files?.length) return;
+  // 檔案選擇處理（不立即上傳）
+  const onFileSelect: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    if (!e.target.files?.length) {
+      setSelectedFile(null);
+      return;
+    }
+
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
+
+    // 檔案格式驗證
     if (!/(txt|pdf|docx)$/i.test(file.name)) {
       toast({ variant: 'destructive', title: '格式不支援', description: '僅支援 .txt, .pdf, .docx' });
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
+
+    // 檔案大小驗證
     if (file.size > 10 * 1024 * 1024) {
       toast({ variant: 'destructive', title: '檔案過大', description: '限制 10MB' });
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
+
+    setSelectedFile(file);
+  };
+
+  // 執行檔案上傳
+  const handleFileUpload = async () => {
+    if (!botId || !selectedFile || isOperatingRef.current) return;
+
     setUploading(true);
+    isOperatingRef.current = true;
+
+    const operationId = 'fileUpload';
+    currentOperationRef.current = operationId;
+
     try {
-      await AIKnowledgeApi.uploadFile(botId, scope, file, chunkSize, overlap);
-      toast({ title: '上傳成功' });
-      setPage(1);
-      await loadList();
+      if (useAsyncProcessing) {
+        // 使用非同步處理
+        const response = await fetch(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/file/async`, {
+          method: 'POST',
+          credentials: 'include',
+          body: (() => {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('scope', scope);
+            formData.append('chunk_size', chunkSize.toString());
+            formData.append('overlap', overlap.toString());
+            return formData;
+          })()
+        });
+
+        if (!response.ok) {
+          throw new Error(`上傳失敗: ${response.statusText}`);
+        }
+
+        const job = await response.json();
+
+        // 檢查操作是否仍然是當前操作（避免競態條件）
+        if (currentOperationRef.current === operationId) {
+          toast({
+            title: '檔案已提交處理',
+            description: `任務 ID: ${job.job_id}，請查看下方進度追蹤`
+          });
+          setSelectedFile(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          isOperatingRef.current = false;
+          currentOperationRef.current = '';
+        }
+      } else {
+        // 使用同步處理（原有邏輯）
+        await AIKnowledgeApi.uploadFile(botId, scope, selectedFile, chunkSize, overlap);
+
+        // 檢查操作是否仍然是當前操作（避免競態條件）
+        if (currentOperationRef.current === operationId) {
+          toast({ title: '上傳成功' });
+          setPage(1);
+          setSelectedFile(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+
+          // 延遲重新載入列表，給後端處理時間
+          setTimeout(() => {
+            if (currentOperationRef.current === operationId) {
+              loadList(true);
+              isOperatingRef.current = false;
+              currentOperationRef.current = '';
+            }
+          }, 1000); // 文件上傳需要更長的處理時間
+        }
+      }
     } catch (e) {
-      toast({ variant: 'destructive', title: '上傳失敗', description: String(e) });
+      if (currentOperationRef.current === operationId) {
+        isOperatingRef.current = false;
+        currentOperationRef.current = '';
+
+        const errorMessage = e instanceof Error ? e.message : String(e);
+
+        // 檢查是否為超時但實際成功的情況
+        const isTimeoutButMaybeSuccess = errorMessage.includes('超時') ||
+                                       errorMessage.includes('timeout') ||
+                                       errorMessage.includes('處理時間較長') ||
+                                       errorMessage.includes('檔案上傳處理時間較長');
+
+        if (isTimeoutButMaybeSuccess) {
+          // 清理檔案選擇狀態，因為上傳可能已經成功
+          setSelectedFile(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+
+          toast({
+            title: '上傳處理中',
+            description: '檔案正在處理中，請稍後重新整理頁面查看結果',
+            variant: 'default'
+          });
+
+          // 延遲重新載入列表，檢查是否實際成功
+          setTimeout(() => {
+            loadList(true);
+          }, 3000);
+        } else {
+          toast({ variant: 'destructive', title: '上傳失敗', description: errorMessage });
+        }
+      }
     } finally {
       setUploading(false);
-      e.target.value = '';
     }
   };
 
@@ -232,17 +457,85 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     setSelected(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // 全選功能
+  const currentItems = semanticItems || items;
+  const selectedCount = currentItems.filter(item => selected[item.id]).length;
+  const isAllSelected = currentItems.length > 0 && selectedCount === currentItems.length;
+  const isPartialSelected = selectedCount > 0 && selectedCount < currentItems.length;
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      // 取消全選
+      setSelected(prev => {
+        const newSelected = { ...prev };
+        currentItems.forEach(item => {
+          delete newSelected[item.id];
+        });
+        return newSelected;
+      });
+    } else {
+      // 全選當前頁面
+      setSelected(prev => {
+        const newSelected = { ...prev };
+        currentItems.forEach(item => {
+          newSelected[item.id] = true;
+        });
+        return newSelected;
+      });
+    }
+  };
+
   const deleteSelected = async () => {
-    if (!botId) return;
+    if (!botId || isOperatingRef.current || deleting) return;
     const ids = Object.entries(selected).filter(([, v]) => v).map(([k]) => k);
     if (!ids.length) return;
+
+    const operationId = 'deleteSelected';
+    setDeleting(true);
+    isOperatingRef.current = true;
+    currentOperationRef.current = operationId;
+
     try {
       await AIKnowledgeApi.batchDelete(botId, ids);
-      toast({ title: '已刪除選取片段' });
-      setSelected({});
-      await loadList();
+
+      // 檢查操作是否仍然是當前操作
+      if (currentOperationRef.current === operationId) {
+        toast({ title: '已刪除選取片段' });
+        setSelected({});
+
+        // 延遲重新載入列表，給後端處理時間
+        setTimeout(() => {
+          if (currentOperationRef.current === operationId) {
+            loadList(true);
+            isOperatingRef.current = false;
+            currentOperationRef.current = '';
+            setDeleting(false);
+          }
+        }, 500);
+      }
     } catch (e) {
-      toast({ variant: 'destructive', title: '刪除失敗', description: String(e) });
+      if (currentOperationRef.current === operationId) {
+        isOperatingRef.current = false;
+        currentOperationRef.current = '';
+        setDeleting(false);
+
+        const errorMessage = e instanceof Error ? e.message : String(e);
+
+        // 對於超時錯誤，提供更友好的提示
+        if (errorMessage.includes('超時') || errorMessage.includes('timeout') ||
+            errorMessage.includes('處理時間較長')) {
+          toast({
+            title: '刪除處理中',
+            description: '刪除操作正在處理中，請稍後重新整理頁面查看結果',
+            variant: 'default'
+          });
+          setSelected({}); // 清除選擇狀態
+          // 即使超時也嘗試重新載入列表
+          setTimeout(() => loadList(true), 2000);
+        } else {
+          toast({ variant: 'destructive', title: '刪除失敗', description: errorMessage });
+        }
+      }
     }
   };
 
@@ -355,14 +648,57 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
               <Switch checked={autoChunk} onCheckedChange={setAutoChunk} /> 自動切塊
             </label>
-            <Button size="sm" onClick={addText} disabled={!textInput.trim()}>新增</Button>
+            <Button size="sm" onClick={addText} disabled={!textInput.trim() || isOperatingRef.current}>
+              {isOperatingRef.current ? '處理中...' : '新增'}
+            </Button>
           </div>
         </div>
         {/* 檔案上傳 */}
         <div className="border rounded p-3">
-          <div className="font-medium mb-2">上傳檔案（.txt / .pdf / .docx）</div>
-          <Input type="file" accept=".txt,.pdf,.docx" onChange={onUploadFile} disabled={uploading} />
-          <p className="text-xs text-muted-foreground mt-2">切塊大小與重疊使用「高級設定」。</p>
+          <div className="flex items-center justify-between mb-2">
+            <div className="font-medium">上傳檔案（.txt / .pdf / .docx）</div>
+            <div className="flex items-center gap-2 text-sm">
+              <Zap className="w-4 h-4" />
+              <span>非同步處理</span>
+              <Switch
+                checked={useAsyncProcessing}
+                onCheckedChange={setUseAsyncProcessing}
+                size="sm"
+              />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.pdf,.docx"
+              onChange={onFileSelect}
+              disabled={uploading}
+            />
+            {selectedFile && (
+              <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                <div className="font-medium">{selectedFile.name}</div>
+                <div className="text-xs">
+                  大小: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                onClick={handleFileUpload}
+                disabled={!selectedFile || uploading || isOperatingRef.current}
+              >
+                {uploading ? '上傳中...' : '上傳'}
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            {useAsyncProcessing
+              ? '非同步模式：檔案將在背景處理，可查看下方進度追蹤。切塊大小與重疊使用「高級設定」。'
+              : '同步模式：檔案將立即處理完成。切塊大小與重疊使用「高級設定」。'
+            }
+          </p>
         </div>
       </div>
 
@@ -373,14 +709,34 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
           <Button onClick={doSearch}>搜尋</Button>
         </div>
         <div>
-          <Button variant="destructive" onClick={deleteSelected} disabled={!Object.values(selected).some(Boolean)}>批次刪除</Button>
+          <Button
+            variant="destructive"
+            onClick={deleteSelected}
+            disabled={!Object.values(selected).some(Boolean) || isOperatingRef.current || deleting}
+          >
+            {deleting ? '刪除中...' : '批次刪除'}
+          </Button>
         </div>
       </div>
 
       {/* 列表 / 語意搜尋結果 */}
       <div className="border rounded">
         <div className="grid grid-cols-12 px-3 py-2 text-xs text-muted-foreground border-b">
-          <div className="col-span-1">選取</div>
+          <div className="col-span-1 flex items-center">
+            <input
+              type="checkbox"
+              checked={isAllSelected}
+              ref={(el) => {
+                if (el) {
+                  el.indeterminate = isPartialSelected;
+                }
+              }}
+              onChange={toggleSelectAll}
+              disabled={currentItems.length === 0}
+              title={isAllSelected ? '取消全選' : '全選'}
+            />
+            <span className="ml-1">選取</span>
+          </div>
           <div className="col-span-7">內容預覽</div>
           {semanticItems ? (
             <>
@@ -435,6 +791,15 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
           </div>
         )}
       </div>
+
+      {/* 處理任務追蹤 */}
+      {useAsyncProcessing && botId && (
+        <ProcessingJobTracker
+          botId={botId}
+          onJobCompleted={handleJobCompleted}
+          onJobFailed={handleJobFailed}
+        />
+      )}
     </div>
   );
 };
