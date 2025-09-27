@@ -37,9 +37,16 @@ function copyDir(src, dest) {
 }
 
 // 複製 assets 目錄到 dist/assets
-const srcDir = path.join(__dirname, '../assets');
+// 在 Docker 環境中，assets 目錄會被複製到 frontend 目錄內
+const srcDir = fs.existsSync(path.join(__dirname, 'assets'))
+  ? path.join(__dirname, 'assets')  // Docker 環境
+  : path.join(__dirname, '../assets'); // 本地環境
 const destDir = path.join(__dirname, 'dist/assets');
 
 console.log('Copying assets directory...');
+console.log(`Source directory: ${srcDir}`);
+console.log(`Destination directory: ${destDir}`);
+console.log(`Source exists: ${fs.existsSync(srcDir)}`);
+
 copyDir(srcDir, destDir);
 console.log('Assets copied successfully!');

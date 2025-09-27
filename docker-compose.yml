@@ -19,8 +19,8 @@ services:
   # 前端服務
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .  # 使用專案根目錄作為構建上下文
+      dockerfile: ./frontend/Dockerfile
       args:
         - VITE_UNIFIED_API_URL=https://api.jkl921102.org
         - VITE_WEBHOOK_DOMAIN=https://api.jkl921102.org
