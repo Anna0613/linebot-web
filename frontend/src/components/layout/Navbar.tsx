@@ -61,42 +61,52 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* 右側：桌面版按鈕 */}
-          <div className="hidden sm:flex items-center space-x-2 md:space-x-4 flex-shrink-0">
+          {/* 右側：桌面版按鈕和手機版登入/註冊按鈕 */}
+          <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
             <div className="hidden md:block">
               <LanguageToggle />
             </div>
-            <Link to="/login">
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full custom-signin hover:bg-[#A0A0A0] active:bg-[#A0A0A0] focus-visible:bg-[#A0A0A0]  text-xs md:text-sm px-3 md:px-4 h-8 md:h-10"
-              >
-                登入
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button
-                size="sm"
-                className="rounded-full custom-joinus hover:bg-[hsl(var(--line-green-hover))] text-xs md:text-sm px-3 md:px-4 h-8 md:h-10"
-              >
-                立即加入
-              </Button>
-            </Link>
+            {/* 桌面版按鈕 */}
+            <div className="hidden sm:flex items-center space-x-2 md:space-x-4">
+              <Link to="/login">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full custom-signin hover:bg-[#A0A0A0] active:bg-[#A0A0A0] focus-visible:bg-[#A0A0A0]  text-xs md:text-sm px-3 md:px-4 h-8 md:h-10"
+                >
+                  登入
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button
+                  size="sm"
+                  className="rounded-full custom-joinus hover:bg-[hsl(var(--line-green-hover))] text-xs md:text-sm px-3 md:px-4 h-8 md:h-10"
+                >
+                  立即加入
+                </Button>
+              </Link>
+            </div>
+            {/* 手機版登入/註冊按鈕 */}
+            <div className="sm:hidden flex items-center space-x-1">
+              <Link to="/login">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full text-xs px-2 h-7"
+                >
+                  登入
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button
+                  size="sm"
+                  className="rounded-full bg-line hover:bg-line-dark text-xs px-2 h-7"
+                >
+                  註冊
+                </Button>
+              </Link>
+            </div>
           </div>
-
-          {/* 手機版選單按鈕 */}
-          <button
-            className="sm:hidden p-2 hover:bg-secondary rounded-md transition-colors"
-            onClick={toggleMobileMenu}
-            aria-label="切換選單"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <Menu className="h-5 w-5 text-muted-foreground" />
-            )}
-          </button>
         </div>
 
         {/* 手機版下拉選單 */}
@@ -145,52 +155,61 @@ const Navbar = () => {
           />
         )}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-card text-card-foreground z-40 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
+          className={`fixed top-0 left-0 h-full w-64 bg-background/95 backdrop-blur-md border-r border-border text-card-foreground z-40 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
         >
           <div className="flex justify-end">
             <button
               onClick={toggleMobileMenu}
-              className="text-2xl text-foreground"
+              className="text-2xl text-foreground hover:bg-secondary rounded-md p-1 transition-colors"
             >
               <X />
             </button>
           </div>
-          <ul className="mt-8 space-y-4 text-foreground text-lg">
+          <ul className="mt-8 space-y-2 text-foreground text-base">
             <li>
-            <Link
-              to="/"
-              onClick={toggleMobileMenu}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-            >
-              首頁
-            </Link>
+              <Link
+                to="/"
+                onClick={toggleMobileMenu}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
+              >
+                首頁
+              </Link>
             </li>
             <li>
-            <Link
-              to="/about"
-              onClick={toggleMobileMenu}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-            >
-              關於
-            </Link>
+              <Link
+                to="/about"
+                onClick={toggleMobileMenu}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
+              >
+                關於
+              </Link>
             </li>
             <li>
-            <Link
-              to="/login"
-              onClick={toggleMobileMenu}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-            >
-              登入
-            </Link>
+              <Link
+                to="/how-to-establish"
+                onClick={toggleMobileMenu}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
+              >
+                建立教學
+              </Link>
             </li>
             <li>
-            <Link
-              to="/register"
-              onClick={toggleMobileMenu}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-            >
-              註冊
-            </Link>
+              <Link
+                to="/login"
+                onClick={toggleMobileMenu}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
+              >
+                登入
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/register"
+                onClick={toggleMobileMenu}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
+              >
+                註冊
+              </Link>
             </li>
           </ul>
         </div>
