@@ -101,15 +101,25 @@ export const useVisibilityAwarePolling = (
   interval: number = 30000
 ) => {
   const isVisible = useRef(true);
-  
+
   useEffect(() => {
     const handleVisibilityChange = () => {
       isVisible.current = !document.hidden;
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
+
+  // 如果 interval 為 0 或負數，不啟動輪詢
+  if (interval <= 0) {
+    return {
+      startPolling: () => {},
+      stopPolling: () => {},
+      resetInterval: () => {},
+      getCurrentInterval: () => 0
+    };
+  }
 
   return useSmartPolling(callback, {
     baseInterval: interval,

@@ -95,61 +95,7 @@ async def websocket_bot_endpoint(
         # 清理連接
         await websocket_manager.disconnect(bot_id, websocket)
 
-@router.websocket("/ws/dashboard/{user_id}")
-async def websocket_dashboard_endpoint(
-    websocket: WebSocket,
-    user_id: str,
-    ws_token: Optional[str] = Query(None),
-    db: AsyncSession = Depends(get_async_db)
-):
-    """用戶儀表板 WebSocket 端點"""
 
-    # WebSocket 認證檢查（改用 Cookie）
-    token = websocket.cookies.get("token") or ws_token
-    if not token:
-        await websocket.close(code=4001, reason="Missing authentication")
-        return
-
-    try:
-        # 驗證 token 並獲取用戶
-        payload = verify_token(token)
-        token_username = payload.get("sub")
-
-        if not token_username or token_username != user_id:
-            await websocket.close(code=4001, reason="Invalid token or user mismatch")
-            return
-
-        result = await db.execute(select(User).where(User.username == user_id))
-        user = result.scalars().first()
-        if not user:
-            await websocket.close(code=4004, reason="User not found")
-            return
-
-    except Exception as e:
-        logger.error(f"儀表板 WebSocket 認證失敗: {e}")
-        await websocket.close(code=4001, reason="Authentication failed")
-        return
-
-    await websocket.accept()
-    logger.info(f"儀表板 WebSocket 連接已接受: User {user_id}")
-    
-    # 註冊連接
-    await websocket_manager.connect_user_dashboard(user_id, websocket)
-    
-    try:
-        while True:
-            data = await websocket.receive_text()
-            message = json.loads(data)
-            
-            # 處理儀表板相關消息
-            await handle_dashboard_message(user_id, message, websocket, db)
-            
-    except WebSocketDisconnect:
-        logger.info(f"儀表板 WebSocket 斷開: User {user_id}")
-    except Exception as e:
-        logger.error(f"儀表板 WebSocket 錯誤: {e}")
-    finally:
-        await websocket_manager.disconnect_user_dashboard(user_id, websocket)
 
 async def handle_websocket_message(bot_id: str, message: dict, websocket: WebSocket, db: AsyncSession):
     """處理 Bot WebSocket 消息"""
@@ -194,42 +140,7 @@ async def handle_websocket_message(bot_id: str, message: dict, websocket: WebSoc
             'message': 'Failed to process message'
         }))
 
-async def handle_dashboard_message(user_id: str, message: dict, websocket: WebSocket, db: AsyncSession):
-    """處理儀表板 WebSocket 消息"""
-    
-    message_type = message.get('type')
-    
-    try:
-        if message_type == 'ping':
-            await websocket.send_text(json.dumps({
-                'type': 'pong',
-                'timestamp': message.get('timestamp')
-            }))
-            
-        elif message_type == 'subscribe_user_bots':
-            # 訂閱用戶所有 Bot 的更新
-            result = await db.execute(select(Bot).where(Bot.user_id == user_id))
-            user_bots = result.scalars().all()
-            bot_ids = [str(bot.id) for bot in user_bots]
-            
-            await websocket.send_text(json.dumps({
-                'type': 'user_bots_subscribed',
-                'bot_ids': bot_ids,
-                'count': len(bot_ids)
-            }))
-            
-        else:
-            await websocket.send_text(json.dumps({
-                'type': 'error',
-                'message': f'Unknown dashboard message type: {message_type}'
-            }))
-            
-    except Exception as e:
-        logger.error(f"處理儀表板消息失敗: {e}")
-        await websocket.send_text(json.dumps({
-            'type': 'error',
-            'message': 'Failed to process dashboard message'
-        }))
+
 
 async def send_initial_data(bot_id: str, websocket: WebSocket, db: AsyncSession):
     """發送初始數據"""

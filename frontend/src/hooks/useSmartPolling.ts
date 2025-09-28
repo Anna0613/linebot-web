@@ -74,16 +74,23 @@ export const useSmartPolling = (
 
   const startPolling = useCallback(() => {
     clearCurrentInterval();
-    
+
+    // 如果間隔為 0 或負數，不啟動輪詢
+    if (currentIntervalRef.current <= 0) {
+      return;
+    }
+
     const poll = () => {
       if (shouldPoll()) {
         executeCallback();
       }
-      
-      // 設置下一次輪詢
-      intervalRef.current = setTimeout(poll, currentIntervalRef.current);
+
+      // 檢查間隔是否有效，避免無限循環
+      if (currentIntervalRef.current > 0) {
+        intervalRef.current = setTimeout(poll, currentIntervalRef.current);
+      }
     };
-    
+
     // 立即執行一次
     poll();
   }, [clearCurrentInterval, shouldPoll, executeCallback]);
@@ -99,9 +106,17 @@ export const useSmartPolling = (
   }, [baseInterval]);
 
   useEffect(() => {
-    startPolling();
+    // 當 baseInterval 變化時，更新當前間隔並重新啟動輪詢
+    currentIntervalRef.current = baseInterval;
+
+    if (baseInterval > 0) {
+      startPolling();
+    } else {
+      stopPolling();
+    }
+
     return stopPolling;
-  }, [startPolling, stopPolling]);
+  }, [baseInterval, startPolling, stopPolling]);
 
   return {
     startPolling,

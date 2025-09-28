@@ -2,7 +2,7 @@
  * 優化版本的活動動態組件
  * 使用智能輪詢，結合 WebSocket 狀態，只在必要時使用 HTTP 輪詢
  */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -167,11 +167,17 @@ const OptimizedActivityFeed: React.FC<OptimizedActivityFeedProps> = ({
   const [newActivities, setNewActivities] = useState<Set<string>>(new Set());
   const [displayedActivities, setDisplayedActivities] = useState<ActivityItem[]>([]);
 
-  // 使用頁面可見性感知的輪詢，只在頁面可見且 WebSocket 未連接時輪詢
-  useVisibilityAwarePolling(
-    onRefresh || (() => {}),
-    autoRefresh && !isWebSocketConnected() ? refreshInterval : 0
-  );
+  // 完全禁用輪詢，依賴 WebSocket 即時更新和手動刷新
+  // 修復：移除自動輪詢，避免重複的 API 調用
+  const shouldEnablePolling = false; // 強制禁用輪詢
+  const pollingInterval = 0; // 設為 0 禁用輪詢
+
+  // 移除條件回調，不再自動執行刷新
+  // WebSocket 連接時會自動更新數據，手動刷新通過按鈕觸發
+  console.log('OptimizedActivityFeed: 輪詢已禁用，依賴 WebSocket 和手動刷新');
+
+  // 不再使用輪詢
+  // useVisibilityAwarePolling(conditionalRefresh, pollingInterval);
 
   // 處理活動更新
   useEffect(() => {

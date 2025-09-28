@@ -145,8 +145,8 @@ async def get_bot_analytics(
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
     try:
-        # 計算時間範圍
-        end_date = datetime.now()
+        # 計算時間範圍 (使用 UTC 時間以匹配 MongoDB 中的時間戳)
+        end_date = datetime.utcnow()
         if period == "day":
             start_date = end_date - timedelta(days=1)
         elif period == "week":

@@ -47,7 +47,8 @@ class WebSocketManager {
   private connections: Map<string, WebSocketConnection> = new Map();
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000; // 1 秒
-  private heartbeatInterval = 60000; // 60 秒（優化頻率）
+  private heartbeatInterval = 30000; // 30 秒（優化頻率）
+  private connectionTimeout = 10000; // 10 秒連接超時
 
   /**
    * 訂閱 Bot 的 WebSocket 消息
@@ -161,7 +162,16 @@ class WebSocketManager {
   }
 
   private attachSocketHandlers(botId: string, connection: WebSocketConnection): void {
+    // 設置連接超時
+    const connectionTimer = setTimeout(() => {
+      if (connection.isConnecting) {
+        console.error(`Bot ${botId} WebSocket 連接超時`);
+        connection.socket.close();
+      }
+    }, this.connectionTimeout);
+
     connection.socket.onopen = () => {
+      clearTimeout(connectionTimer);
       console.log(`✅ Bot ${botId} WebSocket 連接已建立`);
       connection.isConnecting = false;
       connection.reconnectAttempts = 0;
@@ -173,8 +183,13 @@ class WebSocketManager {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
         console.log(`📨 收到 Bot ${botId} WebSocket 消息:`, message.type);
-        connection.subscribers.forEach(subscriber => {
-          try { subscriber.callback(message); } catch (error) {
+
+        // 批量處理訂閱者回調，避免單個錯誤影響其他訂閱者
+        const callbacks = Array.from(connection.subscribers);
+        callbacks.forEach(subscriber => {
+          try {
+            subscriber.callback(message);
+          } catch (error) {
             console.error(`訂閱者 ${subscriber.id} 處理消息失敗:`, error);
           }
         });
@@ -184,15 +199,19 @@ class WebSocketManager {
     };
 
     connection.socket.onclose = (ev) => {
-      console.log(`❌ Bot ${botId} WebSocket 連接已關閉 (code=${ev.code}, reason=${ev.reason})`);
+      clearTimeout(connectionTimer);
+      console.log(`🔌 Bot ${botId} WebSocket 連接關閉 (code=${ev.code}, reason=${ev.reason})`);
       connection.isConnecting = false;
       this.stopHeartbeat(botId);
-      if (connection.subscribers.size > 0) {
+
+      // 只有在有訂閱者且不是正常關閉時才重連
+      if (connection.subscribers.size > 0 && ev.code !== 1000) {
         this.scheduleReconnect(botId);
       }
     };
 
     connection.socket.onerror = (error) => {
+      clearTimeout(connectionTimer);
       console.error(`❌ Bot ${botId} WebSocket 連接錯誤:`, error);
       connection.isConnecting = false;
     };
@@ -262,15 +281,32 @@ class WebSocketManager {
 
     if (connection.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error(`Bot ${botId} 重連次數已達上限，停止重連`);
+      // 通知所有訂閱者連接失敗
+      connection.subscribers.forEach(subscriber => {
+        try {
+          subscriber.callback({
+            type: 'connection_failed',
+            bot_id: botId,
+            message: '重連次數已達上限'
+          });
+        } catch (error) {
+          console.error(`通知訂閱者連接失敗時出錯:`, error);
+        }
+      });
       return;
     }
 
     connection.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.pow(2, connection.reconnectAttempts - 1);
-    
+    // 使用指數退避，但限制最大延遲為 30 秒
+    const delay = Math.min(
+      this.reconnectDelay * Math.pow(2, connection.reconnectAttempts - 1),
+      30000
+    );
+
     console.log(`🔄 Bot ${botId} 將在 ${delay}ms 後重連 (第 ${connection.reconnectAttempts} 次)`);
-    
+
     setTimeout(() => {
+      // 再次檢查是否還有訂閱者
       if (connection.subscribers.size > 0) {
         this.createConnection(botId);
       }

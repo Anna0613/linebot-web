@@ -305,6 +305,9 @@ const BotManagementPage: React.FC = () => {
     enabled: !!selectedBotId
   });
 
+  // 創建穩定的 WebSocket 連接檢查函數，避免每次渲染都創建新函數
+  const checkWebSocketConnection = useCallback(() => isConnected, [isConnected]);
+
   // 圖表配置
   const _chartConfig = {
     sent: {
@@ -372,10 +375,22 @@ const BotManagementPage: React.FC = () => {
         return;
       }
 
+      // 根據時間範圍計算查詢天數
+      const getDaysFromTimeRange = (range: string) => {
+        switch (range) {
+          case "day": return 1;
+          case "week": return 7;
+          case "month": return 30;
+          default: return 30;
+        }
+      };
+
+      const queryDays = getDaysFromTimeRange(timeRange);
+
       // 使用 apiClient 調用真實的後端API端點
       const [analyticsRes, messageStatsRes, userActivityRes, usageStatsRes, activitiesRes] = await Promise.all([
         apiClient.getBotAnalytics(botId, timeRange),
-        apiClient.getBotMessageStats(botId, 7),
+        apiClient.getBotMessageStats(botId, queryDays), // 根據時間範圍動態調整天數
         apiClient.getBotUserActivity(botId),
         apiClient.getBotUsageStats(botId),
         apiClient.getBotActivities(botId, 20, 0)
@@ -1120,13 +1135,35 @@ const BotManagementPage: React.FC = () => {
     
     switch (lastMessage.type) {
       case 'analytics_update':
+        console.log('🔄 收到 analytics_update WebSocket 事件，開始更新數據...');
+
+        // 根據時間範圍計算查詢天數
+        const getDaysFromTimeRange = (range: string) => {
+          switch (range) {
+            case "day": return 1;
+            case "week": return 7;
+            case "month": return 30;
+            default: return 30;
+          }
+        };
+
+        const queryDays = getDaysFromTimeRange(timeRange);
+        console.log(`📊 當前時間範圍: ${timeRange}, 查詢天數: ${queryDays}`);
+
         // 靜默更新所有分析相關數據，保持其他數據不變
         Promise.all([
           apiClient.getBotAnalytics(selectedBotId, timeRange),
-          apiClient.getBotMessageStats(selectedBotId, 7),
+          apiClient.getBotMessageStats(selectedBotId, queryDays), // 根據時間範圍動態調整天數
           apiClient.getBotUserActivity(selectedBotId),
           apiClient.getBotUsageStats(selectedBotId)
         ]).then(([analyticsRes, messageStatsRes, userActivityRes, usageStatsRes]) => {
+          console.log('📈 WebSocket 觸發的 API 響應:', {
+            analytics: analyticsRes.data ? '✅' : '❌',
+            messageStats: messageStatsRes.data ? '✅' : '❌',
+            userActivity: userActivityRes.data ? '✅' : '❌',
+            usageStats: usageStatsRes.data ? '✅' : '❌'
+          });
+
           // 更新分析數據
           if (analyticsRes.data && !analyticsRes.error) {
             const analyticsData = analyticsRes.data as BotAnalytics;
@@ -1140,11 +1177,18 @@ const BotManagementPage: React.FC = () => {
               weekMessages: analyticsData.weekMessages || prev?.weekMessages || 0,
               monthMessages: analyticsData.monthMessages || prev?.monthMessages || 0,
             } as BotAnalytics));
+            console.log('✅ Analytics 數據已更新');
           }
 
           // 更新訊息統計圖表數據
           if (messageStatsRes.data && !messageStatsRes.error) {
-            setMessageStats(Array.isArray(messageStatsRes.data) ? messageStatsRes.data as MessageStats[] : []);
+            const newMessageStats = Array.isArray(messageStatsRes.data) ? messageStatsRes.data as MessageStats[] : [];
+            setMessageStats(newMessageStats);
+            console.log('📊 MessageStats 數據已更新:', {
+              數據長度: newMessageStats.length,
+              第一個: newMessageStats[0],
+              最後一個: newMessageStats[newMessageStats.length - 1]
+            });
           }
 
           // 更新用戶活躍度數據和熱力圖
@@ -1553,11 +1597,26 @@ const BotManagementPage: React.FC = () => {
                       {/* 增強版訊息統計圖表 */}
                       <ChartWidget
                         title="訊息統計趨勢"
-                        data={messageStats.map(stat => ({
-                          name: stat.date,
-                          發送: stat.sent,
-                          接收: stat.received
-                        }))}
+                        data={messageStats.map(stat => {
+                          // 格式化日期顯示
+                          const formatDate = (dateStr: string) => {
+                            const date = new Date(dateStr);
+                            if (timeRange === 'day') {
+                              return date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
+                            } else if (timeRange === 'week') {
+                              return date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
+                            } else {
+                              return date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
+                            }
+                          };
+
+                          return {
+                            name: formatDate(stat.date),
+                            originalDate: stat.date, // 保留原始日期用於排序
+                            發送: stat.sent,
+                            接收: stat.received
+                          };
+                        })}
                         chartType="bar"
                         isLoading={analyticsLoading}
                         height={300}
@@ -1629,8 +1688,9 @@ const BotManagementPage: React.FC = () => {
                         height={400}
                         showRefresh
                         onRefresh={handleRefreshActivities}
-                        autoRefresh
+                        autoRefresh={false} // 禁用自動刷新，依賴 WebSocket 即時更新
                         refreshInterval={30000}
+                        isWebSocketConnected={checkWebSocketConnection}
                       />
                       
                       {/* 功能使用統計 */}
