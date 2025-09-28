@@ -48,7 +48,7 @@ import { getWebhookUrl } from "../config/apiConfig";
 // 導入新的儀表板元件
 import MetricCard from "@/components/dashboard/MetricCard";
 import ChartWidget from "@/components/dashboard/ChartWidget";
-import ActivityFeed from "@/components/dashboard/ActivityFeed";
+import OptimizedActivityFeed from "@/components/optimized/OptimizedActivityFeed";
 import HeatMap from "@/components/dashboard/HeatMap";
 
 // 導入用戶管理相關元件
@@ -1623,7 +1623,7 @@ const BotManagementPage: React.FC = () => {
                   <div className="lg:col-span-4">
                     <div className="space-y-6">
                       {/* 即時活動動態 */}
-                      <ActivityFeed
+                      <OptimizedActivityFeed
                         activities={activities}
                         isLoading={analyticsLoading}
                         height={400}

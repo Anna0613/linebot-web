@@ -38,12 +38,18 @@ from app.services.background_tasks import get_task_manager, PerformanceOptimizer
 from app.services.cache_service import get_cache
 from app.services.minio_service import init_minio_service
 
-# 配置日誌
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# 配置日誌（使用增強的日誌配置）
+try:
+    from app.config.logging_config import init_logging
+    logger = init_logging()
+except ImportError:
+    # 備用日誌配置
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger(__name__)
+    logger.warning("使用備用日誌配置，建議檢查 logging_config 模組")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

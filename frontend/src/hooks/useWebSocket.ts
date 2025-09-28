@@ -4,6 +4,7 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 import { webSocketManager } from '../services/WebSocketManager';
+import { useOptimizedWebSocketCheck } from './useOptimizedPolling';
 
 interface WebSocketMessage {
   type: string;
@@ -79,6 +80,12 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     }
   }, []);
 
+  // 使用優化的 WebSocket 狀態檢查
+  useOptimizedWebSocketCheck(
+    checkConnectionState,
+    () => isConnected
+  );
+
   // 使用全域管理器訂閱 WebSocket 消息
   useEffect(() => {
     if (!botId || !enabled) {
@@ -90,16 +97,12 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     // 訂閱消息
     const unsubscribe = webSocketManager.subscribe(botId, handleMessage);
 
-    // 定期檢查連接狀態
-    const statusInterval = setInterval(checkConnectionState, 1000);
-
     // 初始檢查
     checkConnectionState();
 
     return () => {
       console.log(`🔌 取消訂閱 Bot ${botId} 的 WebSocket 消息`);
       unsubscribe();
-      clearInterval(statusInterval);
     };
   }, [botId, enabled, handleMessage, checkConnectionState]);
 

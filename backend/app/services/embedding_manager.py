@@ -11,6 +11,7 @@ import hashlib
 from functools import lru_cache
 from typing import Dict, List, Optional, Any, Tuple, TYPE_CHECKING
 import numpy as np
+import psutil
 
 # 僅在型別檢查時匯入，避免執行期觸發重量級相依
 if TYPE_CHECKING:  # pragma: no cover
@@ -187,6 +188,162 @@ class EmbeddingManager:
         return embedding.tolist()
     
     @classmethod
+    async def _get_system_load(cls) -> float:
+        """獲取系統負載指標"""
+        try:
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            memory_percent = psutil.virtual_memory().percent
+            # 取 CPU 和記憶體使用率的最大值作為負載指標
+            return max(cpu_percent, memory_percent) / 100.0
+        except Exception as e:
+            logger.warning(f"獲取系統負載失敗: {e}")
+            return 0.5  # 預設中等負載
+
+    @classmethod
+    def _calculate_optimal_batch_size(
+        cls,
+        texts: List[str],
+        base_batch_size: int = 32,
+        min_batch_size: int = 8,
+        max_batch_size: int = 128,
+        system_load: float = 0.5
+    ) -> int:
+        """
+        根據文本特徵和系統負載計算最佳批次大小
+
+        Args:
+            texts: 文本列表
+            base_batch_size: 基礎批次大小
+            min_batch_size: 最小批次大小
+            max_batch_size: 最大批次大小
+            system_load: 系統負載 (0.0-1.0)
+
+        Returns:
+            int: 最佳批次大小
+        """
+        if not texts:
+            return base_batch_size
+
+        # 計算平均文本長度
+        avg_text_length = sum(len(text) for text in texts) / len(texts)
+
+        # 根據文本長度調整批次大小
+        if avg_text_length > 2000:  # 長文本
+            length_factor = 0.5
+        elif avg_text_length > 1000:  # 中等文本
+            length_factor = 0.75
+        elif avg_text_length < 200:  # 短文本
+            length_factor = 1.5
+        else:  # 正常文本
+            length_factor = 1.0
+
+        # 根據系統負載調整
+        if system_load > 0.8:  # 高負載
+            load_factor = 0.5
+        elif system_load > 0.6:  # 中高負載
+            load_factor = 0.75
+        elif system_load < 0.3:  # 低負載
+            load_factor = 1.5
+        else:  # 正常負載
+            load_factor = 1.0
+
+        # 計算最佳批次大小
+        optimal_size = int(base_batch_size * length_factor * load_factor)
+
+        # 限制在合理範圍內
+        optimal_size = max(min_batch_size, min(max_batch_size, optimal_size))
+
+        logger.debug(
+            f"批次大小計算: 平均文本長度={avg_text_length:.0f}, "
+            f"系統負載={system_load:.2f}, 最佳批次大小={optimal_size}"
+        )
+
+        return optimal_size
+
+    @classmethod
+    async def embed_texts_adaptive_batch(
+        cls,
+        texts: List[str],
+        model_name: str = None,
+        base_batch_size: int = 32,
+        min_batch_size: int = 8,
+        max_batch_size: int = 128,
+        normalize_embeddings: bool = True,
+        show_progress: bool = False
+    ) -> List[List[float]]:
+        """
+        自適應批次大小的向量化處理
+
+        Args:
+            texts: 要嵌入的文本列表
+            model_name: 模型名稱
+            base_batch_size: 基礎批次大小
+            min_batch_size: 最小批次大小
+            max_batch_size: 最大批次大小
+            normalize_embeddings: 是否標準化嵌入向量
+            show_progress: 是否顯示進度
+
+        Returns:
+            List[List[float]]: 嵌入向量列表
+        """
+        model_name = model_name or cls.DEFAULT_MODEL
+
+        if not texts:
+            return []
+
+        # 獲取系統負載
+        system_load = await cls._get_system_load()
+
+        # 計算最佳批次大小
+        optimal_batch_size = cls._calculate_optimal_batch_size(
+            texts, base_batch_size, min_batch_size, max_batch_size, system_load
+        )
+
+        logger.info(
+            f"開始自適應批次向量化: {len(texts)} 個文本, "
+            f"批次大小={optimal_batch_size}, 系統負載={system_load:.2f}"
+        )
+
+        def _process_batch(batch_texts: List[str]) -> List[List[float]]:
+            model = cls.get_model(model_name)
+            embeddings = model.encode(
+                batch_texts,
+                normalize_embeddings=normalize_embeddings,
+                convert_to_numpy=True,
+                show_progress_bar=show_progress and len(batch_texts) > 10
+            )
+            return [emb.tolist() for emb in embeddings]
+
+        # 分批處理
+        all_embeddings = []
+        total_batches = (len(texts) - 1) // optimal_batch_size + 1
+
+        for i in range(0, len(texts), optimal_batch_size):
+            batch = texts[i:i + optimal_batch_size]
+            batch_num = i // optimal_batch_size + 1
+
+            logger.debug(f"處理批次 {batch_num}/{total_batches} ({len(batch)} 個文本)")
+
+            try:
+                batch_embeddings = await asyncio.to_thread(_process_batch, batch)
+                all_embeddings.extend(batch_embeddings)
+            except Exception as e:
+                logger.error(f"批次 {batch_num} 處理失敗: {e}")
+                # 如果批次處理失敗，嘗試單個處理
+                for text in batch:
+                    try:
+                        single_embedding = await cls.embed_text(text, model_name)
+                        all_embeddings.append(single_embedding)
+                    except Exception as single_e:
+                        logger.error(f"單個文本處理失敗: {single_e}")
+                        # 使用零向量作為備選
+                        dimensions = cls.get_embedding_dimensions(model_name)
+                        all_embeddings.append([0.0] * dimensions)
+
+        logger.info(f"自適應批次向量化完成: {len(all_embeddings)} 個向量")
+        return all_embeddings
+
+    @classmethod
     async def embed_texts_batch(
         cls,
         texts: List[str],
@@ -195,12 +352,12 @@ class EmbeddingManager:
         normalize_embeddings: bool = True,
         show_progress: bool = False
     ) -> List[List[float]]:
-        """批次生成嵌入向量"""
+        """批次生成嵌入向量（保持向後相容性）"""
         model_name = model_name or cls.DEFAULT_MODEL
-        
+
         if not texts:
             return []
-        
+
         def _process_batch(batch_texts: List[str]) -> List[List[float]]:
             model = cls.get_model(model_name)
             embeddings = model.encode(
@@ -210,7 +367,7 @@ class EmbeddingManager:
                 show_progress_bar=show_progress
             )
             return [emb.tolist() for emb in embeddings]
-        
+
         # 分批處理
         all_embeddings = []
         for i in range(0, len(texts), batch_size):
@@ -218,7 +375,7 @@ class EmbeddingManager:
             logger.debug(f"處理批次 {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}")
             batch_embeddings = await asyncio.to_thread(_process_batch, batch)
             all_embeddings.extend(batch_embeddings)
-        
+
         return all_embeddings
     
     @classmethod

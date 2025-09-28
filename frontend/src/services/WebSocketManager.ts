@@ -47,7 +47,7 @@ class WebSocketManager {
   private connections: Map<string, WebSocketConnection> = new Map();
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000; // 1 秒
-  private heartbeatInterval = 30000; // 30 秒
+  private heartbeatInterval = 60000; // 60 秒（優化頻率）
 
   /**
    * 訂閱 Bot 的 WebSocket 消息

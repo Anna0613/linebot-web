@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import HomeBotfly from "../components/features/dashboard/HomeBotfly";
 const DashboardFooter = lazy(() => import("../components/layout/DashboardFooter"));
-const TokenExpiryWarning = lazy(() => import("../components/auth/TokenExpiryWarning"));
+const OptimizedTokenExpiryWarning = lazy(() => import("../components/optimized/OptimizedTokenExpiryWarning"));
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 // import { API_CONFIG, getApiUrl } from "../config/apiConfig";
@@ -64,7 +64,7 @@ const DashboardPage = memo(() => {
 
       {/* Token 過期警告 */}
       <Suspense fallback={null}>
-        <TokenExpiryWarning
+        <OptimizedTokenExpiryWarning
           onExtendSession={() => {
             // 會話延長成功後的處理
             console.log('會話已延長');

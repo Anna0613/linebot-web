@@ -29,6 +29,7 @@ from app.services.text_chunker import recursive_split
 from app.services.embedding_service import embed_text, embed_texts
 from app.services.file_text_extractor import extract_text_by_mime
 from app.services.minio_service import get_minio_service
+from app.services.stream_file_processor import get_stream_file_processor
 
 # 導入 pgvector 支援
 try:
@@ -51,12 +52,23 @@ def _format_embedding_for_db(embedding: list[float]) -> any:
     Returns:
         適合資料庫儲存的格式
     """
+    import math
+
+    # 清理嵌入向量，移除 NaN、Infinity 等無效值
+    cleaned_embedding = []
+    for value in embedding:
+        if math.isnan(value) or math.isinf(value):
+            cleaned_embedding.append(0.0)  # 用 0.0 替換無效值
+        else:
+            cleaned_embedding.append(float(value))
+
     if Vector is not None:
-        # 如果有 pgvector，直接返回列表，SQLAlchemy 會自動處理
-        return embedding
+        # 如果有 pgvector，返回清理後的列表
+        return cleaned_embedding
     else:
-        # 如果沒有 pgvector，轉換為字串格式
-        return str(embedding)
+        # 如果沒有 pgvector，轉換為 JSON 字串格式
+        import json
+        return json.dumps(cleaned_embedding)
 
 
 async def _ensure_bot_owned(db: AsyncSession, bot_id: str, user_id) -> Bot:
@@ -294,14 +306,24 @@ async def add_file_knowledge(
     try:
         await _ensure_bot_owned(db, bot_id, current_user.id)
 
-        # Validate file
-        data = await file.read()
-        if len(data) > 10 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="檔案大小超過 10MB 限制")
+        # 使用流式檔案處理器
+        stream_processor = get_stream_file_processor()
+
+        # 流式處理檔案（包含格式驗證、大小檢查和記憶體監控）
+        try:
+            data = await stream_processor.process_upload_stream(file)
+            logger.info(f"檔案 {file.filename} 流式處理完成，大小: {len(data) / 1024 / 1024:.2f}MB")
+        except HTTPException:
+            # 重新拋出 HTTP 異常（檔案格式、大小或記憶體問題）
+            raise
+        except Exception as e:
+            logger.error(f"檔案流式處理失敗: {e}")
+            raise HTTPException(status_code=500, detail=f"檔案處理失敗: {str(e)}")
 
         # Extract text
         try:
             text = extract_text_by_mime(file.filename or "", file.content_type, data)
+            logger.info(f"檔案 {file.filename} 文字提取完成，文字長度: {len(text)} 字元")
         except Exception as e:
             logger.error(f"檔案文字提取失敗: {e}")
             raise HTTPException(status_code=400, detail=f"檔案處理失敗: {str(e)}")

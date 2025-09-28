@@ -21,6 +21,7 @@ from app.services.embedding_service import embed_texts
 from app.services.file_text_extractor import extract_text_by_mime
 from app.services.background_tasks import get_task_manager, TaskPriority
 from app.services.minio_service import get_minio_service
+from app.services.adaptive_concurrency import get_adaptive_concurrency_manager
 
 logger = logging.getLogger(__name__)
 
@@ -54,20 +55,57 @@ class ProcessingJob:
 
 class KnowledgeProcessingService:
     """知識庫處理服務"""
-    
-    # 並發限制
-    MAX_CONCURRENT_JOBS = 5
+
+    # 並發限制（更新為更高的基礎值）
+    BASE_CONCURRENT_JOBS = 8  # 從 5 提升到 8
+    MAX_CONCURRENT_JOBS = 15  # 最大並發數
     MAX_CHUNKS_PER_BATCH = 50
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-    
+    MAX_FILE_SIZE = 50 * 1024 * 1024  # 從 10MB 提升到 50MB
+
     # 活躍任務追蹤
     _active_jobs: Dict[str, ProcessingJob] = {}
-    _processing_semaphore = asyncio.Semaphore(MAX_CONCURRENT_JOBS)
+    _processing_semaphore: Optional[asyncio.Semaphore] = None
+    _concurrency_manager = None
+    _last_semaphore_update = 0
     
     @classmethod
     def generate_job_id(cls) -> str:
         """生成任務 ID"""
         return f"knowledge_processing_{uuid.uuid4().hex}"
+
+    @classmethod
+    async def _get_processing_semaphore(cls) -> asyncio.Semaphore:
+        """獲取動態調整的處理信號量"""
+        import time
+
+        # 初始化並發管理器
+        if cls._concurrency_manager is None:
+            cls._concurrency_manager = get_adaptive_concurrency_manager()
+
+        current_time = time.time()
+
+        # 每 30 秒或首次使用時更新信號量
+        if (cls._processing_semaphore is None or
+            current_time - cls._last_semaphore_update > 30):
+
+            optimal_concurrency = await cls._concurrency_manager.get_optimal_concurrency()
+
+            # 如果並發數有變化，創建新的信號量
+            if (cls._processing_semaphore is None or
+                cls._processing_semaphore._value != optimal_concurrency):
+
+                old_value = cls._processing_semaphore._value if cls._processing_semaphore else cls.BASE_CONCURRENT_JOBS
+                cls._processing_semaphore = asyncio.Semaphore(optimal_concurrency)
+                cls._last_semaphore_update = current_time
+
+                logger.info(f"並發信號量更新: {old_value} -> {optimal_concurrency}")
+
+        return cls._processing_semaphore
+
+    @classmethod
+    def get_active_jobs_count(cls) -> int:
+        """獲取活躍任務數量"""
+        return len(cls._active_jobs)
     
     @classmethod
     async def submit_file_processing(
@@ -189,7 +227,8 @@ class KnowledgeProcessingService:
         progress_callback: Optional[Callable[[ProcessingJob], None]] = None
     ):
         """非同步處理檔案"""
-        async with cls._processing_semaphore:
+        semaphore = await cls._get_processing_semaphore()
+        async with semaphore:
             job = cls._active_jobs.get(job_id)
             if not job:
                 logger.error(f"找不到任務: {job_id}")
@@ -236,7 +275,8 @@ class KnowledgeProcessingService:
         progress_callback: Optional[Callable[[ProcessingJob], None]] = None
     ):
         """非同步處理文字"""
-        async with cls._processing_semaphore:
+        semaphore = await cls._get_processing_semaphore()
+        async with semaphore:
             job = cls._active_jobs.get(job_id)
             if not job:
                 logger.error(f"找不到任務: {job_id}")
@@ -271,15 +311,22 @@ class KnowledgeProcessingService:
         # 獲取資料庫會話
         async for db in get_async_db():
             try:
+                # 清理文字以確保資料庫相容性
+                from app.services.file_text_extractor import clean_text_for_database
+                text = clean_text_for_database(text)
+
                 # 文字切塊
                 chunk_size = job.metadata.get("chunk_size", 800)
                 overlap = job.metadata.get("overlap", 80)
                 auto_chunk = job.metadata.get("auto_chunk", True)
-                
+
                 if auto_chunk and len(text) > 500:
                     chunks = recursive_split(text, chunk_size=chunk_size, overlap=overlap)
                 else:
                     chunks = [text]
+
+                # 清理每個切塊
+                chunks = [clean_text_for_database(chunk) for chunk in chunks]
                 
                 job.total_chunks = len(chunks)
                 job.progress = 0.4
@@ -336,6 +383,28 @@ class KnowledgeProcessingService:
         return embeddings
 
     @classmethod
+    def _clean_embedding(cls, embedding: List[float]) -> List[float]:
+        """
+        清理嵌入向量，移除 NaN、Infinity 等無效值
+
+        Args:
+            embedding: 原始嵌入向量
+
+        Returns:
+            清理後的嵌入向量
+        """
+        import math
+
+        cleaned_embedding = []
+        for value in embedding:
+            if math.isnan(value) or math.isinf(value):
+                cleaned_embedding.append(0.0)  # 用 0.0 替換無效值
+            else:
+                cleaned_embedding.append(float(value))
+
+        return cleaned_embedding
+
+    @classmethod
     async def _batch_insert_knowledge(
         cls,
         db: AsyncSession,
@@ -375,12 +444,15 @@ class KnowledgeProcessingService:
         # 批次插入知識塊
         chunk_data = []
         for i, (chunk_text, embedding) in enumerate(zip(chunks, embeddings)):
+            # 清理嵌入向量
+            cleaned_embedding = cls._clean_embedding(embedding)
+
             chunk_data.append({
                 "id": uuid.uuid4(),
                 "document_id": doc.id,
                 "bot_id": scope_bot,
                 "content": chunk_text,
-                "embedding": embedding,
+                "embedding": cleaned_embedding,
                 "embedding_model": "all-mpnet-base-v2",
                 "embedding_dimensions": "768",
                 "meta": {"chunk_index": i, "source_type": "file" if file_data else "text"}

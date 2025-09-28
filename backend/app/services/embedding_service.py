@@ -35,7 +35,8 @@ async def embed_text(text: str, model_name: Optional[str] = None) -> List[float]
 async def embed_texts(
     texts: Sequence[str],
     model_name: Optional[str] = None,
-    batch_size: int = 32
+    batch_size: int = 32,
+    adaptive: bool = True
 ) -> List[List[float]]:
     """
     批次嵌入文本（升級版本）
@@ -43,16 +44,24 @@ async def embed_texts(
     Args:
         texts: 要嵌入的文本列表
         model_name: 模型名稱，預設使用 all-mpnet-base-v2
-        batch_size: 批次大小
+        batch_size: 批次大小（當 adaptive=False 時使用）
+        adaptive: 是否使用自適應批次大小
 
     Returns:
         嵌入向量列表
     """
-    return await EmbeddingManager.embed_texts_batch(
-        list(texts),
-        model_name=model_name,
-        batch_size=batch_size
-    )
+    if adaptive:
+        return await EmbeddingManager.embed_texts_adaptive_batch(
+            list(texts),
+            model_name=model_name,
+            base_batch_size=batch_size
+        )
+    else:
+        return await EmbeddingManager.embed_texts_batch(
+            list(texts),
+            model_name=model_name,
+            batch_size=batch_size
+        )
 
 
 # === 新增的便利函數 ===
