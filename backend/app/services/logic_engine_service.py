@@ -23,6 +23,7 @@ from sqlalchemy import select
 
 from app.models.bot import LogicTemplate, FlexMessage, Bot
 from app.services.conversation_service import ConversationService
+from app.services.websocket_manager import websocket_manager
 
 logger = logging.getLogger(__name__)
 
@@ -286,8 +287,11 @@ class LogicEngineService:
                 logger.info("沒有啟用中的邏輯模板，跳過自動回覆")
                 return results
 
+            logger.info(f"🔍 找到 {len(templates)} 個啟用的邏輯模板，開始匹配")
+
             # 預設策略：命中一個模板即停止
-            for tpl in templates:
+            for i, tpl in enumerate(templates):
+                logger.info(f"🔍 檢查邏輯模板 {i+1}/{len(templates)}: {tpl.name}")
                 blocks = LogicEngineService._normalize_blocks(tpl.logic_blocks)
                 event_blocks = LogicEngineService._extract_event_blocks(blocks)
                 reply_blocks = LogicEngineService._extract_reply_blocks(blocks)
@@ -296,9 +300,11 @@ class LogicEngineService:
 
                 pair = LogicEngineService._select_reply_block(event_blocks, reply_blocks, event)
                 if not pair:
+                    logger.info(f"❌ 邏輯模板 {tpl.name} 沒有匹配的事件，跳過")
                     continue
 
                 eb, rb = pair
+                logger.info(f"✅ 邏輯模板 {tpl.name} 匹配成功，準備執行回覆")
 
                 # AI 接管優先規則：
                 # - 若 bot 啟用 AI 接管 且 事件為文字訊息，則下列事件不阻擋 AI：
@@ -358,12 +364,40 @@ class LogicEngineService:
                         else:
                             send_result = await asyncio.to_thread(line_bot_service.send_text_or_reply, user_id, text, None)
                         try:
-                            await ConversationService.add_bot_message(
+                            logger.info(f"📝 準備記錄邏輯模板文字回覆到 MongoDB: bot_id={bot.id}, user_id={user_id}, text='{text}'")
+                            added_message = await ConversationService.add_bot_message(
                                 bot_id=str(bot.id),
                                 line_user_id=user_id,
                                 message_content={"text": text},
                                 message_type="text",
                             )
+                            logger.info(f"✅ 邏輯模板文字回覆已記錄到 MongoDB: message_id={added_message.id}")
+                            # 推播 WebSocket 訊息讓前端即時更新
+                            try:
+                                logger.info(f"🔄 準備推送邏輯模板文字回覆 WebSocket 訊息: bot_id={bot.id}, user_id={user_id}, message_id={added_message.id}")
+                                logger.info(f"🔍 WebSocket 管理器實例: {websocket_manager}, 類型: {type(websocket_manager)}")
+                                await websocket_manager.broadcast_to_bot(str(bot.id), {
+                                    'type': 'chat_message',
+                                    'bot_id': str(bot.id),
+                                    'line_user_id': user_id,
+                                    'data': {
+                                        'line_user_id': user_id,
+                                        'message': {
+                                            'id': added_message.id,
+                                            'event_type': added_message.event_type,
+                                            'message_type': added_message.message_type,
+                                            'message_content': added_message.content,
+                                            'sender_type': added_message.sender_type,
+                                            'timestamp': added_message.timestamp.isoformat() if hasattr(added_message.timestamp, 'isoformat') else added_message.timestamp,
+                                            'media_url': added_message.media_url,
+                                            'media_path': added_message.media_path,
+                                            'admin_user': None
+                                        }
+                                    }
+                                })
+                                logger.info(f"✅ 邏輯模板文字回覆 WebSocket 訊息推送成功")
+                            except Exception as ws_err:
+                                logger.warning(f"❌ 推送邏輯模板回覆 WebSocket 訊息失敗: {ws_err}")
                         except Exception as log_err:
                             logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
                         results.append({"type": "text", "text": text, "result": send_result})
@@ -390,12 +424,35 @@ class LogicEngineService:
 
                         send_result = await asyncio.to_thread(line_bot_service.send_flex_message, user_id, alt_text, contents)
                         try:
-                            await ConversationService.add_bot_message(
+                            added_message = await ConversationService.add_bot_message(
                                 bot_id=str(bot.id),
                                 line_user_id=user_id,
                                 message_content={"altText": alt_text, "contents": contents},
                                 message_type="flex",
                             )
+                            # 推播 WebSocket 訊息讓前端即時更新
+                            try:
+                                await websocket_manager.broadcast_to_bot(str(bot.id), {
+                                    'type': 'chat_message',
+                                    'bot_id': str(bot.id),
+                                    'line_user_id': user_id,
+                                    'data': {
+                                        'line_user_id': user_id,
+                                        'message': {
+                                            'id': added_message.id,
+                                            'event_type': added_message.event_type,
+                                            'message_type': added_message.message_type,
+                                            'message_content': added_message.content,
+                                            'sender_type': added_message.sender_type,
+                                            'timestamp': added_message.timestamp.isoformat() if hasattr(added_message.timestamp, 'isoformat') else added_message.timestamp,
+                                            'media_url': added_message.media_url,
+                                            'media_path': added_message.media_path,
+                                            'admin_user': None
+                                        }
+                                    }
+                                })
+                            except Exception as ws_err:
+                                logger.warning(f"推送邏輯模板 Flex 回覆 WebSocket 訊息失敗: {ws_err}")
                         except Exception as log_err:
                             logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
                         results.append({"type": "flex", "altText": alt_text, "contents": contents, "result": send_result})
@@ -407,12 +464,35 @@ class LogicEngineService:
                         if image_url:
                             send_result = await asyncio.to_thread(line_bot_service.send_image_message, user_id, image_url, preview_url)
                             try:
-                                await ConversationService.add_bot_message(
+                                added_message = await ConversationService.add_bot_message(
                                     bot_id=str(bot.id),
                                     line_user_id=user_id,
                                     message_content={"originalContentUrl": image_url, "previewImageUrl": preview_url},
                                     message_type="image",
                                 )
+                                # 推播 WebSocket 訊息讓前端即時更新
+                                try:
+                                    await websocket_manager.broadcast_to_bot(str(bot.id), {
+                                        'type': 'chat_message',
+                                        'bot_id': str(bot.id),
+                                        'line_user_id': user_id,
+                                        'data': {
+                                            'line_user_id': user_id,
+                                            'message': {
+                                                'id': added_message.id,
+                                                'event_type': added_message.event_type,
+                                                'message_type': added_message.message_type,
+                                                'message_content': added_message.content,
+                                                'sender_type': added_message.sender_type,
+                                                'timestamp': added_message.timestamp.isoformat() if hasattr(added_message.timestamp, 'isoformat') else added_message.timestamp,
+                                                'media_url': added_message.media_url,
+                                                'media_path': added_message.media_path,
+                                                'admin_user': None
+                                            }
+                                        }
+                                    })
+                                except Exception as ws_err:
+                                    logger.warning(f"推送邏輯模板圖片回覆 WebSocket 訊息失敗: {ws_err}")
                             except Exception as log_err:
                                 logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
                             results.append({"type": "image", "url": image_url, "result": send_result})
@@ -424,12 +504,35 @@ class LogicEngineService:
                         if package_id and sticker_id:
                             send_result = await asyncio.to_thread(line_bot_service.send_sticker_message, user_id, package_id, sticker_id)
                             try:
-                                await ConversationService.add_bot_message(
+                                added_message = await ConversationService.add_bot_message(
                                     bot_id=str(bot.id),
                                     line_user_id=user_id,
                                     message_content={"packageId": package_id, "stickerId": sticker_id},
                                     message_type="sticker",
                                 )
+                                # 推播 WebSocket 訊息讓前端即時更新
+                                try:
+                                    await websocket_manager.broadcast_to_bot(str(bot.id), {
+                                        'type': 'chat_message',
+                                        'bot_id': str(bot.id),
+                                        'line_user_id': user_id,
+                                        'data': {
+                                            'line_user_id': user_id,
+                                            'message': {
+                                                'id': added_message.id,
+                                                'event_type': added_message.event_type,
+                                                'message_type': added_message.message_type,
+                                                'message_content': added_message.content,
+                                                'sender_type': added_message.sender_type,
+                                                'timestamp': added_message.timestamp.isoformat() if hasattr(added_message.timestamp, 'isoformat') else added_message.timestamp,
+                                                'media_url': added_message.media_url,
+                                                'media_path': added_message.media_path,
+                                                'admin_user': None
+                                            }
+                                        }
+                                    })
+                                except Exception as ws_err:
+                                    logger.warning(f"推送邏輯模板貼圖回覆 WebSocket 訊息失敗: {ws_err}")
                             except Exception as log_err:
                                 logger.warning(f"寫入 bot 訊息至 Mongo 失敗: {log_err}")
                             results.append({"type": "sticker", "packageId": package_id, "stickerId": sticker_id, "result": send_result})

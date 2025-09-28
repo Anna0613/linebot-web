@@ -70,21 +70,32 @@ class WebSocketManager:
     
     async def broadcast_to_bot(self, bot_id: str, message: dict):
         """向特定 Bot 的所有連接廣播消息"""
+        logger.info(f"🔄 嘗試廣播訊息到 Bot {bot_id}, 訊息類型: {message.get('type', 'unknown')}")
+
         if bot_id not in self.bot_connections:
+            logger.warning(f"❌ Bot {bot_id} 沒有 WebSocket 連接，無法廣播訊息")
+            logger.info(f"📊 當前連接的 Bot: {list(self.bot_connections.keys())}")
             return
-        
+
+        connection_count = len(self.bot_connections[bot_id])
+        logger.info(f"📡 Bot {bot_id} 有 {connection_count} 個 WebSocket 連接")
+
         disconnected = set()
-        
+
         for websocket in self.bot_connections[bot_id].copy():
             try:
                 await self.send_to_websocket(websocket, message)
+                logger.debug(f"✅ 成功發送訊息到 WebSocket 連接")
             except Exception as e:
-                logger.warning(f"發送消息失敗，移除連接: {e}")
+                logger.warning(f"❌ 發送消息失敗，移除連接: {e}")
                 disconnected.add(websocket)
-        
+
         # 清理斷開的連接
         for websocket in disconnected:
             await self.disconnect(bot_id, websocket)
+
+        if disconnected:
+            logger.info(f"🧹 清理了 {len(disconnected)} 個斷開的連接")
     
     async def send_analytics_update(self, bot_id: str, analytics_data: dict):
         """發送分析數據更新"""

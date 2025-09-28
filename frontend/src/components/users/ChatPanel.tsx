@@ -470,22 +470,44 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   // 處理 WebSocket 消息：優先增量更新
   useEffect(() => {
     if (lastMessage && selectedUser) {
+      console.log('🔄 ChatPanel 收到 WebSocket 訊息:', lastMessage.type, lastMessage);
+
       // 直接推送的聊天消息（我們在後端廣播/單發時發出）
       if (lastMessage.type === 'chat_message') {
         const payload = lastMessage.data as { line_user_id?: string; message?: ChatMessage };
+        console.log('📨 處理 chat_message:', payload);
+
         if (payload?.line_user_id === selectedUser.line_user_id && payload.message) {
+          console.log('✅ 訊息匹配當前用戶，準備更新聊天記錄');
+          console.log('📋 當前聊天記錄長度:', chatHistory.length);
+          console.log('📋 新訊息詳情:', payload.message);
+
           setChatHistory((prev) => {
+            console.log('🔍 檢查訊息是否已存在，當前記錄數:', prev.length);
             const idx = prev.findIndex(m => m.id === payload.message!.id);
+            console.log('🔍 查找結果 idx:', idx, '訊息 ID:', payload.message!.id);
+
             if (idx >= 0) {
               // 更新既有訊息（例如媒體就緒）
+              console.log('🔄 更新既有訊息:', payload.message!.id);
               const next = prev.slice();
               next[idx] = { ...prev[idx], ...payload.message };
+              console.log('🔄 更新後記錄數:', next.length);
               return next;
             }
             // 新增訊息（增量 append）
-            return [...prev, payload.message!];
+            console.log('➕ 新增訊息到聊天記錄:', payload.message!.id, payload.message!.sender_type);
+            const newHistory = [...prev, payload.message!];
+            console.log('➕ 新增後記錄數:', newHistory.length);
+            return newHistory;
           });
           setTimeout(scrollToBottom, 50);
+        } else {
+          console.log('❌ 訊息不匹配當前用戶或無訊息內容:', {
+            payloadUserId: payload?.line_user_id,
+            selectedUserId: selectedUser.line_user_id,
+            hasMessage: !!payload?.message
+          });
         }
       }
       // 其餘事件（new_user_message / activity_update）不再觸發整頁重載，
