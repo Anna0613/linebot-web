@@ -122,20 +122,20 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       {loading && <Loader fullPage />}
 
       <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
         <div className="max-w-md w-full">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold">重設密碼</h2>
+            <h2 className="text-3xl font-bold neon-text-gradient">重設密碼</h2>
             <p className="text-sm text-muted-foreground mt-2">
               請輸入您的新密碼
             </p>
           </div>
 
-          <div className="bg-card text-card-foreground p-8 rounded-lg shadow-lg border border-border">
+          <div className="web3-glass-card p-8 web3-hover-glow">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="password">新密碼：</Label>
@@ -171,7 +171,7 @@ const ResetPassword = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold hover:bg-[hsl(var(--line-green-hover))] h-11"
+                className="web3-primary-button w-full rounded-full font-bold h-11"
               >
                 {loading ? "處理中..." : "重設密碼"}
               </Button>

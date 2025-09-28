@@ -34,9 +34,9 @@ const DashboardPage = memo(() => {
   // 處理錯誤狀態顯示
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">認證錯誤</h1>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="web3-glass-card p-8 text-center max-w-md">
+          <h1 className="text-2xl font-bold text-web3-red mb-4">認證錯誤</h1>
           <p className="text-muted-foreground">{error}</p>
         </div>
       </div>
@@ -46,14 +46,16 @@ const DashboardPage = memo(() => {
   // 加載狀態顯示
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="web3-glass-card p-8">
+          <Loader />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <DashboardNavbar user={user} />
       <main id="main" role="main" className="pt-24 md:pt-28 mb-20">
         <HomeBotfly user={user} />

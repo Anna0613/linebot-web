@@ -166,7 +166,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-background/90 supports-[backdrop-filter]:backdrop-blur-md border-b border-border`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 web3-glass-card border-b border-border dark:border-web3-cyan/20`}
       >
         <div className="w-full px-4 sm:px-6 flex items-center justify-between h-14 sm:h-16 md:h-20">
           {/* 左側：漢堡選單和Logo */}
@@ -195,7 +195,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   className="block h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain align-middle"
                 />
               </picture>
-              <h6 className="m-0 leading-none flex items-center text-lg sm:text-xl md:text-[28px] font-bold text-foreground tracking-wide truncate translate-y-[1px]">
+              <h6 className="m-0 leading-none flex items-center text-lg sm:text-xl md:text-[28px] font-bold neon-text-gradient tracking-wide truncate translate-y-[1px]">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
               </h6>
@@ -219,7 +219,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               </div>
             </Link>
             <Link to="/bots/create">
-              <Button className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-[5px] text-sm lg:text-[16px] hover:bg-[hsl(var(--line-green-hover))] px-3 lg:px-4 h-8 lg:h-10">
+              <Button className="web3-primary-button font-bold rounded-[5px] text-sm lg:text-[16px] px-3 lg:px-4 h-8 lg:h-10">
                 建立設計
               </Button>
             </Link>
@@ -421,12 +421,12 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
           />
         )}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-card text-card-foreground z-40 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
+          className={`mobile-menu-sidebar fixed top-0 left-0 h-full w-64 text-card-foreground z-40 p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
         >
           <div className="flex justify-end">
             <button
               onClick={toggleMobileMenu}
-              className="text-2xl text-foreground"
+              className="text-2xl text-foreground hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan rounded-md p-2 transition-all duration-300"
             >
               <X />
             </button>
@@ -439,7 +439,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   <Link
                     to="/dashboard"
                     onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
                   >
                     首頁
                   </Link>
@@ -448,7 +448,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   <Link
                     to="/how-to-establish"
                     onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
                   >
                     如何建立LINE Bot
                   </Link>
@@ -457,7 +457,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   <Link
                     to="/bots/create"
                     onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
                   >
                     建立LINE Bot
                   </Link>
@@ -466,7 +466,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   <Link
                     to="/bots/management"
                     onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
                   >
                     LINE Bot 管理
                   </Link>
@@ -475,7 +475,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   <Link
                     to="/about"
                     onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
                   >
                     關於
                   </Link>
@@ -487,7 +487,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   <Link
                     to="/"
                     onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
                   >
                     首頁
                   </Link>
@@ -496,7 +496,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   <Link
                     to="/how-to-establish"
                     onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
                   >
                     建立教學
                   </Link>
@@ -505,7 +505,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   <Link
                     to="/about"
                     onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
                   >
                     關於
                   </Link>
@@ -514,7 +514,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   <Link
                     to="/login"
                     onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
                   >
                     登入
                   </Link>
@@ -523,7 +523,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   <Link
                     to="/register"
                     onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
                   >
                     註冊
                   </Link>

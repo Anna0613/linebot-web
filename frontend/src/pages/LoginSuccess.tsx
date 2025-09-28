@@ -53,14 +53,14 @@ const LoginSuccess: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+      <div className="web3-glass-card w-full max-w-md p-8 web3-hover-glow">
+        <div className="text-center">
           <div className="flex justify-center mb-4">
-            <CheckCircle className="w-16 h-16 text-[#425B4F]" />
+            <CheckCircle className="w-16 h-16 text-web3-green" />
           </div>
-          <CardTitle className="text-2xl text-[#425B4F]">登入成功！</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
+          <h2 className="neon-text-gradient text-2xl font-bold mb-4">登入成功！</h2>
+        </div>
+        <div className="text-center space-y-4">
           <p className="text-muted-foreground">您已成功登入</p>
           <p className="text-sm text-muted-foreground">
             {countdown > 0
@@ -69,12 +69,12 @@ const LoginSuccess: React.FC = () => {
           </p>
           <Button
             onClick={handleContinue}
-            className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-[5px] text-[16px] hover:bg-[hsl(var(--line-green-hover))]"
+            className="w-full web3-primary-button"
           >
             立即進入
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

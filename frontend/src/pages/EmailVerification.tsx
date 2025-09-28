@@ -78,7 +78,7 @@ const EmailVerification = () => {
             </p>
             <Button
               onClick={() => navigate("/login")}
-              className="rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold hover:bg-[hsl(var(--line-green-hover))] px-8"
+              className="web3-primary-button px-8"
             >
               前往登入
             </Button>
@@ -117,13 +117,13 @@ const EmailVerification = () => {
               </Button>
               <Button
                 onClick={() => navigate("/register")}
-                className="rounded-full bg-blue-500 text-white font-bold hover:bg-blue-600 px-8 w-full"
+                className="web3-button px-8 w-full"
               >
                 重新註冊
               </Button>
               <Button
                 onClick={() => navigate("/login")}
-                className="rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold hover:bg-[hsl(var(--line-green-hover))] px-8 w-full"
+                className="web3-primary-button px-8 w-full"
               >
                 返回登入頁面
               </Button>
@@ -142,11 +142,11 @@ const EmailVerification = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
         <div className="max-w-md w-full">
-          <div className="bg-card text-card-foreground p-8 rounded-lg shadow-lg border border-border">
+          <div className="web3-glass-card p-8 web3-hover-glow">
             {renderContent()}
           </div>
         </div>

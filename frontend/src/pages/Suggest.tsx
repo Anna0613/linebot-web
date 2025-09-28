@@ -103,7 +103,7 @@ const Suggest = () => {
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16">
-          <h1 className="text-foreground text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
+          <h1 className="web3-section-title leading-tight tracking-wide">
             意見回饋
           </h1>
           <p className="text-muted-foreground text-xl max-w-4xl mx-auto leading-relaxed">

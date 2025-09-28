@@ -30,24 +30,24 @@ const LoginError: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+      <div className="web3-glass-card w-full max-w-md p-8 web3-hover-glow">
+        <div className="text-center">
           <div className="flex justify-center mb-4">
-            <XCircle className="w-16 h-16 text-red-500" />
+            <XCircle className="w-16 h-16 text-web3-red" />
           </div>
-          <CardTitle className="text-2xl text-red-600">登入失敗</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-web3-red mb-4">登入失敗</h2>
+        </div>
+        <div className="text-center space-y-4">
           <p className="text-muted-foreground">LINE 登入過程中發生錯誤</p>
           {errorMessage && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-sm text-red-700">錯誤詳情：{errorMessage}</p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+              <p className="text-sm text-red-700 dark:text-red-300">錯誤詳情：{errorMessage}</p>
             </div>
           )}
           <div className="flex flex-col space-y-2">
             <Button
               onClick={handleRetryLogin}
-              className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-[5px] text-[16px] hover:bg-[hsl(var(--line-green-hover))] flex items-center justify-center space-x-2"
+              className="w-full web3-primary-button flex items-center justify-center space-x-2"
             >
               <RefreshCw className="w-4 h-4" />
               <span>重試登入</span>
@@ -56,8 +56,8 @@ const LoginError: React.FC = () => {
               返回首頁
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

@@ -49,11 +49,11 @@ const LINELogin: React.FC = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       {loading && <Loader fullPage />}
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>LINE Login</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center">
+      <div className="web3-glass-card w-full max-w-md p-8 web3-hover-glow">
+        <div className="mb-6">
+          <h2 className="neon-text-gradient text-2xl font-bold text-center">LINE Login</h2>
+        </div>
+        <div className="flex flex-col items-center">
           {user ? (
             <div className="text-center">
               <Avatar className="w-24 h-24 mx-auto mb-4">
@@ -64,12 +64,12 @@ const LINELogin: React.FC = () => {
               <p className="text-muted-foreground">Welcome back!</p>
             </div>
           ) : error ? (
-            <p className="text-red-500">{error}</p>
+            <p className="text-web3-red">{error}</p>
           ) : (
             <LINELoginButton onLogin={() => {}} />
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

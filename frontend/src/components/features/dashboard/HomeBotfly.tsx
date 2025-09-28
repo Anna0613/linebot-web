@@ -207,7 +207,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Welcome Section */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+        <h1 className="web3-section-title mb-4">
           歡迎回來，{user?.display_name || user?.username || "用戶"}！
         </h1>
         <p className="text-lg text-muted-foreground">
@@ -216,59 +216,59 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
       </div>
 
       {/* Quick Actions */}
-      <h2 className="text-xl font-semibold text-gray-900 mb-3">快速操作</h2>
+      <h2 className="text-xl font-semibold neon-text-cyan mb-3">快速操作</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium">創建新 Bot</CardTitle>
-            <Plus className="h-6 w-6 text-blue-700" />
-          </CardHeader>
-          <CardContent>
+        <div className="web3-dashboard-card p-6 web3-hover-glow">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
+            <h3 className="text-lg font-medium text-web3-cyan">創建新 Bot</h3>
+            <Plus className="h-6 w-6 text-web3-cyan animate-neon-pulse" />
+          </div>
+          <div>
             <p className="text-sm text-muted-foreground mb-4">
               快速創建一個新的 LINE Bot 專案
             </p>
-            <Button asChild className="w-full">
+            <Button asChild className="web3-primary-button w-full">
               <Link to="/bots/create">開始創建</Link>
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium">Bot 編輯器</CardTitle>
-            <Bot className="h-6 w-6 text-green-700" />
-          </CardHeader>
-          <CardContent>
+        <div className="web3-dashboard-card p-6 web3-hover-glow">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
+            <h3 className="text-lg font-medium text-web3-purple">Bot 編輯器</h3>
+            <Bot className="h-6 w-6 text-web3-purple animate-web3-glow" />
+          </div>
+          <div>
             <p className="text-sm text-muted-foreground mb-4">
               設計和編輯您的 Bot 對話流程
             </p>
-            <Button asChild variant="outline" className="w-full">
+            <Button asChild className="web3-button w-full">
               <Link to="/bots/visual-editor">進入編輯器</Link>
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium">管理 LINE Bot</CardTitle>
-            <Settings className="h-6 w-6 text-purple-700" />
-          </CardHeader>
-          <CardContent>
+        <div className="web3-dashboard-card p-6 web3-hover-glow">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
+            <h3 className="text-lg font-medium text-web3-pink">管理 LINE Bot</h3>
+            <Settings className="h-6 w-6 text-web3-pink animate-cosmic-flow" />
+          </div>
+          <div>
             <p className="text-sm text-muted-foreground mb-4">
               監控和控制您的 LINE Bot
             </p>
-            <Button asChild variant="outline" className="w-full">
+            <Button asChild className="web3-button w-full">
               <Link to="/bots/management">管理中心</Link>
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Bot List Section */}
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow p-6">
+      <div className="web3-glass-card p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-foreground">我的 Bot</h2>
-          <Button asChild size="sm">
+          <h2 className="text-xl font-semibold neon-text-gradient">我的 Bot</h2>
+          <Button asChild size="sm" className="web3-primary-button">
             <Link to="/bots/create">
               <Plus className="h-4 w-4 mr-2" />
               新增 Bot
@@ -277,16 +277,16 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
-            <p className="text-red-700">{error}</p>
+          <div className="web3-glass-card p-4 mb-4 border border-web3-red">
+            <p className="text-web3-red">{error}</p>
           </div>
         )}
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, idx) => (
-              <Card key={idx} className="overflow-hidden">
-                <CardHeader className="pb-3">
+              <div key={idx} className="web3-metric-card p-6 overflow-hidden">
+                <div className="pb-3">
                   <div className="flex items-center justify-between">
                     <Skeleton className="h-5 w-2/3" />
                     <div className="flex space-x-2">
@@ -296,8 +296,8 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                     </div>
                   </div>
                   <Skeleton className="h-4 w-full mt-2" />
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between items-center">
                       <Skeleton className="h-4 w-16" />
@@ -312,25 +312,25 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                       <Skeleton className="h-4 w-10" />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         ) : bots.length === 0 ? (
           <div className="text-center py-8">
-            <Bot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <Bot className="h-12 w-12 text-web3-cyan mx-auto mb-4 animate-neon-pulse" />
             <p className="text-muted-foreground mb-4">還沒有任何 Bot</p>
-            <Button asChild>
+            <Button asChild className="web3-primary-button">
               <Link to="/bots/create">創建第一個 Bot</Link>
             </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {bots.map((bot) => (
-              <Card key={bot.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
+              <div key={bot.id} className="web3-metric-card p-6 web3-hover-glow">
+                <div className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{bot.name}</CardTitle>
+                    <h3 className="text-lg font-semibold text-web3-cyan">{bot.name}</h3>
                     <div className="flex space-x-2">
                       <TooltipProvider>
                         <Tooltip>
@@ -339,7 +339,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                               size="sm"
                               variant="outline"
                               onClick={() => handleEditClick(bot.id)}
-                              className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 hover:bg-blue-50"
+                              className="web3-button text-web3-purple hover:text-web3-purple border-web3-purple/30 hover:border-web3-purple"
                               aria-label="編輯 Bot"
                             >
                               <Edit className="h-4 w-4" />
@@ -356,7 +356,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeleteClick(bot.id, bot.name)}
-                              className="text-muted-foreground hover:text-foreground border-border hover:border-foreground/40 hover:bg-secondary"
+                              className="web3-button text-web3-red hover:text-web3-red border-web3-red/30 hover:border-web3-red"
                               aria-label="刪除 Bot"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -373,7 +373,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                               size="sm"
                               variant="outline"
                               onClick={() => showBotDetails(bot)}
-                              className="text-purple-600 hover:text-purple-700 border-purple-200 hover:border-purple-300 hover:bg-purple-50"
+                              className="web3-button text-web3-pink hover:text-web3-pink border-web3-pink/30 hover:border-web3-pink"
                               aria-label="查看詳情"
                             >
                               <Eye className="h-4 w-4" />
@@ -389,12 +389,12 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                       {bot.description}
                     </p>
                   )}
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">狀態:</span>
-                      <span className="font-medium text-green-700">啟用</span>
+                      <span className="font-medium text-web3-green">啟用</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">建立時間:</span>
@@ -405,12 +405,12 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                     {bot.channel_token && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">頻道已設定:</span>
-                        <span className="text-green-700 font-medium">是</span>
+                        <span className="text-web3-green font-medium">是</span>
                       </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}

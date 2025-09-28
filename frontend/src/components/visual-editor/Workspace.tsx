@@ -509,11 +509,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
           }} 
           className="h-full flex flex-col"
         >
-          <TabsList className="m-4 flex-shrink-0">
-            <TabsTrigger value="logic">
+          <TabsList className="m-4 flex-shrink-0 web3-glass-card">
+            <TabsTrigger value="logic" className="data-[state=active]:bg-web3-cyan/20 data-[state=active]:text-web3-cyan">
               邏輯編輯器
               {currentLogicTemplateName && (
-                <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                <span className="ml-2 text-xs bg-web3-cyan/20 text-web3-cyan px-2 py-1 rounded">
                   {currentLogicTemplateName}
                 </span>
               )}

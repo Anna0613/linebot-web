@@ -1,4 +1,4 @@
-/* 現代化儀表板樣式 */
+/* 現代化儀表板樣式 - Web3 Enhanced */
 
 /* 玻璃擬態效果 */
 .glass-card {
@@ -8,9 +8,105 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-/* 漸層背景 */
+/* Web3 Enhanced Glass Cards - Dark mode only */
+.dark .web3-dashboard-card {
+  background: rgba(26, 27, 58, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 212, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .web3-dashboard-card:hover {
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(0, 212, 255, 0.3),
+    0 0 0 1px rgba(0, 212, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px);
+}
+
+.dark .web3-metric-card {
+  background: linear-gradient(135deg,
+    rgba(26, 27, 58, 0.8) 0%,
+    rgba(42, 45, 90, 0.6) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-radius: 20px;
+  box-shadow:
+    0 10px 35px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 212, 255, 0.08),
+    inset 0 2px 0 rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .web3-metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(0, 212, 255, 0.8),
+    rgba(168, 85, 247, 0.8),
+    transparent);
+  animation: web3-scan-line 3s ease-in-out infinite;
+}
+
+@keyframes web3-scan-line {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+/* Web3 Enhanced Gradients */
 .gradient-bg-primary {
   background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+}
+
+.dark .web3-gradient-primary {
+  background: linear-gradient(135deg, #00d4ff 0%, #a855f7 100%);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+}
+
+.dark .web3-gradient-success {
+  background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+}
+
+.dark .web3-gradient-warning {
+  background: linear-gradient(135deg, #ff8c00 0%, #ffd700 100%);
+  box-shadow: 0 0 30px rgba(255, 140, 0, 0.3);
+}
+
+.dark .web3-gradient-error {
+  background: linear-gradient(135deg, #ff3366 0%, #ff6b9d 100%);
+  box-shadow: 0 0 30px rgba(255, 51, 102, 0.3);
+}
+
+.dark .web3-gradient-cosmic {
+  background: linear-gradient(135deg,
+    #00d4ff 0%,
+    #a855f7 25%,
+    #f472b6 50%,
+    #00ff88 75%,
+    #00d4ff 100%);
+  background-size: 300% 300%;
+  animation: web3-cosmic-flow 8s ease infinite;
+}
+
+@keyframes web3-cosmic-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .gradient-bg-success {
@@ -113,7 +209,7 @@
   }
 }
 
-/* 卡片懸停效果 */
+/* Enhanced Card Hover Effects */
 .metric-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -122,6 +218,53 @@
 .metric-card:hover {
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.dark .web3-metric-card:hover {
+  transform: translateY(-6px) scale(1.03);
+  border-color: rgba(0, 212, 255, 0.5);
+  box-shadow:
+    0 25px 50px rgba(0, 0, 0, 0.4),
+    0 0 40px rgba(0, 212, 255, 0.4),
+    0 0 80px rgba(168, 85, 247, 0.2),
+    inset 0 2px 0 rgba(255, 255, 255, 0.2);
+}
+
+.dark .web3-metric-card:hover::before {
+  animation-duration: 1.5s;
+}
+
+/* Web3 Interactive Elements - Dark mode only */
+.dark .web3-interactive {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .web3-interactive::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg,
+    rgba(0, 212, 255, 0.3),
+    rgba(168, 85, 247, 0.3),
+    rgba(244, 114, 182, 0.3));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dark .web3-interactive:hover::after {
+  opacity: 1;
+}
+
+.dark .web3-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 212, 255, 0.2);
 }
 
 /* 圖表容器樣式 */
@@ -170,13 +313,74 @@
   position: relative;
 }
 
-/* 深色模式適配 */
+/* Enhanced Dark Mode with Web3 Styling */
 @media (prefers-color-scheme: dark) {
   .glass-card {
     background: rgba(15, 23, 42, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
+}
+
+.dark .glass-card {
+  background: rgba(26, 27, 58, 0.6);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0, 212, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.dark .metric-card {
+  background: rgba(26, 27, 58, 0.7);
+  border: 1px solid rgba(0, 212, 255, 0.1);
+  color: #e5e7eb;
+}
+
+.dark .metric-card:hover {
+  border-color: rgba(0, 212, 255, 0.3);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+/* Web3 Chart Containers - Dark mode only */
+.dark .web3-chart-container {
+  background: rgba(26, 27, 58, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .web3-chart-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(0, 212, 255, 0.6),
+    rgba(168, 85, 247, 0.6),
+    transparent);
+  z-index: 1;
+}
+
+.dark .web3-chart-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(244, 114, 182, 0.4),
+    transparent);
+  z-index: 1;
 }
 
 /* 載入狀態 */

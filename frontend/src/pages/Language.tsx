@@ -103,7 +103,7 @@ const Language = () => {
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16">
-        <h1 className="text-foreground text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] font-bold mb-3 sm:mb-4 leading-tight tracking-wide px-2">
+        <h1 className="web3-section-title leading-tight tracking-wide px-2">
             語言設定
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto px-4">

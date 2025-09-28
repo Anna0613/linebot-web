@@ -19,7 +19,9 @@ const BotEditorPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-[#5A2C1D] text-lg loading-pulse">載入中...</div>
+        <div className="web3-glass-card p-8">
+          <div className="text-foreground text-lg loading-pulse">載入中...</div>
+        </div>
       </div>
     );
   }
@@ -27,7 +29,9 @@ const BotEditorPage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-red-600 text-lg">{error}</div>
+        <div className="web3-glass-card p-8">
+          <div className="text-web3-red text-lg">{error}</div>
+        </div>
       </div>
     );
   }

@@ -46,6 +46,11 @@ const Language = lazy(() => import("./pages/Language"));
 const Suggest = lazy(() => import("./pages/Suggest"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
+// 測試頁面
+const SidebarTestPage = lazy(() => import("./pages/SidebarTestPage"));
+
+
+
 // 使用優化的 QueryClient 配置（從 useReactQuery 導入）
 
 // 優化的載入指示器組件 - 使用 CSS 動畫而非 JavaScript
@@ -148,6 +153,10 @@ const App = () => {
               <Route path="/about" element={<About />} />
               <Route path="/language" element={<Language />} />
               <Route path="/suggest" element={<Suggest />} />
+
+              {/* 測試頁面 */}
+              <Route path="/sidebar-test" element={<SidebarTestPage />} />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

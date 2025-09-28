@@ -365,7 +365,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
           />
         )}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-card text-card-foreground z-40 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
+          className={`mobile-menu-sidebar fixed top-0 left-0 h-full w-64 border-r border-border text-card-foreground z-40 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
         >
           <div className="flex justify-end">
             <button

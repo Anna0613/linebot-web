@@ -184,7 +184,9 @@ const Setting: React.FC = () => {
   if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground text-lg">載入設定頁面...</div>
+        <div className="web3-glass-card p-8">
+          <div className="text-muted-foreground text-lg">載入設定頁面...</div>
+        </div>
       </div>
     );
   }
@@ -193,10 +195,12 @@ const Setting: React.FC = () => {
   if (authError) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Alert className="max-w-md">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{authError}</AlertDescription>
-        </Alert>
+        <div className="web3-glass-card p-8">
+          <Alert className="max-w-md">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{authError}</AlertDescription>
+          </Alert>
+        </div>
       </div>
     );
   }
@@ -204,7 +208,9 @@ const Setting: React.FC = () => {
   if (!user) {
     return (
         <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground text-lg">載入用戶資料...</div>
+        <div className="web3-glass-card p-8">
+          <div className="text-muted-foreground text-lg">載入用戶資料...</div>
+        </div>
       </div>
     );
   }
@@ -217,7 +223,7 @@ const Setting: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           {/* 頁面標題 */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">帳號設定</h1>
+            <h1 className="web3-section-title mb-2">帳號設定</h1>
             <p className="text-muted-foreground">
               管理您的個人資料、安全設定和帳號偏好
             </p>

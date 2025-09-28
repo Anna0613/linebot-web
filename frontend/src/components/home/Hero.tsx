@@ -20,7 +20,7 @@ const Hero = () => {
           style={{ animationDelay: "0.1s" }}
         >
           <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.2]">
-            無需編碼即可建造 <span className="text-gradient">LINE Bot</span>
+            無需編碼即可建造 <span className="neon-text-gradient">LINE Bot</span>
           </h1>
           <p className="text-base xs:text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0">
             使用我們的拖拉介面創建強大的LINE
@@ -31,7 +31,7 @@ const Hero = () => {
             <Link to="/register">
               <Button
                 size="lg"
-                className="w-full xs:w-auto rounded-full bg-[hsl(var(--primary))] text-sm xs:text-base font-bold hover:bg-[hsl(var(--line-green-hover))] h-10 xs:h-11 shadow-lg hover:shadow-xl transition-all text-[hsl(var(--primary-foreground))]"
+                className="web3-primary-button w-full xs:w-auto rounded-full text-sm xs:text-base font-bold h-10 xs:h-11 shadow-lg hover:shadow-xl transition-all"
               >
                 開始設計
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -41,7 +41,7 @@ const Hero = () => {
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full xs:w-auto rounded-full text-sm xs:text-base hover:bg-[#A0A0A0] h-10 xs:h-11"
+                className="web3-button w-full xs:w-auto rounded-full text-sm xs:text-base h-10 xs:h-11"
               >
                 了解更多
               </Button>

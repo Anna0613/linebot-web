@@ -243,7 +243,7 @@ const Register = () => {
 
         <Button
           type="submit"
-          className="w-full bg-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-hover))] text-[hsl(var(--primary-foreground))]"
+          className="web3-primary-button w-full"
           disabled={loading}
         >
           {loading ? <Loader size="sm" /> : "註冊"}

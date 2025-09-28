@@ -26,19 +26,19 @@ const AuthFormLayout = ({
 
       <div className="flex-1 flex items-center justify-center px-4 py-8 pt-28 sm:pt-24 md:pt-28 pb-8">
         <div className="w-full max-w-md">
-      <Card className="shadow-lg border border-border bg-card text-card-foreground">
-            <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl font-bold text-foreground">
+          <div className="web3-glass-card p-8 web3-hover-glow">
+            <div className="text-center pb-6">
+              <h1 className="text-2xl font-bold neon-text-gradient mb-2">
                 {title}
-              </CardTitle>
+              </h1>
               {description && (
-                <CardDescription className="text-muted-foreground mt-2">
+                <p className="text-muted-foreground mt-2">
                   {description}
-                </CardDescription>
+                </p>
               )}
-            </CardHeader>
-            <CardContent className="space-y-4">{children}</CardContent>
-          </Card>
+            </div>
+            <div className="space-y-4">{children}</div>
+          </div>
         </div>
       </div>
 

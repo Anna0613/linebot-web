@@ -53,11 +53,11 @@ const EmailVerificationPending = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
         <div className="max-w-md w-full">
-          <div className="bg-card text-card-foreground p-8 rounded-lg shadow-lg border border-border">
+          <div className="web3-glass-card p-8 web3-hover-glow">
             <div className="flex flex-col items-center">
               <div className="w-20 h-20 rounded-full bg-[hsl(var(--accent))]/15 dark:bg-[hsl(var(--accent))]/25 flex items-center justify-center mb-6">
                 <Mail className="w-12 h-12 text-[hsl(var(--accent))]" />
@@ -123,7 +123,7 @@ const EmailVerificationPending = () => {
                 
                 <Button
                   onClick={handleLoginRedirect}
-                  className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold hover:bg-[hsl(var(--line-green-hover))]"
+                  className="w-full web3-primary-button"
                 >
                   我稍後再驗證，先去登入
                 </Button>

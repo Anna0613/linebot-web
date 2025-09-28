@@ -111,7 +111,7 @@ const Navbar = () => {
 
         {/* 手機版下拉選單 */}
         <div
-          className={`sm:hidden bg-card text-card-foreground border-t border-border fixed w-full top-14 left-0 right-0 transform transition-all duration-300 ease-in-out ${
+          className={`mobile-menu-dropdown sm:hidden text-card-foreground border-t border-border fixed w-full top-14 left-0 right-0 transform transition-all duration-300 ease-in-out ${
             mobileMenuOpen
               ? "translate-y-0 opacity-100 shadow-lg"
               : "-translate-y-full opacity-0"
@@ -155,7 +155,7 @@ const Navbar = () => {
           />
         )}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-background/95 backdrop-blur-md border-r border-border text-card-foreground z-40 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
+          className={`mobile-menu-sidebar fixed top-0 left-0 h-full w-64 border-r border-border text-card-foreground z-40 shadow-lg p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
         >
           <div className="flex justify-end">
             <button

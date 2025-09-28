@@ -480,21 +480,21 @@ export const VisualBotEditor: React.FC = () => {
     <DragDropProvider>
       <div className="h-screen flex flex-col bg-background">
         {/* Header */}
-        <header className="bg-card border-b border-border px-6 py-4">
+        <header className="web3-glass-card border-b border-border dark:border-web3-cyan/20 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* 返回按鈕 */}
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 onClick={handleGoBack}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-web3-cyan transition-colors"
                 title="返回上一頁"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              
-              <h1 className="text-xl font-semibold text-foreground">
+
+              <h1 className="web3-section-title text-xl">
                 LINE Bot 視覺化編輯器
               </h1>
               <div className="flex items-center space-x-2">

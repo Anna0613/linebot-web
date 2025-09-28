@@ -35,13 +35,13 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4 text-foreground">404</h1>
-        <p className="text-xl text-muted-foreground mb-4">Oops! Page not found</p>
+      <div className="web3-glass-card p-12 text-center web3-hover-glow">
+        <h1 className="neon-text-gradient text-6xl font-bold mb-6">404</h1>
+        <p className="text-xl text-muted-foreground mb-8">Oops! Page not found</p>
         {isAuthenticated !== null && (
           <Button
             onClick={handleReturnHome}
-            className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-[5px] text-[16px] hover:bg-[hsl(var(--line-green-hover))] px-6 py-2"
+            className="web3-primary-button px-8 py-3"
           >
             Return to Home
           </Button>

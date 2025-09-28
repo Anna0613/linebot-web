@@ -1360,8 +1360,10 @@ const BotManagementPage: React.FC = () => {
   // 處理加載狀態 - 改善載入體驗
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="web3-glass-card p-8">
+          <Loader />
+        </div>
       </div>
     );
   }
@@ -1369,8 +1371,8 @@ const BotManagementPage: React.FC = () => {
   // 如果用戶已認證但仍在載入 Bot 列表，顯示載入器
   if (loading && bots.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="web3-glass-card p-8 text-center">
           <Loader />
           <p className="mt-4 text-muted-foreground">載入 Bot 列表中...</p>
         </div>
@@ -1381,27 +1383,27 @@ const BotManagementPage: React.FC = () => {
   const selectedBot = bots.find(bot => bot.id === selectedBotId);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[hsl(var(--background))]">
+    <div className="min-h-screen flex flex-col bg-background">
       <DashboardNavbar user={user} />
-      
+
       <div className="flex-1 mt-20 mb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* 頁面標題 */}
           <div className="mb-6">
-            <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-1">LINE Bot 管理中心</h1>
+            <h1 className="web3-section-title mb-1">LINE Bot 管理中心</h1>
             <p className="text-muted-foreground">監控與控制您的 LINE Bot，管理邏輯與分析數據</p>
           </div>
 
           {/* Bot 選擇器 */}
           <div className="mb-6 sticky top-20 z-20">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <div className="web3-glass-card p-6 web3-hover-glow">
+              <div className="mb-4">
+                <h3 className="neon-text-gradient text-lg font-semibold flex items-center gap-2">
                   <Bot className="h-5 w-5" />
                   選擇 Bot
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                </h3>
+              </div>
+              <div>
                 <div className="flex items-center gap-4">
                   <Select value={selectedBotId} onValueChange={setSelectedBotId}>
                     <SelectTrigger className="w-64">
@@ -1415,29 +1417,29 @@ const BotManagementPage: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  
+
                   {selectedBot && (
                     <div className="flex items-center gap-4">
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
                         <Activity className="h-3 w-3 mr-1" />
                         啟用中
                       </Badge>
 
                       {/* WebSocket 連接狀態 */}
                       <div className="flex items-center gap-2 text-sm">
-                        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-                        <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+                        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-web3-green' : 'bg-web3-red'}`} />
+                        <span className={isConnected ? 'text-web3-green' : 'text-web3-red'}>
                           {isConnected ? '即時連接' : '離線模式'}
                         </span>
                         {connectionError && (
-                          <span className="text-red-500 text-xs">({connectionError})</span>
+                          <span className="text-web3-red text-xs">({connectionError})</span>
                         )}
                       </div>
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

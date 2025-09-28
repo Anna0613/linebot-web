@@ -146,16 +146,16 @@ export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
         }
       `}</style>
       
-      <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+      <div className="w-80 bg-secondary dark:bg-background border-r border-border dark:border-web3-cyan/20 flex flex-col h-full">
         {/* 當前模式指示器 */}
-        <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
+        <div className="p-4 web3-glass-card border-b border-border dark:border-web3-cyan/20 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">
+              <Filter className="w-4 h-4 text-web3-cyan" />
+              <span className="text-sm font-medium neon-text-cyan">
                 {currentContext === WorkspaceContext.LOGIC ? '邏輯積木' : 'Flex 組件'}
               </span>
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              <span className="text-xs text-muted-foreground bg-secondary dark:bg-web3-cyan/20 px-2 py-1 rounded">
                 自動切換
               </span>
             </div>
@@ -163,7 +163,7 @@ export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
               variant="outline"
               size="sm"
               onClick={() => onShowAllBlocksChange?.(!showAllBlocks)}
-              className="text-xs"
+              className="text-xs web3-button"
             >
               {showAllBlocks ? '僅顯示相容' : '顯示全部'}
             </Button>

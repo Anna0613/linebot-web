@@ -82,8 +82,10 @@ const HowToEstablish = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-[#3D5A80] text-lg">
-          載入中...
+        <div className="web3-glass-card p-8">
+          <div className="text-foreground text-lg">
+            載入中...
+          </div>
         </div>
       </div>
     );
@@ -113,7 +115,7 @@ const HowToEstablish = () => {
       <div className="pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6">
 
         <div className="text-center mb-8 sm:mb-12 fade-in-element">
-          <h1 className="text-foreground text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] font-bold mb-3 sm:mb-4 leading-tight tracking-wide px-2">
+          <h1 className="web3-section-title leading-tight tracking-wide px-2">
             LINE Bot 建立教學
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto px-4">
@@ -123,12 +125,9 @@ const HowToEstablish = () => {
 
         {/* 進度指示器 */}
         <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
-          <div
-            className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border-l-4"
-            style={{ borderLeftColor: ACCENT }}
-          >
+          <div className="web3-glass-card p-4 sm:p-6 web3-hover-glow border-l-4 border-web3-cyan">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
-              <h2 className="text-[#383A45] text-lg sm:text-xl font-bold">教學進度</h2>
+              <h2 className="neon-text-cyan text-lg sm:text-xl font-bold">教學進度</h2>
               <span className="text-muted-foreground font-medium text-sm sm:text-base">
                 第 {currentStep} 步，共 4 步
               </span>
@@ -144,16 +143,11 @@ const HowToEstablish = () => {
                     onClick={() => goToStep(step)}
                     className={`p-3 md:p-4 rounded-lg text-center transition-all duration-200 ${
                       state === "current"
-                        ? "text-white shadow-lg scale-105"
+                        ? "text-white shadow-neon-cyan scale-105 bg-web3-cyan"
                         : state === "done"
-                          ? "text-foreground"
-                          : "text-muted-foreground hover:bg-gray-200"
+                          ? "text-web3-cyan bg-web3-cyan/20"
+                          : "text-muted-foreground hover:bg-secondary"
                     }`}
-                    style={{
-                      backgroundColor:
-                        state === "current" ? ACCENT :
-                        state === "done" ? ACCENT_LT : "#F3F4F6",
-                    }}
                   >
                     <div className="font-bold text-base md:text-lg mb-1">步驟 {step}</div>
                     <div className="text-xs md:text-sm">

@@ -19,7 +19,9 @@ const About = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground text-lg">載入中...</div>
+        <div className="web3-glass-card p-8">
+          <div className="text-foreground text-lg">載入中...</div>
+        </div>
       </div>
     );
   }
@@ -31,7 +33,7 @@ const About = () => {
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16 fade-in-element">
-          <h1 className="text-foreground text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
+          <h1 className="web3-section-title leading-tight tracking-wide">
             關於本網站
           </h1>
           <p className="text-muted-foreground text-xl max-w-4xl mx-auto leading-relaxed">
@@ -41,7 +43,7 @@ const About = () => {
 
         {/* 平台簡介區域 */}
         <div className="max-w-6xl mx-auto mb-20">
-          <div className="bg-card text-card-foreground rounded-lg shadow-lg p-8 sm:p-12 border-l-4 border-border">
+          <div className="web3-glass-card p-8 sm:p-12 web3-hover-glow border-l-4 border-web3-cyan">
             <h2 className="text-foreground text-[32px] font-bold mb-8">
               平台簡介
             </h2>
@@ -86,12 +88,12 @@ const About = () => {
 
         {/* 功能特色區域 */}
         <div className="max-w-7xl mx-auto mb-20">
-          <h2 className="text-foreground text-[32px] font-bold text-center mb-12">
+          <h2 className="web3-section-title text-center mb-12">
             功能特色
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="bg-card rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center border-t-4 border-[hsl(var(--primary))]">
-              <div className="w-16 h-16 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="web3-glass-card p-8 web3-hover-glow text-center border-t-4 border-web3-cyan">
+              <div className="w-16 h-16 bg-web3-cyan rounded-full flex items-center justify-center mx-auto mb-6 shadow-neon-cyan">
                 <svg
                   className="w-8 h-8 text-white"
                   fill="currentColor"
@@ -100,7 +102,7 @@ const About = () => {
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-foreground font-bold text-xl mb-4">
+              <h3 className="neon-text-cyan font-bold text-xl mb-4">
                 簡單易用
               </h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -108,8 +110,8 @@ const About = () => {
               </p>
             </div>
 
-            <div className="bg-card rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center border-t-4 border-[hsl(var(--primary))]">
-              <div className="w-16 h-16 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="web3-glass-card p-8 web3-hover-glow text-center border-t-4 border-web3-purple">
+              <div className="w-16 h-16 bg-web3-purple rounded-full flex items-center justify-center mx-auto mb-6 shadow-neon-purple">
                 <svg
                   className="w-8 h-8 text-white"
                   fill="currentColor"
@@ -118,7 +120,7 @@ const About = () => {
                   <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
                 </svg>
               </div>
-              <h3 className="text-foreground font-bold text-xl mb-4">
+              <h3 className="neon-text-purple font-bold text-xl mb-4">
                 功能豐富
               </h3>
               <p className="text-muted-foreground leading-relaxed">
