@@ -2056,7 +2056,7 @@ const BotManagementPage: React.FC = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
                     {/* 用戶列表 */}
                     <div className="space-y-6">
                       {/* 廣播訊息 */}

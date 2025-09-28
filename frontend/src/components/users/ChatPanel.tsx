@@ -722,26 +722,26 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   }
 
   return (
-    <Card className="flex flex-col self-start max-h-[75vh]">
+    <Card className="flex flex-col self-start h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[75vh] max-h-[calc(100vh-8rem)] w-full">
       {/* 聊天室頭部 */}
-      <CardHeader className="pb-3 border-b">
+      <CardHeader className="pb-3 border-b flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Avatar className="h-10 w-10 flex-shrink-0">
               <AvatarImage src={selectedUser.picture_url} />
               <AvatarFallback>
                 <User className="h-5 w-5" />
               </AvatarFallback>
             </Avatar>
-            <div>
-              <CardTitle className="text-lg">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-lg truncate">
                 {selectedUser.display_name || "未設定名稱"}
               </CardTitle>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                <span>最後活動: {formatTime(selectedUser.last_interaction)}</span>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                <Clock className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">最後活動: {formatTime(selectedUser.last_interaction)}</span>
                 {/* WebSocket 連接狀態 */}
-                <div className={`flex items-center gap-1 ml-2 ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
+                <div className={`flex items-center gap-1 ${isConnected ? 'text-green-500' : 'text-red-500'} flex-shrink-0`}>
                   <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
                   <span className="text-xs">
                     {isConnected ? '即時' : '離線'}
@@ -750,8 +750,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="hidden sm:flex items-center gap-2">
               <span className="text-sm text-muted-foreground">AI 分析</span>
               <Switch checked={aiMode} onCheckedChange={toggleAIMode} />
             </div>
@@ -762,11 +762,16 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
             )}
           </div>
         </div>
+        {/* 在小螢幕上顯示 AI 分析開關 */}
+        <div className="sm:hidden flex items-center justify-between pt-3 mt-3 border-t">
+          <span className="text-sm text-muted-foreground">AI 分析</span>
+          <Switch checked={aiMode} onCheckedChange={toggleAIMode} />
+        </div>
       </CardHeader>
 
       {/* AI 模型選擇器與設定 */}
       {aiMode && (
-        <div className="px-4 pb-4 border-b">
+        <div className="px-4 pb-4 border-b flex-shrink-0">
           {/* 頂部對齊區域：模型選擇器與按鈕 */}
           <div className="flex items-center gap-2 mb-2">
             <div className="flex-1">
@@ -828,10 +833,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       )}
 
       {/* 聊天訊息區域 */}
-      <CardContent className="p-0">
+      <CardContent className="p-0 flex-1 flex flex-col min-h-0">
         <div
           ref={scrollRef}
-          className="max-h-[60vh] p-4 overflow-y-auto"
+          className="flex-1 p-4 overflow-y-auto"
           onScroll={(e: React.UIEvent<HTMLDivElement>) => {
             const el = e.currentTarget;
             if (el.scrollTop < 40 && hasMore && !isFetchingMore) {
@@ -957,7 +962,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       </CardContent>
 
       {/* 訊息輸入區域 */}
-      <div className="border-t p-4">
+      <div className="border-t p-4 flex-shrink-0">
         <div className="flex gap-2">
           <Input
             placeholder={aiMode ? "向 AI 詢問關於此用戶的問題…" : "輸入訊息..."}
