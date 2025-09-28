@@ -1,117 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Download, Upload, Save, Play, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import VisualEditorApi, { BotSummary } from '../../services/visualEditorApi';
-import { generateUnifiedCode } from '../../utils/unifiedCodeGenerator';
-
-interface BlockData {
-  [key: string]: unknown;
-}
-
-interface Block {
-  blockType: string;
-  blockData: BlockData;
-}
-
-interface ProjectData {
-  name: string;
-  version?: string;
-  createdAt?: string;
-  logicBlocks: Block[];
-  flexBlocks: Block[];
-  metadata?: {
-    description: string;
-    author: string;
-  };
-  savedAt?: string;
-}
 
 interface ProjectManagerProps {
-  logicBlocks: Block[];
-  flexBlocks: Block[];
-  onImport?: (projectData: ProjectData) => void;
   selectedBotId?: string;
   onBotSelect?: (botId: string) => void;
-  onSaveToBot?: (botId: string, data: { logicBlocks: Block[], flexBlocks: Block[], generatedCode: string }) => void;
 }
 
-const ProjectManager: React.FC<ProjectManagerProps> = ({ 
-  logicBlocks, 
-  flexBlocks, 
-  onImport,
+const ProjectManager: React.FC<ProjectManagerProps> = ({
   selectedBotId,
-  onBotSelect,
-  onSaveToBot
+  onBotSelect
 }) => {
-  // 移除用戶輸入的專案名稱，改為自動生成
-  const getProjectName = () => {
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('zh-TW').replace(/\//g, '-');
-    const timeStr = now.toLocaleTimeString('zh-TW', { hour12: false }).replace(/:/g, '-');
-    return `LINE_Bot_專案_${dateStr}_${timeStr}`;
-  };
   const [bots, setBots] = useState<BotSummary[]>([]);
   const [isLoadingBots, setIsLoadingBots] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  const exportProject = () => {
-    const projectName = getProjectName();
-    const projectData: ProjectData = {
-      name: projectName,
-      version: '1.0.0',
-      createdAt: new Date().toISOString(),
-      logicBlocks: logicBlocks,
-      flexBlocks: flexBlocks,
-      metadata: {
-        description: '使用 LINE Bot 視覺化編輯器建立的專案',
-        author: 'LINE Bot Visual Editor'
-      }
-    };
-
-    const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${projectName.replace(/\s+/g, '_')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const importProject = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const target = e.target as HTMLInputElement;
-      const file = target.files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const result = e.target?.result as string;
-            const projectData = JSON.parse(result) as ProjectData;
-            if (projectData.logicBlocks && projectData.flexBlocks) {
-              // 移除 setProjectName 調用，因為不再需要設定專案名稱
-              if (onImport) {
-                onImport(projectData);
-              }
-            } else {
-              alert('無效的專案檔案格式');
-            }
-          } catch (error) {
-            alert('檔案讀取失敗：' + (error as Error).message);
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  };
 
   // 載入用戶的 Bot 列表
   const loadBots = useCallback(async () => {
@@ -140,60 +45,10 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     }
   }, [toast]);
 
-  // 統一的儲存功能 - 儲存到資料庫
-  const saveProject = async () => {
-    if (!selectedBotId) {
-      toast({
-        variant: 'destructive',
-        title: '儲存失敗',
-        description: '請先選擇一個 Bot'
-      });
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      // 生成程式碼
-      const generatedCode = generateUnifiedCode(logicBlocks, flexBlocks);
-      
-      // 呼叫父組件的儲存函數
-      if (onSaveToBot) {
-        await onSaveToBot(selectedBotId, {
-          logicBlocks,
-          flexBlocks,
-          generatedCode
-        });
-      }
-
-      toast({
-        title: '儲存成功',
-        description: '專案已成功儲存到資料庫'
-      });
-    } catch (err) {
-      toast({
-        variant: 'destructive',
-        title: '儲存失敗',
-        description: err instanceof Error ? err.message : '儲存失敗'
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const testBot = () => {
-    // 切換到預覽標籤
-    const previewTab = document.querySelector('[value="preview"]') as HTMLElement;
-    if (previewTab) {
-      previewTab.click();
-    }
-  };
-
   // 組件載入時取得 Bot 列表
   useEffect(() => {
     loadBots();
   }, [loadBots]);
-
 
   return (
     <div className="space-y-4">
@@ -230,36 +85,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
         </div>
 
         {/* 移除專案名稱輸入欄位 */}
-      
-        <Button variant="outline" size="sm" onClick={importProject}>
-          <Upload className="w-4 h-4 mr-2" />
-          匯入
-        </Button>
-        
-        <Button variant="outline" size="sm" onClick={exportProject}>
-          <Download className="w-4 h-4 mr-2" />
-          匯出
-        </Button>
-        
-        {/* 儲存按鈕 */}
-        <Button 
-          variant="default" 
-          size="sm" 
-          onClick={saveProject}
-          disabled={!selectedBotId || isSaving}
-        >
-          {isSaving ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4 mr-2" />
-          )}
-          {isSaving ? '儲存中...' : '儲存'}
-        </Button>
-        
-        <Button variant="default" size="sm" onClick={testBot}>
-          <Play className="w-4 h-4 mr-2" />
-          測試
-        </Button>
+        {/* 已移除匯出、匯入、儲存、測試按鈕 */}
       </div>
     </div>
   );

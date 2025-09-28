@@ -509,13 +509,9 @@ export const VisualBotEditor: React.FC = () => {
               </div>
             </div>
             
-            <ProjectManager 
-              logicBlocks={logicBlocks}
-              flexBlocks={flexBlocks}
-              onImport={handleImportProject}
+            <ProjectManager
               selectedBotId={selectedBotId}
               onBotSelect={handleBotSelect}
-              onSaveToBot={handleSaveToBot}
             />
           </div>
         </header>
