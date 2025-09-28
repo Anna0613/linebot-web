@@ -125,12 +125,16 @@ class AuthPollingManager {
     this.isChecking = true;
 
     try {
-      const response = await fetch('/api/v1/auth/check-login', {
-        credentials: 'include',
-        headers: {
-          'Cache-Control': 'no-cache'
+      const { API_CONFIG, getApiUrl } = await import('../config/apiConfig');
+      const response = await fetch(
+        getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN),
+        {
+          credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
         }
-      });
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -199,10 +203,14 @@ class AuthPollingManager {
    */
   private async refreshToken(): Promise<void> {
     try {
-      const response = await fetch('/api/v1/auth/refresh', {
-        method: 'POST',
-        credentials: 'include'
-      });
+      const { API_CONFIG, getApiUrl } = await import('../config/apiConfig');
+      const response = await fetch(
+        getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.REFRESH),
+        {
+          method: 'POST',
+          credentials: 'include'
+        }
+      );
 
       if (response.ok) {
         console.log('[AuthPollingManager] Token refreshed successfully');

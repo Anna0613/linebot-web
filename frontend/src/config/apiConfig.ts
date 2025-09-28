@@ -43,6 +43,7 @@ export const API_CONFIG = {
       REGISTER: "/register",
       LOGOUT: "/logout",
       CHECK_LOGIN: "/check-login",
+      REFRESH: "/refresh",
       VERIFY_EMAIL: "/verify-email",
       FORGOT_PASSWORD: "/forgot_password",
       RESET_PASSWORD: (token: string) => `/reset_password/${token}`,
