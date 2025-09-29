@@ -52,10 +52,11 @@ export class RichMenuApi {
     return this.api.delete(url);
   }
 
-  static async uploadImage(botId: string, menuId: string, file: File): Promise<RichMenu> {
+  static async uploadImage(botId: string, menuId: string, file: Blob | File): Promise<RichMenu> {
     const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/richmenus/${menuId}/image`);
     const form = new FormData();
-    form.append('image', file);
+    const filename = (file as File).name || 'richmenu.jpg';
+    form.append('image', file, filename);
     const res = await this.api.postFormData<RichMenu>(url, form);
     if (!res.success || !res.data) throw new Error(res.error || '上傳圖片失敗');
     return res.data as RichMenu;

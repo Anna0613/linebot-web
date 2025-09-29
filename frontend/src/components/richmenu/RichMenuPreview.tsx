@@ -1,6 +1,8 @@
 import React from 'react';
 import type { RichMenuArea, RichMenuBounds } from '@/types/richMenu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 export interface RichMenuPreviewData {
   name: string;
@@ -16,22 +18,29 @@ type Props = {
   onSelectArea?: (index: number) => void;
   onCreateArea?: (bounds: RichMenuBounds) => void;
   onUpdateArea?: (index: number, bounds: RichMenuBounds) => void;
+  onDeleteArea?: (index: number) => void;
+  imageNaturalWidth?: number;
+  imageNaturalHeight?: number;
+  imageOffset?: { x: number; y: number };
+  onImageOffsetChange?: (offset: { x: number; y: number }) => void;
 };
 
 const HANDLE = 10;
 
-const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, onCreateArea, onUpdateArea }) => {
+const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, onCreateArea, onUpdateArea, onDeleteArea, imageNaturalWidth, imageNaturalHeight, imageOffset, onImageOffsetChange }) => {
   const widthBase = 2500;
   const heightBase = data?.size?.height || 1686;
 
   // 互動拖曳狀態
   const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const [dragMode, setDragMode] = React.useState<'idle'|'creating'|'moving'|'resizing'>('idle');
+  const [dragMode, setDragMode] = React.useState<'idle'|'creating'|'moving'|'resizing'|'panning'>('idle');
   const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
   const startRef = React.useRef<{x:number;y:number}>();
   const startBoundsRef = React.useRef<RichMenuBounds>();
   const resizeAnchorRef = React.useRef<'nw'|'ne'|'sw'|'se'>();
   const [draft, setDraft] = React.useState<RichMenuBounds | null>(null);
+  const [gridSize, setGridSize] = React.useState<number>(25);
+  const [panMode, setPanMode] = React.useState<boolean>(false);
 
   const getPointBase = (e: React.MouseEvent) => {
     const el = containerRef.current;
@@ -57,6 +66,12 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
     if (!data) return;
     const el = containerRef.current;
     if (!el) return;
+    // panning image
+    if (panMode) {
+      setDragMode('panning');
+      startRef.current = getPointBase(e);
+      return;
+    }
     // if clicked on handle
     const target = e.target as HTMLElement;
     const role = target.getAttribute('data-role');
@@ -92,6 +107,28 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
   const onMouseMove = (e: React.MouseEvent) => {
     if (dragMode === 'idle') return;
     const p = getPointBase(e);
+    if (dragMode === 'panning' && startRef.current && onImageOffsetChange && imageNaturalWidth && imageNaturalHeight) {
+      // compute new offset based on delta in base coordinates
+      const dx = p.x - startRef.current.x;
+      const dy = p.y - startRef.current.y;
+      // move reference point for continuous pan
+      startRef.current = p;
+      const iw = imageNaturalWidth;
+      const ih = imageNaturalHeight;
+      const scale = Math.max(widthBase / iw, heightBase / ih);
+      const dsW = iw * scale;
+      const dsH = ih * scale;
+      const cur = imageOffset || { x: Math.round((widthBase - dsW) / 2), y: Math.round((heightBase - dsH) / 2) };
+      let nx = cur.x + dx;
+      let ny = cur.y + dy;
+      // clamp so image always covers the canvas
+      const minX = widthBase - dsW;
+      const minY = heightBase - dsH;
+      nx = Math.max(minX, Math.min(0, nx));
+      ny = Math.max(minY, Math.min(0, ny));
+      onImageOffsetChange({ x: Math.round(nx), y: Math.round(ny) });
+      return;
+    }
     if (dragMode === 'creating' && startRef.current) {
       const x1 = Math.min(startRef.current.x, p.x);
       const y1 = Math.min(startRef.current.y, p.y);
@@ -144,11 +181,25 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium">即時預覽</h3>
-        {data?.chat_bar_text && (
-          <div className="text-xs text-muted-foreground">聊天室按鈕：{data.chat_bar_text}</div>
-        )}
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium">即時預覽</h3>
+          <div className="text-xs text-muted-foreground">聊天室按鈕：{data?.chat_bar_text || '（未設定）'}</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground">格線：</div>
+          <Select value={String(gridSize)} onValueChange={(v) => setGridSize(Number(v))}>
+            <SelectTrigger className="h-7 w-24"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">細</SelectItem>
+              <SelectItem value="25">中</SelectItem>
+              <SelectItem value="50">粗</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant={panMode ? 'default' : 'outline'} onClick={() => setPanMode(v => !v)}>
+            {panMode ? '調整圖片中' : '調整圖片'}
+          </Button>
+        </div>
       </div>
       <div className="flex-1 w-full">
         <div
@@ -156,18 +207,35 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
           className="relative w-full border rounded-md overflow-hidden bg-muted select-none"
           style={{ aspectRatio: `${widthBase} / ${heightBase}`, backgroundImage: `
             linear-gradient(0deg, rgba(0,0,0,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)` , backgroundSize: '25px 25px'}}
+            linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)` , backgroundSize: `${gridSize}px ${gridSize}px`}}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
         >
           {/* 背景圖片或佔位 */}
           {data?.image_url ? (
-            <img
-              src={data.image_url}
-              alt="richmenu"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+            (() => {
+              const iw = imageNaturalWidth || 0;
+              const ih = imageNaturalHeight || 0;
+              const scale = iw && ih ? Math.max(widthBase / iw, heightBase / ih) : 1;
+              const dsW = iw * scale;
+              const dsH = ih * scale;
+              const ox = imageOffset?.x ?? Math.round((widthBase - dsW) / 2);
+              const oy = imageOffset?.y ?? Math.round((heightBase - dsH) / 2);
+              const left = (ox / widthBase) * 100;
+              const top = (oy / heightBase) * 100;
+              const w = (dsW / widthBase) * 100;
+              const h = (dsH / heightBase) * 100;
+              return (
+                <img
+                  src={data.image_url}
+                  alt="richmenu"
+                  className="absolute"
+                  style={{ left: `${left}%`, top: `${top}%`, width: `${w}%`, height: `${h}%`, objectFit: 'cover' }}
+                  draggable={false}
+                />
+              );
+            })()
           ) : (
             <div className="absolute inset-0 grid place-items-center text-xs text-muted-foreground">
               尚未上傳選單圖片
@@ -196,10 +264,17 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
                     className={`absolute ${isActive ? 'border-2 border-blue-600 bg-blue-500/10' : 'border-2 border-blue-500/70 bg-blue-500/10'}`}
                     style={{ left: `${left}%`, top: `${top}%`, width: `${w}%`, height: `${h}%` }}
                     onClick={(e) => { e.stopPropagation(); setActiveIndex(idx); onSelectArea?.(idx); }}
+                    onContextMenu={(e) => { e.preventDefault(); onDeleteArea?.(idx); }}
                   >
                     {/* label */}
                     <div className="absolute -top-5 left-0 text-[10px] bg-blue-600 text-white px-1 rounded">
                       #{idx + 1}
+                    </div>
+                    {/* hover toolbar */}
+                    <div className="absolute right-1 top-1 hidden group-[.area]:block"></div>
+                    <div className="absolute right-1 top-1 text-[10px] bg-black/60 text-white rounded px-1 py-0.5 opacity-0 hover:opacity-100 transition">
+                      <button className="underline mr-1" onClick={(ev) => { ev.stopPropagation(); onSelectArea?.(idx); }}>編輯</button>
+                      <button className="underline" onClick={(ev) => { ev.stopPropagation(); onDeleteArea?.(idx); }}>刪除</button>
                     </div>
                     {/* resize handles */}
                     {isActive && (

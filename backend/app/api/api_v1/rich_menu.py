@@ -217,6 +217,40 @@ async def upload_rich_menu_image(
         raise HTTPException(status_code=400, detail="空的圖片內容")
 
     try:
+        # 基本格式驗證
+        allowed_types = {"image/jpeg": "jpg", "image/png": "png"}
+        ctype = (image.content_type or "").lower()
+        if ctype not in allowed_types:
+            raise HTTPException(status_code=415, detail="不支援的圖片格式，僅支援 JPG/PNG")
+
+        # 嘗試保護性尺寸驗證與校正
+        processed_bytes = content
+        try:
+            from PIL import Image
+            import io
+            # 取得目標尺寸（依 richmenu 設定）
+            target_w = 2500
+            target_h = int(m.size.get("height", 1686)) if isinstance(m.size, dict) else 1686
+            img = Image.open(io.BytesIO(content))
+            img = img.convert("RGB") if ctype == "image/jpeg" else img.convert("RGBA")
+            iw, ih = img.size
+            # cover 縮放 + 置中裁切，確保最終符合規格
+            scale = max(target_w / iw, target_h / ih)
+            new_w, new_h = int(iw * scale), int(ih * scale)
+            img = img.resize((new_w, new_h), Image.LANCZOS)
+            left = max(0, (new_w - target_w) // 2)
+            top = max(0, (new_h - target_h) // 2)
+            img = img.crop((left, top, left + target_w, top + target_h))
+            out = io.BytesIO()
+            if ctype == "image/jpeg":
+                img = img.convert("RGB")
+                img.save(out, format="JPEG", quality=90)
+            else:
+                img.save(out, format="PNG")
+            processed_bytes = out.getvalue()
+        except Exception as _pil_err:
+            logger.warning(f"PIL 驗證/校正失敗，將直接儲存原圖: {_pil_err}")
+
         from app.services.minio_service import get_minio_service
         svc = get_minio_service()
         if not svc:
@@ -234,8 +268,8 @@ async def upload_rich_menu_image(
             svc.client.put_object,
             svc.bucket_name,
             object_path,
-            BytesIO(content),
-            len(content),
+            BytesIO(processed_bytes),
+            len(processed_bytes),
             content_type=content_type,
         )
 

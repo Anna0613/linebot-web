@@ -150,6 +150,14 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
                   onSelectArea={(i) => previewControlsRef.current?.selectArea(i >= 0 ? i : null)}
                   onCreateArea={(b) => previewControlsRef.current?.createArea(b)}
                   onUpdateArea={(i, b) => previewControlsRef.current?.updateArea(i, b)}
+                  onDeleteArea={(i) => previewControlsRef.current?.removeArea?.(i)}
+                  imageNaturalWidth={(previewData as any)?.image_meta?.iw}
+                  imageNaturalHeight={(previewData as any)?.image_meta?.ih}
+                  imageOffset={(previewData as any)?.image_meta?.offset}
+                  onImageOffsetChange={(offset) => {
+                    // reflect to form state via binding if provided
+                    previewControlsRef.current?.setImageOffset?.(offset);
+                  }}
                 />
               </CardContent>
             </Card>

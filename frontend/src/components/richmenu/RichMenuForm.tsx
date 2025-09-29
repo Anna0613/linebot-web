@@ -20,11 +20,14 @@ type Props = {
     size: { width: 2500; height: 1686 | 843 };
     areas: RichMenuArea[];
     image_url?: string;
+    image_meta?: { iw: number; ih: number; offset: { x: number; y: number } };
   }) => void;
   onBindPreviewControls?: (controls: {
     createArea: (b: RichMenuBounds) => void;
     updateArea: (index: number, b: RichMenuBounds) => void;
     selectArea: (index: number | null) => void;
+    removeArea: (index: number) => void;
+    setImageOffset: (offset: { x: number; y: number }) => void;
   }) => void;
   onSelectedIndexChange?: (index: number | null) => void;
 };
@@ -52,6 +55,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [selectedAreaIndex, setSelectedAreaIndex] = useState<number | null>(null);
+  const [imageMeta, setImageMeta] = useState<{ iw: number; ih: number; offset: { x: number; y: number } } | null>(null);
 
   useEffect(() => {
     if (menu) {
@@ -73,8 +77,9 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
       size: { width: 2500, height: Number(height) as 1686 | 843 },
       areas,
       image_url: imageUrl,
+      image_meta: imageMeta || undefined,
     });
-  }, [name, chatBarText, height, areas, imageUrl, onChangePreview]);
+  }, [name, chatBarText, height, areas, imageUrl, imageMeta, onChangePreview]);
 
   // 將互動控制權綁定給父層（預覽面板）
   useEffect(() => {
@@ -94,7 +99,13 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
       selectArea: (index) => {
         setSelectedAreaIndex(index);
         onSelectedIndexChange?.(index);
-      }
+      },
+      removeArea: (index) => {
+        setAreas(prev => prev.filter((_, i) => i !== index));
+      },
+      setImageOffset: (offset) => {
+        setImageMeta(prev => prev ? ({ ...prev, offset }) : prev);
+      },
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [areas.length, onBindPreviewControls]);
@@ -138,11 +149,11 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
         const create: CreateRichMenuPayload = payload as any;
         saved = await RichMenuApi.create(botId, create);
       }
-      // 若有待上傳圖片，保存後一併上傳
+      // 若有待上傳圖片，保存後一併上傳（依照目前高度裁切/縮放）
       if (pendingFile) {
         try {
-          await validateImage(pendingFile);
-          const updated = await RichMenuApi.uploadImage(botId, saved.id, pendingFile);
+          const blob = await renderProcessedImage(pendingFile);
+          const updated = await RichMenuApi.uploadImage(botId, saved.id, blob);
           setImageUrl(updated.image_url);
           toast({ title: '圖片已上傳', description: '已更新選單圖片' });
         } catch (err: any) {
@@ -162,7 +173,41 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
     }
   };
 
-  const validateImage = (file: File): Promise<void> => {
+  const renderProcessedImage = (file: File): Promise<Blob> => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          const iw = img.width;
+          const ih = img.height;
+          const expectedW = 2500;
+          const expectedH = Number(height);
+          const scale = Math.max(expectedW / iw, expectedH / ih);
+          const dsW = iw * scale;
+          const dsH = ih * scale;
+          const offset = imageMeta?.offset || { x: Math.round((expectedW - dsW) / 2), y: Math.round((expectedH - dsH) / 2) };
+          const canvas = document.createElement('canvas');
+          canvas.width = expectedW;
+          canvas.height = expectedH;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('瀏覽器不支援 Canvas'));
+          ctx.clearRect(0, 0, expectedW, expectedH);
+          // draw scaled image with offset
+          ctx.drawImage(img, offset.x, offset.y, dsW, dsH);
+          canvas.toBlob((blob) => {
+            if (!blob) return reject(new Error('轉換圖片失敗'));
+            resolve(blob);
+          }, file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.9);
+        };
+        img.onerror = () => reject(new Error('載入圖片失敗'));
+        img.src = URL.createObjectURL(file);
+      } catch (e) {
+        reject(e as Error);
+      }
+    });
+  };
+
+  const validateImage = (file: File): Promise<{ iw: number; ih: number }> => {
     return new Promise((resolve, reject) => {
       const allowed = ['image/jpeg', 'image/png'];
       if (!allowed.includes(file.type)) {
@@ -175,15 +220,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
         return;
       }
       const img = new Image();
-      img.onload = () => {
-        const expectedW = 2500;
-        const expectedH = Number(height);
-        if (img.width !== expectedW || img.height !== expectedH) {
-          reject(new Error(`圖片尺寸需為 ${expectedW}×${expectedH}（目前為 ${img.width}×${img.height}），請先裁切後再上傳`));
-        } else {
-          resolve();
-        }
-      };
+      img.onload = () => resolve({ iw: img.width, ih: img.height });
       img.onerror = () => reject(new Error('讀取圖片失敗，請更換檔案'));
       img.src = URL.createObjectURL(file);
     });
@@ -193,12 +230,19 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
     if (!file) return;
     try {
       setUploading(true);
-      await validateImage(file);
-      // 預先預覽，不立即上傳，待保存時一併處理
+      const { iw, ih } = await validateImage(file);
+      // 預先預覽：計算 cover 比例與置中偏移
+      const expectedW = 2500;
+      const expectedH = Number(height);
+      const scale = Math.max(expectedW / iw, expectedH / ih);
+      const dsW = iw * scale;
+      const dsH = ih * scale;
+      const offset = { x: Math.round((expectedW - dsW) / 2), y: Math.round((expectedH - dsH) / 2) };
       const url = URL.createObjectURL(file);
       setImageUrl(url);
+      setImageMeta({ iw, ih, offset });
       setPendingFile(file);
-      toast({ title: '已選取圖片', description: '請按「儲存選單」，系統會一併上傳並套用' });
+      toast({ title: '已選取圖片', description: '可拖曳右側圖片調整顯示位置，最後按「儲存選單」套用。' });
     } catch (e: any) {
       toast({ variant: 'destructive', title: '上傳失敗', description: e?.message || '請稍後再試' });
     } finally {
