@@ -532,15 +532,47 @@ async def process_single_event(
         source = event.get('source', {})
         source_type = source.get('type')
         user_id = source.get('userId')
+        webhook_event_id = event.get('webhookEventId')
 
         reply_token = event.get('replyToken')
         logger.info(f"📬 replyToken 存在: {bool(reply_token)}")
 
-
-        print(f"🔍 處理事件詳情: type={event_type}, source={source_type}, user={user_id}")
+        print(f"🔍 處理事件詳情: type={event_type}, source={source_type}, user={user_id}, webhookEventId={webhook_event_id}")
         print(f"🔍 完整事件內容: {event}")
-        logger.info(f"🔍 處理事件詳情: type={event_type}, source={source_type}, user={user_id}")
+        logger.info(f"🔍 處理事件詳情: type={event_type}, source={source_type}, user={user_id}, webhookEventId={webhook_event_id}")
         logger.info(f"🔍 完整事件內容: {event}")
+
+        # 檢查 webhookEventId 是否已處理過（防止重複處理）
+        if webhook_event_id:
+            from app.config.redis_config import CacheService as AsyncCache, redis_manager
+            print(f"🔍 Redis 連接狀態: {redis_manager.is_connected}")
+            logger.info(f"🔍 Redis 連接狀態: {redis_manager.is_connected}")
+
+            if redis_manager.is_connected:
+                try:
+                    webhook_cache_key = f"webhook_event:{bot_id}:{webhook_event_id}"
+                    print(f"🔍 檢查 webhook 快取鍵: {webhook_cache_key}")
+                    logger.info(f"🔍 檢查 webhook 快取鍵: {webhook_cache_key}")
+
+                    is_processed = await AsyncCache.get(webhook_cache_key)
+                    print(f"🔍 快取檢查結果: {is_processed}")
+                    logger.info(f"🔍 快取檢查結果: {is_processed}")
+
+                    if is_processed:
+                        print(f"⏭️ 跳過重複的 webhook 事件: {webhook_event_id}")
+                        logger.info(f"⏭️ 跳過重複的 webhook 事件: {webhook_event_id}")
+                        return None
+
+                    # 標記此事件為已處理（TTL 24小時）
+                    await AsyncCache.set(webhook_cache_key, "processed", ttl=86400)
+                    print(f"✅ 標記 webhook 事件為已處理: {webhook_event_id}")
+                    logger.info(f"✅ 標記 webhook 事件為已處理: {webhook_event_id}")
+                except Exception as cache_err:
+                    print(f"⚠️ webhook 事件重複檢查失敗，繼續處理: {cache_err}")
+                    logger.warning(f"⚠️ webhook 事件重複檢查失敗，繼續處理: {cache_err}")
+            else:
+                print(f"⚠️ Redis 未連接，跳過 webhook 事件重複檢查")
+                logger.warning(f"⚠️ Redis 未連接，跳過 webhook 事件重複檢查")
 
         # 僅處理來自 user 的事件
         if source_type != 'user' or not user_id:
