@@ -58,8 +58,7 @@ const EmailVerification = () => {
       case "loading":
         return (
           <div className="flex flex-col items-center">
-            <Loader fullPage={false} />
-            <p className="mt-4 text-lg text-muted-foreground">正在驗證您的電子郵件...</p>
+            <Loader fullPage={false} text="正在驗證您的電子郵件..." web3Style={true} />
           </div>
         );
       case "success":

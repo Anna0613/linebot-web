@@ -1361,8 +1361,8 @@ const BotManagementPage: React.FC = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="web3-glass-card p-8">
-          <Loader />
+        <div className="web3-loader-card p-8">
+          <Loader fullPage={false} text="驗證身份中..." web3Style={true} />
         </div>
       </div>
     );
@@ -1372,9 +1372,8 @@ const BotManagementPage: React.FC = () => {
   if (loading && bots.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="web3-glass-card p-8 text-center">
-          <Loader />
-          <p className="mt-4 text-muted-foreground">載入 Bot 列表中...</p>
+        <div className="web3-loader-card p-8 text-center">
+          <Loader fullPage={false} text="載入 Bot 列表中..." web3Style={true} />
         </div>
       </div>
     );
@@ -1986,7 +1985,7 @@ const BotManagementPage: React.FC = () => {
                   <CardContent>
                     {logicLoading ? (
                       <div className="flex justify-center py-8">
-                        <Loader />
+                        <Loader fullPage={false} text="載入邏輯模板..." web3Style={true} />
                       </div>
                     ) : logicTemplates.length === 0 ? (
                       <div className="text-center py-8">

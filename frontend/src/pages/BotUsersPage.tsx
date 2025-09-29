@@ -672,8 +672,10 @@ const BotUsersPage: React.FC = () => {
   // 處理加載狀態
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="web3-loader-card p-8">
+          <Loader fullPage={false} text="載入用戶資料..." web3Style={true} />
+        </div>
       </div>
     );
   }

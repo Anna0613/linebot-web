@@ -104,7 +104,99 @@
   z-index: 9999;
 }
 
+/* Web3 深色模式 loading 樣式 */
+.dark .loading-overlay {
+  background: linear-gradient(135deg,
+    rgba(15, 23, 42, 0.95) 0%,
+    rgba(26, 27, 58, 0.95) 50%,
+    rgba(42, 45, 90, 0.95) 100%);
+  backdrop-filter: blur(20px);
+}
+
 /* 在按鈕內保持loader置中 */
 .button-loader .loader {
   margin: 0 auto;
+}
+
+/* Web3 Loader 容器 */
+.web3-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Web3 Loader 文字 */
+.web3-loader-text {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* 深色模式下的 Web3 Loader 效果 */
+.dark .web3-loader-container {
+  position: relative;
+}
+
+/* 移除發光背景效果，避免產生外框感 */
+.dark .web3-loader-container::before {
+  display: none;
+}
+
+.dark .web3-loader-text {
+  color: hsl(var(--foreground));
+  /* 移除文字陰影效果 */
+}
+
+/* Web3 發光動畫 */
+@keyframes web3-glow {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* 深色模式下的 loader cells 增強效果 */
+.dark .cell {
+  /* 移除外框，只保留顏色效果 */
+}
+
+.dark .cell:nth-child(1) {
+  --cell-color: hsl(var(--web3-green));
+}
+
+.dark .cell:nth-child(2) {
+  --cell-color: hsl(var(--web3-cyan));
+}
+
+.dark .cell:nth-child(3) {
+  --cell-color: hsl(var(--web3-cyan));
+}
+
+.dark .cell:nth-child(4) {
+  --cell-color: hsl(var(--web3-cyan));
+}
+
+.dark .cell:nth-child(5) {
+  --cell-color: hsl(var(--web3-cyan));
+}
+
+.dark .cell:nth-child(6) {
+  --cell-color: hsl(var(--web3-purple));
+}
+
+.dark .cell:nth-child(7) {
+  --cell-color: hsl(var(--web3-purple));
+}
+
+.dark .cell:nth-child(8) {
+  --cell-color: hsl(var(--web3-indigo));
+}
+
+.dark .cell:nth-child(9) {
+  --cell-color: hsl(var(--web3-pink));
 }

@@ -1,8 +1,10 @@
 interface LoaderProps {
   fullPage?: boolean;
+  text?: string;
+  web3Style?: boolean;
 }
 
-export function Loader({ fullPage = false }: LoaderProps) {
+export function Loader({ fullPage = false, text, web3Style = true }: LoaderProps) {
   const loaderContent = (
     <div className="loader">
       <div className="cell d-1"></div>
@@ -17,9 +19,24 @@ export function Loader({ fullPage = false }: LoaderProps) {
     </div>
   );
 
+  const web3LoaderContent = (
+    <div className="web3-loader-container">
+      {loaderContent}
+      {text && <div className="web3-loader-text">{text}</div>}
+    </div>
+  );
+
   if (fullPage) {
-    return <div className="loading-overlay">{loaderContent}</div>;
+    return (
+      <div className="loading-overlay">
+        {web3Style ? web3LoaderContent : loaderContent}
+      </div>
+    );
   }
 
-  return <div className="button-loader">{loaderContent}</div>;
+  return (
+    <div className="button-loader">
+      {web3Style ? web3LoaderContent : loaderContent}
+    </div>
+  );
 }

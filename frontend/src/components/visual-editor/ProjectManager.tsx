@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader } from '../ui/loader';
 import { useToast } from '../../hooks/use-toast';
 import VisualEditorApi, { BotSummary } from '../../services/visualEditorApi';
 
@@ -81,7 +81,11 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
               )}
             </SelectContent>
           </Select>
-          {isLoadingBots && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isLoadingBots && (
+            <div className="scale-50">
+              <Loader fullPage={false} web3Style={true} />
+            </div>
+          )}
         </div>
 
         {/* 移除專案名稱輸入欄位 */}

@@ -47,8 +47,8 @@ const DashboardPage = memo(() => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="web3-glass-card p-8">
-          <Loader />
+        <div className="web3-loader-card p-8">
+          <Loader fullPage={false} text="載入儀表板..." web3Style={true} />
         </div>
       </div>
     );

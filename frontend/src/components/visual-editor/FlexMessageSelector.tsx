@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Loader2, Plus, Save } from 'lucide-react';
+import { Loader } from '../ui/loader';
+import { Plus, Save } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import VisualEditorApi, { FlexMessageSummary } from '../../services/visualEditorApi';
 
@@ -152,7 +153,11 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
             )}
           </SelectContent>
         </Select>
-        {isLoadingFlexMessages && <Loader2 className="h-4 w-4 animate-spin" />}
+        {isLoadingFlexMessages && (
+          <div className="scale-50">
+            <Loader fullPage={false} web3Style={true} />
+          </div>
+        )}
         
         {/* 創建新 FlexMessage 按鈕 */}
         {!showCreateFlexMessage ? (
@@ -205,7 +210,9 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
           disabled={!selectedFlexMessageId || isSaving || disabled}
         >
           {isSaving ? (
-            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+            <div className="scale-50 mr-1">
+              <Loader fullPage={false} web3Style={true} />
+            </div>
           ) : (
             <Save className="w-4 h-4 mr-1" />
           )}

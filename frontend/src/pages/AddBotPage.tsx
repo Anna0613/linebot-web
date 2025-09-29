@@ -1,6 +1,7 @@
 import BotCreationForm from "../components/forms/BotCreationForm";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
+import { Loader } from "@/components/ui/loader";
 import React from "react";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 
@@ -13,7 +14,9 @@ const AddBotPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-[#5A2C1D] text-lg loading-pulse">載入中...</div>
+        <div className="web3-loader-card p-8">
+          <Loader fullPage={false} text="載入中..." web3Style={true} />
+        </div>
       </div>
     );
   }
@@ -21,7 +24,10 @@ const AddBotPage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-red-600 text-lg">{error}</div>
+        <div className="web3-glass-card p-8 text-center max-w-md">
+          <h1 className="text-2xl font-bold text-destructive mb-4">載入錯誤</h1>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
       </div>
     );
   }

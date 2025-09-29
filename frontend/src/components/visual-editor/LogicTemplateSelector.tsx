@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Loader2, Plus, Save } from 'lucide-react';
+import { Loader } from '../ui/loader';
+import { Plus, Save } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import VisualEditorApi, { LogicTemplateSummary } from '../../services/visualEditorApi';
 import { generateUnifiedCode } from '../../utils/unifiedCodeGenerator';
@@ -175,7 +176,11 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
             )}
           </SelectContent>
         </Select>
-        {isLoadingLogicTemplates && <Loader2 className="h-4 w-4 animate-spin" />}
+        {isLoadingLogicTemplates && (
+          <div className="scale-50">
+            <Loader fullPage={false} web3Style={true} />
+          </div>
+        )}
         
         {/* 創建新邏輯模板按鈕 */}
         {!showCreateLogicTemplate ? (
@@ -228,7 +233,9 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
           disabled={!selectedLogicTemplateId || isSaving || disabled}
         >
           {isSaving ? (
-            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+            <div className="scale-50 mr-1">
+              <Loader fullPage={false} web3Style={true} />
+            </div>
           ) : (
             <Save className="w-4 h-4 mr-1" />
           )}
