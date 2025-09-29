@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuthPollingManager } from '@/services/AuthPollingManager';
-import { useSmartPolling, useAuthPolling, useWebSocketPolling, useJobPolling } from './useSmartPolling';
+import { useSmartPolling, useWebSocketPolling, useJobPolling } from './useSmartPolling';
 
 /**
  * 優化的認證檢查 Hook
@@ -111,19 +111,10 @@ export const useVisibilityAwarePolling = (
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // 如果 interval 為 0 或負數，不啟動輪詢
-  if (interval <= 0) {
-    return {
-      startPolling: () => {},
-      stopPolling: () => {},
-      resetInterval: () => {},
-      getCurrentInterval: () => 0
-    };
-  }
-
+  // Always initialize the hook; gate behavior via shouldPoll
   return useSmartPolling(callback, {
-    baseInterval: interval,
-    shouldPoll: () => isVisible.current,
+    baseInterval: interval > 0 ? interval : 2147483647,
+    shouldPoll: () => interval > 0 && isVisible.current,
     enableBackoff: true
   });
 };

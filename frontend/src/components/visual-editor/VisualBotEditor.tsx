@@ -10,19 +10,13 @@ import { Button } from '../ui/button';
 import { UnifiedBlock } from '../../types/block';
 import VisualEditorApi, { FlexMessage } from '../../services/visualEditorApi';
 
-// 專案資料介面
-interface ProjectData {
-  name: string;
-  logicBlocks: UnifiedBlock[];
-  flexBlocks: UnifiedBlock[];
-  version?: string;
-}
+// 專案資料介面（未使用，已移除）
 
 export const VisualBotEditor: React.FC = () => {
   const navigate = useNavigate();
   const [logicBlocks, setLogicBlocks] = useState<UnifiedBlock[]>([]);
   const [flexBlocks, setFlexBlocks] = useState<UnifiedBlock[]>([]);
-  const [projectVersion, setProjectVersion] = useState<string>('2.0'); // 新版本使用統一積木系統
+  const [projectVersion, _setProjectVersion] = useState<string>('2.0'); // 新版本使用統一積木系統
   const [selectedBotId, setSelectedBotId] = useState<string>('');
   const [selectedLogicTemplateId, setSelectedLogicTemplateId] = useState<string>('');
   const [selectedFlexMessageId, setSelectedFlexMessageId] = useState<string>('');
@@ -384,54 +378,7 @@ export const VisualBotEditor: React.FC = () => {
     }
   };
 
-  // 處理儲存到 Bot
-  const handleSaveToBot = async (botId: string, data: { logicBlocks: UnifiedBlock[], flexBlocks: UnifiedBlock[], generatedCode: string }) => {
-    try {
-      // 設置儲存中狀態，並鎖定儲存操作
-      isSavingRef.current = true;
-      setSaveStatus(SaveStatus.SAVING);
-      setSaveError('');
-
-      await VisualEditorApi.saveVisualEditorData(botId, {
-        logic_blocks: data.logicBlocks,
-        flex_blocks: data.flexBlocks,
-        generated_code: data.generatedCode
-      });
-      
-      // 原子性狀態更新：同時設置所有狀態避免競爭
-      setSaveStatus(SaveStatus.SAVED);
-      setLastSavedTime(new Date());
-      setHasUnsavedChanges(false);
-      
-      // 更新參考值，避免後續誤判
-      previousBlocksRef.current = { 
-        logicBlocks: data.logicBlocks, 
-        flexBlocks: data.flexBlocks 
-      };
-      
-      console.log(`已儲存數據到 Bot ${botId}`);
-    } catch (error) {
-      console.error("Error occurred:", error);
-      setSaveStatus(SaveStatus.ERROR);
-      setSaveError(error instanceof Error ? error.message : '儲存失敗');
-      throw error;
-    } finally {
-      // 確保儲存鎖定狀態被釋放
-      isSavingRef.current = false;
-    }
-  };
-
-  const handleImportProject = (projectData: ProjectData) => {
-    setLogicBlocks(projectData.logicBlocks || []);
-    setFlexBlocks(projectData.flexBlocks || []);
-    setProjectVersion(projectData.version || '2.0');
-    
-    // 重置儲存狀態
-    setSaveStatus(SaveStatus.PENDING);
-    setHasUnsavedChanges(true);
-    setSaveError('');
-    setLastSavedTime(undefined);
-  };
+  // （移除未使用的函式：handleSaveToBot、handleImportProject）
 
   // 記憶化積木數據以減少不必要的重新渲染
   const memoizedLogicBlocks = useMemo(() => logicBlocks, [logicBlocks]);

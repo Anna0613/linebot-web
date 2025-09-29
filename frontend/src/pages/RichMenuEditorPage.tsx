@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import DashboardNavbar from '@/components/layout/DashboardNavbar';
 import DashboardFooter from '@/components/layout/DashboardFooter';
@@ -31,8 +31,9 @@ const RichMenuEditorPage: React.FC = () => {
       if (list.length && !currentMenuId) {
         setCurrentMenuId(list[0].id);
       }
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: '載入失敗', description: e?.message || '無法取得 Rich Menu' });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '無法取得 Rich Menu';
+      toast({ variant: 'destructive', title: '載入失敗', description: message });
     } finally {
       setLoading(false);
     }
@@ -99,4 +100,3 @@ const RichMenuEditorPage: React.FC = () => {
 };
 
 export default RichMenuEditorPage;
-

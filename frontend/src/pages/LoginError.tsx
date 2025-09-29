@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
+// Removed unused Card components
 import { Button } from "../components/ui/button";
 import { XCircle, RefreshCw } from "lucide-react";
 

@@ -41,9 +41,10 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
   const { toast } = useToast();
   const [name, setName] = useState<string>(menu?.name || 'MainMenu');
   const [chatBarText, setChatBarText] = useState<string>(menu?.chat_bar_text || '開啟選單');
-  const [height, setHeight] = useState<'1686' | '843'>(
-    String((menu?.size as any)?.height || 1686) === '843' ? '843' : '1686'
-  );
+  const isRichMenuSize = (v: unknown): v is { height: number } =>
+    !!v && typeof v === 'object' && typeof (v as { height?: unknown }).height === 'number';
+  const initialHeightNum = isRichMenuSize(menu?.size) ? (menu!.size as { height: number }).height : 1686;
+  const [height, setHeight] = useState<'1686' | '843'>(String(initialHeightNum) === '843' ? '843' : '1686');
   const [selected, setSelected] = useState<boolean>(!!menu?.selected);
   const [areas, setAreas] = useState<RichMenuArea[]>(
     (menu?.areas as RichMenuArea[]) || [
@@ -66,7 +67,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
     if (menu) {
       setName(menu.name);
       setChatBarText(menu.chat_bar_text);
-      setHeight(String((menu.size as any)?.height || 1686) === '843' ? '843' : '1686');
+      setHeight(String(isRichMenuSize(menu.size) ? (menu.size as { height: number }).height : 1686) === '843' ? '843' : '1686');
       setSelected(menu.selected);
       setAreas((menu.areas as RichMenuArea[]) || []);
       setImageUrl(menu.image_url);
@@ -107,12 +108,10 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
     if (!onBindPreviewControls) return;
     onBindPreviewControls({
       createArea: (b) => {
-        setAreas(prev => [...prev, { bounds: b, action: { ...defaultAction } as any }]);
-        setSelectedAreaIndex((prev) => {
-          const next = (areas?.length ?? 0);
-          onSelectedIndexChange?.(next);
-          return next;
-        });
+        setAreas(prev => [...prev, { bounds: b, action: { ...defaultAction } }]);
+        const next = (areas?.length ?? 0);
+        setSelectedAreaIndex(next);
+        onSelectedIndexChange?.(next);
       },
       updateArea: (index, b) => {
         setAreas(prev => prev.map((a, i) => i === index ? ({ ...a, bounds: b }) : a));
@@ -180,7 +179,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
         const update: UpdateRichMenuPayload = payload;
         saved = await RichMenuApi.update(botId, menu.id, update);
       } else {
-        const create: CreateRichMenuPayload = payload as any;
+        const create: CreateRichMenuPayload = payload;
         saved = await RichMenuApi.create(botId, create);
       }
       // 若有待上傳圖片，保存後一併上傳（依照目前高度裁切/縮放）
@@ -190,8 +189,9 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
           const updated = await RichMenuApi.uploadImage(botId, saved.id, blob);
           setImageUrl(updated.image_url);
           toast({ title: '圖片已上傳', description: '已更新選單圖片' });
-        } catch (err: any) {
-          toast({ variant: 'destructive', title: '圖片上傳失敗', description: err?.message || '請稍後再試' });
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          toast({ variant: 'destructive', title: '圖片上傳失敗', description: message || '請稍後再試' });
         } finally {
           setPendingFile(null);
         }
@@ -199,8 +199,9 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
       toast({ title: '已保存', description: '功能選單已更新' });
       onSaved?.(saved);
       return saved;
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: '保存失敗', description: e?.message || '請稍後再試' });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      toast({ variant: 'destructive', title: '保存失敗', description: message || '請稍後再試' });
       return undefined;
     } finally {
       setSaving(false);
@@ -208,7 +209,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
   };
 
   const renderProcessedImage = (file: File): Promise<Blob> => {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
         const img = new Image();
         img.onload = () => {
@@ -277,8 +278,9 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
       setImageMeta({ iw, ih, offset });
       setPendingFile(file);
       toast({ title: '已選取圖片', description: '可拖曳右側圖片調整顯示位置，最後按「儲存選單」套用。' });
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: '上傳失敗', description: e?.message || '請稍後再試' });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      toast({ variant: 'destructive', title: '上傳失敗', description: message || '請稍後再試' });
     } finally {
       setUploading(false);
     }
@@ -342,19 +344,19 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
                 <div className="col-span-12 md:col-span-6 grid grid-cols-4 gap-2">
                   <div>
                     <Label className="text-xs">X（左）</Label>
-                    <Input ref={el => (areaInputRefs.current[idx] = el)} type="number" value={area.bounds.x} onChange={e => onChangeArea(idx, { bounds: { x: Number(e.target.value) } as any })} />
+                    <Input ref={el => (areaInputRefs.current[idx] = el)} type="number" value={area.bounds.x} onChange={e => onChangeArea(idx, { bounds: { x: Number(e.target.value) } as Partial<RichMenuBounds> })} />
                   </div>
                   <div>
                     <Label className="text-xs">Y（上）</Label>
-                    <Input type="number" value={area.bounds.y} onChange={e => onChangeArea(idx, { bounds: { y: Number(e.target.value) } as any })} />
+                    <Input type="number" value={area.bounds.y} onChange={e => onChangeArea(idx, { bounds: { y: Number(e.target.value) } as Partial<RichMenuBounds> })} />
                   </div>
                   <div>
                     <Label className="text-xs">寬度</Label>
-                    <Input type="number" value={area.bounds.width} onChange={e => onChangeArea(idx, { bounds: { width: Number(e.target.value) } as any })} />
+                    <Input type="number" value={area.bounds.width} onChange={e => onChangeArea(idx, { bounds: { width: Number(e.target.value) } as Partial<RichMenuBounds> })} />
                   </div>
                   <div>
                     <Label className="text-xs">高度</Label>
-                    <Input type="number" value={area.bounds.height} onChange={e => onChangeArea(idx, { bounds: { height: Number(e.target.value) } as any })} />
+                    <Input type="number" value={area.bounds.height} onChange={e => onChangeArea(idx, { bounds: { height: Number(e.target.value) } as Partial<RichMenuBounds> })} />
                   </div>
                 </div>
                 <div className="col-span-12 md:col-span-4 grid grid-cols-2 gap-2">
@@ -508,7 +510,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
                       <div>
                         <Label className="text-xs">顯示文字（替代，可選）</Label>
                         <Input
-                          value={(area.action as any).displayText || ''}
+                          value={(area.action as { displayText?: string }).displayText || ''}
                           onChange={e => onChangeArea(idx, { action: { ...area.action, displayText: e.target.value } })}
                           placeholder="替代顯示文字"
                         />

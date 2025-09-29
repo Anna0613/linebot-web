@@ -61,10 +61,10 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   const [useAsyncProcessing, setUseAsyncProcessing] = useState(true);
 
   // 處理任務完成回調
-  const handleJobCompleted = useCallback((jobId: string) => {
+  const handleJobCompleted = useCallback((_jobId: string) => {
     // 重新載入列表以顯示新的知識塊
     loadList(true);
-  }, []);
+  }, [loadList]);
 
   const handleJobFailed = useCallback((jobId: string, error: string) => {
     // 可以在這裡添加額外的錯誤處理邏輯

@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LINELoginButton from "../components/LINELogin/LINELoginButton";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
+// Removed unused Card components
 import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";

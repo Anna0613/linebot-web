@@ -2,7 +2,7 @@
  * 優化版本的活動動態組件
  * 使用智能輪詢，結合 WebSocket 狀態，只在必要時使用 HTTP 輪詢
  */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useOptimizedActivityRefresh, useVisibilityAwarePolling } from '@/hooks/useOptimizedPolling';
+// Removed unused polling hooks to avoid unused imports
 
 interface ActivityItem {
   id: string;
@@ -159,25 +159,16 @@ const OptimizedActivityFeed: React.FC<OptimizedActivityFeedProps> = ({
   maxItems = 50,
   showRefresh = true,
   onRefresh,
-  autoRefresh = false,
-  refreshInterval = 60000, // 60秒預設間隔
+  autoRefresh: _autoRefresh = false,
+  refreshInterval: _refreshInterval = 60000, // 60秒預設間隔
   height = 400,
   isWebSocketConnected = () => false
 }) => {
   const [newActivities, setNewActivities] = useState<Set<string>>(new Set());
   const [displayedActivities, setDisplayedActivities] = useState<ActivityItem[]>([]);
 
-  // 完全禁用輪詢，依賴 WebSocket 即時更新和手動刷新
-  // 修復：移除自動輪詢，避免重複的 API 調用
-  const shouldEnablePolling = false; // 強制禁用輪詢
-  const pollingInterval = 0; // 設為 0 禁用輪詢
-
-  // 移除條件回調，不再自動執行刷新
-  // WebSocket 連接時會自動更新數據，手動刷新通過按鈕觸發
-  console.log('OptimizedActivityFeed: 輪詢已禁用，依賴 WebSocket 和手動刷新');
-
-  // 不再使用輪詢
-  // useVisibilityAwarePolling(conditionalRefresh, pollingInterval);
+  // 使用 WebSocket 和手動刷新，不進行輪詢
+  console.log('OptimizedActivityFeed: 依賴 WebSocket 和手動刷新');
 
   // 處理活動更新
   useEffect(() => {

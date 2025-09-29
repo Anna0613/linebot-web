@@ -479,7 +479,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
 
         if (payload?.line_user_id === selectedUser.line_user_id && payload.message) {
           console.log('✅ 訊息匹配當前用戶，準備更新聊天記錄');
-          console.log('📋 當前聊天記錄長度:', chatHistory.length);
           console.log('📋 新訊息詳情:', payload.message);
 
           setChatHistory((prev) => {

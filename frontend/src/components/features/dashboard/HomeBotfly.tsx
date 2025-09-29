@@ -1,7 +1,7 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// Removed unused Card components
 import { Bot, Plus, Settings, FileText, Edit, Trash2, Eye } from "lucide-react";
 import { useBotManagement } from "@/hooks/useBotManagement";
 import { useToast } from "@/hooks/use-toast";

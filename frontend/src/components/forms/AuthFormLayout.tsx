@@ -1,13 +1,7 @@
 import { ReactNode } from "react";
 import Navbar from "../layout/Navbar";
 import Footer from "../layout/Footer";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+// Removed unused Card components
 
 interface AuthFormLayoutProps {
   title: string;

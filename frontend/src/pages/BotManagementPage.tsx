@@ -1134,7 +1134,7 @@ const BotManagementPage: React.FC = () => {
     }
     
     switch (lastMessage.type) {
-      case 'analytics_update':
+      case 'analytics_update': {
         console.log('🔄 收到 analytics_update WebSocket 事件，開始更新數據...');
 
         // 根據時間範圍計算查詢天數
@@ -1239,8 +1239,9 @@ const BotManagementPage: React.FC = () => {
           // 靜默處理錯誤，不影響用戶體驗
         });
         break;
+      }
         
-      case 'activity_update':
+      case 'activity_update': {
         if (lastMessage.data) {
           console.log('收到 WebSocket 活動更新:', lastMessage.data);
           // 靜默更新活動數據，保持其他數據不變
@@ -1297,8 +1298,9 @@ const BotManagementPage: React.FC = () => {
           }
         }
         break;
+      }
 
-      case 'new_user_message':
+      case 'new_user_message': {
         // 收到新用戶訊息時更新用戶列表和對話記錄
         if (lastMessage?.data) {
           const lm = lastMessage as unknown;
@@ -1323,6 +1325,7 @@ const BotManagementPage: React.FC = () => {
           }
         }
         break;
+      }
         
       case 'webhook_status_update':
         setWebhookStatusLoading(true);

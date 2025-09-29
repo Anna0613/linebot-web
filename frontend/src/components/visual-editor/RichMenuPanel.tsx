@@ -22,9 +22,11 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
   const emptyToastForBotRef = useRef<string | null>(null);
   const [previewData, setPreviewData] = useState<RichMenuPreviewData | null>(null);
   const previewControlsRef = useRef<{
-    createArea: (b: any) => void;
-    updateArea: (i: number, b: any) => void;
+    createArea: (b: RichMenu['areas'][number]['bounds']) => void;
+    updateArea: (i: number, b: RichMenu['areas'][number]['bounds']) => void;
     selectArea: (i: number | null) => void;
+    removeArea?: (i: number) => void;
+    setImageOffset?: (offset: { x: number; y: number }) => void;
   } | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -38,8 +40,8 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
         toast({ title: '目前沒有選單', description: '點右上角「新增選單」即可建立你的第一個功能選單。' });
         emptyToastForBotRef.current = selectedBotId;
       }
-    } catch (e: any) {
-      const msg = typeof e?.message === 'string' ? e.message : '無法取得選單，請稍後再試';
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '無法取得選單，請稍後再試';
       toast({ variant: 'destructive', title: '載入失敗', description: msg });
     } finally {
       setLoading(false);
@@ -74,8 +76,9 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
       await RichMenuApi.remove(selectedBotId, m.id);
       toast({ title: '已刪除', description: 'Rich Menu 已刪除' });
       await loadMenus();
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: '刪除失敗', description: e?.message || '請稍後再試' });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '請稍後再試';
+      toast({ variant: 'destructive', title: '刪除失敗', description: msg });
     }
   };
 
@@ -85,8 +88,9 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
       await RichMenuApi.setDefault(selectedBotId, m.id);
       toast({ title: '已設定預設', description: `已將「${m.name}」設為預設 Rich Menu` });
       await loadMenus();
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: '設定失敗', description: e?.message || '請稍後再試' });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '請稍後再試';
+      toast({ variant: 'destructive', title: '設定失敗', description: msg });
     }
   };
 
@@ -96,8 +100,9 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
       const res = await RichMenuApi.publish(selectedBotId, menu.id);
       toast({ title: '已重新發佈到 LINE', description: `選單「${res.name}」已更新` });
       await loadMenus();
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: '重新發佈失敗', description: e?.message || '請稍後再試' });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '請稍後再試';
+      toast({ variant: 'destructive', title: '重新發佈失敗', description: msg });
     }
   };
 
@@ -206,9 +211,9 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
                   onCreateArea={(b) => previewControlsRef.current?.createArea(b)}
                   onUpdateArea={(i, b) => previewControlsRef.current?.updateArea(i, b)}
                   onDeleteArea={(i) => previewControlsRef.current?.removeArea?.(i)}
-                  imageNaturalWidth={(previewData as any)?.image_meta?.iw}
-                  imageNaturalHeight={(previewData as any)?.image_meta?.ih}
-                  imageOffset={(previewData as any)?.image_meta?.offset}
+                  imageNaturalWidth={previewData?.image_meta?.iw}
+                  imageNaturalHeight={previewData?.image_meta?.ih}
+                  imageOffset={previewData?.image_meta?.offset}
                   onImageOffsetChange={(offset) => {
                     // reflect to form state via binding if provided
                     previewControlsRef.current?.setImageOffset?.(offset);

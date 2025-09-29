@@ -95,7 +95,7 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [botId, fetchJobs]);
+  }, [botId, fetchJobs, jobs]);
 
   // 取消任務
   const cancelJob = async (jobId: string) => {
@@ -114,7 +114,7 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
       } else {
         throw new Error('取消失敗');
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: '取消失敗',

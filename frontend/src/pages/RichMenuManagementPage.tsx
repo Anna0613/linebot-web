@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import DashboardNavbar from '@/components/layout/DashboardNavbar';
 import DashboardFooter from '@/components/layout/DashboardFooter';
@@ -28,8 +28,9 @@ const RichMenuManagementPage: React.FC = () => {
     try {
       const list = await RichMenuApi.list(botId);
       setMenus(list);
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: '載入失敗', description: e?.message || '無法取得 Rich Menu' });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '無法取得 Rich Menu';
+      toast({ variant: 'destructive', title: '載入失敗', description: message });
     } finally {
       setLoading(false);
     }
@@ -52,8 +53,9 @@ const RichMenuManagementPage: React.FC = () => {
       await RichMenuApi.remove(selectedBotId, m.id);
       toast({ title: '已刪除', description: 'Rich Menu 已刪除' });
       await loadMenus(selectedBotId);
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: '刪除失敗', description: e?.message || '請稍後再試' });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '請稍後再試';
+      toast({ variant: 'destructive', title: '刪除失敗', description: message });
     }
   };
 
@@ -63,8 +65,9 @@ const RichMenuManagementPage: React.FC = () => {
       await RichMenuApi.setDefault(selectedBotId, m.id);
       toast({ title: '已設定預設', description: `已將「${m.name}」設為預設 Rich Menu` });
       await loadMenus(selectedBotId);
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: '設定失敗', description: e?.message || '請稍後再試' });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '請稍後再試';
+      toast({ variant: 'destructive', title: '設定失敗', description: message });
     }
   };
 

@@ -10,6 +10,7 @@ export interface RichMenuPreviewData {
   size: { width: 2500; height: 1686 | 843 };
   areas: RichMenuArea[];
   image_url?: string;
+  image_meta?: { iw: number; ih: number; offset: { x: number; y: number } };
 }
 
 type Props = {
@@ -25,7 +26,7 @@ type Props = {
   onImageOffsetChange?: (offset: { x: number; y: number }) => void;
 };
 
-const HANDLE = 10;
+// Removed unused HANDLE constant
 
 const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, onCreateArea, onUpdateArea, onDeleteArea, imageNaturalWidth, imageNaturalHeight, imageOffset, onImageOffsetChange }) => {
   const widthBase = 2500;
@@ -250,7 +251,7 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
             const w = (width / widthBase) * 100;
             const h = (height / heightBase) * 100;
             const isActive = (selectedIndex ?? activeIndex) === idx;
-            const action = a.action as any;
+            const action = a.action;
             const summary = action?.type === 'message' ? `回覆：「${action.text || action.data || ''}」`
               : action?.type === 'uri' ? `連結：${action.uri || action.data || ''}`
               : action?.type === 'datetimepicker' ? '選日期/時間'
