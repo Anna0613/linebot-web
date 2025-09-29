@@ -61,6 +61,13 @@ export class RichMenuApi {
     if (!res.success || !res.data) throw new Error(res.error || '上傳圖片失敗');
     return res.data as RichMenu;
   }
+
+  static async publish(botId: string, menuId: string): Promise<RichMenu> {
+    const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/richmenus/${menuId}/publish`);
+    const res = await this.api.post<RichMenu>(url, {});
+    if (!res.success || !res.data) throw new Error(res.error || '重新發佈失敗');
+    return res.data as RichMenu;
+  }
 }
 
 export default RichMenuApi;

@@ -106,12 +106,29 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
           {/* 左：編輯 */}
           <div className="flex flex-col h-full overflow-hidden">
             <Card className="h-full flex flex-col">
-              <CardHeader className="py-3"><CardTitle className="text-base">編輯與設定</CardTitle></CardHeader>
+              <CardHeader className="py-3 flex items-center justify-between">
+                <CardTitle className="text-base">編輯與設定</CardTitle>
+                {(editing || creating) && (
+                  <div className="flex items-center gap-2">
+                    {editing && (
+                      <Button size="sm" variant="outline" onClick={async () => {
+                        try {
+                          if (!selectedBotId || !editing) return;
+                          const res = await RichMenuApi.publish(selectedBotId, editing.id);
+                          toast({ title: '已重新發佈到 LINE', description: `選單「${res.name}」已更新` });
+                        } catch (e: any) {
+                          toast({ variant: 'destructive', title: '重新發佈失敗', description: e?.message || '請稍後再試' });
+                        }
+                      }}>重新發佈到 LINE</Button>
+                    )}
+                  </div>
+                )}
+              </CardHeader>
               <CardContent className="flex-1 overflow-auto">
                 {creating && (
-                <RichMenuForm
-                  botId={selectedBotId}
-                  onSaved={onSaved}
+                  <RichMenuForm
+                    botId={selectedBotId}
+                    onSaved={onSaved}
                   onChangePreview={setPreviewData}
                   onBindPreviewControls={(controls) => { previewControlsRef.current = controls; }}
                   onSelectedIndexChange={setSelectedIndex}

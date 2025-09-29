@@ -56,6 +56,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [selectedAreaIndex, setSelectedAreaIndex] = useState<number | null>(null);
   const [imageMeta, setImageMeta] = useState<{ iw: number; ih: number; offset: { x: number; y: number } } | null>(null);
+  const areaInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
     if (menu) {
@@ -109,6 +110,19 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [areas.length, onBindPreviewControls]);
+
+  // 預覽點「編輯」時，僅滾動到該區塊（不聚焦單一欄位，避免欄位高亮）
+  useEffect(() => {
+    if (selectedAreaIndex == null) return;
+    const el = areaInputRefs.current[selectedAreaIndex];
+    if (el) {
+      try {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (_) {
+        // ignore
+      }
+    }
+  }, [selectedAreaIndex]);
 
   const onAddArea = () => {
     const idx = areas.length;
@@ -295,11 +309,20 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
 
           <div className="space-y-3">
             {areas.map((area, idx) => (
-              <div key={idx} className="grid grid-cols-12 gap-2 border rounded-md p-3">
+              <div
+                key={idx}
+                className={
+                  `grid grid-cols-12 gap-2 rounded-md p-3 transition-shadow transition-colors border ` +
+                  (selectedAreaIndex === idx
+                    ? 'ring-2 ring-blue-500 border-blue-300 shadow-sm bg-blue-50/40'
+                    : 'border-border')
+                }
+                onClick={() => setSelectedAreaIndex(idx)}
+              >
                 <div className="col-span-12 md:col-span-6 grid grid-cols-4 gap-2">
                   <div>
                     <Label className="text-xs">X（左）</Label>
-                    <Input type="number" value={area.bounds.x} onChange={e => onChangeArea(idx, { bounds: { x: Number(e.target.value) } as any })} />
+                    <Input ref={el => (areaInputRefs.current[idx] = el)} type="number" value={area.bounds.x} onChange={e => onChangeArea(idx, { bounds: { x: Number(e.target.value) } as any })} />
                   </div>
                   <div>
                     <Label className="text-xs">Y（上）</Label>
