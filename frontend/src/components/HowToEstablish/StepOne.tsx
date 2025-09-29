@@ -11,7 +11,7 @@ const StepOne = () => {
       <div className="absolute bottom-0 left-0 w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 bg-line/5 rounded-full blur-3xl"></div>
 
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 equal-columns">
           {/* Content Section */}
           <div className="order-2 lg:order-1 space-y-6 sm:space-y-8 fade-in-element">
             <div className="space-y-4">

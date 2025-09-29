@@ -11,7 +11,7 @@ const StepTwo = () => {
       <div className="absolute bottom-12 sm:bottom-20 right-0 w-72 h-72 sm:w-96 sm:h-96 bg-primary/5 rounded-full blur-3xl"></div>
 
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 equal-columns">
           {/* Image Section */}
           <div className="order-1 relative fade-in-element">
             <div className="relative">

@@ -176,23 +176,23 @@ const AddServerPage = () => {
 
         {/* 成功訊息區域 */}
         <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 border-l-4 border-[hsl(var(--primary))]">
+          <div className="web3-glass-card p-8 border-l-4 border-primary">
             <h2 className="text-foreground text-[24px] font-bold mb-6">
               建立完成
             </h2>
             <div className="space-y-4">
-              <div className="bg-[hsl(var(--line-green-soft))] rounded-lg p-6">
+              <div className="bg-secondary/50 rounded-lg p-6">
                 <h3 className="text-foreground font-bold text-lg mb-4">
                   機器人資訊
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <div className="flex items-center justify-between py-2 border-b border-border">
                     <span className="text-muted-foreground font-medium">名稱：</span>
                     <span className="text-foreground/80">{formData.name}</span>
                   </div>
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <div className="flex items-center justify-between py-2 border-b border-border">
                     <span className="text-muted-foreground font-medium">狀態：</span>
-                    <span className="text-[hsl(var(--primary))] font-bold">已建立</span>
+                    <span className="text-primary font-bold">已建立</span>
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <span className="text-muted-foreground font-medium">
@@ -210,15 +210,15 @@ const AddServerPage = () => {
 
         {/* 下一步區域 */}
         <div className="max-w-4xl mx-auto">
-          <div className="bg-secondary rounded-lg p-8">
-            <h2 className="text-[#383A45] text-[24px] font-bold text-center mb-8">
+          <div className="web3-glass-card p-8">
+            <h2 className="text-foreground text-[24px] font-bold text-center mb-8">
               下一步操作
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center p-6 bg-white rounded-lg shadow-sm">
-                <div className="w-16 h-16 bg-[#8ECAE6] rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="text-center p-6 web3-glass-card">
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg
-                    className="w-8 h-8 text-white"
+                    className="w-8 h-8 text-primary-foreground"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -231,16 +231,16 @@ const AddServerPage = () => {
                     />
                   </svg>
                 </div>
-                <h3 className="text-[#383A45] font-bold mb-2">設計對話</h3>
-                <p className="text-[#5A2C1D] text-sm leading-relaxed">
+                <h3 className="text-foreground font-bold mb-2">設計對話</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   開始設計您的機器人對話流程
                 </p>
               </div>
 
-              <div className="text-center p-6 bg-white rounded-lg shadow-sm">
-                <div className="w-16 h-16 bg-[#F4A261] rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="text-center p-6 web3-glass-card">
+                <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg
-                    className="w-8 h-8 text-white"
+                    className="w-8 h-8 text-accent-foreground"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -259,16 +259,16 @@ const AddServerPage = () => {
                     />
                   </svg>
                 </div>
-                <h3 className="text-[#383A45] font-bold mb-2">測試功能</h3>
-                <p className="text-[#5A2C1D] text-sm leading-relaxed">
+                <h3 className="text-foreground font-bold mb-2">測試功能</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   測試機器人回應是否正常
                 </p>
               </div>
 
-              <div className="text-center p-6 bg-white rounded-lg shadow-sm">
-                <div className="w-16 h-16 bg-[#A0D6B4] rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="text-center p-6 web3-glass-card">
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg
-                    className="w-8 h-8 text-white"
+                    className="w-8 h-8 text-primary-foreground"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -281,8 +281,8 @@ const AddServerPage = () => {
                     />
                   </svg>
                 </div>
-                <h3 className="text-[#383A45] font-bold mb-2">正式發布</h3>
-                <p className="text-[#5A2C1D] text-sm leading-relaxed">
+                <h3 className="text-foreground font-bold mb-2">正式發布</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   讓您的機器人上線服務
                 </p>
               </div>
@@ -295,7 +295,7 @@ const AddServerPage = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={() => navigate("/bots/management")}
-              className="px-8 py-4 bg-[#A0D6B4] text-white font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
+              className="web3-primary-button px-8 py-4 font-bold rounded-lg shadow-lg transition-all duration-200 text-lg"
             >
               查看我的機器人
             </button>
@@ -304,7 +304,7 @@ const AddServerPage = () => {
                 setSuccess(false);
                 setFormData({ name: "", accessToken: "", channelSecret: "" });
               }}
-              className="px-8 py-4 bg-[#FFD59E] text-[#5A2C1D] font-bold rounded-lg shadow-lg hover:brightness-90 hover:shadow-xl transition-all duration-200 text-lg"
+              className="web3-button px-8 py-4 font-bold rounded-lg shadow-lg transition-all duration-200 text-lg"
             >
               建立其他機器人
             </button>
@@ -329,10 +329,10 @@ const AddServerPage = () => {
       {/* 錯誤訊息 */}
       {error && (
         <div className="max-w-3xl mx-auto">
-          <div className="bg-[#F6B1B1]/20 border border-[#F6B1B1] rounded-lg p-4">
+          <div className="bg-destructive/10 border border-destructive rounded-lg p-4">
             <div className="flex items-center">
               <svg
-                className="w-5 h-5 text-[#F6B1B1] mr-3"
+                className="w-5 h-5 text-destructive mr-3"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -344,7 +344,7 @@ const AddServerPage = () => {
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
                 />
               </svg>
-              <span className="text-[#5A2C1D] font-medium">{error}</span>
+              <span className="text-foreground font-medium">{error}</span>
             </div>
           </div>
         </div>
@@ -352,11 +352,11 @@ const AddServerPage = () => {
 
       {/* 主要表單區域 */}
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8 sm:p-12">
+        <div className="web3-glass-card p-8 sm:p-12">
           <div className="space-y-8">
             {/* Bot 名稱 */}
             <div>
-              <label className="block text-[#383A45] text-lg font-bold mb-3">
+              <label className="block text-foreground text-lg font-bold mb-3">
                 Bot 名稱
               </label>
               <input
@@ -364,16 +364,16 @@ const AddServerPage = () => {
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="請輸入您的 Bot 名稱"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8ECAE6] focus:border-[#8ECAE6] outline-none transition-colors text-[#5A2C1D] text-lg"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors text-foreground text-lg"
               />
-              <p className="text-[#4B4B4B] text-sm mt-2">
+              <p className="text-muted-foreground text-sm mt-2">
                 這個名稱將會顯示在您的機器人設定中
               </p>
             </div>
 
             {/* Channel Access Token */}
             <div>
-              <label className="block text-[#383A45] text-lg font-bold mb-3">
+              <label className="block text-foreground text-lg font-bold mb-3">
                 Channel Access Token
               </label>
               <input
@@ -383,16 +383,16 @@ const AddServerPage = () => {
                   handleInputChange("accessToken", e.target.value)
                 }
                 placeholder="請輸入您的 Channel Access Token"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8ECAE6] focus:border-[#8ECAE6] outline-none transition-colors text-[#5A2C1D] text-lg"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors text-foreground text-lg"
               />
-              <p className="text-[#4B4B4B] text-sm mt-2">
+              <p className="text-muted-foreground text-sm mt-2">
                 從 LINE Developers Console 取得的長期 Channel Access Token
               </p>
             </div>
 
             {/* Channel Secret */}
             <div>
-              <label className="block text-[#383A45] text-lg font-bold mb-3">
+              <label className="block text-foreground text-lg font-bold mb-3">
                 Channel Secret
               </label>
               <input
@@ -402,9 +402,9 @@ const AddServerPage = () => {
                   handleInputChange("channelSecret", e.target.value)
                 }
                 placeholder="請輸入您的 Channel Secret"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8ECAE6] focus:border-[#8ECAE6] outline-none transition-colors text-[#5A2C1D] text-lg"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors text-foreground text-lg"
               />
-              <p className="text-[#4B4B4B] text-sm mt-2">
+              <p className="text-muted-foreground text-sm mt-2">
                 用於驗證來自 LINE 平台的請求
               </p>
             </div>
@@ -414,27 +414,18 @@ const AddServerPage = () => {
 
       {/* 幫助資訊區域 */}
       <div className="max-w-5xl mx-auto mt-12 sm:mt-16">
-        <div
-          className="rounded-lg p-8"
-          style={{
-            background: "linear-gradient(90deg, #EAF2F8 0%, #F6F9FC 100%)", // 淺淡到白的安全背景
-            border: "1px solid #E6EEF6"
-          }}
-        >
-          <h2 className="text-[#383A45] text-[24px] font-bold text-center mb-8">
+        <div className="web3-glass-card p-8">
+          <h2 className="text-foreground text-[24px] font-bold text-center mb-8">
             如何取得這些資訊？
           </h2>
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* 卡片 1 */}
             <div className="text-center">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold shadow-md"
-                style={{ backgroundColor: "#3D5A80" }} // ACCENT
-              >
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-primary-foreground text-2xl font-bold shadow-md bg-primary">
                 1
               </div>
-              <h3 className="text-[#383A45] font-bold text-lg mb-3">
+              <h3 className="text-foreground font-bold text-lg mb-3">
                 前往 LINE Developers
               </h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -444,13 +435,10 @@ const AddServerPage = () => {
 
             {/* 卡片 2 */}
             <div className="text-center">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-[#0F172A] text-2xl font-bold shadow-md"
-                style={{ backgroundColor: "#98C1D9" }} // ACCENT_LT
-              >
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-accent-foreground text-2xl font-bold shadow-md bg-accent">
                 2
               </div>
-              <h3 className="text-[#383A45] font-bold text-lg mb-3">
+              <h3 className="text-foreground font-bold text-lg mb-3">
                 取得 Access Token
               </h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -460,13 +448,10 @@ const AddServerPage = () => {
 
             {/* 卡片 3 */}
             <div className="text-center">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold shadow-md"
-                style={{ backgroundColor: "#3D5A80" }} // ACCENT
-              >
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-primary-foreground text-2xl font-bold shadow-md bg-primary">
                 3
               </div>
-              <h3 className="text-[#383A45] font-bold text-lg mb-3">
+              <h3 className="text-foreground font-bold text-lg mb-3">
                 複製 Channel Secret
               </h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -478,10 +463,7 @@ const AddServerPage = () => {
           <div className="mt-8 text-center">
             <a
               href="/how-to-establish"
-              className="inline-flex items-center px-6 py-3 font-bold rounded-lg shadow-lg transition-all duration-200"
-              style={{ backgroundColor: "#3D5A80", color: "white" }} // ACCENT
-              onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#324B6A")}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#3D5A80")}
+              className="web3-primary-button inline-flex items-center px-6 py-3 font-bold rounded-lg shadow-lg transition-all duration-200"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -492,15 +474,12 @@ const AddServerPage = () => {
         </div>
       </div>
 
-      {/* 提交按鈕區域（主色 = ACCENT，hover 稍微加深；disabled 保留原樣式） */}
+      {/* 提交按鈕區域 */}
       <div className="text-center mt-8">
         <button
           onClick={handleSubmit}
           disabled={isLoading || !formData.name || !formData.accessToken || !formData.channelSecret}
-          className="px-12 py-4 text-white font-bold rounded-lg shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-          style={{ backgroundColor: "#3D5A80" }} // ACCENT
-          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#324B6A")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "#3D5A80")}
+          className="web3-primary-button px-12 py-4 font-bold rounded-lg shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
         >
           {isLoading ? (
             <span className="flex items-center justify-center">

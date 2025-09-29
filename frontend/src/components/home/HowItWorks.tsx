@@ -162,7 +162,7 @@ const HowItWorks = () => {
               style={{ animationDelay: `${0.2 * index}s` }}
             >
               <div
-                className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center ${
+                className={`grid grid-cols-1 lg:grid-cols-2 gap-8 equal-columns ${
                   index % 2 === 1 ? "lg:grid-flow-dense" : ""
                 }`}
               >

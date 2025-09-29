@@ -612,6 +612,9 @@ body {
 
 /* Dark mode text readability overrides for legacy classes */
 @layer utilities {
+  /* Equal-height columns for two-column grids */
+  .equal-columns { align-items: stretch; }
+  .equal-columns > * { height: 100%; }
   /* Background/border overrides for light-only classes */
   .dark .bg-white { background-color: hsl(var(--card)) !important; color: hsl(var(--card-foreground)) !important; }
   .dark .bg-gray-50, .dark .bg-gray-100, .dark .bg-gray-200 { background-color: hsl(var(--secondary)) !important; }

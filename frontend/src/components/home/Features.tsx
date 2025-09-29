@@ -288,7 +288,7 @@ const Features = () => {
             className="mt-0 fade-in-element"
           >
             <div className="glassmorphism p-6 md:p-8 lg:p-10">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 equal-columns">
                 <div className="space-y-6">
                   <h3 className="text-2xl md:text-3xl font-bold">
                     {feature.title}

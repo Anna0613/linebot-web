@@ -27,9 +27,10 @@ const About = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {isAuthenticated ? <DashboardNavbar user={user} /> : <Navbar />}
       {/* 主要內容區域 */}
+      <main className="flex-1">
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16 fade-in-element">
@@ -47,7 +48,7 @@ const About = () => {
             <h2 className="text-foreground text-[32px] font-bold mb-8">
               平台簡介
             </h2>
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 equal-columns">
               <div className="space-y-6">
                 <p className="text-muted-foreground text-lg leading-relaxed">
                   本網站旨在協助使用者快速建立與設計 LINE
@@ -285,6 +286,7 @@ const About = () => {
           </div>
         </div>
       </div>
+      </main>
 
       <Footer />
     </div>

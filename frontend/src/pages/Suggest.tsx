@@ -97,9 +97,10 @@ const Suggest = () => {
   ]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* 主要內容區域 */}
       <DashboardNavbar user={user || authUser} />
+      <main className="flex-1">
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16">
@@ -239,6 +240,7 @@ const Suggest = () => {
           </div>
         </div>
       </div>
+      </main>
 
       <DashboardFooter />
     </div>

@@ -107,11 +107,12 @@ const HowToEstablish = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* 根據登入狀態顯示不同的導航欄 */}
       <DashboardNavbar user={user} />
 
       {/* 主要內容區域 */}
+      <main className="flex-1">
       <div className="pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6">
 
         <div className="text-center mb-8 sm:mb-12 fade-in-element">
@@ -255,6 +256,7 @@ const HowToEstablish = () => {
           </div>
         )}
       </div>
+      </main>
 
       <DashboardFooter />
     </div>

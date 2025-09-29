@@ -1736,11 +1736,11 @@ const BotManagementPage: React.FC = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+                  <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 equal-columns">
                   {/* 左側：Bot 資訊和狀態 */}
-                  <div className="space-y-6">
+                  <div className="space-y-6 flex flex-col h-full min-h-0">
                     {/* Bot 資訊與狀態綜合卡片 */}
-                    <Card className="shadow-sm hover:shadow-md transition">
+                  <Card className="shadow-sm hover:shadow-md transition flex-1 flex flex-col">
                       <CardHeader>
                         <CardTitle className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -1810,7 +1810,7 @@ const BotManagementPage: React.FC = () => {
                   </div>
 
                   {/* 右側：Webhook 和其他設定 */}
-                  <div className="space-y-6">
+                  <div className="space-y-6 flex flex-col h-full min-h-0">
 
                   {/* Webhook URL 設定 */}
                   <Card className="shadow-sm hover:shadow-md transition">
@@ -1929,7 +1929,7 @@ const BotManagementPage: React.FC = () => {
                   </Card>
 
                     {/* 進階功能 */}
-                    <Card className="shadow-sm hover:shadow-md transition">
+                    <Card className="shadow-sm hover:shadow-md transition flex-1 flex flex-col">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Settings className="h-5 w-5" />
@@ -2058,11 +2058,11 @@ const BotManagementPage: React.FC = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 equal-columns">
                     {/* 用戶列表 */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 flex flex-col h-full min-h-0">
                       {/* 廣播訊息 */}
-                      <Card>
+                      <Card className="flex-1 flex flex-col">
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
                             <Send className="h-5 w-5" />
@@ -2276,12 +2276,14 @@ const BotManagementPage: React.FC = () => {
 
                     {/* 聊天面板區域 */}
                     {showChatPanel && currentChatUser && (
-                      <div className="space-y-6">
-                        <ChatPanel
+                      <div className="space-y-6 flex flex-col h-full min-h-0">
+                        <div className="flex-1 flex min-h-0">
+                          <ChatPanel
                           botId={selectedBotId}
                           selectedUser={currentChatUser}
                           onClose={() => setShowChatPanel(false)}
-                        />
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
