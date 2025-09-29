@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,12 +21,18 @@ type Props = {
     areas: RichMenuArea[];
     image_url?: string;
   }) => void;
+  onBindPreviewControls?: (controls: {
+    createArea: (b: RichMenuBounds) => void;
+    updateArea: (index: number, b: RichMenuBounds) => void;
+    selectArea: (index: number | null) => void;
+  }) => void;
+  onSelectedIndexChange?: (index: number | null) => void;
 };
 
 const emptyBounds: RichMenuBounds = { x: 0, y: 0, width: 1250, height: 843 };
 const defaultAction: RichMenuAction = { type: 'postback', data: 'action=demo' };
 
-const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview }) => {
+const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, onBindPreviewControls, onSelectedIndexChange }) => {
   const isEdit = !!menu?.id;
   const { toast } = useToast();
   const [name, setName] = useState<string>(menu?.name || 'MainMenu');
@@ -43,6 +49,9 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview }
   const [uploading, setUploading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | undefined>(menu?.image_url);
   const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [selectedAreaIndex, setSelectedAreaIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (menu) {
@@ -66,6 +75,29 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview }
       image_url: imageUrl,
     });
   }, [name, chatBarText, height, areas, imageUrl, onChangePreview]);
+
+  // 將互動控制權綁定給父層（預覽面板）
+  useEffect(() => {
+    if (!onBindPreviewControls) return;
+    onBindPreviewControls({
+      createArea: (b) => {
+        setAreas(prev => [...prev, { bounds: b, action: { ...defaultAction } as any }]);
+        setSelectedAreaIndex((prev) => {
+          const next = (areas?.length ?? 0);
+          onSelectedIndexChange?.(next);
+          return next;
+        });
+      },
+      updateArea: (index, b) => {
+        setAreas(prev => prev.map((a, i) => i === index ? ({ ...a, bounds: b }) : a));
+      },
+      selectArea: (index) => {
+        setSelectedAreaIndex(index);
+        onSelectedIndexChange?.(index);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [areas.length, onBindPreviewControls]);
 
   const onAddArea = () => {
     const idx = areas.length;
@@ -95,7 +127,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview }
     areas,
   }), [name, chatBarText, selected, height, areas]);
 
-  const onSubmit = async () => {
+  const onSubmit = async (): Promise<RichMenu | undefined> => {
     try {
       setSaving(true);
       let saved: RichMenu;
@@ -106,23 +138,67 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview }
         const create: CreateRichMenuPayload = payload as any;
         saved = await RichMenuApi.create(botId, create);
       }
-      toast({ title: '已保存', description: 'Rich Menu 設定已更新' });
+      // 若有待上傳圖片，保存後一併上傳
+      if (pendingFile) {
+        try {
+          await validateImage(pendingFile);
+          const updated = await RichMenuApi.uploadImage(botId, saved.id, pendingFile);
+          setImageUrl(updated.image_url);
+          toast({ title: '圖片已上傳', description: '已更新選單圖片' });
+        } catch (err: any) {
+          toast({ variant: 'destructive', title: '圖片上傳失敗', description: err?.message || '請稍後再試' });
+        } finally {
+          setPendingFile(null);
+        }
+      }
+      toast({ title: '已保存', description: '功能選單已更新' });
       onSaved?.(saved);
+      return saved;
     } catch (e: any) {
       toast({ variant: 'destructive', title: '保存失敗', description: e?.message || '請稍後再試' });
+      return undefined;
     } finally {
       setSaving(false);
     }
   };
 
+  const validateImage = (file: File): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const allowed = ['image/jpeg', 'image/png'];
+      if (!allowed.includes(file.type)) {
+        reject(new Error('僅支援 JPG/PNG 圖片'));
+        return;
+      }
+      const maxBytes = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxBytes) {
+        reject(new Error('圖片大小請小於 5MB'));
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        const expectedW = 2500;
+        const expectedH = Number(height);
+        if (img.width !== expectedW || img.height !== expectedH) {
+          reject(new Error(`圖片尺寸需為 ${expectedW}×${expectedH}（目前為 ${img.width}×${img.height}），請先裁切後再上傳`));
+        } else {
+          resolve();
+        }
+      };
+      img.onerror = () => reject(new Error('讀取圖片失敗，請更換檔案'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const onUploadImage = async (file?: File | null) => {
-    if (!file || !menu) return;
+    if (!file) return;
     try {
       setUploading(true);
-      const updated = await RichMenuApi.uploadImage(botId, menu.id, file);
-      toast({ title: '圖片已上傳', description: '已更新 Rich Menu 圖片' });
-      setImageUrl(updated.image_url);
-      onSaved?.(updated);
+      await validateImage(file);
+      // 預先預覽，不立即上傳，待保存時一併處理
+      const url = URL.createObjectURL(file);
+      setImageUrl(url);
+      setPendingFile(file);
+      toast({ title: '已選取圖片', description: '請按「儲存選單」，系統會一併上傳並套用' });
     } catch (e: any) {
       toast({ variant: 'destructive', title: '上傳失敗', description: e?.message || '請稍後再試' });
     } finally {
@@ -177,31 +253,41 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview }
             {areas.map((area, idx) => (
               <div key={idx} className="grid grid-cols-12 gap-2 border rounded-md p-3">
                 <div className="col-span-12 md:col-span-6 grid grid-cols-4 gap-2">
-                  <Input type="number" value={area.bounds.x} onChange={e => onChangeArea(idx, { bounds: { x: Number(e.target.value) } as any })} placeholder="X（左）" />
-                  <Input type="number" value={area.bounds.y} onChange={e => onChangeArea(idx, { bounds: { y: Number(e.target.value) } as any })} placeholder="Y（上）" />
-                  <Input type="number" value={area.bounds.width} onChange={e => onChangeArea(idx, { bounds: { width: Number(e.target.value) } as any })} placeholder="寬度" />
-                  <Input type="number" value={area.bounds.height} onChange={e => onChangeArea(idx, { bounds: { height: Number(e.target.value) } as any })} placeholder="高度" />
+                  <div>
+                    <Label className="text-xs">X（左）</Label>
+                    <Input type="number" value={area.bounds.x} onChange={e => onChangeArea(idx, { bounds: { x: Number(e.target.value) } as any })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Y（上）</Label>
+                    <Input type="number" value={area.bounds.y} onChange={e => onChangeArea(idx, { bounds: { y: Number(e.target.value) } as any })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">寬度</Label>
+                    <Input type="number" value={area.bounds.width} onChange={e => onChangeArea(idx, { bounds: { width: Number(e.target.value) } as any })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">高度</Label>
+                    <Input type="number" value={area.bounds.height} onChange={e => onChangeArea(idx, { bounds: { height: Number(e.target.value) } as any })} />
+                  </div>
                 </div>
                 <div className="col-span-12 md:col-span-4 grid grid-cols-2 gap-2">
-                  <Select value={area.action.type} onValueChange={v => onChangeArea(idx, { action: { ...area.action, type: v as RichMenuAction['type'] } })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="message">回覆文字訊息</SelectItem>
-                      <SelectItem value="uri">開啟連結（網址）</SelectItem>
-                      <SelectItem value="datetimepicker">選日期時間</SelectItem>
-                      <SelectItem value="richmenuswitch">切換到其他選單</SelectItem>
-                      <SelectItem value="postback">回傳暗號（進階）</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input value={(area.action.data as string) || ''} onChange={e => onChangeArea(idx, { action: { ...area.action, data: e.target.value } })} placeholder="輸入內容（上方選項不同，填文字/網址/暗號）" />
-                </div>
-                <div className="col-span-12 md:col-span-12">
-                  <p className="text-xs text-muted-foreground">提示：
-                    「回覆文字訊息」請在右側輸入要回覆的文字；
-                    「開啟連結」請輸入完整網址；
-                    「切換到其他選單」需先設定選單別名；
-                    「回傳暗號」給系統做進階判斷。
-                  </p>
+                  <div>
+                    <Label className="text-xs">點擊後的動作</Label>
+                    <Select value={area.action.type} onValueChange={v => onChangeArea(idx, { action: { ...area.action, type: v as RichMenuAction['type'] } })}>
+                      <SelectTrigger><SelectValue placeholder="選擇動作" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="message">回覆文字訊息</SelectItem>
+                        <SelectItem value="uri">開啟連結（網址）</SelectItem>
+                        <SelectItem value="datetimepicker">選日期時間</SelectItem>
+                        <SelectItem value="richmenuswitch">切換到其他選單</SelectItem>
+                        <SelectItem value="postback">回傳暗號（進階）</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">動作內容</Label>
+                    <Input value={(area.action.data as string) || ''} onChange={e => onChangeArea(idx, { action: { ...area.action, data: e.target.value } })} placeholder="輸入文字／網址／暗號" />
+                  </div>
                 </div>
                 <div className="col-span-12 md:col-span-2 flex items-center justify-end gap-2">
                   <Button variant="destructive" onClick={() => onRemoveArea(idx)}>移除</Button>
@@ -211,16 +297,25 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview }
           </div>
         </div>
 
-        <div className="flex items-center gap-3 justify-end">
-          {isEdit && (
-            <div className="flex items-center gap-2">
-              <Input type="file" accept="image/png,image/jpeg" onChange={e => onUploadImage(e.target.files?.[0])} />
-              <Button disabled={uploading} onClick={() => { /* button kept for layout */ }} type="button" variant="outline">
-                {uploading ? '上傳中...' : '上傳圖片'}
-              </Button>
-              <p className="text-xs text-muted-foreground">建議尺寸：2500×1686（大）或 2500×843（小）；格式：JPG/PNG</p>
-            </div>
-          )}
+        <div className="flex items-center gap-3 justify-between">
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg"
+              className="hidden"
+              onChange={e => onUploadImage(e.target.files?.[0])}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+            >
+              {uploading ? '上傳中...' : '選擇圖片上傳'}
+            </Button>
+            <p className="text-xs text-muted-foreground">建議尺寸：2500×1686（大）或 2500×843（小）；格式：JPG/PNG</p>
+          </div>
           <Button onClick={onSubmit} disabled={saving}>{saving ? '儲存中...' : '儲存選單'}</Button>
         </div>
       </CardContent>

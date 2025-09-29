@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import type { RichMenuArea } from '@/types/richMenu';
+import React from 'react';
+import type { RichMenuArea, RichMenuBounds } from '@/types/richMenu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface RichMenuPreviewData {
   name: string;
@@ -11,29 +12,135 @@ export interface RichMenuPreviewData {
 
 type Props = {
   data?: RichMenuPreviewData | null;
+  selectedIndex?: number;
+  onSelectArea?: (index: number) => void;
+  onCreateArea?: (bounds: RichMenuBounds) => void;
+  onUpdateArea?: (index: number, bounds: RichMenuBounds) => void;
 };
 
-const RichMenuPreview: React.FC<Props> = ({ data }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [dim, setDim] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+const HANDLE = 10;
 
+const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, onCreateArea, onUpdateArea }) => {
   const widthBase = 2500;
   const heightBase = data?.size?.height || 1686;
 
-  useEffect(() => {
+  // 互動拖曳狀態
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const [dragMode, setDragMode] = React.useState<'idle'|'creating'|'moving'|'resizing'>('idle');
+  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+  const startRef = React.useRef<{x:number;y:number}>();
+  const startBoundsRef = React.useRef<RichMenuBounds>();
+  const resizeAnchorRef = React.useRef<'nw'|'ne'|'sw'|'se'>();
+  const [draft, setDraft] = React.useState<RichMenuBounds | null>(null);
+
+  const getPointBase = (e: React.MouseEvent) => {
+    const el = containerRef.current;
+    if (!el) return { x: 0, y: 0 };
+    const rect = el.getBoundingClientRect();
+    const rx = (e.clientX - rect.left) / rect.width;
+    const ry = (e.clientY - rect.top) / rect.height;
+    return {
+      x: Math.max(0, Math.min(widthBase, Math.round(rx * widthBase))),
+      y: Math.max(0, Math.min(heightBase, Math.round(ry * heightBase)))
+    };
+  };
+
+  const clampBounds = (b: RichMenuBounds): RichMenuBounds => {
+    const x2 = Math.min(widthBase, Math.max(0, b.x + b.width));
+    const y2 = Math.min(heightBase, Math.max(0, b.y + b.height));
+    const x1 = Math.max(0, Math.min(b.x, x2 - 1));
+    const y1 = Math.max(0, Math.min(b.y, y2 - 1));
+    return { x: x1, y: y1, width: Math.max(1, x2 - x1), height: Math.max(1, y2 - y1) };
+  };
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (!data) return;
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
-      const width = el.clientWidth;
-      const height = Math.max(180, Math.round(width * (heightBase / widthBase)));
-      setDim({ width, height });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [heightBase]);
+    // if clicked on handle
+    const target = e.target as HTMLElement;
+    const role = target.getAttribute('data-role');
+    if (role && activeIndex !== null && onUpdateArea) {
+      // start resizing
+      resizeAnchorRef.current = role as 'nw'|'ne'|'sw'|'se';
+      setDragMode('resizing');
+      startRef.current = getPointBase(e);
+      startBoundsRef.current = data.areas[activeIndex].bounds;
+      e.preventDefault();
+      return;
+    }
+    // if clicked on area
+    const idxAttr = target.getAttribute('data-area-index');
+    if (idxAttr) {
+      const idx = parseInt(idxAttr, 10);
+      setActiveIndex(idx);
+      onSelectArea?.(idx);
+      setDragMode('moving');
+      startRef.current = getPointBase(e);
+      startBoundsRef.current = { ...data.areas[idx].bounds };
+      e.preventDefault();
+      return;
+    }
+    // empty space: start creating
+    setActiveIndex(null);
+    onSelectArea?.(-1);
+    setDragMode('creating');
+    startRef.current = getPointBase(e);
+    setDraft({ x: startRef.current.x, y: startRef.current.y, width: 1, height: 1 });
+  };
 
-  const scaleX = dim.width / widthBase;
-  const scaleY = dim.height / heightBase;
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (dragMode === 'idle') return;
+    const p = getPointBase(e);
+    if (dragMode === 'creating' && startRef.current) {
+      const x1 = Math.min(startRef.current.x, p.x);
+      const y1 = Math.min(startRef.current.y, p.y);
+      const x2 = Math.max(startRef.current.x, p.x);
+      const y2 = Math.max(startRef.current.y, p.y);
+      setDraft(clampBounds({ x: x1, y: y1, width: x2 - x1, height: y2 - y1 }));
+    } else if (dragMode === 'moving' && startRef.current && startBoundsRef.current && activeIndex !== null) {
+      const dx = p.x - startRef.current.x;
+      const dy = p.y - startRef.current.y;
+      const nb = clampBounds({
+        x: startBoundsRef.current.x + dx,
+        y: startBoundsRef.current.y + dy,
+        width: startBoundsRef.current.width,
+        height: startBoundsRef.current.height,
+      });
+      onUpdateArea?.(activeIndex, nb);
+    } else if (dragMode === 'resizing' && startRef.current && startBoundsRef.current && activeIndex !== null) {
+      const anchor = resizeAnchorRef.current;
+      if (!anchor) return;
+      let b = { ...startBoundsRef.current } as RichMenuBounds;
+      const dx = p.x - startRef.current.x;
+      const dy = p.y - startRef.current.y;
+      if (anchor.includes('n')) {
+        b.y += dy;
+        b.height -= dy;
+      }
+      if (anchor.includes('s')) {
+        b.height += dy;
+      }
+      if (anchor.includes('w')) {
+        b.x += dx;
+        b.width -= dx;
+      }
+      if (anchor.includes('e')) {
+        b.width += dx;
+      }
+      b = clampBounds(b);
+      onUpdateArea?.(activeIndex, b);
+    }
+    e.preventDefault();
+  };
+
+  const onMouseUp = () => {
+    if (dragMode === 'creating') {
+      if (draft && draft.width > 3 && draft.height > 3) onCreateArea?.(draft);
+      setDraft(null);
+    }
+    setDragMode('idle');
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -43,10 +150,16 @@ const RichMenuPreview: React.FC<Props> = ({ data }) => {
           <div className="text-xs text-muted-foreground">聊天室按鈕：{data.chat_bar_text}</div>
         )}
       </div>
-      <div ref={containerRef} className="flex-1 w-full">
+      <div className="flex-1 w-full">
         <div
-          className="relative w-full h-full border rounded-md overflow-hidden bg-muted"
-          style={{ height: `${dim.height}px` }}
+          ref={containerRef}
+          className="relative w-full border rounded-md overflow-hidden bg-muted select-none"
+          style={{ aspectRatio: `${widthBase} / ${heightBase}`, backgroundImage: `
+            linear-gradient(0deg, rgba(0,0,0,0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)` , backgroundSize: '25px 25px'}}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
         >
           {/* 背景圖片或佔位 */}
           {data?.image_url ? (
@@ -64,23 +177,58 @@ const RichMenuPreview: React.FC<Props> = ({ data }) => {
           {/* 區塊覆蓋 */}
           {(data?.areas || []).map((a, idx) => {
             const { x, y, width, height } = a.bounds;
-            const left = Math.round(x * scaleX);
-            const top = Math.round(y * scaleY);
-            const w = Math.max(1, Math.round(width * scaleX));
-            const h = Math.max(1, Math.round(height * scaleY));
+            const left = (x / widthBase) * 100;
+            const top = (y / heightBase) * 100;
+            const w = (width / widthBase) * 100;
+            const h = (height / heightBase) * 100;
+            const isActive = (selectedIndex ?? activeIndex) === idx;
+            const action = a.action as any;
+            const summary = action?.type === 'message' ? `回覆：「${action.text || action.data || ''}」`
+              : action?.type === 'uri' ? `連結：${action.uri || action.data || ''}`
+              : action?.type === 'datetimepicker' ? '選日期/時間'
+              : action?.type === 'richmenuswitch' ? `切換選單：${action.richMenuAliasId || ''}`
+              : action?.type === 'postback' ? `暗號：${action.data || ''}` : '未設定';
             return (
-              <div
-                key={idx}
-                className="absolute border-2 border-blue-500/70 bg-blue-500/10"
-                style={{ left, top, width: w, height: h }}
-                title={`區塊 ${idx + 1}`}
-              >
-                <div className="absolute -top-5 left-0 text-[10px] bg-blue-600 text-white px-1 rounded">
-                  #{idx + 1}
-                </div>
-              </div>
+              <Tooltip key={idx}>
+                <TooltipTrigger asChild>
+                  <div
+                    data-area-index={idx}
+                    className={`absolute ${isActive ? 'border-2 border-blue-600 bg-blue-500/10' : 'border-2 border-blue-500/70 bg-blue-500/10'}`}
+                    style={{ left: `${left}%`, top: `${top}%`, width: `${w}%`, height: `${h}%` }}
+                    onClick={(e) => { e.stopPropagation(); setActiveIndex(idx); onSelectArea?.(idx); }}
+                  >
+                    {/* label */}
+                    <div className="absolute -top-5 left-0 text-[10px] bg-blue-600 text-white px-1 rounded">
+                      #{idx + 1}
+                    </div>
+                    {/* resize handles */}
+                    {isActive && (
+                      <>
+                        <div data-role="nw" className="absolute -left-[5px] -top-[5px] w-[10px] h-[10px] bg-blue-600 rounded-sm" />
+                        <div data-role="ne" className="absolute -right-[5px] -top-[5px] w-[10px] h-[10px] bg-blue-600 rounded-sm" />
+                        <div data-role="sw" className="absolute -left-[5px] -bottom-[5px] w-[10px] h-[10px] bg-blue-600 rounded-sm" />
+                        <div data-role="se" className="absolute -right-[5px] -bottom-[5px] w-[10px] h-[10px] bg-blue-600 rounded-sm" />
+                      </>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-xs space-y-1">
+                    <div>區塊 {idx + 1}</div>
+                    <div className="text-muted-foreground">{summary}</div>
+                    <div className="text-muted-foreground">({x}, {y}) {width}×{height}</div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             );
           })}
+          {/* draft rectangle when creating */}
+          {draft && (
+            <div
+              className="absolute border-2 border-green-500/70 bg-green-500/10"
+              style={{ left: `${(draft.x / widthBase) * 100}%`, top: `${(draft.y / heightBase) * 100}%`, width: `${(draft.width / widthBase) * 100}%`, height: `${(draft.height / heightBase) * 100}%` }}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -88,4 +236,3 @@ const RichMenuPreview: React.FC<Props> = ({ data }) => {
 };
 
 export default RichMenuPreview;
-

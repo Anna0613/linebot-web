@@ -7,6 +7,7 @@ import type { RichMenu } from '@/types/richMenu';
 import RichMenuList from '@/components/richmenu/RichMenuList';
 import RichMenuForm from '@/components/richmenu/RichMenuForm';
 import RichMenuPreview, { RichMenuPreviewData } from '@/components/richmenu/RichMenuPreview';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Props = {
   selectedBotId?: string;
@@ -20,6 +21,12 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
   const [creating, setCreating] = useState<boolean>(false);
   const emptyToastForBotRef = useRef<string | null>(null);
   const [previewData, setPreviewData] = useState<RichMenuPreviewData | null>(null);
+  const previewControlsRef = useRef<{
+    createArea: (b: any) => void;
+    updateArea: (i: number, b: any) => void;
+    selectArea: (i: number | null) => void;
+  } | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const loadMenus = useCallback(async () => {
     if (!selectedBotId) return;
@@ -98,29 +105,54 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
           {/* 左：編輯 */}
           <div className="flex flex-col h-full overflow-hidden">
-            <div className="flex-1 overflow-auto">
-              {creating && (
-                <RichMenuForm botId={selectedBotId} onSaved={onSaved} onChangePreview={setPreviewData} />
+            <Card className="h-full flex flex-col">
+              <CardHeader className="py-3"><CardTitle className="text-base">編輯與設定</CardTitle></CardHeader>
+              <CardContent className="flex-1 overflow-auto">
+                {creating && (
+                <RichMenuForm
+                  botId={selectedBotId}
+                  onSaved={onSaved}
+                  onChangePreview={setPreviewData}
+                  onBindPreviewControls={(controls) => { previewControlsRef.current = controls; }}
+                  onSelectedIndexChange={setSelectedIndex}
+                />
               )}
               {editing && (
-                <RichMenuForm botId={selectedBotId} menu={editing} onSaved={onSaved} onChangePreview={setPreviewData} />
+                <RichMenuForm
+                  botId={selectedBotId}
+                  menu={editing}
+                  onSaved={onSaved}
+                  onChangePreview={setPreviewData}
+                  onBindPreviewControls={(controls) => { previewControlsRef.current = controls; }}
+                  onSelectedIndexChange={setSelectedIndex}
+                />
               )}
-              {!creating && !editing && (
-                <div className="space-y-3">
-                  {loading ? (
-                    <div className="flex justify-center py-10"><Loader fullPage={false} web3Style /></div>
-                  ) : (
-                    <RichMenuList menus={menus} onEdit={setEditing} onDelete={onDelete} onSetDefault={onSetDefault} />
-                  )}
-                </div>
-              )}
-            </div>
+                {!creating && !editing && (
+                  <div className="space-y-3">
+                    {loading ? (
+                      <div className="flex justify-center py-10"><Loader fullPage={false} web3Style /></div>
+                    ) : (
+                      <RichMenuList menus={menus} onEdit={setEditing} onDelete={onDelete} onSetDefault={onSetDefault} />
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
           {/* 右：預覽 */}
           <div className="flex flex-col h-full overflow-hidden">
-            <div className="flex-1 overflow-auto">
-              <RichMenuPreview data={previewData} />
-            </div>
+            <Card className="h-full flex flex-col">
+              <CardHeader className="py-3"><CardTitle className="text-base">預覽</CardTitle></CardHeader>
+              <CardContent className="flex-1 overflow-auto">
+                <RichMenuPreview
+                  data={previewData}
+                  selectedIndex={selectedIndex ?? undefined}
+                  onSelectArea={(i) => previewControlsRef.current?.selectArea(i >= 0 ? i : null)}
+                  onCreateArea={(b) => previewControlsRef.current?.createArea(b)}
+                  onUpdateArea={(i, b) => previewControlsRef.current?.updateArea(i, b)}
+                />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
