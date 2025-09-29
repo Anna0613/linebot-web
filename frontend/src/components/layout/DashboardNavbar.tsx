@@ -413,25 +413,27 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
             </div>
           </div>
         </div>
+      </header>
 
-        {mobileMenuOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-30 z-30"
-            onClick={toggleMobileMenu}
-          />
-        )}
+      {/* Global overlay and sidebar (outside header to avoid fixed containing block issues) */}
+      {mobileMenuOpen && (
         <div
-          className={`mobile-menu-sidebar fixed top-0 left-0 h-full w-64 text-card-foreground z-40 p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
-        >
-          <div className="flex justify-end">
-            <button
-              onClick={toggleMobileMenu}
-              className="text-2xl text-foreground hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan rounded-md p-2 transition-all duration-300"
-            >
-              <X />
-            </button>
-          </div>
-          <ul className="mt-8 space-y-4 text-foreground text-lg">
+          className="fixed inset-0 bg-black bg-opacity-40 z-40"
+          onClick={toggleMobileMenu}
+        />
+      )}
+      <div
+        className={`mobile-menu-sidebar fixed top-0 left-0 h-full w-64 text-card-foreground z-[60] p-6 ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
+      >
+        <div className="flex justify-end">
+          <button
+            onClick={toggleMobileMenu}
+            className="text-2xl text-foreground hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan rounded-md p-2 transition-all duration-300"
+          >
+            <X />
+          </button>
+        </div>
+        <ul className="mt-8 space-y-4 text-foreground text-lg">
             {/* 根據登入狀態顯示不同的選單項目 */}
             {user ? (
               <>
@@ -530,9 +532,8 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                 </li>
               </>
             )}
-          </ul>
-        </div>
-      </header>
+        </ul>
+      </div>
 
       <QuickActions />
     </>
