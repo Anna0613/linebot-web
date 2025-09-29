@@ -1936,10 +1936,13 @@ const BotManagementPage: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <Button className="w-full" variant="outline" disabled>
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={() => navigate(`/bots/management/richmenu${selectedBotId ? `?botId=${selectedBotId}` : ''}`)}
+                        >
                           <Settings className="h-4 w-4 mr-2" />
                           管理 Rich Menu
-                          <Badge variant="secondary" className="ml-2 text-xs">開發中</Badge>
                         </Button>
                         
                         <Button 

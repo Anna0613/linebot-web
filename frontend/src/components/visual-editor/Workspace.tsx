@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+// import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import DropZone from './DropZone';
 import CodePreview from './CodePreview';
@@ -9,6 +10,7 @@ import LogicTemplateSelector from './LogicTemplateSelector';
 import FlexMessageSelector from './FlexMessageSelector';
 // 已移除舊的預覽控制台（PreviewControlPanel）與增強模擬器（EnhancedLineBotSimulator）在 AI 知識庫頁面
 import CodeControlPanel from './CodeControlPanel';
+import RichMenuPanel from './RichMenuPanel';
 import AIKnowledgeBaseManager from '../ai/AIKnowledgeBaseManager';
 import { CodeDisplayProvider } from './CodeDisplayContext';
 import { 
@@ -148,6 +150,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   onFlexMessageCreate,
   onFlexMessageSave
 }) => {
+  // const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('logic');
   const [showAllBlocks, setShowAllBlocks] = useState(true);
   // 已移除舊的預覽模擬器控制狀態（useEnhancedSimulator / showDebugInfo）
@@ -488,6 +491,9 @@ const Workspace: React.FC<WorkspaceProps> = ({
             blocks={logicBlocks}
           />
         );
+      case 'richmenu':
+        // Rich Menu 面板不需要左側積木面板
+        return null;
       default:
         return null;
     }
@@ -534,6 +540,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
             </TabsTrigger>
             <TabsTrigger value="preview">AI 知識庫管理</TabsTrigger>
             <TabsTrigger value="code">程式碼</TabsTrigger>
+            <TabsTrigger value="richmenu">功能選單（Rich Menu）</TabsTrigger>
           </TabsList>
           
           <TabsContent value="logic" className="flex-1 overflow-hidden">
@@ -618,13 +625,19 @@ const Workspace: React.FC<WorkspaceProps> = ({
           </TabsContent>
           
           <TabsContent value="preview" className="flex-1 overflow-hidden">
-            <AIKnowledgeBaseManager botId={selectedBotId} />
+            <div className="h-full flex flex-col">
+              <AIKnowledgeBaseManager botId={selectedBotId} />
+            </div>
           </TabsContent>
           
           <TabsContent value="code" className="flex-1 overflow-hidden">
             <div className="h-full p-4 overflow-auto">
               <CodePreview blocks={logicBlocks} />
             </div>
+          </TabsContent>
+
+          <TabsContent value="richmenu" className="flex-1 overflow-hidden">
+            <RichMenuPanel selectedBotId={selectedBotId} />
           </TabsContent>
         </Tabs>
         </div>

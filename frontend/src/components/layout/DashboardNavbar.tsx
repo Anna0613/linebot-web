@@ -219,8 +219,8 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               </div>
             </Link>
             <Link to="/bots/create">
-              <Button className="web3-primary-button font-bold rounded-[5px] text-sm lg:text-[16px] px-3 lg:px-4 h-8 lg:h-10">
-                建立設計
+              <Button className="web3-button font-bold rounded-[5px] text-sm lg:text-[16px] px-3 lg:px-4 h-8 lg:h-10">
+                建立 LINE Bot
               </Button>
             </Link>
 

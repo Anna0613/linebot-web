@@ -513,6 +513,7 @@ export const VisualBotEditor: React.FC = () => {
               selectedBotId={selectedBotId}
               onBotSelect={handleBotSelect}
             />
+            {/* 已將 Rich Menu 作為工作區的獨立標籤 */}
           </div>
         </header>
         

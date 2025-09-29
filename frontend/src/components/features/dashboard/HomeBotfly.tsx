@@ -220,14 +220,14 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div className="web3-dashboard-card p-6 web3-hover-glow">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
-            <h3 className="text-lg font-medium text-web3-cyan">創建新 Bot</h3>
+            <h3 className="text-lg font-medium text-web3-cyan">創建新 LINE Bot</h3>
             <Plus className="h-6 w-6 text-web3-cyan animate-neon-pulse" />
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-4">
               快速創建一個新的 LINE Bot 專案
             </p>
-            <Button asChild className="web3-primary-button w-full">
+            <Button asChild className="web3-button w-full">
               <Link to="/bots/create">開始創建</Link>
             </Button>
           </div>
@@ -235,7 +235,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
 
         <div className="web3-dashboard-card p-6 web3-hover-glow">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
-            <h3 className="text-lg font-medium text-web3-purple">Bot 編輯器</h3>
+            <h3 className="text-lg font-medium text-web3-purple">LINE Bot 編輯器</h3>
             <Bot className="h-6 w-6 text-web3-purple animate-web3-glow" />
           </div>
           <div>
@@ -267,11 +267,11 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
       {/* Bot List Section */}
       <div className="web3-glass-card p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold neon-text-gradient">我的 Bot</h2>
-          <Button asChild size="sm" className="web3-primary-button">
+          <h2 className="text-xl font-semibold neon-text-gradient">我的 LINE Bot</h2>
+          <Button asChild size="sm" className="web3-button">
             <Link to="/bots/create">
               <Plus className="h-4 w-4 mr-2" />
-              新增 Bot
+              新增 LINE Bot
             </Link>
           </Button>
         </div>
@@ -319,9 +319,9 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         ) : bots.length === 0 ? (
           <div className="text-center py-8">
             <Bot className="h-12 w-12 text-web3-cyan mx-auto mb-4 animate-neon-pulse" />
-            <p className="text-muted-foreground mb-4">還沒有任何 Bot</p>
-            <Button asChild className="web3-primary-button">
-              <Link to="/bots/create">創建第一個 Bot</Link>
+            <p className="text-muted-foreground mb-4">還沒有任何 LINE Bot</p>
+            <Button asChild className="web3-button">
+              <Link to="/bots/create">創建第一個 LINE Bot</Link>
             </Button>
           </div>
         ) : (
