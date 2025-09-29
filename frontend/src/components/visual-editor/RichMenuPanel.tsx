@@ -90,66 +90,104 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
     }
   };
 
+  const onPublish = async (menu: RichMenu) => {
+    if (!selectedBotId) return;
+    try {
+      const res = await RichMenuApi.publish(selectedBotId, menu.id);
+      toast({ title: '已重新發佈到 LINE', description: `選單「${res.name}」已更新` });
+      await loadMenus();
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: '重新發佈失敗', description: e?.message || '請稍後再試' });
+    }
+  };
+
+  const onCreateNew = () => {
+    setCreating(true);
+    setEditing(null);
+  };
+
+  const onBackToList = () => {
+    setCreating(false);
+    setEditing(null);
+    setPreviewData(null);
+    setSelectedIndex(null);
+  };
+
   if (!selectedBotId) {
     return <div className="p-4 text-sm text-muted-foreground">請先在上方選擇一個 Bot</div>;
   }
 
   return (
     <div className="h-full flex flex-col p-4 gap-4 overflow-hidden">
+      {/* 頂部標題和導航 */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium">功能選單（Rich Menu）</h2>
-        <Button onClick={() => { setCreating(true); setEditing(null); }} disabled={!selectedBotId}>新增選單</Button>
+        <div className="flex items-center space-x-2">
+          <h2 className="text-lg font-medium">功能選單（Rich Menu）</h2>
+          {(editing || creating) && (
+            <>
+              <span className="text-muted-foreground">›</span>
+              <span className="text-sm text-muted-foreground">
+                {creating ? '新增選單' : `編輯 ${editing.name}`}
+              </span>
+            </>
+          )}
+        </div>
+        {(editing || creating) && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onBackToList}
+          >
+            返回列表
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-          {/* 左：編輯 */}
+          {/* 左：編輯與設定 */}
           <div className="flex flex-col h-full overflow-hidden">
             <Card className="h-full flex flex-col">
-              <CardHeader className="py-3 flex items-center justify-between">
-                <CardTitle className="text-base">編輯與設定</CardTitle>
-                {(editing || creating) && (
-                  <div className="flex items-center gap-2">
-                    {editing && (
-                      <Button size="sm" variant="outline" onClick={async () => {
-                        try {
-                          if (!selectedBotId || !editing) return;
-                          const res = await RichMenuApi.publish(selectedBotId, editing.id);
-                          toast({ title: '已重新發佈到 LINE', description: `選單「${res.name}」已更新` });
-                        } catch (e: any) {
-                          toast({ variant: 'destructive', title: '重新發佈失敗', description: e?.message || '請稍後再試' });
-                        }
-                      }}>重新發佈到 LINE</Button>
-                    )}
-                  </div>
-                )}
+              <CardHeader className="py-3">
+                <CardTitle className="text-base">
+                  {(editing || creating) ? '編輯選單' : '編輯與設定'}
+                </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 overflow-auto">
                 {creating && (
                   <RichMenuForm
                     botId={selectedBotId}
                     onSaved={onSaved}
-                  onChangePreview={setPreviewData}
-                  onBindPreviewControls={(controls) => { previewControlsRef.current = controls; }}
-                  onSelectedIndexChange={setSelectedIndex}
-                />
-              )}
-              {editing && (
-                <RichMenuForm
-                  botId={selectedBotId}
-                  menu={editing}
-                  onSaved={onSaved}
-                  onChangePreview={setPreviewData}
-                  onBindPreviewControls={(controls) => { previewControlsRef.current = controls; }}
-                  onSelectedIndexChange={setSelectedIndex}
-                />
-              )}
+                    onCancel={onBackToList}
+                    onChangePreview={setPreviewData}
+                    onBindPreviewControls={(controls) => { previewControlsRef.current = controls; }}
+                    onSelectedIndexChange={setSelectedIndex}
+                  />
+                )}
+                {editing && (
+                  <RichMenuForm
+                    botId={selectedBotId}
+                    menu={editing}
+                    onSaved={onSaved}
+                    onCancel={onBackToList}
+                    onChangePreview={setPreviewData}
+                    onBindPreviewControls={(controls) => { previewControlsRef.current = controls; }}
+                    onSelectedIndexChange={setSelectedIndex}
+                  />
+                )}
                 {!creating && !editing && (
                   <div className="space-y-3">
                     {loading ? (
                       <div className="flex justify-center py-10"><Loader fullPage={false} web3Style /></div>
                     ) : (
-                      <RichMenuList menus={menus} onEdit={setEditing} onDelete={onDelete} onSetDefault={onSetDefault} />
+                      <RichMenuList
+                        menus={menus}
+                        onEdit={setEditing}
+                        onDelete={onDelete}
+                        onSetDefault={onSetDefault}
+                        onPublish={onPublish}
+                        onCreateNew={onCreateNew}
+                      />
                     )}
                   </div>
                 )}

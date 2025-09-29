@@ -14,6 +14,7 @@ type Props = {
   botId: string;
   menu?: RichMenu | null;
   onSaved?: (menu: RichMenu) => void;
+  onCancel?: () => void;
   onChangePreview?: (data: {
     name: string;
     chat_bar_text: string;
@@ -35,7 +36,7 @@ type Props = {
 const emptyBounds: RichMenuBounds = { x: 0, y: 0, width: 1250, height: 843 };
 const defaultAction: RichMenuAction = { type: 'postback', data: 'action=demo' };
 
-const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, onBindPreviewControls, onSelectedIndexChange }) => {
+const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChangePreview, onBindPreviewControls, onSelectedIndexChange }) => {
   const isEdit = !!menu?.id;
   const { toast } = useToast();
   const [name, setName] = useState<string>(menu?.name || 'MainMenu');
@@ -49,6 +50,9 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
       { bounds: { ...emptyBounds, x: 0, y: 0 }, action: { ...defaultAction, data: 'action=area1' } },
     ]
   );
+
+  // 新增：獲取其他選單列表供 richmenuswitch 使用
+  const [availableMenus, setAvailableMenus] = useState<RichMenu[]>([]);
   const [uploading, setUploading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | undefined>(menu?.image_url);
   const [saving, setSaving] = useState(false);
@@ -68,6 +72,22 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
       setImageUrl(menu.image_url);
     }
   }, [menu]);
+
+  // 載入其他選單列表供 richmenuswitch 使用
+  useEffect(() => {
+    const loadAvailableMenus = async () => {
+      if (!botId) return;
+      try {
+        const menus = await RichMenuApi.list(botId);
+        // 過濾掉當前編輯的選單
+        const otherMenus = menus.filter(m => m.id !== menu?.id);
+        setAvailableMenus(otherMenus);
+      } catch (error) {
+        console.error('載入選單列表失敗:', error);
+      }
+    };
+    loadAvailableMenus();
+  }, [botId, menu?.id]);
 
   // 同步預覽資料
   useEffect(() => {
@@ -340,7 +360,23 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
                 <div className="col-span-12 md:col-span-4 grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-xs">點擊後的動作</Label>
-                    <Select value={area.action.type} onValueChange={v => onChangeArea(idx, { action: { ...area.action, type: v as RichMenuAction['type'] } })}>
+                    <Select value={area.action.type} onValueChange={v => {
+                      // 清除舊的 action 資料，根據新類型設定預設值
+                      const newAction: RichMenuAction = { type: v as RichMenuAction['type'] };
+                      if (v === 'message') {
+                        newAction.text = '';
+                      } else if (v === 'uri') {
+                        newAction.uri = '';
+                      } else if (v === 'postback') {
+                        newAction.data = '';
+                      } else if (v === 'datetimepicker') {
+                        newAction.data = '';
+                        newAction.mode = 'date';
+                      } else if (v === 'richmenuswitch') {
+                        newAction.richMenuAliasId = '';
+                      }
+                      onChangeArea(idx, { action: newAction });
+                    }}>
                       <SelectTrigger><SelectValue placeholder="選擇動作" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="message">回覆文字訊息</SelectItem>
@@ -352,10 +388,135 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs">動作內容</Label>
-                    <Input value={(area.action.data as string) || ''} onChange={e => onChangeArea(idx, { action: { ...area.action, data: e.target.value } })} placeholder="輸入文字／網址／暗號" />
+                    {/* 根據 action 類型顯示不同的輸入欄位和提示 */}
+                    {area.action.type === 'message' && (
+                      <>
+                        <Label className="text-xs">訊息內容</Label>
+                        <Input
+                          value={area.action.text || ''}
+                          onChange={e => onChangeArea(idx, { action: { ...area.action, text: e.target.value } })}
+                          placeholder="輸入要回覆的訊息內容"
+                        />
+                      </>
+                    )}
+                    {area.action.type === 'uri' && (
+                      <>
+                        <Label className="text-xs">網址 (URL)</Label>
+                        <Input
+                          value={area.action.uri || ''}
+                          onChange={e => onChangeArea(idx, { action: { ...area.action, uri: e.target.value } })}
+                          placeholder="https://example.com"
+                          type="url"
+                        />
+                      </>
+                    )}
+                    {area.action.type === 'postback' && (
+                      <>
+                        <Label className="text-xs">回傳資料</Label>
+                        <Input
+                          value={area.action.data || ''}
+                          onChange={e => onChangeArea(idx, { action: { ...area.action, data: e.target.value } })}
+                          placeholder="輸入要回傳的資料"
+                        />
+                      </>
+                    )}
+                    {area.action.type === 'datetimepicker' && (
+                      <>
+                        <Label className="text-xs">識別碼</Label>
+                        <Input
+                          value={area.action.data || ''}
+                          onChange={e => onChangeArea(idx, { action: { ...area.action, data: e.target.value } })}
+                          placeholder="用於識別此日期選擇器的標識"
+                        />
+                      </>
+                    )}
+                    {area.action.type === 'richmenuswitch' && (
+                      <>
+                        <Label className="text-xs">切換到選單</Label>
+                        <Select
+                          value={area.action.richMenuAliasId || undefined}
+                          onValueChange={v => onChangeArea(idx, { action: { ...area.action, richMenuAliasId: v } })}
+                        >
+                          <SelectTrigger><SelectValue placeholder="選擇要切換的選單" /></SelectTrigger>
+                          <SelectContent>
+                            {availableMenus.length === 0 ? (
+                              <SelectItem value="no-menus" disabled>沒有其他可用的選單</SelectItem>
+                            ) : (
+                              availableMenus.map(menu => (
+                                <SelectItem key={menu.id} value={menu.line_rich_menu_id || menu.id}>
+                                  {menu.name} {menu.line_rich_menu_id ? '(已發佈)' : '(未發佈)'}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
                   </div>
                 </div>
+
+                {/* 額外的 datetimepicker 設定 */}
+                {area.action.type === 'datetimepicker' && (
+                  <div className="col-span-12 md:col-span-8">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label className="text-xs">模式</Label>
+                        <Select
+                          value={area.action.mode || 'date'}
+                          onValueChange={v => onChangeArea(idx, { action: { ...area.action, mode: v } })}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="date">僅日期</SelectItem>
+                            <SelectItem value="time">僅時間</SelectItem>
+                            <SelectItem value="datetime">日期和時間</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">初始值（可選）</Label>
+                        <Input
+                          value={area.action.initial || ''}
+                          onChange={e => onChangeArea(idx, { action: { ...area.action, initial: e.target.value } })}
+                          placeholder="YYYY-MM-DD 或 HH:mm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">最大值（可選）</Label>
+                        <Input
+                          value={area.action.max || ''}
+                          onChange={e => onChangeArea(idx, { action: { ...area.action, max: e.target.value } })}
+                          placeholder="YYYY-MM-DD 或 HH:mm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 額外的 postback 設定 */}
+                {area.action.type === 'postback' && (
+                  <div className="col-span-12 md:col-span-8">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">顯示文字（可選）</Label>
+                        <Input
+                          value={area.action.text || ''}
+                          onChange={e => onChangeArea(idx, { action: { ...area.action, text: e.target.value } })}
+                          placeholder="點擊後顯示在聊天室的文字"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">顯示文字（替代，可選）</Label>
+                        <Input
+                          value={(area.action as any).displayText || ''}
+                          onChange={e => onChangeArea(idx, { action: { ...area.action, displayText: e.target.value } })}
+                          placeholder="替代顯示文字"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="col-span-12 md:col-span-2 flex items-center justify-end gap-2">
                   <Button variant="destructive" onClick={() => onRemoveArea(idx)}>移除</Button>
                 </div>
@@ -383,7 +544,16 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onChangePreview, 
             </Button>
             <p className="text-xs text-muted-foreground">建議尺寸：2500×1686（大）或 2500×843（小）；格式：JPG/PNG</p>
           </div>
-          <Button onClick={onSubmit} disabled={saving}>{saving ? '儲存中...' : '儲存選單'}</Button>
+          <div className="flex items-center gap-2">
+            {onCancel && (
+              <Button variant="outline" onClick={onCancel}>
+                取消
+              </Button>
+            )}
+            <Button onClick={onSubmit} disabled={saving}>
+              {saving ? '儲存中...' : '儲存選單'}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

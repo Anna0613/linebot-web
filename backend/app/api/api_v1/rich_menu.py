@@ -33,6 +33,78 @@ if not logger.handlers:
 router = APIRouter()
 
 
+def _process_action_for_line_api(action: dict) -> dict:
+    """
+    根據 action 類型處理參數，確保符合 LINE API 要求
+
+    Args:
+        action: 原始 action 字典
+
+    Returns:
+        處理後的 action 字典
+    """
+    if not action or not isinstance(action, dict):
+        return {}
+
+    action_type = action.get("type", "")
+    logger.info(f"🔧 Processing action: type={action_type}, original_action={action}")
+    processed_action = {"type": action_type}
+
+    if action_type == "message":
+        # message 類型需要 text 參數
+        text = action.get("text")
+        if not text:
+            # 如果沒有 text，嘗試使用 data 作為備用（向後兼容）
+            text = action.get("data", "點擊")
+        processed_action["text"] = text
+
+    elif action_type == "postback":
+        # postback 類型需要 data 參數
+        data = action.get("data", "")
+        processed_action["data"] = data
+
+        # 可選的 text 和 displayText
+        if action.get("text"):
+            processed_action["text"] = action["text"]
+        if action.get("displayText"):
+            processed_action["displayText"] = action["displayText"]
+
+    elif action_type == "uri":
+        # uri 類型需要 uri 參數
+        uri = action.get("uri", "")
+        processed_action["uri"] = uri
+
+    elif action_type == "datetimepicker":
+        # datetimepicker 類型需要 data 和 mode 參數
+        data = action.get("data", "")
+        mode = action.get("mode", "date")
+        processed_action["data"] = data
+        processed_action["mode"] = mode
+
+        # 可選參數
+        if action.get("initial"):
+            processed_action["initial"] = action["initial"]
+        if action.get("max"):
+            processed_action["max"] = action["max"]
+        if action.get("min"):
+            processed_action["min"] = action["min"]
+
+    elif action_type == "richmenuswitch":
+        # richmenuswitch 類型需要 richMenuAliasId 參數
+        rich_menu_alias_id = action.get("richMenuAliasId", "")
+        processed_action["richMenuAliasId"] = rich_menu_alias_id
+
+        # 可選的 data 參數
+        if action.get("data"):
+            processed_action["data"] = action["data"]
+
+    # 移除 None 值
+    processed_action = {k: v for k, v in processed_action.items() if v is not None}
+
+    logger.info(f"✅ Processed action result: {processed_action}")
+    return processed_action
+
+
 async def _assert_bot_ownership(db: AsyncSession, bot_id: str, user_id) -> Bot:
     try:
         bot_uuid = PyUUID(bot_id)
@@ -450,15 +522,26 @@ async def publish_rich_menu(
 
         print(f"✅ Height determined: {height}")
 
+        # 處理 areas，確保每個 action 都有正確的參數
+        processed_areas = []
+        for a in (m.areas or []):
+            bounds = a.get("bounds", {})
+            action = a.get("action", {})
+
+            # 根據 action 類型處理參數
+            processed_action = _process_action_for_line_api(action)
+
+            processed_areas.append({
+                "bounds": bounds,
+                "action": processed_action
+            })
+
         rm_payload = {
             "size": {"width": 2500, "height": height},
             "selected": bool(m.selected),
             "name": m.name,
             "chatBarText": m.chat_bar_text,
-            "areas": [
-                {"bounds": a.get("bounds", {}), "action": a.get("action", {})}
-                for a in (m.areas or [])
-            ],
+            "areas": processed_areas,
         }
         print(f"✅ Rich Menu payload prepared: {rm_payload}")
         logger.info(f"Rich Menu payload prepared: {rm_payload}")
@@ -796,15 +879,26 @@ async def upload_rich_menu_image(
         # 嘗試同步至 LINE 平台（建立/更新圖片、設定預設）
         try:
             logger.info(f"Syncing Rich Menu {menu_id} to LINE platform after image upload")
+            # 處理 areas，確保每個 action 都有正確的參數
+            processed_areas = []
+            for a in (m.areas or []):
+                bounds = a.get("bounds", {})
+                action = a.get("action", {})
+
+                # 根據 action 類型處理參數
+                processed_action = _process_action_for_line_api(action)
+
+                processed_areas.append({
+                    "bounds": bounds,
+                    "action": processed_action
+                })
+
             rm_payload = {
                 "size": {"width": 2500, "height": int(m.size.get("height", 1686)) if isinstance(m.size, dict) else 1686},
                 "selected": bool(m.selected),
                 "name": m.name,
                 "chatBarText": m.chat_bar_text,
-                "areas": [
-                    {"bounds": a.get("bounds", {}), "action": a.get("action", {})}
-                    for a in (m.areas or [])
-                ],
+                "areas": processed_areas,
             }
             rid: Optional[str] = m.line_rich_menu_id
             if not rid:
