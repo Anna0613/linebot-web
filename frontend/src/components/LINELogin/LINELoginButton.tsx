@@ -33,7 +33,9 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin: _onLogin }) 
         try {
           const text = await response.text();
           if (text) msg = `${msg} - ${text}`;
-        } catch {}
+        } catch {
+          // Intentionally ignore: response body may be empty or non-text
+        }
         throw new Error(msg);
       }
       const data = await response.json();
