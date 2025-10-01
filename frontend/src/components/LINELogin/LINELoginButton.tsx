@@ -28,7 +28,13 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin: _onLogin }) 
         }
       );
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // 嘗試讀取錯誤訊息以提供更友善提示
+        let msg = `HTTP error! status: ${response.status}`;
+        try {
+          const text = await response.text();
+          if (text) msg = `${msg} - ${text}`;
+        } catch {}
+        throw new Error(msg);
       }
       const data = await response.json();
       if (!data.login_url) {
@@ -37,7 +43,7 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin: _onLogin }) 
       console.log("LINE login URL:", data.login_url); // 調試用
       window.location.href = data.login_url;
     } catch (error: unknown) {
-      console.error("Error occurred:", _error);
+      console.error("Error occurred:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -46,6 +52,8 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin: _onLogin }) 
             ? error.message
             : "Failed to initiate LINE login. Please try again.",
       });
+    } finally {
+      // 若已成功導向至 LINE，這段不會影響體驗；若失敗則解除 loading
       setLoading(false);
     }
   };

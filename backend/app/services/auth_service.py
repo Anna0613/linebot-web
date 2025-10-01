@@ -231,8 +231,12 @@ class AuthService:
             line_user = res.scalars().first()
             
             if line_user:
-                # 已存在的 LINE 用戶，直接登入
-                user = line_user.user
+                user = await db.get(User, line_user.user_id)
+                if not user:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="找不到對應的使用者"
+                    )
                 # 更新用戶的顯示名稱和頭像（如果有變更）
                 updated = False
                 if line_user.display_name != display_name:
