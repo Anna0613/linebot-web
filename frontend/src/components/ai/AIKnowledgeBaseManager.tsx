@@ -60,35 +60,6 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   // 非同步處理模式
   const [useAsyncProcessing, setUseAsyncProcessing] = useState(true);
 
-  // 處理任務完成回調
-  const handleJobCompleted = useCallback((_jobId: string) => {
-    // 重新載入列表以顯示新的知識塊
-    loadList(true);
-  }, [loadList]);
-
-  const handleJobFailed = useCallback((jobId: string, error: string) => {
-    // 可以在這裡添加額外的錯誤處理邏輯
-    console.error(`任務 ${jobId} 失敗:`, error);
-  }, []);
-
-  const canOperate = !!botId;
-
-  const loadToggle = useCallback(async () => {
-    if (!botId) return;
-    try {
-      const s = await AIKnowledgeApi.getAIToggle(botId);
-      setAiEnabled(!!s.ai_takeover_enabled);
-      setProvider(s.provider || 'groq');
-      setSelectedModel(s.model || '');
-      setRagThreshold(s.rag_threshold);
-      setRagTopK(s.rag_top_k);
-      setHistoryN(s.history_messages);
-      setSystemPrompt(s.system_prompt || '你是一個對話助理。若提供了知識片段，請優先引用並準確回答；若未提供或不足，也可依一般常識與推理能力完整作答。');
-    } catch (_err) {
-      // ignore
-    }
-  }, [botId]);
-
   const loadList = useCallback(async (immediate = false) => {
     if (!botId) return;
 
@@ -135,6 +106,35 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
       loadListTimeoutRef.current = setTimeout(doLoad, 300);
     }
   }, [botId, scope, page, toast]);
+
+  // 處理任務完成回調
+  const handleJobCompleted = useCallback((_jobId: string) => {
+    // 重新載入列表以顯示新的知識塊
+    loadList(true);
+  }, [loadList]);
+
+  const handleJobFailed = useCallback((jobId: string, error: string) => {
+    // 可以在這裡添加額外的錯誤處理邏輯
+    console.error(`任務 ${jobId} 失敗:`, error);
+  }, []);
+
+  const canOperate = !!botId;
+
+  const loadToggle = useCallback(async () => {
+    if (!botId) return;
+    try {
+      const s = await AIKnowledgeApi.getAIToggle(botId);
+      setAiEnabled(!!s.ai_takeover_enabled);
+      setProvider(s.provider || 'groq');
+      setSelectedModel(s.model || '');
+      setRagThreshold(s.rag_threshold);
+      setRagTopK(s.rag_top_k);
+      setHistoryN(s.history_messages);
+      setSystemPrompt(s.system_prompt || '你是一個對話助理。若提供了知識片段，請優先引用並準確回答；若未提供或不足，也可依一般常識與推理能力完整作答。');
+    } catch (_err) {
+      // ignore
+    }
+  }, [botId]);
 
   useEffect(() => {
     loadToggle();
