@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DashboardNavbar } from "@/components/layout/DashboardNavbar";
+import DashboardNavbar from "@/components/layout/DashboardNavbar";
 
 // 模擬用戶數據
 const mockUser = {

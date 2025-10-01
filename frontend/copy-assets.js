@@ -49,4 +49,16 @@ console.log(`Destination directory: ${destDir}`);
 console.log(`Source exists: ${fs.existsSync(srcDir)}`);
 
 copyDir(srcDir, destDir);
+
+// 複製 manifest.json 到 dist 根目錄
+const manifestSrc = path.join(__dirname, 'public/manifest.json');
+const manifestDest = path.join(__dirname, 'dist/manifest.json');
+
+if (fs.existsSync(manifestSrc)) {
+  fs.copyFileSync(manifestSrc, manifestDest);
+  console.log('manifest.json copied to dist root');
+} else {
+  console.log('manifest.json not found in public directory');
+}
+
 console.log('Assets copied successfully!');

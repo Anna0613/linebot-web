@@ -77,7 +77,14 @@ export default defineConfig(({ mode }) => ({
               '.jpeg': 'image/jpeg',
               '.webp': 'image/webp',
               '.svg': 'image/svg+xml',
-              '.gif': 'image/gif'
+              '.gif': 'image/gif',
+              '.js': 'application/javascript',
+              '.mjs': 'application/javascript',
+              '.jsx': 'application/javascript',
+              '.ts': 'application/javascript',
+              '.tsx': 'application/javascript',
+              '.css': 'text/css',
+              '.json': 'application/json'
             };
 
             res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
@@ -88,11 +95,31 @@ export default defineConfig(({ mode }) => ({
         });
       }
     },
-    // 開發環境提供 manifest.json，避免瀏覽器解析錯誤
+    // 開發環境和預覽環境提供 manifest.json，避免瀏覽器解析錯誤
     {
       name: 'manifest-middleware',
-      apply: 'serve' as const,
       configureServer(server: ViteDevServer) {
+        server.middlewares.use('/manifest.json', (_req: IncomingMessage, res: ServerResponse) => {
+          const manifest = {
+            name: 'LineBot-Web',
+            short_name: 'LineBotWeb',
+            start_url: '/',
+            display: 'standalone',
+            background_color: '#ffffff',
+            theme_color: '#2563eb',
+            icons: [
+              { src: '/assets/images/logo.svg', sizes: 'any', type: 'image/svg+xml' },
+              { src: '/assets/images/webp/LOGO-sm.webp', sizes: '192x192', type: 'image/webp' },
+              { src: '/assets/images/webp/LOGO-md.webp', sizes: '384x384', type: 'image/webp' },
+              { src: '/assets/images/webp/LOGO.webp', sizes: '512x512', type: 'image/webp' },
+              { src: '/assets/images/webp/LOGO-lg.webp', sizes: '1024x1024', type: 'image/webp' }
+            ]
+          };
+          res.setHeader('Content-Type', 'application/manifest+json');
+          res.end(JSON.stringify(manifest));
+        });
+      },
+      configurePreviewServer(server: ViteDevServer) {
         server.middlewares.use('/manifest.json', (_req: IncomingMessage, res: ServerResponse) => {
           const manifest = {
             name: 'LineBot-Web',
