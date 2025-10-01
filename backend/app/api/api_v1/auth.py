@@ -91,9 +91,15 @@ async def login(
         )
 
 @router.post("/line-login", response_model=Dict[str, str])
-def line_login():
-    """取得 LINE 登入 URL"""
-    return AuthService.get_line_login_url()
+async def line_login():
+    """取得 LINE 登入 URL
+    兼容 get_line_login_url 為同步或非同步定義的情況。
+    """
+    import inspect
+    result = AuthService.get_line_login_url()
+    if inspect.isawaitable(result):  # 若被定義為 async
+        result = await result
+    return result
 
 @router.get("/line/callback")
 async def line_callback(
