@@ -316,7 +316,7 @@ const AddServerPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="space-y-12">
       {/* 標題區域 */}
       <div className="text-center mb-8 sm:mb-12 fade-in-element">
       <h1 className="text-foreground text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] font-bold mb-3 sm:mb-4 leading-tight tracking-wide px-2">

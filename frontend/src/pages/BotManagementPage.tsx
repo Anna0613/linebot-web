@@ -1566,7 +1566,7 @@ const BotManagementPage: React.FC = () => {
                     </div>
 
                 {/* 現代化的圖表和分析區域 */}
-                <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
+                <div className="grid gap-6 grid-cols-1 lg:grid-cols-12 mt-8">
                   <div className="lg:col-span-8">
                     <div className="space-y-6">
                       {/* 增強版訊息統計圖表 */}

@@ -7,6 +7,7 @@ import DemoPreview from "../components/home/DemoPreview";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import { authManager } from "../services/UnifiedAuthManager";
+import { PageContentWrapper } from "../components/common/PageContentWrapper";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -21,10 +22,12 @@ const HomePage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <DemoPreview />
+      <PageContentWrapper>
+        <Hero />
+        <Features />
+        <HowItWorks />
+        <DemoPreview />
+      </PageContentWrapper>
       <Footer />
     </div>
   );

@@ -63,6 +63,47 @@ const LoadingFallback = () => (
   <Loader fullPage={true} />
 );
 
+// 路由組件
+// 不使用 AnimatePresence 包裹 Routes，避免導航欄閃爍
+// 動畫效果由各頁面內的 PageContentWrapper 處理
+const AnimatedRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgetthepassword" element={<ForgetThePassword />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/line-login" element={<LINELogin />} />
+      <Route path="/login-success" element={<LoginSuccess />} />
+      <Route path="/login-error" element={<LoginError />} />
+
+      {/* 新的語義化路由 */}
+      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/bots/create" element={<AddBotPage />} />
+      <Route path="/bots/editor" element={<BotEditorPage />} />
+      <Route path="/bots/visual-editor" element={<VisualBotEditorPage />} />
+      <Route path="/bots/management" element={<BotManagementPage />} />
+      <Route path="/bots/management/richmenu" element={<RichMenuManagementPage />} />
+      <Route path="/how-to-establish" element={<HowToEstablish />} />
+
+      <Route path="/setting" element={<Setting />} />
+      <Route path="/verify-email" element={<EmailVerification />} />
+      <Route path="/email-verification" element={<EmailVerification />} />
+      <Route path="/email-verification-pending" element={<EmailVerificationPending />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      {/* 移除所有舊路由，僅保留新語義化路由 */}
+      <Route path="/about" element={<About />} />
+      <Route path="/language" element={<Language />} />
+      <Route path="/suggest" element={<Suggest />} />
+
+      {/* 測試頁面 */}
+      <Route path="/sidebar-test" element={<SidebarTestPage />} />
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => {
   // 初始化快取事件處理器和認證優化器
   useEffect(() => {
@@ -118,43 +159,10 @@ const App = () => {
           }}
         >
           <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/forgetthepassword" element={<ForgetThePassword />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/line-login" element={<LINELogin />} />
-              <Route path="/login-success" element={<LoginSuccess />} />
-              <Route path="/login-error" element={<LoginError />} />
-
-              {/* 新的語義化路由 */}
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/bots/create" element={<AddBotPage />} />
-              <Route path="/bots/editor" element={<BotEditorPage />} />
-              <Route path="/bots/visual-editor" element={<VisualBotEditorPage />} />
-              <Route path="/bots/management" element={<BotManagementPage />} />
-              <Route path="/bots/management/richmenu" element={<RichMenuManagementPage />} />
-              <Route path="/how-to-establish" element={<HowToEstablish />} />
-
-
-              <Route path="/setting" element={<Setting />} />
-              <Route path="/verify-email" element={<EmailVerification />} />
-              <Route path="/email-verification" element={<EmailVerification />} />
-              <Route path="/email-verification-pending" element={<EmailVerificationPending />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              {/* 移除所有舊路由，僅保留新語義化路由 */}
-              <Route path="/about" element={<About />} />
-              <Route path="/language" element={<Language />} />
-              <Route path="/suggest" element={<Suggest />} />
-
-              {/* 測試頁面 */}
-              <Route path="/sidebar-test" element={<SidebarTestPage />} />
-
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AnimatedRoutes />
           </Suspense>
         </BrowserRouter>
-        
+
       </TooltipProvider>
     </QueryClientProvider>
   );

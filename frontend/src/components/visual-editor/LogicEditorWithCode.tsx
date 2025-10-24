@@ -42,21 +42,23 @@ const LogicEditorWithCode: React.FC<LogicEditorWithCodeProps> = ({
   return (
     <div className="h-full flex flex-col">
       {/* 邏輯模板選擇器 */}
-      {selectedBotId && (
-        <LogicTemplateSelector
-          selectedBotId={selectedBotId}
-          selectedLogicTemplateId={selectedLogicTemplateId}
-          onLogicTemplateSelect={onLogicTemplateSelect}
-          onLogicTemplateCreate={onLogicTemplateCreate}
-          onLogicTemplateSave={onLogicTemplateSave}
-          logicBlocks={logicBlocks.map((b) => ({ blockType: b.blockType, blockData: b.blockData }))}
-        />
-      )}
+      <div className="flex-shrink-0">
+        {selectedBotId && (
+          <LogicTemplateSelector
+            selectedBotId={selectedBotId}
+            selectedLogicTemplateId={selectedLogicTemplateId}
+            onLogicTemplateSelect={onLogicTemplateSelect}
+            onLogicTemplateCreate={onLogicTemplateCreate}
+            onLogicTemplateSave={onLogicTemplateSave}
+            logicBlocks={logicBlocks.map((b) => ({ blockType: b.blockType, blockData: b.blockData }))}
+          />
+        )}
+      </div>
 
       {/* 邏輯編輯器主體 */}
-      <div className="flex-1 p-4 overflow-auto h-full">
-        <div className="grid grid-cols-2 gap-4 h-full min-h-0">
-          <div className="flex flex-col min-h-0">
+      <div className="flex-1 p-4 overflow-hidden flex">
+        <div className="grid grid-cols-2 gap-4 w-full h-full">
+          <div className="flex flex-col h-full overflow-hidden">
             <DropZone
               title={currentLogicTemplateName ?
                 `邏輯編輯器 - ${currentLogicTemplateName}` :
@@ -72,7 +74,7 @@ const LogicEditorWithCode: React.FC<LogicEditorWithCodeProps> = ({
             />
           </div>
 
-          <div className="flex flex-col min-h-0">
+          <div className="flex flex-col h-full overflow-hidden">
             <LineBotSimulator
               blocks={logicBlocks.map((b) => ({ blockType: b.blockType, blockData: b.blockData, id: b.id, parentId: b.parentId }))}
               flexBlocks={flexBlocks.map((b) => ({ blockType: b.blockType, blockData: b.blockData, id: b.id, parentId: b.parentId }))}

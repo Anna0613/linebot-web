@@ -6,6 +6,7 @@ import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { useEmailManagement } from "../hooks/useEmailManagement";
 import { useToast } from "@/hooks/use-toast";
+import { PageContentWrapper } from "../components/common/PageContentWrapper";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const Language = () => {
@@ -100,7 +101,8 @@ const Language = () => {
     <div className="min-h-screen bg-background">
       {/* 主要內容區域 */}
       <DashboardNavbar user={user || authUser} />
-      <div className="pt-32 pb-16 px-6">
+      <PageContentWrapper>
+        <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16">
         <h1 className="web3-section-title leading-tight tracking-wide px-2">
@@ -145,6 +147,7 @@ const Language = () => {
           </div>
         </div>
       </div>
+      </PageContentWrapper>
 
       <DashboardFooter />
     </div>

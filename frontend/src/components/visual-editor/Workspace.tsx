@@ -494,13 +494,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
         {/* 主工作區 */}
         <div className="flex-1 bg-background flex flex-col">
-        <Tabs 
-          value={activeTab} 
+        <Tabs
+          value={activeTab}
           onValueChange={(value) => {
             console.log('切換標籤:', value);
             setActiveTab(value);
-          }} 
-          className="h-full flex flex-col"
+          }}
+          className="h-full flex flex-col relative"
         >
           <TabsList className="m-4 flex-shrink-0 web3-glass-card">
             <TabsTrigger value="logic" className="data-[state=active]:bg-web3-cyan/20 data-[state=active]:text-web3-cyan">
@@ -529,7 +529,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
             <TabsTrigger value="richmenu">功能選單（Rich Menu）</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="logic" className="flex-1 overflow-hidden">
+          <TabsContent value="logic" className="absolute inset-0 top-[60px] overflow-hidden data-[state=inactive]:hidden">
             <LogicEditorWithCode
               selectedBotId={selectedBotId || ''}
               selectedLogicTemplateId={selectedLogicTemplateId || ''}
@@ -549,8 +549,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
             />
           </TabsContent>
           
-          <TabsContent value="flex" className="flex-1 overflow-hidden">
-            <div className="h-full flex flex-col">
+          <TabsContent value="flex" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
+            <div className="flex-shrink-0">
               {/* FlexMessage 選擇器 */}
               <FlexMessageSelector
                 selectedFlexMessageId={selectedFlexMessageId}
@@ -559,40 +559,40 @@ const Workspace: React.FC<WorkspaceProps> = ({
                 onFlexMessageSave={onFlexMessageSave}
                 flexBlocks={flexBlocks as Block[]}
               />
-              
-              <div className="flex-1 p-4 overflow-auto">
-                <div className="grid grid-cols-2 gap-4 h-full min-h-0">
-                  <div className="flex flex-col min-h-0">
-                    <DropZone 
-                      title={currentFlexMessageName ? 
-                        `Flex 設計器 - ${currentFlexMessageName}` : 
-                        "Flex 設計器 - 請選擇 FlexMessage"
-                      }
-                      context={WorkspaceContext.FLEX}
-                      onDrop={handleFlexDrop}
-                      blocks={flexBlocks}
-                      onRemove={removeFlexBlock}
-                      onUpdate={updateFlexBlock}
-                      onMove={moveFlexBlock}
-                      onInsert={insertFlexBlock}
-                    />
-                  </div>
-                  
-                  <div className="flex flex-col min-h-0">
-                    <FlexMessagePreview blocks={flexBlocks} />
-                  </div>
+            </div>
+
+            <div className="flex-1 p-4 overflow-hidden flex flex-col">
+              <div className="grid grid-cols-2 gap-4 w-full h-full">
+                <div className="flex flex-col h-full overflow-hidden">
+                  <DropZone
+                    title={currentFlexMessageName ?
+                      `Flex 設計器 - ${currentFlexMessageName}` :
+                      "Flex 設計器 - 請選擇 FlexMessage"
+                    }
+                    context={WorkspaceContext.FLEX}
+                    onDrop={handleFlexDrop}
+                    blocks={flexBlocks}
+                    onRemove={removeFlexBlock}
+                    onUpdate={updateFlexBlock}
+                    onMove={moveFlexBlock}
+                    onInsert={insertFlexBlock}
+                  />
+                </div>
+
+                <div className="flex flex-col h-full overflow-hidden">
+                  <FlexMessagePreview blocks={flexBlocks} />
                 </div>
               </div>
             </div>
           </TabsContent>
           
-          <TabsContent value="preview" className="flex-1 overflow-hidden">
+          <TabsContent value="preview" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
             <div className="h-full flex flex-col">
               <AIKnowledgeBaseManager botId={selectedBotId} />
             </div>
           </TabsContent>
 
-          <TabsContent value="richmenu" className="flex-1 overflow-hidden">
+          <TabsContent value="richmenu" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
             <RichMenuPanel selectedBotId={selectedBotId} />
           </TabsContent>
         </Tabs>

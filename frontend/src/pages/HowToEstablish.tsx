@@ -7,6 +7,7 @@ import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import { useNavigate } from "react-router-dom";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
+import { PageContentWrapper } from "../components/common/PageContentWrapper";
 type StepNavProps = { onNext?: () => void; onPrev?: () => void };
 
 const StepOneC: React.FC<StepNavProps> = (p) => <StepOne {...p} />;
@@ -112,7 +113,8 @@ const HowToEstablish = () => {
       <DashboardNavbar user={user} />
 
       {/* 主要內容區域 */}
-      <main className="flex-1">
+      <PageContentWrapper>
+        <main className="flex-1">
       <div className="pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6">
 
         <div className="text-center mb-8 sm:mb-12 fade-in-element">
@@ -257,6 +259,7 @@ const HowToEstablish = () => {
         )}
       </div>
       </main>
+      </PageContentWrapper>
 
       <DashboardFooter />
     </div>

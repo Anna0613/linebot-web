@@ -3,12 +3,13 @@ import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
+import { PageContentWrapper } from "../components/common/PageContentWrapper";
 
 // 移除重複的 User 介面定義，使用 UnifiedUser
 
 const About = () => {
   const navigate = useNavigate();
-  
+
   // 使用統一身份驗證Hook - 不強制要求登入
   const { user, loading, isAuthenticated } = useUnifiedAuth({
     requireAuth: false, // 允許未登入用戶訪問
@@ -30,7 +31,8 @@ const About = () => {
     <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
       {isAuthenticated ? <DashboardNavbar user={user} /> : <Navbar />}
       {/* 主要內容區域 */}
-      <main className="flex-1">
+      <PageContentWrapper>
+        <main className="flex-1">
       <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16 fade-in-element">
@@ -287,6 +289,7 @@ const About = () => {
         </div>
       </div>
       </main>
+      </PageContentWrapper>
 
       <Footer />
     </div>

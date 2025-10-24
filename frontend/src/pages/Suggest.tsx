@@ -6,6 +6,7 @@ import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { useEmailManagement } from "../hooks/useEmailManagement";
 import { useToast } from "@/hooks/use-toast";
+import { PageContentWrapper } from "../components/common/PageContentWrapper";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const Suggest = () => {
@@ -100,8 +101,9 @@ const Suggest = () => {
     <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
       {/* 主要內容區域 */}
       <DashboardNavbar user={user || authUser} />
-      <main className="flex-1">
-      <div className="pt-32 pb-16 px-6">
+      <PageContentWrapper>
+        <main className="flex-1">
+        <div className="pt-32 pb-16 px-6">
         {/* 標題區域 */}
         <div className="text-center mb-16">
           <h1 className="web3-section-title leading-tight tracking-wide">
@@ -241,6 +243,7 @@ const Suggest = () => {
         </div>
       </div>
       </main>
+      </PageContentWrapper>
 
       <DashboardFooter />
     </div>

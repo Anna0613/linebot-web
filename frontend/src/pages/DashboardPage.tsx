@@ -8,6 +8,7 @@ import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 // import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
+import { PageContentWrapper } from "../components/common/PageContentWrapper";
 
 interface _User {
   line_id?: string;
@@ -51,9 +52,11 @@ const DashboardPage = memo(() => {
   return (
     <div className="min-h-screen flex flex-col bg-transparent dark:bg-background">
       <DashboardNavbar user={user} />
-      <main id="main" role="main" className="pt-24 md:pt-28 mb-20">
-        <HomeBotfly user={user} />
-      </main>
+      <PageContentWrapper>
+        <main id="main" role="main" className="pt-24 md:pt-28 mb-20">
+          <HomeBotfly user={user} />
+        </main>
+      </PageContentWrapper>
       <Suspense fallback={null}>
         <DashboardFooter />
       </Suspense>
