@@ -679,7 +679,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
             onClick={deleteSelected}
             disabled={!Object.values(selected).some(Boolean) || isOperatingRef.current || deleting}
           >
-            {deleting ? '刪除中...' : '批次刪除'}
+            {deleting ? '刪除中...' : '刪除'}
           </Button>
         </div>
       </div>

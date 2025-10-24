@@ -40,6 +40,7 @@ from app.services.background_tasks import get_task_manager, PerformanceOptimizer
 from app.services.cache_service import get_cache
 from app.services.minio_service import init_minio_service
 from app.services.websocket_manager import websocket_manager
+from app.middleware import TokenRefreshMiddleware
 
 # 配置日誌（使用增強的日誌配置）
 try:
@@ -174,6 +175,9 @@ app.add_middleware(
     expose_headers=["Set-Cookie"],
     max_age=3600,  # 預檢請求緩存時間
 )
+
+# Token 自動刷新中間件 - 實現滑動過期機制
+app.add_middleware(TokenRefreshMiddleware)
 
 # 依 HTTP 方法設定 DB 偏好中間件（GET/HEAD/OPTIONS 偏好從庫）
 @app.middleware("http")

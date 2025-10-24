@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Loader2 } from 'lucide-react';
 import type { RichMenu } from '@/types/richMenu';
 
 type Props = {
@@ -11,9 +12,10 @@ type Props = {
   onDelete: (menu: RichMenu) => void;
   onPublish: (menu: RichMenu) => void;
   onCreateNew: () => void;
+  publishingMenuId?: string | null;
 };
 
-const RichMenuList: React.FC<Props> = ({ menus, onEdit, onDelete, onPublish, onCreateNew }) => {
+const RichMenuList: React.FC<Props> = ({ menus, onEdit, onDelete, onPublish, onCreateNew, publishingMenuId = null }) => {
   return (
     <div className="space-y-4">
       {/* 頂部操作區域 */}
@@ -61,10 +63,7 @@ const RichMenuList: React.FC<Props> = ({ menus, onEdit, onDelete, onPublish, onC
                       <div className="flex items-center space-x-2 mb-1">
                         <h4 className="font-medium text-sm truncate">{menu.name}</h4>
                         {menu.selected && (
-                          <Badge variant="default" className="text-xs">預設</Badge>
-                        )}
-                        {menu.line_rich_menu_id && (
-                          <Badge variant="secondary" className="text-xs">已發佈</Badge>
+                          <Badge variant="default" className="text-xs">當前功能選單</Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
@@ -82,6 +81,7 @@ const RichMenuList: React.FC<Props> = ({ menus, onEdit, onDelete, onPublish, onC
                       size="sm"
                       variant="outline"
                       onClick={() => onEdit(menu)}
+                      disabled={publishingMenuId === menu.id}
                     >
                       編輯
                     </Button>
@@ -89,15 +89,23 @@ const RichMenuList: React.FC<Props> = ({ menus, onEdit, onDelete, onPublish, onC
                       size="sm"
                       variant="outline"
                       onClick={() => onPublish(menu)}
-                      disabled={!menu.image_url}
+                      disabled={!menu.image_url || publishingMenuId === menu.id}
                       title={!menu.image_url ? "請先上傳選單圖片" : "發佈到 LINE 並設為預設功能選單"}
                     >
-                      發佈到 LINE
+                      {publishingMenuId === menu.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          發佈中...
+                        </>
+                      ) : (
+                        '發佈到 LINE'
+                      )}
                     </Button>
                     <Button
                       size="sm"
                       variant="destructive"
                       onClick={() => onDelete(menu)}
+                      disabled={publishingMenuId === menu.id}
                     >
                       刪除
                     </Button>

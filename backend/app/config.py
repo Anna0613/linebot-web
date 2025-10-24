@@ -73,9 +73,14 @@ class Settings(BaseSettings):
     # JWT 設定
     JWT_SECRET: str = os.getenv("JWT_SECRET", "your-secret-key-here")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
-    JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "120"))  # 調整為 120 分鐘
+    # 滑動過期時間設定：3 小時閒置後過期
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "180"))  # 3 小時 = 180 分鐘
+    # 向後兼容的別名
+    JWT_EXPIRE_MINUTES: int = ACCESS_TOKEN_EXPIRE_MINUTES
     # 記住我功能的長期 token 過期時間（7天）
     JWT_REMEMBER_EXPIRE_MINUTES: int = int(os.getenv("JWT_REMEMBER_EXPIRE_MINUTES", "10080"))  # 7 * 24 * 60 = 10080 分鐘
+    # Token 自動刷新閾值（當剩餘時間少於此百分比時自動刷新）
+    TOKEN_REFRESH_THRESHOLD: float = float(os.getenv("TOKEN_REFRESH_THRESHOLD", "0.5"))  # 50%
 
     # Cookie 設定
     COOKIE_DOMAIN: Optional[str] = os.getenv("COOKIE_DOMAIN")  # None 表示讓瀏覽器自動處理

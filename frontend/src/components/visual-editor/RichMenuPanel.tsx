@@ -17,6 +17,7 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
   const { toast } = useToast();
   const [menus, setMenus] = useState<RichMenu[]>([]);
   const [loading, setLoading] = useState(false);
+  const [publishingMenuId, setPublishingMenuId] = useState<string | null>(null);
   const [editing, setEditing] = useState<RichMenu | null>(null);
   const [creating, setCreating] = useState<boolean>(false);
   const emptyToastForBotRef = useRef<string | null>(null);
@@ -84,6 +85,7 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
 
   const onPublish = async (menu: RichMenu) => {
     if (!selectedBotId) return;
+    setPublishingMenuId(menu.id);
     try {
       const res = await RichMenuApi.publish(selectedBotId, menu.id);
       toast({
@@ -94,6 +96,8 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '請稍後再試';
       toast({ variant: 'destructive', title: '發佈失敗', description: msg });
+    } finally {
+      setPublishingMenuId(null);
     }
   };
 
@@ -182,6 +186,7 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
                         onDelete={onDelete}
                         onPublish={onPublish}
                         onCreateNew={onCreateNew}
+                        publishingMenuId={publishingMenuId}
                       />
                     )}
                   </div>
