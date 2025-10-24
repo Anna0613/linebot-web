@@ -33,12 +33,13 @@ from app.database import init_database
 from app.database_enhanced import init_database_enhanced
 from app.database_mongo import init_mongodb, close_mongodb
 from app.db_read_write_split import db_manager
-from app.db_session_context import reset_session_context
+from app.db_session_context import reset_session_context, SessionContext
 from app.api.api_v1.api import api_router
 from app.config.redis_config import init_redis, close_redis
 from app.services.background_tasks import get_task_manager, PerformanceOptimizer
 from app.services.cache_service import get_cache
 from app.services.minio_service import init_minio_service
+from app.services.websocket_manager import websocket_manager
 
 # 配置日誌（使用增強的日誌配置）
 try:
@@ -103,6 +104,12 @@ async def lifespan(app: FastAPI):
         optimizer = PerformanceOptimizer()
         await optimizer.setup_cache_warming()
         logger.info("效能優化器設置完成")
+
+        # 啟動 WebSocket Redis 訂閱（跨進程廣播）
+        try:
+            await websocket_manager.start()
+        except Exception as e:
+            logger.warning(f"WebSocket Redis 訂閱啟動失敗: {e}")
         
         # 添加定期效能報告任務
         from app.services.background_tasks import generate_performance_report, TaskPriority
@@ -134,6 +141,12 @@ async def lifespan(app: FastAPI):
         await close_mongodb()
         logger.info("MongoDB 連接處理完成")
 
+        # 停止 WebSocket 訂閱
+        try:
+            await websocket_manager.stop()
+        except Exception as e:
+            logger.warning(f"關閉 WebSocket 訂閱失敗: {e}")
+
         # 關閉資料庫連線
         await db_manager.close()
         logger.info("資料庫連線已關閉")
@@ -162,11 +175,44 @@ app.add_middleware(
     max_age=3600,  # 預檢請求緩存時間
 )
 
-# Gzip 壓縮中間件
+# 依 HTTP 方法設定 DB 偏好中間件（GET/HEAD/OPTIONS 偏好從庫）
+@app.middleware("http")
+async def db_preference_middleware(request: Request, call_next):
+    prefer_replica = False
+    try:
+        if settings.ENABLE_READ_WRITE_SPLITTING:
+            method = (request.method or "").upper()
+            prefer_replica = method in ("GET", "HEAD", "OPTIONS")
+
+            # 允許用 Header/Query 覆蓋
+            role_header = request.headers.get("X-DB-Role", "").lower()
+            role_query = (request.query_params.get("db_role") or "").lower()
+            consistency = (request.query_params.get("consistency") or "").lower()
+
+            if role_header in ("primary", "replica"):
+                prefer_replica = (role_header == "replica")
+            elif role_query in ("primary", "replica"):
+                prefer_replica = (role_query == "replica")
+            elif consistency in ("strong", "eventual"):
+                prefer_replica = (consistency == "eventual")
+
+        SessionContext.set_prefer_replica(prefer_replica)
+        response = await call_next(request)
+        try:
+            response.headers["X-DB-Preferred-Role"] = "replica" if prefer_replica else "primary"
+        except Exception:
+            pass
+        return response
+    finally:
+        # 實際重置由 session_context_middleware 完成
+        ...
+
+# Gzip 壓縮中間件（生產環境提高最小壓縮大小，降低 CPU 負擔）
+gzip_min_size = 5000 if settings.ENVIRONMENT == "production" else 1000
 app.add_middleware(
     GZipMiddleware,
-    minimum_size=1000,  # 只壓縮大於 1KB 的響應
-    compresslevel=6     # 壓縮等級 1-9，6 是效能與壓縮率的平衡點
+    minimum_size=gzip_min_size,
+    compresslevel=6
 )
 
 # Session 上下文管理中間件

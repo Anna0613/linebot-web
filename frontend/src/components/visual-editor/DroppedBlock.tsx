@@ -4,9 +4,10 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { X, Settings, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import { X, Settings, GripVertical, ArrowUp, ArrowDown, Upload, Link as LinkIcon } from 'lucide-react';
 import { FlexMessageSummary } from '../../services/visualEditorApi';
 import { useFlexMessageCache } from '../../hooks/useFlexMessageCache';
+import { useToast } from '../../hooks/use-toast';
 import { 
   ActionEditor, 
   ColorPicker,
@@ -69,6 +70,12 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
   const [flexMessages, setFlexMessages] = useState<FlexMessageSummary[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
+  // 圖片上傳相關 state
+  const [imageUploadMode, setImageUploadMode] = useState<'url' | 'upload'>('url');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
   // 使用緩存 Hook
   const { getFlexMessages, isLoading: loadingFlexMessages } = useFlexMessageCache();
 
@@ -103,6 +110,91 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
         flexMessageId: value,
         flexMessageName: selectedMessage.name
       });
+    }
+  };
+
+  // 處理圖片上傳
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 驗證檔案類型
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "檔案類型不支援",
+        description: `請上傳 JPG、PNG、GIF 或 WebP 格式的圖片`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 驗證檔案大小（10MB）
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        title: "檔案過大",
+        description: `圖片大小不能超過 10MB，目前大小: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // 從 URL 中提取 bot_id
+      const pathParts = window.location.pathname.split('/');
+      const botId = pathParts[pathParts.indexOf('bots') + 1];
+
+      if (!botId) {
+        throw new Error('無法取得 Bot ID');
+      }
+
+      // 準備 FormData
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // 上傳圖片
+      const response = await fetch(`/api/v1/bots/${botId}/upload-logic-template-image`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || '上傳失敗');
+      }
+
+      const result = await response.json();
+      const imageUrl = result.data.url;
+
+      // 更新積木數據，同時設定原始圖片和預覽圖片 URL
+      setBlockData({
+        ...blockData,
+        originalContentUrl: imageUrl,
+        previewImageUrl: imageUrl,
+      });
+
+      toast({
+        title: "上傳成功",
+        description: `圖片已成功上傳 (${(file.size / 1024).toFixed(2)}KB)`,
+      });
+
+    } catch (error) {
+      console.error('圖片上傳失敗:', error);
+      toast({
+        title: "上傳失敗",
+        description: error instanceof Error ? error.message : '請稍後再試',
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      // 清空 input，允許重新上傳同一檔案
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -397,35 +489,106 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                     />
                   </div>
                 ) : block.blockData.replyType === 'image' ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <label className="text-xs text-white/80">圖片回覆設定：</label>
-                    <Input 
-                      placeholder="原始圖片URL (必填)"
-                      value={blockData.originalContentUrl || ''}
-                      onChange={(e) => setBlockData({...blockData, originalContentUrl: e.target.value})}
-                      className="text-black"
-                    />
-                    <Input 
-                      placeholder="預覽圖片URL (必填)"
-                      value={blockData.previewImageUrl || ''}
-                      onChange={(e) => setBlockData({...blockData, previewImageUrl: e.target.value})}
-                      className="text-black"
-                    />
-                    <div className="text-xs text-white/60">
-                      • 原始圖片: 用戶點擊時顯示的高解析度圖片<br/>
-                      • 預覽圖片: 聊天室中顯示的縮圖 (建議 240x240px)
+
+                    {/* 切換按鈕：上傳圖片 / 輸入網址 */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={imageUploadMode === 'upload' ? 'default' : 'outline'}
+                        onClick={() => setImageUploadMode('upload')}
+                        className="flex-1"
+                      >
+                        <Upload className="w-4 h-4 mr-1" />
+                        上傳圖片
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={imageUploadMode === 'url' ? 'default' : 'outline'}
+                        onClick={() => setImageUploadMode('url')}
+                        className="flex-1"
+                      >
+                        <LinkIcon className="w-4 h-4 mr-1" />
+                        輸入網址
+                      </Button>
                     </div>
+
+                    {/* 上傳模式 */}
+                    {imageUploadMode === 'upload' ? (
+                      <div className="space-y-2">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploading}
+                          className="w-full"
+                          variant="secondary"
+                        >
+                          {isUploading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              上傳中...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              選擇圖片檔案
+                            </>
+                          )}
+                        </Button>
+                        <div className="text-xs text-white/60">
+                          支援格式: JPG, PNG, GIF, WebP<br/>
+                          檔案大小限制: 10MB
+                        </div>
+                      </div>
+                    ) : (
+                      /* URL 輸入模式 */
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="原始圖片URL (必填)"
+                          value={blockData.originalContentUrl || ''}
+                          onChange={(e) => setBlockData({...blockData, originalContentUrl: e.target.value})}
+                          className="text-black"
+                        />
+                        <Input
+                          placeholder="預覽圖片URL (必填)"
+                          value={blockData.previewImageUrl || ''}
+                          onChange={(e) => setBlockData({...blockData, previewImageUrl: e.target.value})}
+                          className="text-black"
+                        />
+                        <div className="text-xs text-white/60">
+                          • 原始圖片: 用戶點擊時顯示的高解析度圖片<br/>
+                          • 預覽圖片: 聊天室中顯示的縮圖 (建議 240x240px)
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 圖片預覽 */}
                     {blockData.originalContentUrl && (
                       <div className="bg-white/5 p-2 rounded">
                         <div className="text-xs text-white/70 mb-1">圖片預覽:</div>
-                        <img 
-                          src={blockData.previewImageUrl || blockData.originalContentUrl} 
-                          alt="圖片預覽" 
+                        <img
+                          src={blockData.previewImageUrl || blockData.originalContentUrl}
+                          alt="圖片預覽"
                           className="max-w-full max-h-32 rounded border"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjI0MCIgdmlld0JveD0iMCAwIDI0MCAyNDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI0MCIgaGVpZ2h0PSIyNDAiIGZpbGw9IiNGMEYwRjAiLz48dGV4dCB4PSIxMjAiIHk9IjEyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSI+5Zue55qE6KeJ5Zy5</text></svg>';
                           }}
                         />
+                        {imageUploadMode === 'upload' && (
+                          <div className="text-xs text-white/60 mt-2">
+                            圖片 URL: {String(blockData.originalContentUrl).substring(0, 50)}...
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

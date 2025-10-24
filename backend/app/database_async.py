@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import settings
 from .db_read_write_split import db_manager, DatabaseRole
+from .db_session_context import SessionContext
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,22 @@ async def get_async_db(use_replica: bool = False) -> AsyncGenerator[AsyncSession
     Args:
         use_replica: 是否使用從庫（僅用於讀取操作）
     """
-    role = DatabaseRole.REPLICA if use_replica else DatabaseRole.PRIMARY
+    # 智慧選擇讀寫角色：
+    # 1) 呼叫者顯式要求 use_replica=True 則從庫
+    # 2) 否則，若當前請求已發生寫入 -> 主庫（確保一致性）
+    # 3) 若中介層標記 prefer_replica 且讀寫分離啟用 -> 從庫
+    # 4) 其餘走主庫
+    final_use_replica = False
+    if use_replica:
+        final_use_replica = True
+    else:
+        if SessionContext.has_write_operation():
+            final_use_replica = False
+        else:
+            if db_manager.is_read_write_splitting_enabled() and SessionContext.prefer_replica():
+                final_use_replica = True
+
+    role = DatabaseRole.REPLICA if final_use_replica else DatabaseRole.PRIMARY
     session_factory = db_manager.get_async_session_factory(role)
 
     async with session_factory() as session:

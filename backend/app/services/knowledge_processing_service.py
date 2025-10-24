@@ -251,7 +251,9 @@ class KnowledgeProcessingService:
                 if progress_callback:
                     progress_callback(job)
                 
-                text = extract_text_by_mime(filename, content_type, file_data)
+                # 將文字提取移至 thread pool，避免阻塞事件圈
+                import asyncio as _asyncio
+                text = await _asyncio.to_thread(extract_text_by_mime, filename, content_type, file_data)
                 
                 job.progress = 0.3
                 if progress_callback:

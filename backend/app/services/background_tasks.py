@@ -381,19 +381,16 @@ async def warm_bot_dashboard_cache(bot_id: str, user_id: str):
     """預熱 Bot 儀表板快取"""
     try:
         from app.api.api_v1.bot_dashboard import _get_analytics_data
-        from app.database import SessionLocal
+        from app.database_async import AsyncSessionLocal
         
         logger.info(f"預熱 Bot {bot_id} 儀表板快取")
         
-        db = SessionLocal()
-        try:
+        # 使用 AsyncSession 預熱快取，避免在背景任務中混用同步/非同步 Session
+        async with AsyncSessionLocal() as db:
             # 預熱不同時間週期的分析資料
             periods = ["day", "week", "month"]
             for period in periods:
                 await _get_analytics_data(bot_id, period, db)
-                
-        finally:
-            db.close()
             
         logger.info(f"Bot {bot_id} 儀表板快取預熱完成")
         

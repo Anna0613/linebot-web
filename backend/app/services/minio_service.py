@@ -298,6 +298,64 @@ class MinIOService:
         }
         return type_mapping.get(message_type, 'application/octet-stream')
 
+    async def upload_logic_template_image(
+        self,
+        bot_id: str,
+        file_data: bytes,
+        filename: str,
+        content_type: str = 'image/jpeg'
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """
+        上傳邏輯模板圖片到 MinIO
+
+        Args:
+            bot_id: Bot ID
+            file_data: 圖片檔案數據
+            filename: 原始檔案名稱
+            content_type: 檔案 MIME 類型
+
+        Returns:
+            Tuple[object_path, proxy_url]: MinIO 路徑和公開 URL，失敗則返回 None
+        """
+        try:
+            import time
+            from pathlib import Path
+
+            # 生成唯一檔案名
+            timestamp = int(time.time() * 1000)
+            file_ext = Path(filename).suffix or '.jpg'
+            unique_filename = f"{timestamp}_{uuid.uuid4().hex[:8]}{file_ext}"
+
+            # 生成儲存路徑：{bot_id}/logic-template-images/{timestamp}_{filename}
+            object_path = f"{bot_id}/logic-template-images/{unique_filename}"
+
+            logger.info(f"開始上傳邏輯模板圖片: bot_id={bot_id}, filename={filename}, size={len(file_data)} bytes")
+
+            # 上傳到 MinIO
+            file_stream = BytesIO(file_data)
+            file_size = len(file_data)
+
+            await asyncio.to_thread(
+                self.client.put_object,
+                self.bucket_name,
+                object_path,
+                file_stream,
+                file_size,
+                content_type=content_type,
+            )
+
+            # 生成代理訪問 URL
+            proxy_url = self.get_presigned_url(object_path)
+
+            logger.info(f"邏輯模板圖片上傳成功: path={object_path}, url={proxy_url}")
+            return object_path, proxy_url
+
+        except Exception as e:
+            logger.error(f"上傳邏輯模板圖片失敗: {e}")
+            import traceback
+            logger.error(f"詳細錯誤: {traceback.format_exc()}")
+            return None, None
+
     async def _download_media_http(self, channel_token: str, line_message_id: str,
                                  line_user_id: str, message_type: str) -> Tuple[Optional[str], Optional[str]]:
         """使用 HTTP 方式下載媒體檔案（回退方案）"""

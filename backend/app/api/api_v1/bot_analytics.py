@@ -11,7 +11,7 @@ import logging
 import asyncio
 
 from app.database_async import get_async_db
-from app.dependencies import get_current_user_async
+from app.dependencies import get_current_user_async, get_db_primary
 from app.models.user import User
 from app.models.bot import Bot
 from app.services.line_bot_service import LineBotService
@@ -443,7 +443,7 @@ async def get_bot_users(
     bot_id: str,
     limit: int = 50,
     offset: int = 0,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_db_primary),
     current_user: User = Depends(get_current_user_async)
 ):
     """獲取 Bot 的用戶列表（從 MongoDB 和 PostgreSQL 組合數據）"""

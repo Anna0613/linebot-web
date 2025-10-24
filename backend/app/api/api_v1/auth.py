@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict
 
 from app.database_async import get_async_db
+from app.dependencies import get_db_primary
 from app.services.auth_service import AuthService
 from app.schemas.auth import UserRegister, UserLogin, Token, EmailVerification, ForgotPassword, RefreshToken
 from app.core.security import get_cookie_settings, get_refresh_cookie_settings
@@ -106,7 +107,7 @@ async def line_callback(
     code: str,
     state: str,
     response: Response,
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_db_primary)
 ):
     """LINE 登入回調（Cookie-only，不再透過 URL 傳遞 token）"""
     try:

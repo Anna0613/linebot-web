@@ -320,9 +320,10 @@ async def add_file_knowledge(
             logger.error(f"檔案流式處理失敗: {e}")
             raise HTTPException(status_code=500, detail=f"檔案處理失敗: {str(e)}")
 
-        # Extract text
+        # Extract text（移至 thread pool 避免阻塞事件圈）
         try:
-            text = extract_text_by_mime(file.filename or "", file.content_type, data)
+            import asyncio as _asyncio
+            text = await _asyncio.to_thread(extract_text_by_mime, file.filename or "", file.content_type, data)
             logger.info(f"檔案 {file.filename} 文字提取完成，文字長度: {len(text)} 字元")
         except Exception as e:
             logger.error(f"檔案文字提取失敗: {e}")

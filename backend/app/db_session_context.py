@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 # 使用 ContextVar 追蹤當前請求是否有寫入操作
 _has_write_operation: ContextVar[bool] = ContextVar('has_write_operation', default=False)
+# 偏好使用從庫的請求級旗標（由中間件依 HTTP 方法設定）
+_prefer_replica: ContextVar[bool] = ContextVar('prefer_replica', default=False)
 
 # 追蹤當前請求的主 session（用於事務一致性）
 _primary_session: ContextVar[Optional[AsyncSession]] = ContextVar('primary_session', default=None)
@@ -40,6 +42,7 @@ class SessionContext:
         """重置上下文（通常在請求結束時調用）"""
         _has_write_operation.set(False)
         _primary_session.set(None)
+        _prefer_replica.set(False)
     
     @staticmethod
     def set_primary_session(session: AsyncSession):
@@ -50,6 +53,16 @@ class SessionContext:
     def get_primary_session() -> Optional[AsyncSession]:
         """取得主 session"""
         return _primary_session.get(None)
+
+    @staticmethod
+    def set_prefer_replica(flag: bool):
+        """設定此請求是否偏好使用從庫（僅讀場景）"""
+        _prefer_replica.set(bool(flag))
+
+    @staticmethod
+    def prefer_replica() -> bool:
+        """此請求是否偏好使用從庫"""
+        return _prefer_replica.get(False)
 
 
 @asynccontextmanager
@@ -183,4 +196,3 @@ async def reset_session_context():
     應在每個請求結束時調用（通常在中間件中）
     """
     SessionContext.reset()
-

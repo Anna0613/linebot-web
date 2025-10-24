@@ -1,7 +1,7 @@
 """
 Bot 管理 API 路由
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 import logging
@@ -17,6 +17,7 @@ from app.schemas.bot import (
 )
 from app.services.bot_service import BotService
 from app.services.line_bot_service import LineBotService
+from app.services.minio_service import get_minio_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -424,3 +425,82 @@ async def process_pending_media(
     except Exception as e:
         logger.error(f"處理媒體檔案時發生錯誤: {e}")
         raise HTTPException(status_code=500, detail=f"處理失敗: {str(e)}")
+
+
+@router.post("/{bot_id}/upload-logic-template-image")
+async def upload_logic_template_image(
+    bot_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
+):
+    """
+    上傳邏輯模板圖片到 MinIO
+
+    Args:
+        bot_id: Bot ID
+        file: 上傳的圖片檔案
+
+    Returns:
+        包含圖片 URL 的 JSON 回應
+    """
+    try:
+        # 驗證 Bot 擁有權
+        bot = await BotService.get_bot(db, bot_id, current_user.id)
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot 不存在或無權訪問")
+
+        # 驗證檔案類型
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=400,
+                detail=f"不支援的檔案類型: {file.content_type}。支援的類型: {', '.join(allowed_types)}"
+            )
+
+        # 驗證檔案大小（限制 10MB）
+        max_size = 10 * 1024 * 1024  # 10MB
+        file_data = await file.read()
+        if len(file_data) > max_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"檔案過大: {len(file_data)} bytes。最大允許: {max_size} bytes (10MB)"
+            )
+
+        # 獲取 MinIO 服務
+        minio_service = get_minio_service()
+        if not minio_service:
+            raise HTTPException(status_code=500, detail="MinIO 服務未初始化")
+
+        # 上傳圖片
+        object_path, proxy_url = await minio_service.upload_logic_template_image(
+            bot_id=bot_id,
+            file_data=file_data,
+            filename=file.filename or 'image.jpg',
+            content_type=file.content_type or 'image/jpeg'
+        )
+
+        if not object_path or not proxy_url:
+            raise HTTPException(status_code=500, detail="圖片上傳失敗")
+
+        logger.info(f"邏輯模板圖片上傳成功: bot_id={bot_id}, url={proxy_url}")
+
+        return {
+            "success": True,
+            "message": "圖片上傳成功",
+            "data": {
+                "object_path": object_path,
+                "url": proxy_url,
+                "filename": file.filename,
+                "size": len(file_data),
+                "content_type": file.content_type
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"上傳邏輯模板圖片時發生錯誤: {e}")
+        import traceback
+        logger.error(f"詳細錯誤: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"上傳失敗: {str(e)}")
