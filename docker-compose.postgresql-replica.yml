@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgresql-replica1:
+    image: postgres:15
+    container_name: postgresql15-replica1
+    environment:
+      POSTGRES_PASSWORD: 11131230
+      TZ: America/Los_Angeles
+    volumes:
+      - /mnt/cache/appdata/postgresql15-replica1:/var/lib/postgresql/data
+      - ./scripts/init-pgvector-replica.sh:/docker-entrypoint-initdb.d/init-pgvector.sh:ro
+    ports:
+      - "5433:5432"
+    networks:
+      - tcp-service
+      - frontend
+    restart: unless-stopped
+    depends_on:
+      - postgresql-master
+    # 在容器啟動時安裝 pgvector
+    entrypoint: >
+      bash -c "
+      apt-get update && 
+      apt-get install -y postgresql-15-pgvector && 
+      docker-entrypoint.sh postgres
+      "
+
+  # 主庫參考（不需要重新部署）
+  postgresql-master:
+    image: postgres:15
+    container_name: postgresql15
+    environment:
+      POSTGRES_USER: 11131230
+      POSTGRES_PASSWORD: 11131230
+      POSTGRES_DB: linebot
+      TZ: America/Los_Angeles
+    volumes:
+      - /mnt/cache/appdata/postgresql15:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - tcp-service
+      - frontend
+    restart: unless-stopped
+
+networks:
+  tcp-service:
+    external: true
+  frontend:
+    external: true
+

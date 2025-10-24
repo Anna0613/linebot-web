@@ -27,15 +27,15 @@ fi
 echo -e "${BLUE}=== 服務健康檢查 ===${NC}"
 
 # 後端健康檢查
-if curl -f -s http://localhost:6000/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ 後端服務 (http://localhost:6000) - 正常${NC}"
+if curl -f -s http://localhost:8001/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ 後端服務 (http://localhost:8001) - 正常${NC}"
     # 獲取健康檢查詳細信息
-    health_info=$(curl -s http://localhost:6000/health 2>/dev/null | head -1)
+    health_info=$(curl -s http://localhost:8001/health 2>/dev/null | head -1)
     if [ ! -z "$health_info" ]; then
         echo "  詳細信息: $health_info"
     fi
 else
-    echo -e "${RED}✗ 後端服務 (http://localhost:6000) - 異常${NC}"
+    echo -e "${RED}✗ 後端服務 (http://localhost:8001) - 異常${NC}"
 fi
 
 # 前端健康檢查
