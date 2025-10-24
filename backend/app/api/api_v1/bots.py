@@ -1,7 +1,8 @@
 """
 Bot 管理 API 路由
+Updated: 2025-10-24
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 import logging
@@ -17,7 +18,7 @@ from app.schemas.bot import (
 )
 from app.services.bot_service import BotService
 from app.services.line_bot_service import LineBotService
-from app.services.minio_service import get_minio_service
+from app.services.minio_service import get_minio_service, get_minio_last_error
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -432,7 +433,8 @@ async def upload_logic_template_image(
     bot_id: str,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user_async)
+    current_user: User = Depends(get_current_user_async),
+    request: Request = None,
 ):
     """
     上傳邏輯模板圖片到 MinIO
@@ -444,6 +446,7 @@ async def upload_logic_template_image(
     Returns:
         包含圖片 URL 的 JSON 回應
     """
+    # 圖片上傳端點
     try:
         # 驗證 Bot 擁有權
         bot = await BotService.get_bot(db, bot_id, current_user.id)
@@ -467,21 +470,27 @@ async def upload_logic_template_image(
                 detail=f"檔案過大: {len(file_data)} bytes。最大允許: {max_size} bytes (10MB)"
             )
 
-        # 獲取 MinIO 服務
+        # 一律使用 MinIO
         minio_service = get_minio_service()
         if not minio_service:
-            raise HTTPException(status_code=500, detail="MinIO 服務未初始化")
+            last_err = get_minio_last_error() or "MinIO 未初始化"
+            raise HTTPException(status_code=500, detail=f"MinIO 服務未初始化：{last_err}")
 
-        # 上傳圖片
-        object_path, proxy_url = await minio_service.upload_logic_template_image(
+        object_path, _ = await minio_service.upload_logic_template_image(
             bot_id=bot_id,
             file_data=file_data,
             filename=file.filename or 'image.jpg',
             content_type=file.content_type or 'image/jpeg'
         )
 
-        if not object_path or not proxy_url:
+        if not object_path:
             raise HTTPException(status_code=500, detail="圖片上傳失敗")
+
+        # 以後端 base_url 產生代理 URL，確保本機與雲端皆可用
+        from urllib.parse import quote
+        encoded = quote(object_path, safe='/')
+        base = str(request.base_url).rstrip('/') if request else ''
+        proxy_url = f"{base}/api/v1/minio/proxy?object_path={encoded}" if base else f"/api/v1/minio/proxy?object_path={encoded}"
 
         logger.info(f"邏輯模板圖片上傳成功: bot_id={bot_id}, url={proxy_url}")
 

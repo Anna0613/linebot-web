@@ -9,6 +9,7 @@ import { SaveStatus } from '../../types/saveStatus';
 import { Button } from '../ui/button';
 import { UnifiedBlock } from '../../types/block';
 import VisualEditorApi, { FlexMessage } from '../../services/visualEditorApi';
+import { VisualEditorProvider } from '../../contexts/VisualEditorContext';
 
 // 專案資料介面（未使用，已移除）
 
@@ -424,8 +425,9 @@ export const VisualBotEditor: React.FC = () => {
   }, []);
 
   return (
-    <DragDropProvider>
-      <div className="h-screen flex flex-col bg-background">
+    <VisualEditorProvider selectedBotId={selectedBotId}>
+      <DragDropProvider>
+        <div className="h-screen flex flex-col bg-background">
         {/* Header */}
         <header className="web3-glass-card border-b border-border dark:border-web3-cyan/20 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -495,5 +497,6 @@ export const VisualBotEditor: React.FC = () => {
         </div>
       </div>
     </DragDropProvider>
+    </VisualEditorProvider>
   );
 };

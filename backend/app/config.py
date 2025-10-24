@@ -77,6 +77,9 @@ class Settings(BaseSettings):
     # 記住我功能的長期 token 過期時間（7天）
     JWT_REMEMBER_EXPIRE_MINUTES: int = int(os.getenv("JWT_REMEMBER_EXPIRE_MINUTES", "10080"))  # 7 * 24 * 60 = 10080 分鐘
 
+    # Cookie 設定
+    COOKIE_DOMAIN: Optional[str] = os.getenv("COOKIE_DOMAIN")  # None 表示讓瀏覽器自動處理
+
     # LINE 登入設定
     LINE_CHANNEL_ID: str = os.getenv("LINE_CHANNEL_ID", "")
     LINE_CHANNEL_SECRET: str = os.getenv("LINE_CHANNEL_SECRET", "")

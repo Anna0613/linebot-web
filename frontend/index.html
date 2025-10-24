@@ -12,7 +12,8 @@
     <link rel="dns-prefetch" href="//localhost:8000" />
 
     <!-- Preload critical resources -->
-    <link rel="preload" href="/assets/images/webp/LOGO.webp" as="image" type="image/webp" fetchpriority="high" />
+    <!-- 使用 prefetch 避免未即時使用造成的 preload 警告 -->
+    <link rel="prefetch" href="/assets/images/webp/LOGO.webp" as="image" type="image/webp" />
     <link rel="preload" href="/src/start.tsx" as="script" crossorigin />
 
     <!-- Prefetch likely next resources -->

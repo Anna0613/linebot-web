@@ -59,28 +59,45 @@ def create_refresh_token(data: Dict[Any, Any]) -> str:
     return encoded_jwt
 
 def get_cookie_settings(remember_me: bool = False) -> Dict[str, Any]:
-    """取得 Cookie 設定"""
+    """
+    取得 Cookie 設定
+
+    Cookie domain 從環境變數 COOKIE_DOMAIN 讀取：
+    - 本地開發：設定為 "localhost"（避免 localhost 和 127.0.0.1 的跨域問題）
+    - 生產環境：設定為 None 或空字串（讓瀏覽器自動處理）
+    """
     if remember_me:
         max_age = settings.JWT_REMEMBER_EXPIRE_MINUTES * 60
     else:
         max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    
+
+    # 從環境變數讀取 cookie domain
+    # 如果環境變數為空字串，轉換為 None
+    cookie_domain = settings.COOKIE_DOMAIN if settings.COOKIE_DOMAIN else None
+
     return {
         "httponly": True,
         "secure": settings.ENVIRONMENT == "production",
         "samesite": "lax",
         "max_age": max_age,
-        "domain": None,  # 不設定 domain，讓瀏覽器自動處理
+        "domain": cookie_domain,
         "path": "/"
     }
 
 def get_refresh_cookie_settings() -> Dict[str, Any]:
-    """取得 Refresh Token Cookie 設定 (30天)"""
+    """
+    取得 Refresh Token Cookie 設定 (30天)
+
+    Cookie domain 從環境變數 COOKIE_DOMAIN 讀取
+    """
+    # 從環境變數讀取 cookie domain
+    cookie_domain = settings.COOKIE_DOMAIN if settings.COOKIE_DOMAIN else None
+
     return {
         "httponly": True,
         "secure": settings.ENVIRONMENT == "production",
         "samesite": "lax",
         "max_age": 30 * 24 * 60 * 60,  # 30天
-        "domain": None,
+        "domain": cookie_domain,
         "path": "/"
-    } 
+    }

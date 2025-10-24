@@ -33,7 +33,7 @@ from app.database import init_database
 from app.database_enhanced import init_database_enhanced
 from app.database_mongo import init_mongodb, close_mongodb
 from app.db_read_write_split import db_manager
-from app.db_session_context import reset_session_context, SessionContext
+from app.db_context import reset_session_context, SessionContext
 from app.api.api_v1.api import api_router
 from app.config.redis_config import init_redis, close_redis
 from app.services.background_tasks import get_task_manager, PerformanceOptimizer

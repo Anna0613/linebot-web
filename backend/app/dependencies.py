@@ -12,6 +12,7 @@ from app.models.user import User
 from app.core.security import verify_token
 from .config import settings
 from app.db_session_context import get_read_db_session, get_write_db_session
+from app.db_context import SessionContext
 from app.config.redis_config import CacheService, CacheKeys, USER_SESSION_TTL
 import json
 

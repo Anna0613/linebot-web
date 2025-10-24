@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import settings
 from .db_read_write_split import db_manager, DatabaseRole
-from .db_session_context import SessionContext
+from .db_context import SessionContext
 
 logger = logging.getLogger(__name__)
 

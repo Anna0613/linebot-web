@@ -1,15 +1,38 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { fileURLToPath, URL } from "node:url";
-import { componentTagger } from "lovable-tagger";
+// import { componentTagger } from "lovable-tagger"; // 已禁用以避免不必要的網路連接
 import fs from "fs";
 import type { ViteDevServer } from "vite";
 import type { IncomingMessage, ServerResponse } from "http";
 // import { performanceOptimizationPlugin, criticalCSSPlugin } from './vite-plugins/performance-optimization';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+
+  // ========================================
+  // 🔧 從環境變數讀取配置
+  // ========================================
+  // 後端 API URL
+  const BACKEND_BASE = env.VITE_UNIFIED_API_URL || "http://127.0.0.1:8000";
+
+  // 開發伺服器配置
+  const DEV_SERVER_HOST = env.VITE_DEV_SERVER_HOST || "::";
+  const DEV_SERVER_PORT = parseInt(env.VITE_DEV_SERVER_PORT || "8080", 10);
+
+  // 允許的主機名稱（從逗號分隔的字串轉換為陣列）
+  const ALLOWED_HOSTS = env.VITE_ALLOWED_HOSTS
+    ? env.VITE_ALLOWED_HOSTS.split(',').map(host => host.trim())
+    : ["localhost", "127.0.0.1"];
+
+  // 代理配置
+  const PROXY_SECURE = env.VITE_PROXY_SECURE === "true";
+  const PROXY_CHANGE_ORIGIN = env.VITE_PROXY_CHANGE_ORIGIN !== "false"; // 預設為 true
+  // ========================================
+
+  return {
   // 確保 assets 目錄被正確複製到 dist
   publicDir: false, // 禁用默認的 public 目錄，我們將手動處理靜態資源
   // 確保 React 使用 production 版本
@@ -64,15 +87,36 @@ export default defineConfig(({ mode }) => ({
     ]
   },
   server: {
-    host: "::",
-    port: 8080,
-    allowedHosts: [
-      "linebot.jkl921102.org",
-      "localhost",
-      "10.1.1.184",
-      "172.22.0.3",
-      "test.jkl921102.org"
-    ],
+    // ========================================
+    // 🌐 開發伺服器配置（從環境變數讀取）
+    // ========================================
+    host: DEV_SERVER_HOST,
+    port: DEV_SERVER_PORT,
+
+    // ========================================
+    // 🔄 API 代理配置（從環境變數讀取）
+    // ========================================
+    proxy: {
+      // 代理 API 請求到後端服務
+      // 目標 URL 由 VITE_UNIFIED_API_URL 環境變數決定
+      '/api': {
+        target: BACKEND_BASE,
+        changeOrigin: PROXY_CHANGE_ORIGIN,
+        secure: PROXY_SECURE,
+      },
+      // 代理媒體資源請求到後端
+      '/media': {
+        target: BACKEND_BASE,
+        changeOrigin: PROXY_CHANGE_ORIGIN,
+        secure: PROXY_SECURE,
+      }
+    },
+
+    // ========================================
+    // 🔐 允許的主機名稱（從環境變數讀取）
+    // ========================================
+    allowedHosts: ALLOWED_HOSTS,
+
     fs: {
       // Allow serving files from one level up to the project root
       allow: ['..']
@@ -82,17 +126,12 @@ export default defineConfig(({ mode }) => ({
     host: "0.0.0.0",
     port: 3000,
     strictPort: false,
-    allowedHosts: [
-      "linebot.jkl921102.org",
-      "localhost",
-      "10.1.1.184",
-      "172.22.0.3",
-      "test.jkl921102.org"
-    ]
+    allowedHosts: ALLOWED_HOSTS
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
+    // 禁用 lovable-tagger 以避免不必要的網路連接錯誤
+    // mode === 'development' && componentTagger(),
     // 自定義靜態資源插件
     {
       name: 'assets-middleware',
@@ -197,4 +236,5 @@ export default defineConfig(({ mode }) => ({
       }
     }
   }
-}));
+  };
+});
