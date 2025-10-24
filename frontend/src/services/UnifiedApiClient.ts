@@ -6,6 +6,8 @@
 import { authManager } from './UnifiedAuthManager';
 import { secureLog } from '../utils/secureTokenUtils';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
+import LocalStorageCacheService from './LocalStorageCacheService';
+import { CACHE_KEYS } from '../config/cacheConfig';
 
 interface ApiResponse<T = unknown> {
   data?: T;
@@ -492,26 +494,65 @@ export class UnifiedApiClient {
     channel_token: string;
     channel_secret: string;
   }): Promise<ApiResponse> {
-    return this.post(
+    const response = await this.post(
       getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.CREATE_BOT),
       botData
     );
+
+    // 如果建立成功，清除 Bot 列表快取
+    if (response.success || response.status === 200 || response.status === 201) {
+      try {
+        LocalStorageCacheService.remove(CACHE_KEYS.USER_BOTS_SUMMARY);
+        secureLog('已清除 Bot 摘要列表快取（建立後）');
+      } catch (error) {
+        console.error('清除快取失敗:', error);
+      }
+    }
+
+    return response;
   }
 
   public async updateBot(
     botId: string,
     botData: { name?: string; channel_token?: string; channel_secret?: string }
   ): Promise<ApiResponse> {
-    return this.put(
+    const response = await this.put(
       getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.UPDATE_BOT(botId)),
       botData
     );
+
+    // 如果更新成功，清除 Bot 列表快取
+    if (response.success || response.status === 200) {
+      try {
+        LocalStorageCacheService.remove(CACHE_KEYS.USER_BOTS_SUMMARY);
+        secureLog('已清除 Bot 摘要列表快取（更新後）', { botId });
+      } catch (error) {
+        console.error('清除快取失敗:', error);
+      }
+    }
+
+    return response;
   }
 
   public async deleteBot(botId: string): Promise<ApiResponse> {
-    return this.delete(
+    const response = await this.delete(
       getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.DELETE_BOT(botId))
     );
+
+    // 如果刪除成功，清除相關快取
+    if (response.success || response.status === 200) {
+      try {
+        // 清除 Bot 摘要列表快取（視覺編輯器使用）
+        LocalStorageCacheService.remove(CACHE_KEYS.USER_BOTS_SUMMARY);
+        // 清除邏輯模板摘要快取
+        LocalStorageCacheService.remove(CACHE_KEYS.LOGIC_TEMPLATES_SUMMARY);
+        secureLog('已清除 Bot 相關快取', { botId });
+      } catch (error) {
+        console.error('清除快取失敗:', error);
+      }
+    }
+
+    return response;
   }
 
   // 用戶頭像相關API
