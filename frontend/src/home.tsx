@@ -58,13 +58,9 @@ const SidebarTestPage = lazy(() => import("./pages/SidebarTestPage"));
 
 // 使用優化的 QueryClient 配置（從 useReactQuery 導入）
 
-// 優化的載入指示器組件 - 使用 Web3 風格
+// 優化的載入指示器組件 - 使用新的主題感知 loader
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-screen bg-background">
-    <div className="web3-loader-card p-8">
-      <Loader fullPage={false} text="載入應用程式..." web3Style={true} />
-    </div>
-  </div>
+  <Loader fullPage={true} />
 );
 
 const App = () => {

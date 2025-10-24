@@ -45,13 +45,7 @@ const DashboardPage = memo(() => {
 
   // 加載狀態顯示
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-transparent dark:bg-background">
-        <div className="web3-loader-card p-8">
-          <Loader fullPage={false} text="載入儀表板..." web3Style={true} />
-        </div>
-      </div>
-    );
+    return <Loader fullPage={true} />;
   }
 
   return (

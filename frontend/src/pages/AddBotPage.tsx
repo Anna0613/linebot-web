@@ -12,13 +12,7 @@ const AddBotPage = () => {
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
-        <div className="web3-loader-card p-8">
-          <Loader fullPage={false} text="載入中..." web3Style={true} />
-        </div>
-      </div>
-    );
+    return <Loader fullPage={true} />;
   }
 
   if (error) {
