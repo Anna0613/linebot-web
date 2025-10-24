@@ -1,181 +1,528 @@
-# LineBot-Web（統一版）
+# LineBot-Web 管理平台
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Status](https://img.shields.io/badge/Status-Active-green)
 
-LineBot-Web 是一個現代化的 LINE Bot 管理平台，採用前後端分離架構與統一 API 設計，提供便捷的 Web 介面來建立、管理與分析 LINE Bot。
+LineBot-Web 是一個現代化的 LINE Bot 管理平台，採用前後端分離架構，提供完整的 Web 介面來建立、管理與分析 LINE Bot。
 
-**技術棧（與專案實際配置一致）**
-- 前端：Vite 5 + React 18 + TypeScript 5 + Tailwind CSS 3 + shadcn-ui（Radix UI）
-- 後端：FastAPI（0.115.x）+ Python 3.11 + Uvicorn + SQLAlchemy 2 + Alembic
-- 其他：PostgreSQL、Redis、MongoDB（選用）、MinIO、Groq（預設 AI 提供者）
+## 📋 目錄
 
-**開發伺服器埠號**
-- 前端（Vite 開發）：`8080`
-- 後端（Uvicorn 開發）：`8000`
-- Docker Compose（預覽/部署）：前端 `3000`、後端 `8001`（對外）→ 容器內後端埠 `8005`
+- [專案特色功能](#專案特色功能)
+- [技術架構](#技術架構)
+- [快速開始](#快速開始)
+- [外部服務設定](#外部服務設定)
+- [Docker 部署](#docker-部署)
+- [開發指南](#開發指南)
 
-## 專案介紹
+## ✨ 專案特色功能
 
-LineBot-Web 的目標是「讓團隊與個人快速打造、管理與營運 LINE 官方帳號的聊天機器人」。
+### 🤖 Bot 管理
+- **多 Bot 管理**：支援建立、編輯、刪除多個 LINE Bot
+- **視覺化編輯器**：以積木方式編排回覆邏輯與流程，無需撰寫程式碼
+- **Flex 訊息設計**：可視化配置與即時預覽，快速製作精美的卡片式訊息
+- **Rich Menu 管理**：圖形化設定 LINE Bot 的圖文選單
 
-- 過去將登入、Bot 管理、設定、分析等拆為多個微服務，維運成本高、介面分散；本專案以 FastAPI 實作統一後端，前端採一致的 UI/UX，降低學習與操作成本。
-- 透過視覺化工具（Bot 編輯器、Flex 訊息設計）與內建 API，縮短從概念到上線的時間。
-- 內建快取、背景任務與監控端點，提升效能並方便問題追蹤。
+### 🧠 AI 智能功能
+- **AI 知識庫**：支援文字、批次匯入等多種方式建立知識庫
+- **AI 接管對話**：整合 Groq/Gemini AI，提供智能客服回覆
+- **RAG 檢索增強**：基於向量資料庫的語意搜尋，提升回覆準確度
+- **對話分析**：使用 AI 分析使用者對話歷史，提供營運決策參考
 
-適用對象
-- 想要快速建立與維護 LINE Bot 的開發者與小型團隊
-- 希望具備「低門檻上手」與「可擴充後端能力」的產品團隊
-- 既有老專案希望整合為單一 API 的維運人員
+### 📊 分析與監控
+- **即時儀表板**：概覽 Bot 活動、使用者互動統計
+- **對話記錄**：完整保存使用者對話歷史（MongoDB）
+- **效能監控**：內建快取統計、效能報告端點
+- **批次操作**：支援大量訊息發送與資料處理
 
-常見使用情境
-- 建立多個 Bot 並管理其頻道密鑰、Webhook、回覆內容與素材
-- 使用 Flex 設計器快速製作行銷訊息或卡片式 UI
-- 透過使用者清單與對話記錄（選用 MongoDB）進行客服/營運分析
-- 以批次操作與背景任務處理大量訊息或資料整理
+### 💬 訊息功能
+- **多種訊息類型**：文字、圖片、影片、音訊、Flex 訊息等
+- **廣播訊息**：支援全體或指定用戶群發訊息
+- **Webhook 處理**：自動處理 LINE 平台的各種事件
+- **WebSocket 即時通訊**：支援即時訊息推送
 
-典型工作流程
-1) 管理者於前端註冊/登入 → 於「Bot 管理」建立 Bot 並填入 LINE Channel 設定
-2) 設定 Webhook Domain（部署時）並將 LINE 後台的 Webhook 指向後端 `/api/v1/webhooks/{bot_id}`
-3) 使用「視覺化 Bot 編輯器 / Flex 設計器」建立內容與回覆邏輯
-4) 前端以 `VITE_UNIFIED_API_URL` 串接後端 → 開發/預覽/部署
-5) 使用儀表板與效能端點監控（如 `/api/v1/performance/stats`）
+### 🔐 使用者管理
+- **多重登入方式**：支援 LINE Login 與一般帳密登入
+- **Email 驗證**：確保帳號安全性
+- **權限管理**：基於 JWT 的身份驗證與授權
 
-## 功能特色
+## 🏗️ 技術架構
 
-- 統一 API 架構（`/api/v1`）：認證、用戶、Bot 管理、Webhook、WebSocket、儀表板、批次、MinIO 測試等
-- 支援 LINE Login 與一般帳密登入
-- 媒體/檔案服務整合 MinIO，並提供 `/media` 靜態服務
-- 效能優化與背景任務：快取、多層快取統計、效能報告 `/api/v1/performance/*`
-- 跨域安全：允許清單 + 正則自動允許 localhost 與子網域
+### 前端技術棧
+- **框架**：Vite 5 + React 18 + TypeScript 5
+- **樣式**：Tailwind CSS 3 + shadcn-ui（基於 Radix UI）
+- **開發埠號**：8080
 
-## 圖表
+### 後端技術棧
+- **框架**：FastAPI 0.115.x + Python 3.11
+- **伺服器**：Uvicorn
+- **ORM**：SQLAlchemy 2 + Alembic
+- **開發埠號**：8000
 
-- 系統架構圖：linebot-web/docs/diagrams/system-architecture.md
-- 系統流程圖：linebot-web/docs/diagrams/system-flows.md
-- 使用案例圖：linebot-web/docs/diagrams/use-cases.md
+### 資料儲存
+- **PostgreSQL**：主要資料庫（Bot、使用者、知識庫等）
+- **MongoDB**：對話歷史記錄（選用）
+- **Redis**：快取與 Session 管理
+- **MinIO**：媒體檔案儲存
 
-## 專案結構
+### AI 服務
+- **Groq**：預設 AI 提供者（推薦）
+- **Gemini**：備選 AI 提供者
+
+## 🚀 快速開始
+
+### 環境需求
+- Python 3.11+
+- Node.js 18+
+- pnpm（前端套件管理）
+- PostgreSQL（必要）
+- Redis（必要）
+- MongoDB（選用，用於對話記錄）
+- MinIO（選用，用於媒體儲存）
+
+### 前端啟動
+
+```bash
+cd linebot-web/frontend
+pnpm install
+pnpm dev
+```
+
+前端將在 `http://localhost:8080` 啟動。
+
+### 後端啟動
+
+```bash
+cd linebot-web/backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python .\scripts\development\start.py
+```
+
+後端將在 `http://localhost:8000` 啟動。
+
+### 環境變數設定
+
+**前端環境變數**（`frontend/.env.local`）：
+```powershell
+# 複製範例檔案
+Copy-Item frontend\env.example frontend\.env.local
+
+# 主要設定
+VITE_UNIFIED_API_URL=http://localhost:8000
+```
+
+**後端環境變數**（`backend/.env`）：
+```powershell
+# 複製範例檔案
+Copy-Item backend\env.example backend\.env
+
+# 必要設定請參考「外部服務設定」章節
+```
+
+> 💡 **提示**：詳細的環境變數說明請參考 `backend/env.example` 和 `frontend/env.example`
+
+## 🔌 外部服務設定
+
+### LINE Messaging API
+
+1. **申請 LINE 官方帳號**
+   - 前往 [LINE Developers Console](https://developers.line.biz/console/)
+   - 建立 Provider 和 Messaging API Channel
+
+2. **取得憑證**
+   - Channel ID
+   - Channel Secret
+   - Channel Access Token
+
+3. **設定環境變數**（編輯 `backend/.env`）
+   ```ini
+   LINE_CHANNEL_ID=your_line_channel_id
+   LINE_CHANNEL_SECRET=your_line_channel_secret
+   LINE_REDIRECT_URI=http://localhost:8000/api/v1/auth/line/callback
+   ```
+
+4. **設定 Webhook**
+   - 在 LINE Developers Console 設定 Webhook URL：
+   - `https://your-domain.com/api/v1/webhooks/{bot_id}`
+
+### PostgreSQL 資料庫
+
+編輯 `backend/.env`：
+
+```ini
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+```
+
+### Redis
+
+編輯 `backend/.env`：
+
+```ini
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_PASSWORD=
+REDIS_URL=redis://localhost:6379/0
+```
+
+### MongoDB（選用）
+
+用於儲存對話歷史記錄。編輯 `backend/.env`：
+
+```ini
+MONGODB_HOST=localhost
+MONGODB_PORT=27017
+MONGODB_USERNAME=
+MONGODB_PASSWORD=
+MONGODB_DATABASE=linebot_conversations
+MONGODB_AUTH_DATABASE=admin
+MONGODB_SSL=False
+```
+
+### MinIO（選用）
+
+用於儲存媒體檔案。編輯 `backend/.env`：
+
+```ini
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_SECURE=False
+MINIO_BUCKET_NAME=message-store
+MINIO_PUBLIC_URL=http://localhost:9000
+```
+
+### AI 服務
+
+**Groq（推薦）**
+
+1. 前往 [Groq Console](https://console.groq.com/keys) 取得 API Key
+2. 編輯 `backend/.env` 設定環境變數：
+   ```ini
+   AI_PROVIDER=groq
+   GROQ_API_KEY=your_groq_api_key_here
+   GROQ_MODEL=llama-3.1-70b-versatile
+   ```
+
+**Gemini（備選）**
+
+1. 前往 [Google AI Studio](https://aistudio.google.com/app/apikey) 取得 API Key
+2. 編輯 `backend/.env` 設定環境變數：
+   ```ini
+   AI_PROVIDER=gemini
+   GEMINI_API_KEY=your_gemini_api_key_here
+   GEMINI_MODEL=gemini-1.5-flash
+   ```
+
+### JWT 與安全設定
+
+編輯 `backend/.env`：
+
+```ini
+JWT_SECRET=your-secret-key-here
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=180
+SECRET_KEY=your-secret-key-here
+```
+
+## 🐳 Docker 部署
+
+### 使用 Docker Compose 部署
+
+1. **準備環境變數**
+   ```powershell
+   # 確保已設定 backend/.env 和 frontend/.env
+   cd linebot-web
+   Copy-Item backend\env.example backend\.env
+   Copy-Item frontend\env.example frontend\.env
+
+   # 使用文字編輯器編輯環境變數，設定生產環境的值
+   notepad backend\.env
+   notepad frontend\.env
+   ```
+
+2. **建置映像檔**
+   ```powershell
+   cd linebot-web
+   docker-compose build
+   ```
+
+3. **啟動服務**
+   ```powershell
+   docker-compose up -d
+   ```
+
+4. **檢查服務狀態**
+   ```powershell
+   docker-compose ps
+   docker-compose logs -f
+   ```
+
+### 服務端點
+
+- **前端**：`http://localhost:3000`
+- **後端 API**：`http://localhost:8001`
+- **健康檢查**：`http://localhost:8001/health`
+- **API 文件**：`http://localhost:8001/docs`（需設定 `SHOW_DOCS=True`）
+
+### Docker Compose 架構
+
+```yaml
+services:
+  backend:
+    ports: "8001:8005"  # 對外:容器內
+    volumes:
+      - ./backend/media:/app/media
+      - ./backend/logs:/app/logs
+
+  frontend:
+    ports: "3000:3000"
+    depends_on:
+      - backend
+```
+
+### 生產環境注意事項
+
+1. **環境變數**
+   - 修改 `docker-compose.yml` 中的 `VITE_UNIFIED_API_URL` 為實際的 API 網址
+   - 確保所有敏感資訊（API Key、密碼等）已正確設定
+
+2. **資料庫**
+   - 建議使用外部 PostgreSQL 服務（如 AWS RDS、Google Cloud SQL）
+   - 設定定期備份機制
+
+3. **反向代理**
+   - 建議使用 Nginx 或 Caddy 作為反向代理
+   - 設定 SSL/TLS 憑證（Let's Encrypt）
+
+4. **日誌管理**
+   - 後端日誌位於 `backend/logs/`
+   - 建議設定日誌輪替與集中管理
+
+5. **效能優化**
+   - 調整資料庫連線池大小（`POOL_SIZE`、`POOL_MAX_OVERFLOW`）
+   - 啟用 Redis 快取
+   - 設定適當的 `LOG_LEVEL`（建議 `INFO` 或 `WARNING`）
+
+6. **安全性**
+   - 定期更新依賴套件
+   - 設定防火牆規則
+   - 啟用 CORS 白名單（`EXTRA_ALLOWED_ORIGINS`）
+
+## 🛠️ 開發指南
+
+### 專案結構
 
 ```
 linebot-web/
-├── backend/                 # FastAPI 後端（主程式於 app/main.py）
-├── frontend/                # Vite + React 前端
-├── assets/                  # 共用靜態資源（前端開發期由中介層提供）
-├── tests/
-│   └── integration/         # 跨服務整合測試
-├── scripts/                 # 部署/檢查腳本
-├── docker-compose.yml       # Docker 服務編排（前端/後端）
-├── Makefile                 # 常用開發/建置指令
-└── docs/                    # 文件（內含部署指南等）
+├── backend/              # FastAPI 後端
+│   ├── app/             # 主要應用程式
+│   │   ├── api/         # API 路由
+│   │   ├── models/      # 資料模型
+│   │   ├── schemas/     # Pydantic schemas
+│   │   ├── services/    # 業務邏輯
+│   │   └── utils/       # 工具函式
+│   ├── migrations/      # Alembic 資料庫遷移
+│   ├── tests/           # 後端測試
+│   └── scripts/         # 開發腳本
+├── frontend/            # React 前端
+│   ├── src/            # 前端程式碼
+│   │   ├── components/ # React 元件
+│   │   ├── pages/      # 頁面元件
+│   │   ├── services/   # API 服務
+│   │   └── utils/      # 工具函式
+│   └── tests/          # 前端測試
+├── assets/             # 共用靜態資源
+├── scripts/            # 部署腳本
+└── tests/integration/  # 整合測試
 ```
 
-## 快速開始（本機開發）
+### 常用開發指令
 
-需求：Python 3.11、Node.js 18、PostgreSQL/Redis（如需）、可選 MongoDB/MinIO
+#### 安裝依賴
 
-1) 安裝依賴與環境初始化
-```bash
-make -C linebot-web install
-make -C linebot-web dev-setup   # 會依 env.example 生成 backend/.env 與 frontend/.env.local
+```powershell
+# 後端依賴
+cd linebot-web/backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+
+# 前端依賴
+cd linebot-web/frontend
+pnpm install
 ```
 
-2) 啟動開發伺服器（兩個終端）
-```bash
-# 終端 A：後端 FastAPI（http://localhost:8000）
-make -C linebot-web dev-backend
+#### 環境初始化
 
-# 終端 B：前端 Vite（http://localhost:8080）
-make -C linebot-web dev-frontend
+```powershell
+# 複製環境變數範例檔案
+cd linebot-web
+
+# 後端環境變數
+Copy-Item backend\env.example backend\.env
+# 編輯 backend\.env 設定配置
+
+# 前端環境變數
+Copy-Item frontend\env.example frontend\.env.local
+# 編輯 frontend\.env.local 設定配置
 ```
 
-3) 前端統一 API 設定（必要）
-- 前端採用統一 API：在 `frontend/.env.local` 設定 `VITE_UNIFIED_API_URL=http://localhost:8000`
-- 範本請見：`frontend/env.example`
+#### 啟動開發伺服器
 
-## 環境變數
+```powershell
+# 後端（在第一個終端）
+cd linebot-web/backend
+venv\Scripts\activate
+python .\scripts\development\start.py
 
-- 後端：請複製 `backend/env.example` 為 `backend/.env`，最少需設定資料庫與 JWT、LINE Login、Redis/MinIO（如需）。
-- 前端：請複製 `frontend/env.example` 為 `frontend/.env.local`，建議僅設定 `VITE_UNIFIED_API_URL`；其餘舊式分散 API 變數僅保留向後相容（不建議使用）。
-
-### 日誌（Logging）統一規範
-- 後端使用 Python logging，統一格式：`%(asctime)s | %(levelname)s | %(name)s | %(message)s`
-- 檔案輸出：`backend/logs/app.log`（DEBUG 以上），`backend/logs/error.log`（ERROR 以上，自動輪替）
-- 透過環境變數控制等級：`LOG_LEVEL=DEBUG|INFO|WARNING|ERROR|CRITICAL`（預設 INFO）
-- FastAPI 中介層統一記錄 `HTTP <METHOD> <PATH> -> <STATUS>`，詳細標頭在 DEBUG 等級
-- FE（開發模式）已統一 console 輸出格式（見 `frontend/src/utils/setupLogging.ts`），生產建置已移除 console 呼叫
-- SQL 查詢輸出預設關閉（避免噪音）；如需除錯可設定 `SQL_ECHO=True`，或將 `sqlalchemy.*` logger 調至 `INFO`
-
-重點說明（統一 API）
-- `VITE_UNIFIED_API_URL`：前端呼叫的統一後端 API 根路徑，例如：
-  - 開發環境：`http://localhost:8000`
-  - Docker Compose（容器間）：`http://backend:8005`
-
-## Docker 與 Docker Compose
-
-編排檔：`linebot-web/docker-compose.yml`
-
-- 後端服務
-  - 容器埠：`8005`
-  - 對外映射：`8001:8005`（即對外 API 為 `http://localhost:8001`）
-  - 掛載卷：`./backend/media:/app/media`、`./backend/logs:/app/logs`
-- 前端服務
-  - 使用 Vite 預覽伺服器，容器/對外埠：`3000:3000`
-  - 構建時會透過 `ARG/ENV` 設定 `VITE_UNIFIED_API_URL` 等變數（預設為 `https://api.jkl921102.org`，請依需求改成內網位址）
-
-常用指令
-```bash
-make -C linebot-web docker-build
-make -C linebot-web docker-up
-make -C linebot-web docker-down
+# 前端（在第二個終端）
+cd linebot-web/frontend
+pnpm dev
 ```
 
-啟動後端點
-- 前端：`http://localhost:3000`
-- 後端 API：`http://localhost:8001`
-- 健康檢查：`http://localhost:8001/health`
+#### 測試
 
-提示
-- 需本地互通時，建議將 `frontend/.env` 或 docker-compose build args 的 `VITE_UNIFIED_API_URL` 設為 `http://backend:8005`，使前端容器內可直接連到後端容器。
+```powershell
+# 後端測試
+cd linebot-web/backend
+venv\Scripts\activate
+pytest
 
-## Makefile 指令（專案根目錄）
+# 前端測試
+cd linebot-web/frontend
+pnpm test
 
-- `install`：安裝後端與前端依賴
-- `dev-setup`：建立 `backend/.env` 與 `frontend/.env.local`
-- `dev-build`：前端開發建置（`npm run build:dev`）
-- `prod-build`：前端生產建置（`npm run build`）
-- `test`：執行後端 PyTest、前端 `npm test`、整合測試（前端測試需先配置）
-- `format`：後端 Black+isort、前端 Prettier
-- `lint`：後端 flake8+mypy、前端 ESLint
-- `docker-build`：`docker-compose build`
-- `docker-up`：`docker-compose up -d`
-- `docker-down`：`docker-compose down`
-- `dev-backend`：啟動後端（Uvicorn，埠 8000）
-- `dev-frontend`：啟動前端（Vite，埠 8080）
-- `clean`：清理前端 dist/ 與後端快取、移除 Docker 資源
-- `migrate`：`alembic upgrade head`
-- `migration`：`alembic revision --autogenerate -m "$(MSG)"`
-- `deploy-staging` / `deploy-production`：呼叫 `scripts/deploy.sh`（依環境使用）
+# 整合測試
+cd linebot-web/tests/integration
+pytest
+```
 
-## API 與路由簡述
+#### 程式碼檢查與格式化
 
-- 路由前綴：`/api/v1`
-- 主要模組：`auth`、`users`、`bots`、`bot_dashboard`、`bot_analytics`、`ai_analysis`、`ai_knowledge`、`batch`、`webhook`、`websocket`、`storage_test`
-- 文件：`/docs`（需在後端 `.env` 設定 `SHOW_DOCS=True`）
-- 靜態：`/media`（後端自動掛載 `backend/media`）
+```powershell
+# 後端 Lint
+cd linebot-web/backend
+venv\Scripts\activate
+flake8 .
+mypy .
 
-## 測試與品質
+# 後端格式化
+black .
+isort .
 
-- 全部測試：`make -C linebot-web test`
-- 前端測試：需先設定 Vitest/Vite 環境與 `npm test` script（Makefile 已預留）
-- Lint/Format：`make -C linebot-web lint`、`make -C linebot-web format`
+# 前端 Lint
+cd linebot-web/frontend
+pnpm lint
 
-## 注意事項
+# 前端格式化
+pnpm format
+```
 
-- 移除舊的 Lovable 相關說明，請以本文件與 `frontend/README.md`、`backend/README.md` 為準。
-- 請勿提交任何機密憑證到版本庫（含 `.env`）。
-- 若使用 Docker Compose，請檢查 `docker-compose.yml` 的 `build.args` 與 `env_file` 是否符合您的部署環境。
+#### 資料庫遷移
 
----
+```powershell
+# 執行遷移
+cd linebot-web/backend
+venv\Scripts\activate
+alembic upgrade head
 
-若需我幫忙執行 lint/測試或調整 docker-compose API 目標，告訴我一聲即可。
+# 建立新遷移
+alembic revision --autogenerate -m "描述"
+```
+
+#### Docker 操作
+
+```powershell
+# 建置映像檔
+cd linebot-web
+docker-compose build
+
+# 啟動容器
+docker-compose up -d
+
+# 停止容器
+docker-compose down
+
+# 查看容器狀態
+docker-compose ps
+
+# 查看日誌
+docker-compose logs -f
+```
+
+#### 清理
+
+```powershell
+# 清理前端建置檔案
+cd linebot-web/frontend
+Remove-Item -Recurse -Force dist, node_modules\.vite
+
+# 清理後端快取
+cd linebot-web/backend
+Remove-Item -Recurse -Force __pycache__, .pytest_cache, .mypy_cache
+
+# 清理 Docker 資源
+docker-compose down -v
+docker system prune -f
+```
+
+### API 路由架構
+
+所有 API 路由前綴為 `/api/v1`：
+
+- **認證**：`/api/v1/auth/*`
+- **使用者管理**：`/api/v1/users/*`
+- **Bot 管理**：`/api/v1/bots/*`
+- **AI 知識庫**：`/api/v1/bots/{bot_id}/knowledge/*`
+- **AI 分析**：`/api/v1/bots/{bot_id}/ai/*`
+- **Bot 分析**：`/api/v1/bots/{bot_id}/analytics/*`
+- **Webhook**：`/api/v1/webhooks/{bot_id}`
+- **WebSocket**：`/api/v1/ws`
+- **批次操作**：`/api/v1/batch/*`
+
+### 測試
+
+```powershell
+# 後端測試（pytest）
+cd linebot-web/backend
+venv\Scripts\activate
+pytest
+
+# 前端測試
+cd linebot-web/frontend
+pnpm test
+
+# 整合測試
+cd linebot-web/tests/integration
+pytest
+```
+
+### 程式碼風格
+
+- **Python**：Black (88 字元)、isort、flake8、mypy
+- **TypeScript/React**：Prettier + ESLint、2 空格縮排
+
+## 📚 相關文件
+
+- [前端 README](frontend/README.md)
+- [後端 README](backend/README.md)
+- [系統架構圖](docs/diagrams/system-architecture.md)
+- [系統流程圖](docs/diagrams/system-flows.md)
+- [使用案例圖](docs/diagrams/use-cases.md)
+
+## ⚠️ 注意事項
+
+- 請勿將 `.env` 檔案提交到版本控制系統
+- 生產環境請使用強密碼與安全的 JWT Secret
+- 定期更新依賴套件以修補安全漏洞
+- 建議使用 HTTPS 進行生產環境部署
+
+## 📄 授權
+
+本專案採用 MIT 授權條款。
