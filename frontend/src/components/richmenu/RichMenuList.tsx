@@ -9,12 +9,11 @@ type Props = {
   menus: RichMenu[];
   onEdit: (menu: RichMenu) => void;
   onDelete: (menu: RichMenu) => void;
-  onSetDefault: (menu: RichMenu) => void;
   onPublish: (menu: RichMenu) => void;
   onCreateNew: () => void;
 };
 
-const RichMenuList: React.FC<Props> = ({ menus, onEdit, onDelete, onSetDefault, onPublish, onCreateNew }) => {
+const RichMenuList: React.FC<Props> = ({ menus, onEdit, onDelete, onPublish, onCreateNew }) => {
   return (
     <div className="space-y-4">
       {/* 頂部操作區域 */}
@@ -91,17 +90,9 @@ const RichMenuList: React.FC<Props> = ({ menus, onEdit, onDelete, onSetDefault, 
                       variant="outline"
                       onClick={() => onPublish(menu)}
                       disabled={!menu.image_url}
-                      title={!menu.image_url ? "請先上傳選單圖片" : "重新發佈到 LINE"}
+                      title={!menu.image_url ? "請先上傳選單圖片" : "發佈到 LINE 並設為預設功能選單"}
                     >
                       發佈到 LINE
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onSetDefault(menu)}
-                      disabled={menu.selected}
-                    >
-                      設為預設
                     </Button>
                     <Button
                       size="sm"

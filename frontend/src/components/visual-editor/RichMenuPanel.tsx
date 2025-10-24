@@ -82,27 +82,18 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
     }
   };
 
-  const onSetDefault = async (m: RichMenu) => {
-    if (!selectedBotId) return;
-    try {
-      await RichMenuApi.setDefault(selectedBotId, m.id);
-      toast({ title: '已設定預設', description: `已將「${m.name}」設為預設 Rich Menu` });
-      await loadMenus();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : '請稍後再試';
-      toast({ variant: 'destructive', title: '設定失敗', description: msg });
-    }
-  };
-
   const onPublish = async (menu: RichMenu) => {
     if (!selectedBotId) return;
     try {
       const res = await RichMenuApi.publish(selectedBotId, menu.id);
-      toast({ title: '已重新發佈到 LINE', description: `選單「${res.name}」已更新` });
+      toast({
+        title: '已發佈到 LINE 並設為預設',
+        description: `選單「${res.name}」已發佈並設為所有用戶的預設功能選單`
+      });
       await loadMenus();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '請稍後再試';
-      toast({ variant: 'destructive', title: '重新發佈失敗', description: msg });
+      toast({ variant: 'destructive', title: '發佈失敗', description: msg });
     }
   };
 
@@ -189,7 +180,6 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
                         menus={menus}
                         onEdit={setEditing}
                         onDelete={onDelete}
-                        onSetDefault={onSetDefault}
                         onPublish={onPublish}
                         onCreateNew={onCreateNew}
                       />

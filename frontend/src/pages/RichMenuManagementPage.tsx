@@ -59,16 +59,24 @@ const RichMenuManagementPage: React.FC = () => {
     }
   };
 
-  const onSetDefault = async (m: RichMenu) => {
+  const onPublish = async (menu: RichMenu) => {
     if (!selectedBotId) return;
     try {
-      await RichMenuApi.setDefault(selectedBotId, m.id);
-      toast({ title: '已設定預設', description: `已將「${m.name}」設為預設 Rich Menu` });
+      const res = await RichMenuApi.publish(selectedBotId, menu.id);
+      toast({
+        title: '已發佈到 LINE 並設為預設',
+        description: `選單「${res.name}」已發佈並設為所有用戶的預設功能選單`
+      });
       await loadMenus(selectedBotId);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : '請稍後再試';
-      toast({ variant: 'destructive', title: '設定失敗', description: message });
+      toast({ variant: 'destructive', title: '發佈失敗', description: message });
     }
+  };
+
+  const onCreateNew = () => {
+    setCreating(true);
+    setEditing(null);
   };
 
   return (
@@ -107,7 +115,8 @@ const RichMenuManagementPage: React.FC = () => {
                 menus={menus}
                 onEdit={setEditing}
                 onDelete={onDelete}
-                onSetDefault={onSetDefault}
+                onPublish={onPublish}
+                onCreateNew={onCreateNew}
               />
             )}
           </div>

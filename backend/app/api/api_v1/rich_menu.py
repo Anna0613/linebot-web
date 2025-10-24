@@ -424,7 +424,7 @@ async def publish_rich_menu(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async),
 ):
-    """Re-publish the rich menu to LINE (create new if needed, upload image, set default)."""
+    """Re-publish the rich menu to LINE (create new if needed, upload image, set as default)."""
     logger.info(f"開始發佈 Rich Menu: bot_id={bot_id}, menu_id={menu_id}")
 
     try:
@@ -447,6 +447,18 @@ async def publish_rich_menu(
         raise HTTPException(status_code=404, detail="Rich Menu 不存在")
 
     logger.info(f"取得 Rich Menu: name={m.name}, image_url={m.image_url}")
+
+    # 發布時自動設為預設：取消其他選單的預設狀態
+    logger.debug("Step 3.1: 將此選單設為預設，取消其他選單的預設狀態")
+    await db.execute(
+        update(RichMenu)
+        .where(RichMenu.bot_id == bot.id, RichMenu.id != menu_id)
+        .values(selected=False)
+    )
+    m.selected = True
+    await db.commit()
+    await db.refresh(m)
+    logger.info(f"已將 Rich Menu {menu_id} 標記為預設")
 
     # Force reload trigger
     # 標記流程步驟
@@ -487,12 +499,12 @@ async def publish_rich_menu(
 
         rm_payload = {
             "size": {"width": 2500, "height": height},
-            "selected": bool(m.selected),
+            "selected": True,  # 發布時自動設為預設
             "name": m.name,
             "chatBarText": m.chat_bar_text,
             "areas": processed_areas,
         }
-        logger.debug(f"Rich Menu payload 準備完成: {rm_payload}")
+        logger.debug(f"Rich Menu payload 準備完成 (已設為預設): {rm_payload}")
     except Exception as e:
         logger.error(f"準備 Rich Menu payload 失敗: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"準備 Rich Menu 資料時發生錯誤: {str(e)}")
@@ -546,13 +558,14 @@ async def publish_rich_menu(
         await db.refresh(m)
         logger.info(f"Rich Menu {menu_id} published to LINE with ID: {rid}")
 
-        # Set as default if selected
-        if m.selected and m.line_rich_menu_id:
-            success = await _line_set_default(bot.channel_token, m.line_rich_menu_id)
-            if success:
-                logger.info(f"已設定 Rich Menu 預設: {rid}")
-            else:
-                logger.warning(f"設定預設 Rich Menu 失敗，已建立但未設為預設: {rid}")
+        # 發布後自動設為預設功能選單
+        logger.info(f"開始將 Rich Menu {rid} 設為預設功能選單")
+        success = await _line_set_default(bot.channel_token, rid)
+        if success:
+            logger.info(f"已成功將 Rich Menu {rid} 設為預設功能選單")
+        else:
+            logger.error(f"設定預設 Rich Menu 失敗: {rid}")
+            raise HTTPException(status_code=502, detail="Rich Menu 已發布但設定為預設失敗")
 
     except HTTPException:
         raise

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -45,7 +44,6 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
     !!v && typeof v === 'object' && typeof (v as { height?: unknown }).height === 'number';
   const initialHeightNum = isRichMenuSize(menu?.size) ? (menu!.size as { height: number }).height : 1686;
   const [height, setHeight] = useState<'1686' | '843'>(String(initialHeightNum) === '843' ? '843' : '1686');
-  const [selected, setSelected] = useState<boolean>(!!menu?.selected);
   const [areas, setAreas] = useState<RichMenuArea[]>(
     (menu?.areas as RichMenuArea[]) || [
       { bounds: { ...emptyBounds, x: 0, y: 0 }, action: { ...defaultAction, data: 'action=area1' } },
@@ -68,7 +66,6 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
       setName(menu.name);
       setChatBarText(menu.chat_bar_text);
       setHeight(String(isRichMenuSize(menu.size) ? (menu.size as { height: number }).height : 1686) === '843' ? '843' : '1686');
-      setSelected(menu.selected);
       setAreas((menu.areas as RichMenuArea[]) || []);
       setImageUrl(menu.image_url);
     }
@@ -166,10 +163,9 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
   const payload = useMemo(() => ({
     name,
     chat_bar_text: chatBarText,
-    selected,
     size: { width: 2500, height: Number(height) as 1686 | 843 },
     areas,
-  }), [name, chatBarText, selected, height, areas]);
+  }), [name, chatBarText, height, areas]);
 
   const onSubmit = async (): Promise<RichMenu | undefined> => {
     try {
@@ -313,10 +309,6 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
               </SelectContent>
             </Select>
             <p className="mt-1 text-xs text-muted-foreground">大：佔滿畫面高度；小：只佔一半高度。</p>
-          </div>
-          <div className="flex items-end gap-2">
-            <Switch checked={selected} onCheckedChange={setSelected} id="selected" />
-            <Label htmlFor="selected">設為所有人預設選單</Label>
           </div>
         </div>
 
