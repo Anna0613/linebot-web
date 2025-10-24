@@ -5,7 +5,7 @@ import { Switch } from '../ui/switch';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from '../ui/dialog';
-import { Settings, Zap } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import AIKnowledgeApi, { AIToggle, KnowledgeChunkItem, Scope, KnowledgeSearchItem } from '../../services/aiKnowledgeApi';
 import { apiClient } from '../../services/UnifiedApiClient';
 import { API_CONFIG } from '../../config/apiConfig';
@@ -56,9 +56,6 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
 
   // 刪除操作狀態
   const [deleting, setDeleting] = useState(false);
-
-  // 非同步處理模式
-  const [useAsyncProcessing, setUseAsyncProcessing] = useState(true);
 
   const loadList = useCallback(async (immediate = false) => {
     if (!botId) return;
@@ -336,62 +333,38 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     currentOperationRef.current = operationId;
 
     try {
-      if (useAsyncProcessing) {
-        // 使用非同步處理
-        const response = await fetch(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/file/async`, {
-          method: 'POST',
-          credentials: 'include',
-          body: (() => {
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('scope', scope);
-            formData.append('chunk_size', chunkSize.toString());
-            formData.append('overlap', overlap.toString());
-            return formData;
-          })()
+      // 一律使用非同步處理
+      const response = await fetch(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/file/async`, {
+        method: 'POST',
+        credentials: 'include',
+        body: (() => {
+          const formData = new FormData();
+          formData.append('file', selectedFile);
+          formData.append('scope', scope);
+          formData.append('chunk_size', chunkSize.toString());
+          formData.append('overlap', overlap.toString());
+          return formData;
+        })()
+      });
+
+      if (!response.ok) {
+        throw new Error(`上傳失敗: ${response.statusText}`);
+      }
+
+      const job = await response.json();
+
+      // 檢查操作是否仍然是當前操作（避免競態條件）
+      if (currentOperationRef.current === operationId) {
+        toast({
+          title: '檔案已提交處理',
+          description: `任務 ID: ${job.job_id}，請查看下方進度追蹤`
         });
-
-        if (!response.ok) {
-          throw new Error(`上傳失敗: ${response.statusText}`);
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
         }
-
-        const job = await response.json();
-
-        // 檢查操作是否仍然是當前操作（避免競態條件）
-        if (currentOperationRef.current === operationId) {
-          toast({
-            title: '檔案已提交處理',
-            description: `任務 ID: ${job.job_id}，請查看下方進度追蹤`
-          });
-          setSelectedFile(null);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
-          isOperatingRef.current = false;
-          currentOperationRef.current = '';
-        }
-      } else {
-        // 使用同步處理（原有邏輯）
-        await AIKnowledgeApi.uploadFile(botId, scope, selectedFile, chunkSize, overlap);
-
-        // 檢查操作是否仍然是當前操作（避免競態條件）
-        if (currentOperationRef.current === operationId) {
-          toast({ title: '上傳成功' });
-          setPage(1);
-          setSelectedFile(null);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
-
-          // 延遲重新載入列表，給後端處理時間
-          setTimeout(() => {
-            if (currentOperationRef.current === operationId) {
-              loadList(true);
-              isOperatingRef.current = false;
-              currentOperationRef.current = '';
-            }
-          }, 1000); // 文件上傳需要更長的處理時間
-        }
+        isOperatingRef.current = false;
+        currentOperationRef.current = '';
       }
     } catch (e) {
       if (currentOperationRef.current === operationId) {
@@ -655,18 +628,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
         </div>
         {/* 檔案上傳 */}
         <div className="border rounded p-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="font-medium">上傳檔案（.txt / .pdf / .docx）</div>
-            <div className="flex items-center gap-2 text-sm">
-              <Zap className="w-4 h-4" />
-              <span>非同步處理</span>
-              <Switch
-                checked={useAsyncProcessing}
-                onCheckedChange={setUseAsyncProcessing}
-                size="sm"
-              />
-            </div>
-          </div>
+          <div className="font-medium mb-2">上傳檔案（.txt / .pdf / .docx）</div>
           <div className="space-y-3">
             <Input
               ref={fileInputRef}
@@ -694,10 +656,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            {useAsyncProcessing
-              ? '非同步模式：檔案將在背景處理，可查看下方進度追蹤。切塊大小與重疊使用「高級設定」。'
-              : '同步模式：檔案將立即處理完成。切塊大小與重疊使用「高級設定」。'
-            }
+            檔案將在背景處理，可查看下方進度追蹤。切塊大小與重疊使用「高級設定」。
           </p>
         </div>
       </div>
@@ -793,7 +752,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
       </div>
 
       {/* 處理任務追蹤 */}
-      {useAsyncProcessing && botId && (
+      {botId && (
         <ProcessingJobTracker
           botId={botId}
           onJobCompleted={handleJobCompleted}
