@@ -66,6 +66,13 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: [
+      "linebot.jkl921102.org",
+      "localhost",
+      "10.1.1.184",
+      "172.22.0.3",
+      "test.jkl921102.org"
+    ],
     fs: {
       // Allow serving files from one level up to the project root
       allow: ['..']
@@ -79,7 +86,8 @@ export default defineConfig(({ mode }) => ({
       "linebot.jkl921102.org",
       "localhost",
       "10.1.1.184",
-      "172.22.0.3"
+      "172.22.0.3",
+      "test.jkl921102.org"
     ]
   },
   plugins: [
