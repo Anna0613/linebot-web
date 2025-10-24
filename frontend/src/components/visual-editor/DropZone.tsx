@@ -317,11 +317,15 @@ const DropZone: React.FC<DropZoneProps> = ({
           blocks.map((block, index) => {
             // 選擇使用延遲載入或傳統載入
             const BlockComponent = LazyDroppedBlock;
-            
+
+            // 使用穩定的 key：優先使用 block.id，否則使用 index
+            // 避免使用 Date.now() 導致每次渲染都重新掛載組件
+            const stableKey = block.id || `block-${index}`;
+
             return (
-              <BlockComponent 
-                key={`${index}-${Date.now()}`} 
-                block={block} 
+              <BlockComponent
+                key={stableKey}
+                block={block}
                 index={index}
                 onRemove={onRemove}
                 onUpdate={onUpdate}
