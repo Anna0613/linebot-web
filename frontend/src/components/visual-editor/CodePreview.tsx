@@ -31,8 +31,8 @@ const CodePreview: React.FC<CodePreviewProps> = ({ blocks }) => {
 
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-lg border border-gray-200 p-6 h-full flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h3 className="text-lg font-medium text-gray-600">生成的程式碼</h3>
         <div className="flex space-x-2">
           {/* 操作按鈕已移除以避免未使用變數警告 */}

@@ -2,21 +2,18 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 // import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import DropZone from './DropZone';
-import CodePreview from './CodePreview';
-import LineBotSimulator from './LineBotSimulator';
 import FlexMessagePreview from './FlexMessagePreview';
 import { BlockPalette } from './BlockPalette';
-import LogicTemplateSelector from './LogicTemplateSelector';
 import FlexMessageSelector from './FlexMessageSelector';
+import LogicEditorWithCode from './LogicEditorWithCode';
 // 已移除舊的預覽控制台（PreviewControlPanel）與增強模擬器（EnhancedLineBotSimulator）在 AI 知識庫頁面
-import CodeControlPanel from './CodeControlPanel';
 import RichMenuPanel from './RichMenuPanel';
 import AIKnowledgeBaseManager from '../ai/AIKnowledgeBaseManager';
 import { CodeDisplayProvider } from './CodeDisplayContext';
-import { 
-  UnifiedBlock, 
-  UnifiedDropItem, 
-  WorkspaceContext 
+import {
+  UnifiedBlock,
+  UnifiedDropItem,
+  WorkspaceContext
 } from '../../types/block';
 import { validateWorkspace } from '../../utils/blockCompatibility';
 import { useToast } from '../../hooks/use-toast';
@@ -427,7 +424,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   // 獲取當前工作區上下文（增強版）
   const getCurrentContext = (): WorkspaceContext => {
     let context: WorkspaceContext;
-    
+
     // 根據活動標籤決定上下文
     switch (activeTab) {
       case 'logic':
@@ -440,17 +437,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
         // 預覽標籤基於邏輯編輯器內容，使用邏輯上下文
         context = WorkspaceContext.LOGIC;
         break;
-      case 'code':
-        // 程式碼標籤基於邏輯編輯器內容，使用邏輯上下文
-        context = WorkspaceContext.LOGIC;
-        break;
       default:
         // 對於未知標籤，使用邏輯上下文作為預設值
         console.debug('🔧 未知標籤:', activeTab, '使用邏輯上下文作為預設值');
         context = WorkspaceContext.LOGIC;
         break;
     }
-    
+
     console.debug('📍 當前工作區上下文:', {
       context: context,
       activeTab: activeTab,
@@ -458,14 +451,14 @@ const Workspace: React.FC<WorkspaceProps> = ({
       isValidContext: Object.values(WorkspaceContext).includes(context),
       timestamp: new Date().toISOString()
     });
-    
+
     // 驗證上下文的有效性（保留驗證機制以防萬一）
     if (!Object.values(WorkspaceContext).includes(context)) {
       console.error('❌ 生成的上下文無效:', context);
       context = WorkspaceContext.LOGIC; // 回退到安全的預設值
       console.log('🔧 使用回退上下文:', context);
     }
-    
+
     return context;
   };
 
@@ -485,12 +478,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
       case 'preview':
         // AI 知識庫管理頁面不再顯示舊的預覽控制台
         return null;
-      case 'code':
-        return (
-          <CodeControlPanel
-            blocks={logicBlocks}
-          />
-        );
       case 'richmenu':
         // Rich Menu 面板不需要左側積木面板
         return null;
@@ -539,52 +526,27 @@ const Workspace: React.FC<WorkspaceProps> = ({
               )}
             </TabsTrigger>
             <TabsTrigger value="preview">AI 知識庫管理</TabsTrigger>
-            <TabsTrigger value="code">程式碼</TabsTrigger>
             <TabsTrigger value="richmenu">功能選單（Rich Menu）</TabsTrigger>
           </TabsList>
           
           <TabsContent value="logic" className="flex-1 overflow-hidden">
-            <div className="h-full flex flex-col">
-              {/* 邏輯模板選擇器 */}
-              {selectedBotId && (
-                <LogicTemplateSelector
-                  selectedBotId={selectedBotId}
-                  selectedLogicTemplateId={selectedLogicTemplateId}
-                  onLogicTemplateSelect={onLogicTemplateSelect}
-                  onLogicTemplateCreate={onLogicTemplateCreate}
-                  onLogicTemplateSave={onLogicTemplateSave}
-                  logicBlocks={logicBlocks as Block[]}
-                />
-              )}
-              
-              <div className="flex-1 p-4 overflow-auto">
-                <div className="grid grid-cols-2 gap-4 h-full min-h-0">
-                  <div className="flex flex-col min-h-0">
-                    <DropZone 
-                      title={currentLogicTemplateName ? 
-                        `邏輯編輯器 - ${currentLogicTemplateName}` : 
-                        "邏輯編輯器 - 請選擇邏輯模板"
-                      }
-                      context={WorkspaceContext.LOGIC}
-                      onDrop={handleLogicDrop}
-                      blocks={logicBlocks}
-                      onRemove={removeLogicBlock}
-                      onUpdate={updateLogicBlock}
-                      onMove={moveLogicBlock}
-                      onInsert={insertLogicBlock}
-                    />
-                  </div>
-                  
-                  <div className="flex flex-col min-h-0">
-                    <LineBotSimulator
-                      blocks={logicBlocks as Block[]}
-                      flexBlocks={flexBlocks as Block[]}
-                      testAction={currentTestAction}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <LogicEditorWithCode
+              selectedBotId={selectedBotId || ''}
+              selectedLogicTemplateId={selectedLogicTemplateId || ''}
+              currentLogicTemplateName={currentLogicTemplateName || ''}
+              logicBlocks={logicBlocks}
+              flexBlocks={flexBlocks}
+              currentTestAction={currentTestAction}
+              onLogicTemplateSelect={onLogicTemplateSelect || (() => {})}
+              onLogicTemplateCreate={onLogicTemplateCreate || (async () => '')}
+              onLogicTemplateSave={onLogicTemplateSave || (async () => {})}
+              onLogicBlocksChange={onLogicBlocksChange}
+              onRemoveBlock={removeLogicBlock}
+              onUpdateBlock={updateLogicBlock}
+              onMoveBlock={moveLogicBlock}
+              onInsertBlock={insertLogicBlock}
+              onDrop={handleLogicDrop}
+            />
           </TabsContent>
           
           <TabsContent value="flex" className="flex-1 overflow-hidden">
@@ -627,12 +589,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
           <TabsContent value="preview" className="flex-1 overflow-hidden">
             <div className="h-full flex flex-col">
               <AIKnowledgeBaseManager botId={selectedBotId} />
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="code" className="flex-1 overflow-hidden">
-            <div className="h-full p-4 overflow-auto">
-              <CodePreview blocks={logicBlocks} />
             </div>
           </TabsContent>
 

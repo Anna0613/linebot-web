@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Bot, User, Send } from 'lucide-react';
+import { Bot, User, Send, Code } from 'lucide-react';
 import FlexMessagePreview from '../Panels/FlexMessagePreview';
+import CodeViewerDialog from './CodeViewerDialog';
 import VisualEditorApi, { FlexMessage as StoredFlexMessage } from '../../services/visualEditorApi';
 
 /**
@@ -58,6 +59,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
+  const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
 
   // 先定義其他函式，稍後定義 simulateUserMessage 與 handleTestAction
 
@@ -530,11 +532,23 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
   };
 
   return (
-    <div className="h-full flex flex-col bg-white rounded border border-gray-200">
-      <div className="flex items-center px-4 py-2 bg-green-500 text-white rounded-t">
-        <Bot className="w-5 h-5 mr-2" />
-        <div className="font-medium">LINE Bot 模擬器</div>
-      </div>
+    <>
+      <div className="h-full flex flex-col bg-white rounded border border-gray-200">
+        <div className="flex items-center justify-between px-4 py-2 bg-green-500 text-white rounded-t">
+          <div className="flex items-center">
+            <Bot className="w-5 h-5 mr-2" />
+            <div className="font-medium">LINE Bot 模擬器</div>
+          </div>
+          <Button
+            onClick={() => setIsCodeDialogOpen(true)}
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-green-600"
+            title="查看生成的程式碼"
+          >
+            <Code className="w-4 h-4" />
+          </Button>
+        </div>
 
       {/* 訊息區域 */}
       <div className="flex-1 overflow-auto p-4 space-y-3 bg-gray-50">
@@ -592,7 +606,15 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
           送出
         </Button>
       </div>
-    </div>
+      </div>
+
+      {/* 程式碼查看對話框 */}
+      <CodeViewerDialog
+        isOpen={isCodeDialogOpen}
+        onOpenChange={setIsCodeDialogOpen}
+        blocks={blocks as any}
+      />
+    </>
   );
 };
 
