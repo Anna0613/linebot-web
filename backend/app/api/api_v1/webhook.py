@@ -46,7 +46,8 @@ def _build_ai_reply_flex_message(answer: str) -> Dict[str, Any]:
                     "size": "sm",
                     "color": "#1E88E5"
                 }
-            ]
+            ],
+            "paddingBottom": "sm"
         },
         "body": {
             "type": "box",
@@ -59,7 +60,29 @@ def _build_ai_reply_flex_message(answer: str) -> Dict[str, Any]:
                     "size": "md",
                     "color": "#111111"
                 }
-            ]
+            ],
+            "paddingTop": "sm",
+            "paddingBottom": "sm"
+        },
+        "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "separator",
+                    "margin": "sm"
+                },
+                {
+                    "type": "text",
+                    "text": "AI 可能會出錯，請查核重要資訊。",
+                    "size": "xxs",
+                    "color": "#999999",
+                    "margin": "sm",
+                    "wrap": True,
+                    "align": "end"
+                }
+            ],
+            "paddingTop": "sm"
         }
     }
 
