@@ -26,6 +26,11 @@ services:
         - VITE_WEBHOOK_DOMAIN=https://api.jkl921102.org
         - VITE_DOMAIN=https://api.jkl921102.org
         - REACT_APP_DOMAIN=https://api.jkl921102.org
+        - VITE_ALLOWED_HOSTS=localhost,127.0.0.1,linebot.jkl921102.org,api.jkl921102.org
+        - VITE_DEV_SERVER_HOST=0.0.0.0
+        - VITE_DEV_SERVER_PORT=3000
+        - VITE_PROXY_SECURE=true
+        - VITE_PROXY_CHANGE_ORIGIN=true
     container_name: linebot-web-frontend
     ports:
       - "3000:3000"
