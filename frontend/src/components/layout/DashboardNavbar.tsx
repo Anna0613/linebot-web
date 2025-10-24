@@ -334,18 +334,6 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                         設定
                       </Link>
                     )}
-
-                    <Link
-                      to="/language"
-                      className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary text-[16px]"
-                    >
-                      <img
-                        src="/images/language setting.svg"
-                        alt="Logo"
-                        className="w-6 h-6 fill-[#454658]"
-                      />
-                      語言
-                    </Link>
                     <Link
                       to="/suggest"
                       className="flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors hover:bg-secondary text-[16px]"
