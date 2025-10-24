@@ -22,6 +22,48 @@ from app.services.conversation_service import ConversationService
 from app.services.background_tasks import get_task_manager, TaskPriority
 from app.database_async import AsyncSessionLocal
 
+
+def _build_ai_reply_flex_message(answer: str) -> Dict[str, Any]:
+    """
+    構建 AI 回覆的 Flex Message 框架
+
+    Args:
+        answer: AI 回覆的文字內容
+
+    Returns:
+        Dict: Flex Message bubble 結構
+    """
+    return {
+        "type": "bubble",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": "🤖 AI 回覆",
+                    "weight": "bold",
+                    "size": "sm",
+                    "color": "#1E88E5"
+                }
+            ]
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": answer,
+                    "wrap": True,
+                    "size": "md",
+                    "color": "#111111"
+                }
+            ]
+        }
+    }
+
+
 # 背景任務：AI 接管（RAG → 產生回答 → 發送 → 紀錄）
 async def _ai_takeover_background_task(
     *,
@@ -74,12 +116,18 @@ async def _ai_takeover_background_task(
             if not answer:
                 answer = "我在這裡，請告訴我您的問題。"
 
-            # 發送最終 AI 回覆（僅用 push，不使用 replyToken）
+            # 構建 AI 回覆的 Flex Message
+            flex_content = _build_ai_reply_flex_message(answer)
+
+            # 發送最終 AI 回覆（使用 Flex Message）
             try:
                 send_result = await asyncio.to_thread(
-                    line_bot_service.send_text_message, user_id, answer
+                    line_bot_service.send_flex_message,
+                    user_id,
+                    "🤖 AI 回覆",  # alt_text
+                    flex_content
                 )
-                logger.info(f"AI 背景任務：訊息發送結果: {send_result}")
+                logger.info(f"AI 背景任務：Flex 訊息發送結果: {send_result}")
             except Exception as send_err:
                 logger.error(f"AI 背景任務：發送 AI 回覆失敗: {send_err}")
 

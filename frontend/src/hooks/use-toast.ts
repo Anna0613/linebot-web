@@ -3,13 +3,14 @@ import * as React from "react";
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 2000; // 5 秒後自動關閉
 
 type ToasterToast = ToastProps & {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
+  duration?: number; // 自動關閉的時間（毫秒），0 表示不自動關閉
 };
 
 const _actionTypes = {
@@ -157,6 +158,14 @@ function toast({ ...props }: Toast) {
       },
     },
   });
+
+  // 自動設置定時器關閉通知（如果沒有指定 duration，則使用預設值）
+  const duration = props.duration !== undefined ? props.duration : TOAST_REMOVE_DELAY;
+  if (duration > 0) {
+    setTimeout(() => {
+      dismiss();
+    }, duration);
+  }
 
   return {
     id: id,

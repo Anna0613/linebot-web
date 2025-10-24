@@ -223,6 +223,135 @@ class RAGService:
             )
 
     @staticmethod
+    async def _classify_intent(query: str) -> str:
+        """
+        使用 Groq API 判斷用戶意圖。
+
+        Args:
+            query: 用戶訊息
+
+        Returns:
+            "chat" - 閒聊
+            "query" - 詢問問題/查詢資訊
+        """
+        try:
+            from app.services.groq_service import GroqService
+            from app.config import settings
+            import re
+
+            # 使用 llama-3.1-8b-instant 模型進行意圖判斷（快速且不會產生 reasoning）
+            intent_model = "llama-3.1-8b-instant"
+
+            # 通用的系統提示詞 - 避免具體範例限制 AI 思考
+            intent_system_prompt = (
+                "你是一個嚴格的意圖分類器。分析用戶訊息，判斷其核心意圖。\n\n"
+                "【輸出格式要求】\n"
+                "你必須且僅能回答以下兩個詞之一：chat 或 query\n"
+                "不要加上任何標點符號、解釋、引號、括號或其他文字。\n"
+                "嚴格遵守格式，只輸出一個英文單詞。\n\n"
+                "【分類原則】\n"
+                "chat：用戶的主要目的是進行社交互動、情感交流或日常對話，不需要具體資訊或答案。\n"
+                "query：用戶的主要目的是獲取特定資訊、尋求解答或需要實質性的回應內容。\n\n"
+                "請根據訊息的核心意圖進行判斷，只輸出 chat 或 query。"
+            )
+
+            # 呼叫 Groq API
+            client = GroqService._get_client(settings.GROQ_API_KEY)
+
+            completion = await client.chat.completions.create(
+                model=intent_model,
+                messages=[
+                    {"role": "system", "content": intent_system_prompt},
+                    {"role": "user", "content": query}
+                ],
+                temperature=0.0,  # 使用 0 溫度以獲得最確定的分類
+                max_tokens=10,    # 10 個 tokens 足夠輸出 chat 或 query
+                top_p=1.0,        # 使用確定性採樣
+                stream=False
+            )
+
+            # 記錄完整的 API 回應以便除錯
+            logger.info(
+                f"🔍 意圖判斷 API 完整回應：\n"
+                f"   模型: {intent_model}\n"
+                f"   用戶訊息: '{query}'\n"
+                f"   完整回應物件: {completion}"
+            )
+
+            # 解析回應
+            if completion.choices and len(completion.choices) > 0:
+                raw_response = completion.choices[0].message.content
+
+                # 清理回應：移除所有空白字元、標點符號、引號等
+                cleaned_intent = re.sub(r'[^\w]', '', raw_response.strip().lower())
+
+                logger.info(
+                    f"📝 意圖判斷解析過程：\n"
+                    f"   原始回應: '{raw_response}'\n"
+                    f"   清理後: '{cleaned_intent}'\n"
+                    f"   回應長度: {len(raw_response)} 字元"
+                )
+
+                # 嚴格匹配：完全等於 'chat' 或 'query'
+                if cleaned_intent == "chat":
+                    logger.info(f"✅ 意圖判斷結果: 閒聊 (原始回應: '{raw_response}')")
+                    return "chat"
+                elif cleaned_intent == "query":
+                    logger.info(f"✅ 意圖判斷結果: 查詢 (原始回應: '{raw_response}')")
+                    return "query"
+                else:
+                    # 容錯處理：檢查是否包含關鍵詞
+                    if "chat" in cleaned_intent:
+                        logger.warning(
+                            f"⚠️ 意圖判斷包含 'chat' 但格式不標準\n"
+                            f"   原始回應: '{raw_response}'\n"
+                            f"   清理後: '{cleaned_intent}'\n"
+                            f"   判定為: 閒聊"
+                        )
+                        return "chat"
+                    elif "query" in cleaned_intent:
+                        logger.warning(
+                            f"⚠️ 意圖判斷包含 'query' 但格式不標準\n"
+                            f"   原始回應: '{raw_response}'\n"
+                            f"   清理後: '{cleaned_intent}'\n"
+                            f"   判定為: 查詢"
+                        )
+                        return "query"
+                    else:
+                        # 完全無法識別，記錄詳細資訊並預設為查詢
+                        logger.warning(
+                            f"❌ 意圖判斷結果不明確，無法識別！\n"
+                            f"   用戶訊息: '{query}'\n"
+                            f"   原始回應: '{raw_response}'\n"
+                            f"   清理後: '{cleaned_intent}'\n"
+                            f"   回應長度: {len(raw_response)} 字元\n"
+                            f"   回應類型: {type(raw_response)}\n"
+                            f"   完整 completion 物件: {completion}\n"
+                            f"   預設為: 查詢模式"
+                        )
+                        return "query"
+
+            # 預設為查詢
+            logger.warning(
+                f"⚠️ 意圖判斷無回應\n"
+                f"   用戶訊息: '{query}'\n"
+                f"   完整 completion 物件: {completion}\n"
+                f"   預設為: 查詢"
+            )
+            return "query"
+
+        except Exception as e:
+            logger.error(
+                f"❌ 意圖判斷失敗\n"
+                f"   錯誤訊息: {e}\n"
+                f"   用戶訊息: '{query}'\n"
+                f"   預設為: 查詢",
+                exc_info=True
+            )
+            # 發生錯誤時預設為查詢，確保不會遺漏重要問題
+            return "query"
+
+    @staticmethod
     async def generate_answer(
         query: str,
         contexts: List[str],
@@ -243,8 +372,28 @@ class RAGService:
             system_prompt=(
                 system_prompt
                 or (
-                    "你是一個對話助理。若提供了知識片段，請優先引用並準確回答；"
-                    "若未提供或不足，也可依一般常識與推理能力完整作答。"
+                    "你是 LINE 聊天機器人，正在回答用戶的問題。系統已提供相關的知識庫資料。\n\n"
+                    "回覆要求：\n"
+                    "・用自己的話整理資訊，不要直接複製貼上原文\n"
+                    "・簡潔明確，直接回答重點（避免冗長的開場白或結尾）\n"
+                    "・分段清楚，方便在 LINE 上閱讀\n"
+                    "・如果資料不足，簡單說明即可，不需要過度道歉\n"
+                    "・語氣自然友善，但保持專業準確\n\n"
+                    "【格式規範 - 重要！】\n"
+                    "你的回覆會顯示在 LINE 卡片中，請嚴格遵守以下規則：\n\n"
+                    "✗ 絕對禁止使用這些符號：\n"
+                    "  **文字**（粗體）、*文字*（斜體）、`代碼`、# 標題、- 列表、* 列表、> 引用、[連結](網址)\n\n"
+                    "✓ 請改用這些方式：\n"
+                    "  【標題】用中文括號強調\n"
+                    "  ・項目 用日文中點列舉\n"
+                    "  1. 項目 用數字編號\n"
+                    "  直接換行分段即可\n\n"
+                    "範例（正確）：\n"
+                    "【營業時間】\n"
+                    "・週一至週五：9:00-18:00\n"
+                    "・週末：休息\n"
+                    "\n"
+                    "如有特殊需求，請提前聯繫。"
                 )
             ),
             max_tokens=None,  # 移除硬編碼限制，讓 Groq 服務自動計算合適的 max_tokens
@@ -276,37 +425,12 @@ class RAGService:
         bm25_weight: float = 0.3,
     ) -> Optional[str]:
         try:
-            # 選擇檢索方法
-            if use_hybrid:
-                # 使用混合搜尋
-                items = await RAGService.hybrid_search(
-                    db, bot_id, query,
-                    vector_weight=vector_weight,
-                    bm25_weight=bm25_weight,
-                    top_k=top_k or RAGService.TOP_K,
-                    vector_threshold=threshold or RAGService.MIN_SIMILARITY,
-                    model_name=embedding_model
-                )
-            elif use_rerank:
-                # 使用重排序
-                items = await RAGService.retrieve_with_rerank(
-                    db, bot_id, query,
-                    threshold=threshold,
-                    final_k=top_k or RAGService.TOP_K,
-                    rerank_model=rerank_model,
-                    model_name=embedding_model
-                )
-            else:
-                # 使用基本向量搜尋
-                items = await RAGService.retrieve(
-                    db, bot_id, query,
-                    threshold=threshold,
-                    top_k=top_k,
-                    model_name=embedding_model
-                )
+            # ========== 步驟 1: 意圖判斷 ==========
+            logger.info(f"🔍 開始意圖判斷: {query}")
+            intent = await RAGService._classify_intent(query)
+            logger.info(f"✅ 意圖判斷完成: {intent}")
 
-            contexts = [kc.content for kc, _ in items] if items else []
-            # 構建最近對話歷史（可選）
+            # 構建對話歷史（兩種情況都需要）
             hist: Optional[List[dict]] = None
             if line_user_id and (history_messages or 0) > 0:
                 try:
@@ -327,14 +451,87 @@ class RAGService:
                                 hist.append({'role': role, 'content': content})
                 except Exception as _e:
                     logger.warning(f"構建歷史對話失敗: {_e}")
-            return await RAGService.generate_answer(
-                query,
-                contexts,
-                provider=provider,
-                model=model,
-                history=hist,
-                system_prompt=system_prompt,
-            )
+
+            # ========== 步驟 2: 根據意圖分流處理 ==========
+            if intent == "chat":
+                # 閒聊模式：跳過 RAG 檢索，直接使用 AI 生成回覆
+                logger.info("💬 閒聊模式：跳過知識庫檢索，直接生成回覆")
+
+                # 使用空的 contexts 列表，讓 AI 自由對話
+                return await RAGService.generate_answer(
+                    query,
+                    contexts=[],  # 不提供知識庫內容
+                    provider=provider,
+                    model=model,
+                    history=hist,
+                    system_prompt=system_prompt or (
+                        "你是 LINE 聊天機器人，正在與用戶閒聊。\n\n"
+                        "回覆風格：\n"
+                        "・簡短自然，像朋友聊天一樣（1-2 句話即可）\n"
+                        "・語氣輕鬆親切，但不要過度熱情或冗長\n"
+                        "・可以用表情符號，但不要每句都用\n"
+                        "・避免說「有什麼需要幫忙」、「隨時告訴我」等客服用語\n"
+                        "・就像普通朋友回訊息，簡單、真誠就好\n\n"
+                        "【格式規範 - 重要！】\n"
+                        "你的回覆會顯示在 LINE 卡片中，請嚴格遵守以下規則：\n\n"
+                        "✗ 絕對禁止使用這些符號：\n"
+                        "  **文字**（粗體）、*文字*（斜體）、`代碼`、# 標題、- 列表、* 列表、> 引用\n\n"
+                        "✓ 請改用這些方式：\n"
+                        "  【標題】用中文括號\n"
+                        "  ・項目 用日文中點\n"
+                        "  1. 項目 用數字編號\n"
+                        "  直接換行分段即可\n\n"
+                        "範例（正確）：\n"
+                        "早安！😊\n"
+                        "祝你今天順利～"
+                    ),
+                )
+
+            else:  # intent == "query"
+                # 查詢模式：執行完整的 RAG 檢索流程
+                logger.info("📚 查詢模式：執行知識庫檢索")
+
+                # 選擇檢索方法
+                if use_hybrid:
+                    # 使用混合搜尋
+                    items = await RAGService.hybrid_search(
+                        db, bot_id, query,
+                        vector_weight=vector_weight,
+                        bm25_weight=bm25_weight,
+                        top_k=top_k or RAGService.TOP_K,
+                        vector_threshold=threshold or RAGService.MIN_SIMILARITY,
+                        model_name=embedding_model
+                    )
+                elif use_rerank:
+                    # 使用重排序
+                    items = await RAGService.retrieve_with_rerank(
+                        db, bot_id, query,
+                        threshold=threshold,
+                        final_k=top_k or RAGService.TOP_K,
+                        rerank_model=rerank_model,
+                        model_name=embedding_model
+                    )
+                else:
+                    # 使用基本向量搜尋
+                    items = await RAGService.retrieve(
+                        db, bot_id, query,
+                        threshold=threshold,
+                        top_k=top_k,
+                        model_name=embedding_model
+                    )
+
+                contexts = [kc.content for kc, _ in items] if items else []
+                logger.info(f"📖 檢索到 {len(contexts)} 個知識片段")
+
+                return await RAGService.generate_answer(
+                    query,
+                    contexts,
+                    provider=provider,
+                    model=model,
+                    history=hist,
+                    system_prompt=system_prompt,
+                )
+
         except Exception as e:
             logger.error(f"RAG 回答失敗: {e}")
             return None

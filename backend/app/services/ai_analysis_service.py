@@ -231,31 +231,66 @@ class AIAnalysisService:
 
         # 將歷史對話（管理者與 AI 的往返）帶入，作為多輪上下文
         if history:
+            # 在歷史對話前加入明確的分隔標記
+            contents.append({
+                "role": "user",
+                "parts": [{"text": "=== 以下是之前的對話歷史 ==="}]
+            })
             for turn in history:
                 role = "user" if turn.get("role") == "user" else "model"
                 contents.append({"role": role, "parts": [{"text": str(turn.get("content", ""))}]})
+            contents.append({
+                "role": "user",
+                "parts": [{"text": "=== 對話歷史結束 ==="}]
+            })
 
-        # 注入用戶歷史對話（資料上下文）
+        # 注入知識庫檢索片段（不是對話歷史！）
+        if context_text and context_text.strip():
+            context_message = (
+                "【知識庫資料】\n"
+                "以下是系統從知識庫中檢索到的相關資料片段，請參考這些資料來回答問題：\n\n"
+                f"{context_text}\n\n"
+                "【知識庫資料結束】"
+            )
+            contents.append({
+                "role": "user",
+                "parts": [{"text": context_message}]
+            })
+
+        # 當前用戶問題
         contents.append({
             "role": "user",
-            "parts": [{"text": f"對話歷史：\n{context_text}"}]
+            "parts": [{"text": f"【當前問題】\n{question}"}]
         })
 
-        # 當前問題
-        contents.append({"role": "user", "parts": [{"text": f"問題：{question}"}]})
-
         # 系統提示（支援自訂）
+        base_system_instruction = (
+            "【系統基礎規則】\n"
+            "- 你會收到不同類型的資訊，請注意區分：\n"
+            "  * 【知識庫資料】：系統檢索到的參考資料，優先使用這些資料回答\n"
+            "  * 對話歷史：之前的對話內容，用於理解上下文\n"
+            "  * 【當前問題】：用戶現在提出的問題，這是你需要回答的主要內容\n"
+            "- 回答時請基於【知識庫資料】，用自己的話重新組織，不要直接複製\n\n"
+        )
+
         if not system_prompt:
             system_prompt = (
+                "【預設角色設定】\n"
                 "你是一位專精客服對話洞察的分析助手。"
                 "請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、"
                 "有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。"
             )
+        else:
+            # 如果有自訂提示詞，加上標記
+            system_prompt = f"【創建者自訂角色】\n{system_prompt}"
+
+        # 合併基礎規則和角色設定
+        combined_system_prompt = f"{base_system_instruction}{system_prompt}"
 
         payload: Dict[str, Any] = {
             "systemInstruction": {
                 "role": "system",
-                "parts": [{"text": system_prompt}]
+                "parts": [{"text": combined_system_prompt}]
             },
             "contents": contents,
             "generationConfig": {

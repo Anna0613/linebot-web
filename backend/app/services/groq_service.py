@@ -189,34 +189,73 @@ class GroqService:
         messages: List[Dict[str, str]] = []
 
         # 系統層級基礎提示詞（不可被用戶覆蓋）
-        base_system_prompt = "請盡量使用 Markdown 格式輸出。"
+        base_system_prompt = (
+            "【系統基礎規則】\n"
+            "- 請使用純文字格式輸出，嚴格禁止使用以下 Markdown 符號：\n"
+            "  ✗ 禁止：**文字**（粗體）\n"
+            "  ✗ 禁止：*文字*（斜體）\n"
+            "  ✗ 禁止：`代碼`（行內代碼）\n"
+            "  ✗ 禁止：# 標題（任何層級的標題）\n"
+            "  ✗ 禁止：- 項目（列表）\n"
+            "  ✗ 禁止：* 項目（列表）\n"
+            "  ✗ 禁止：> 引用（引用區塊）\n"
+            "  ✗ 禁止：[連結](網址)（超連結）\n"
+            "  ✓ 可用：【標題】（中文括號）\n"
+            "  ✓ 可用：・項目（日文中點）\n"
+            "  ✓ 可用：1. 項目（數字編號）\n"
+            "- 你會收到不同類型的資訊，請注意區分：\n"
+            "  【知識庫資料】：系統檢索到的參考資料，優先使用這些資料回答\n"
+            "  對話歷史：之前的對話內容，用於理解上下文\n"
+            "  【當前問題】：用戶現在提出的問題，這是你需要回答的主要內容\n"
+            "- 回答時請基於【知識庫資料】，用自己的話重新組織，不要直接複製"
+        )
 
         # 用戶自訂或預設的系統提示詞
         if not system_prompt:
             system_prompt = (
+                "【預設角色設定】\n"
                 "你是一位專精客服對話洞察的分析助手。"
                 "請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、"
                 "有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。"
             )
+        else:
+            # 如果有自訂提示詞，加上標記
+            system_prompt = f"【創建者自訂角色】\n{system_prompt}"
 
         # 合併系統層級提示詞和用戶提示詞
         combined_system_prompt = f"{base_system_prompt}\n\n{system_prompt}"
         messages.append({"role": "system", "content": combined_system_prompt})
 
         # 將歷史對話（管理者與 AI 的往返）帶入，作為多輪上下文
+        # 注意：這些是真實的對話歷史，會以原始的 role/content 格式保留
         if history:
+            # 在歷史對話前加入明確的分隔標記
+            messages.append({
+                "role": "user",
+                "content": "=== 以下是之前的對話歷史 ==="
+            })
             for turn in history:
                 role = turn.get("role", "user")
                 content = str(turn.get("content", ""))
                 if role in ["user", "assistant"] and content:
                     messages.append({"role": role, "content": content})
+            messages.append({
+                "role": "user",
+                "content": "=== 對話歷史結束 ==="
+            })
 
-        # 注入用戶歷史對話（資料上下文）
-        context_message = f"對話歷史：\n{context_text}"
-        messages.append({"role": "user", "content": context_message})
+        # 注入知識庫檢索片段（不是對話歷史！）
+        if context_text and context_text.strip():
+            context_message = (
+                "【知識庫資料】\n"
+                "以下是系統從知識庫中檢索到的相關資料片段，請參考這些資料來回答問題：\n\n"
+                f"{context_text}\n\n"
+                "【知識庫資料結束】"
+            )
+            messages.append({"role": "user", "content": context_message})
 
-        # 當前問題
-        messages.append({"role": "user", "content": f"問題：{question}"})
+        # 當前用戶問題
+        messages.append({"role": "user", "content": f"【當前問題】\n{question}"})
 
         return messages
 
