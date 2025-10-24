@@ -16,7 +16,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     """應用程式設定類別"""
-    
+
     # 基本設定
     PROJECT_NAME: str = "LineBot-Web Unified API"
     VERSION: str = "2.0.0"
@@ -26,7 +26,12 @@ class Settings(BaseSettings):
     SHOW_DOCS: bool = os.getenv("SHOW_DOCS", "False").lower() == "true"
     # SQL 日誌輸出（預設關閉）
     SQL_ECHO: bool = os.getenv("SQL_ECHO", "False").lower() == "true"
-    
+
+    # 連線池設定（可由環境變數覆蓋）
+    POOL_SIZE: int = int(os.getenv("POOL_SIZE", "10"))
+    POOL_MAX_OVERFLOW: int = int(os.getenv("POOL_MAX_OVERFLOW", "20"))
+    POOL_TIMEOUT: int = int(os.getenv("POOL_TIMEOUT", "15"))
+
     # 資料庫設定 - 主庫（寫入）
     DB_HOST: str = os.getenv("DB_HOST", "sql.jkl921102.org")
     DB_PORT: int = int(os.getenv("DB_PORT", "5432"))
@@ -64,39 +69,39 @@ class Settings(BaseSettings):
         password = self.DB_REPLICA_PASSWORD or self.DB_PASSWORD
 
         return f"postgresql://{user}:{password}@{host}:{port}/{name}"
-    
+
     # JWT 設定
     JWT_SECRET: str = os.getenv("JWT_SECRET", "your-secret-key-here")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "120"))  # 調整為 120 分鐘
     # 記住我功能的長期 token 過期時間（7天）
     JWT_REMEMBER_EXPIRE_MINUTES: int = int(os.getenv("JWT_REMEMBER_EXPIRE_MINUTES", "10080"))  # 7 * 24 * 60 = 10080 分鐘
-    
+
     # LINE 登入設定
     LINE_CHANNEL_ID: str = os.getenv("LINE_CHANNEL_ID", "")
     LINE_CHANNEL_SECRET: str = os.getenv("LINE_CHANNEL_SECRET", "")
     LINE_REDIRECT_URI: str = os.getenv("LINE_REDIRECT_URI", "http://localhost:8000/api/v1/auth/line/callback")
-    
+
     # Flask 密鑰（向後相容）
     FLASK_SECRET_KEY: str = os.getenv("FLASK_SECRET_KEY", "your-flask-secret-key")
-    
+
     # 前端 URL
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:8080")
-    
+
     # 郵件設定
     MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     MAIL_PORT: int = int(os.getenv("MAIL_PORT", "587"))
     MAIL_USERNAME: str = os.getenv("MAIL_USERNAME", "")
     MAIL_PASSWORD: str = os.getenv("MAIL_PASSWORD", "")
     MAIL_USE_TLS: bool = True
-    
+
     # Redis 設定
     REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
     REDIS_PASSWORD: Optional[str] = os.getenv("REDIS_PASSWORD")
     REDIS_URL: str = os.getenv("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
-    
+
     # MinIO 設定
     MINIO_ENDPOINT: str = os.getenv("MINIO_ENDPOINT", "localhost:9000")
     MINIO_ACCESS_KEY: str = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
@@ -108,7 +113,7 @@ class Settings(BaseSettings):
     MINIO_CA_CERT_FILE: Optional[str] = os.getenv("MINIO_CA_CERT_FILE")
     MINIO_BUCKET_NAME: str = os.getenv("MINIO_BUCKET_NAME", "message-store")
     MINIO_PUBLIC_URL: str = os.getenv("MINIO_PUBLIC_URL", "http://localhost:9000")
-    
+
     # MongoDB 設定
     MONGODB_HOST: str = os.getenv("MONGODB_HOST", "localhost")
     MONGODB_PORT: int = int(os.getenv("MONGODB_PORT", "27017"))
@@ -117,7 +122,7 @@ class Settings(BaseSettings):
     MONGODB_DATABASE: str = os.getenv("MONGODB_DATABASE", "linebot_conversations")
     MONGODB_AUTH_DATABASE: str = os.getenv("MONGODB_AUTH_DATABASE", "admin")
     MONGODB_SSL: bool = os.getenv("MONGODB_SSL", "False").lower() == "true"
-    
+
     @property
     def MONGODB_URL(self) -> str:
         """MongoDB 連線 URL"""
@@ -125,7 +130,7 @@ class Settings(BaseSettings):
             auth_part = f"{self.MONGODB_USERNAME}:{self.MONGODB_PASSWORD}@"
         else:
             auth_part = ""
-        
+
         ssl_param = "?ssl=true" if self.MONGODB_SSL else ""
         return f"mongodb://{auth_part}{self.MONGODB_HOST}:{self.MONGODB_PORT}/{self.MONGODB_DATABASE}{ssl_param}"
 
@@ -142,7 +147,7 @@ class Settings(BaseSettings):
 
     # 通用 AI 設定
     AI_MAX_HISTORY_MESSAGES: int = int(os.getenv("AI_MAX_HISTORY_MESSAGES", "200"))
-    
+
     # CORS 設定 - 預設允許的來源
     @property
     def ALLOWED_ORIGINS(self) -> List[str]:
@@ -171,13 +176,13 @@ class Settings(BaseSettings):
             "https://jkl921102.org",
             "http://jkl921102.org"
         ]
-        
+
         # 從環境變數添加額外的來源
         extra_origins_str = os.getenv("EXTRA_ALLOWED_ORIGINS", "")
         if extra_origins_str:
             extra_origins = [origin.strip() for origin in extra_origins_str.split(",") if origin.strip()]
             default_origins.extend(extra_origins)
-        
+
         return list(set(default_origins))  # 去重
 
     @property
@@ -199,20 +204,20 @@ class Settings(BaseSettings):
             return bool(re.match(pattern, origin)) if pattern else False
         except Exception:
             return origin in self.ALLOWED_ORIGINS
-    
+
     ALLOWED_HOSTS: List[str] = ["*"]  # 在生產環境中應該更嚴格
-    
+
     # API 設定
     API_V1_PREFIX: str = "/api/v1"
-    
+
     # 安全設定
     SECRET_KEY: str = os.getenv("SECRET_KEY", FLASK_SECRET_KEY)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "30"))
-    
+
     class Config:
         case_sensitive = True
         env_file = ".env"
         extra = "ignore"  # 忽略額外的環境變數
 
 # 創建設定實例
-settings = Settings() 
+settings = Settings()

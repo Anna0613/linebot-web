@@ -42,27 +42,34 @@ class DatabaseConnectionManager:
     
     def _create_engine_config(self) -> dict:
         """建立引擎配置（共用設定）"""
+        # 使用有上限的 LRU compiled cache，避免長期無界成長
+        try:
+            from sqlalchemy.util import LRUCache as _LRUCache
+            compiled_cache = _LRUCache(1024)
+        except Exception:
+            compiled_cache = {}
+
         return {
             "pool_pre_ping": True,
             "pool_recycle": 1800,
-            "pool_size": 25,
-            "max_overflow": 50,
-            "pool_timeout": 20,
+            "pool_size": settings.POOL_SIZE,
+            "max_overflow": settings.POOL_MAX_OVERFLOW,
+            "pool_timeout": settings.POOL_TIMEOUT,
             "echo": settings.SQL_ECHO,
             "connect_args": {
                 "application_name": "linebot-web-api",
                 "keepalives_idle": "600",
                 "keepalives_interval": "30",
                 "keepalives_count": "3",
-                "tcp_user_timeout": "30000",
+                # 移除 tcp_user_timeout（相容性不一，避免驅動不支援）
             },
             "execution_options": {
                 "postgresql_readonly": False,
                 "postgresql_autocommit": False,
-                "compiled_cache": {},
+                "compiled_cache": compiled_cache,
             }
         }
-    
+
     def _build_async_url(self, url: str) -> str:
         """轉換為 asyncpg URL"""
         if url.startswith("postgresql+asyncpg://"):
@@ -92,9 +99,10 @@ class DatabaseConnectionManager:
             async_url = self._build_async_url(settings.DATABASE_URL)
             async_config = {
                 "pool_pre_ping": True,
-                "pool_size": 25,
-                "max_overflow": 50,
+                "pool_size": settings.POOL_SIZE,
+                "max_overflow": settings.POOL_MAX_OVERFLOW,
                 "pool_recycle": 1800,
+                "pool_timeout": settings.POOL_TIMEOUT,
                 "echo": settings.SQL_ECHO,
             }
             self._async_primary_engine = create_async_engine(async_url, **async_config)

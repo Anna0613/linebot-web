@@ -11,6 +11,8 @@ from app.database_async import get_async_db
 from app.models.user import User
 from app.core.security import verify_token
 from .config import settings
+from app.db_session_context import get_read_db_session, get_write_db_session
+
 
 # 已移除 OAuth2 Bearer 方案，統一採用 HttpOnly Cookie
 
@@ -29,11 +31,11 @@ def get_db_session(use_replica: bool = False) -> Callable:
     return _get_db
 
 
-# 預設使用主庫的 session（向後相容）
-get_db_primary = get_db_session(use_replica=False)
+# 預設使用主庫的 session（統一使用智慧 Session）
+get_db_primary = get_write_db_session
 
-# 讀取專用的 session（優先使用從庫）
-get_db_read = get_db_session(use_replica=True)
+# 讀取專用的 session（統一使用智慧 Session）
+get_db_read = get_read_db_session
 
 
 async def get_current_user_async(
