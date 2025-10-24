@@ -17,6 +17,8 @@ interface BlockData {
 interface Block {
   blockType: string;
   blockData: BlockData;
+  children?: string[];  // 子積木 ID 列表
+  id?: string;          // 積木 ID
 }
 
 interface EventHandler {
@@ -41,6 +43,7 @@ interface Action {
   waitTime?: number;
   variableName?: string;
   value?: string;
+  children?: Action[];  // 子動作列表（用於控制積木）
 }
 
 export class LineBotCodeGenerator {
@@ -95,14 +98,53 @@ export class LineBotCodeGenerator {
   }
 
   private processEventBlock(block: Block): void {
-    const { eventType, condition, pattern } = block.blockData;
-    
+    const { eventType, condition, pattern, matchMode, caseSensitive } = block.blockData;
+
     switch (eventType) {
       case 'message.text':
+        // 根據匹配模式生成條件表達式
+        let textCondition = '';
+        if (pattern) {
+          const patternStr = pattern as string;
+          const mode = (matchMode as string) || 'contains';
+          const isCaseSensitive = caseSensitive as boolean;
+
+          switch (mode) {
+            case 'contains':
+              textCondition = isCaseSensitive
+                ? `"${patternStr}" in user_message`
+                : `"${patternStr.toLowerCase()}" in user_message.lower()`;
+              break;
+            case 'exact':
+              textCondition = isCaseSensitive
+                ? `user_message == "${patternStr}"`
+                : `user_message.lower() == "${patternStr.toLowerCase()}"`;
+              break;
+            case 'startsWith':
+              textCondition = isCaseSensitive
+                ? `user_message.startswith("${patternStr}")`
+                : `user_message.lower().startswith("${patternStr.toLowerCase()}")`;
+              break;
+            case 'endsWith':
+              textCondition = isCaseSensitive
+                ? `user_message.endswith("${patternStr}")`
+                : `user_message.lower().endswith("${patternStr.toLowerCase()}")`;
+              break;
+            case 'regex':
+              this.imports.add("import re");
+              textCondition = isCaseSensitive
+                ? `re.search(r"${patternStr}", user_message)`
+                : `re.search(r"${patternStr}", user_message, re.IGNORECASE)`;
+              break;
+            default:
+              textCondition = `"${patternStr}" in user_message`;
+          }
+        }
+
         this.eventHandlers.push({
           type: 'message',
           messageType: 'text',
-          condition: condition || pattern || '',
+          condition: textCondition || condition || pattern || '',
           actions: []
         });
         break;
@@ -176,18 +218,37 @@ export class LineBotCodeGenerator {
   }
 
   private processControlBlock(block: Block): void {
-    const { controlType, condition, loopCount, waitTime } = block.blockData;
-    
+    const { controlType, condition, loopCount, waitTime, conditionType, operator, compareValue } = block.blockData;
+
     // 控制邏輯的處理
     if (this.eventHandlers.length > 0) {
       const lastHandler = this.eventHandlers[this.eventHandlers.length - 1];
-      
+
       switch (controlType) {
         case 'if':
+          // 根據條件建構器生成條件表達式
+          let finalCondition = condition as string;
+
+          if (conditionType && conditionType !== 'custom') {
+            const leftSide = conditionType === 'message' ? 'user_message' :
+                           conditionType === 'variable' ? (compareValue as string || 'variable') :
+                           'user_id';
+            const op = operator as string || '==';
+            const rightSide = `"${compareValue as string || ''}"`;
+
+            if (op === 'in') {
+              finalCondition = `"${compareValue as string || ''}" in ${leftSide}`;
+            } else if (op === 'not in') {
+              finalCondition = `"${compareValue as string || ''}" not in ${leftSide}`;
+            } else {
+              finalCondition = `${leftSide} ${op} ${rightSide}`;
+            }
+          }
+
           lastHandler.actions.push({
             type: 'control_if',
             controlType: 'if',
-            condition: condition || 'True'
+            condition: finalCondition || 'True'
           });
           break;
         case 'loop':
@@ -209,32 +270,35 @@ export class LineBotCodeGenerator {
   }
 
   private processSettingBlock(block: Block): void {
-    const { settingType, variableName, value } = block.blockData;
-    
+    const { settingType, variableName, variableValue, value, defaultValue, dataKey, dataValue } = block.blockData;
+
     // 將設定動作加入到最後一個事件處理器
     if (this.eventHandlers.length > 0) {
       const lastHandler = this.eventHandlers[this.eventHandlers.length - 1];
-      
+
       switch (settingType) {
         case 'setVariable':
-          this.variables.set(variableName || 'variable', value || '');
+          // 使用 variableValue 而不是 value
+          const varValue = (variableValue || value || '') as string;
+          this.variables.set((variableName || 'variable') as string, varValue);
           lastHandler.actions.push({
             type: 'set_variable',
-            variableName: variableName || 'variable',
-            value: value || ''
+            variableName: (variableName || 'variable') as string,
+            value: varValue
           });
           break;
         case 'getVariable':
           lastHandler.actions.push({
             type: 'get_variable',
-            variableName: variableName || 'variable'
+            variableName: (variableName || 'variable') as string,
+            value: (defaultValue || '') as string  // 添加預設值支援
           });
           break;
         case 'saveUserData':
           lastHandler.actions.push({
             type: 'save_user_data',
-            variableName: variableName || 'userData',
-            value: value || ''
+            variableName: (dataKey || variableName || 'userData') as string,
+            value: (dataValue || value || '') as string
           });
           break;
       }
@@ -284,13 +348,14 @@ if __name__ == "__main__":
 
   private generateEventHandler(handler: EventHandler): string {
     let code = '';
-    
+
     switch (handler.type) {
       case 'message':
         if (handler.messageType === 'text') {
           code += `@handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
     user_message = event.message.text
+    reply_messages = []
     `;
           if (handler.condition) {
             code += `
@@ -300,19 +365,22 @@ def handle_text_message(event):
         } else if (handler.messageType === 'image') {
           code += `@handler.add(MessageEvent, message=ImageMessage)
 def handle_image_message(event):
+    reply_messages = []
     `;
         }
         break;
-      
+
       case 'follow':
         code += `@handler.add(FollowEvent)
 def handle_follow(event):
+    reply_messages = []
     `;
         break;
-      
+
       case 'postback':
         code += `@handler.add(PostbackEvent)
 def handle_postback(event):
+    reply_messages = []
     `;
         if (handler.condition) {
           code += `
@@ -327,55 +395,45 @@ def handle_postback(event):
       code += this.generateAction(action);
     });
 
+    // 在最後一次性調用 reply_message
+    code += `
+    if reply_messages:
+        line_bot_api.reply_message(event.reply_token, reply_messages)
+`;
+
     return code;
   }
 
   private generateAction(action: Action): string {
     let code = '';
-    
+
     switch (action.type) {
       case 'reply_text':
-        code += `
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text="${action.content}")
-    )
+        code += `    reply_messages.append(TextSendMessage(text="${action.content}"))
 `;
         break;
-      
+
       case 'reply_image':
-        code += `
-    line_bot_api.reply_message(
-        event.reply_token,
-        ImageSendMessage(
-            original_content_url="${action.originalContentUrl}",
-            preview_image_url="${action.previewImageUrl}"
-        )
-    )
+        code += `    reply_messages.append(ImageSendMessage(
+        original_content_url="${action.originalContentUrl}",
+        preview_image_url="${action.previewImageUrl}"
+    ))
 `;
         break;
-      
+
       case 'reply_flex':
-        code += `
-    line_bot_api.reply_message(
-        event.reply_token,
-        FlexSendMessage(
-            alt_text="${action.altText}",
-            contents=${JSON.stringify(action.contents, null, 12)}
-        )
-    )
+        code += `    reply_messages.append(FlexSendMessage(
+        alt_text="${action.altText}",
+        contents=${JSON.stringify(action.contents, null, 12)}
+    ))
 `;
         break;
-      
+
       case 'reply_sticker':
-        code += `
-    line_bot_api.reply_message(
-        event.reply_token,
-        StickerSendMessage(
-            package_id="${action.packageId}",
-            sticker_id="${action.stickerId}"
-        )
-    )
+        code += `    reply_messages.append(StickerSendMessage(
+        package_id="${action.packageId}",
+        sticker_id="${action.stickerId}"
+    ))
 `;
         break;
       
@@ -383,21 +441,42 @@ def handle_postback(event):
         code += `
     # 條件判斷
     if ${action.condition}:
-        # 在這裡加入條件為真時的邏輯
+`;
+        // 處理條件為真時的子動作
+        if (action.children && action.children.length > 0) {
+          action.children.forEach(childAction => {
+            const childCode = this.generateAction(childAction);
+            // 為子動作添加額外的縮進
+            code += childCode.split('\n').map(line => line ? '    ' + line : line).join('\n');
+          });
+        } else {
+          code += `        # 在這裡加入條件為真時的邏輯
         pass
-    else:
+`;
+        }
+        code += `    else:
         # 在這裡加入條件為假時的邏輯
         pass
 `;
         break;
-      
+
       case 'control_loop':
         code += `
     # 迴圈執行
     for i in range(${action.loopCount}):
-        # 在這裡加入要重複執行的邏輯
+`;
+        // 處理迴圈內的子動作
+        if (action.children && action.children.length > 0) {
+          action.children.forEach(childAction => {
+            const childCode = this.generateAction(childAction);
+            // 為子動作添加額外的縮進
+            code += childCode.split('\n').map(line => line ? '    ' + line : line).join('\n');
+          });
+        } else {
+          code += `        # 在這裡加入要重複執行的邏輯
         pass
 `;
+        }
         break;
       
       case 'control_wait':
@@ -409,17 +488,22 @@ def handle_postback(event):
         break;
         
       case 'set_variable':
-        code += `
-    # 設定變數
+        code += `    # 設定變數
     ${action.variableName} = "${action.value}"
 `;
         break;
-        
+
       case 'get_variable':
-        code += `
-    # 取得變數值
+        // 如果有預設值，使用 or 運算符提供預設值
+        if (action.value) {
+          code += `    # 取得變數值（含預設值）
+    value = ${action.variableName} if '${action.variableName}' in locals() else "${action.value}"
+`;
+        } else {
+          code += `    # 取得變數值
     value = ${action.variableName}
 `;
+        }
         break;
         
       case 'save_user_data':

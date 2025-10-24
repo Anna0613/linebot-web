@@ -233,12 +233,36 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                 {/* 根據事件類型顯示不同的輸入介面 */}
                 {block.blockData.eventType === 'message.text' && (
                   <div className="space-y-2">
-                    <Input 
-                      placeholder="觸發文字訊息內容 (例如: 123)"
+                    {/* 匹配模式選擇 */}
+                    <Select
+                      value={blockData.matchMode || 'contains'}
+                      onValueChange={(value) => setBlockData({...blockData, matchMode: value})}
+                    >
+                      <SelectTrigger className="text-black">
+                        <SelectValue placeholder="匹配模式" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="contains">包含關鍵字</SelectItem>
+                        <SelectItem value="exact">完全匹配</SelectItem>
+                        <SelectItem value="startsWith">開頭匹配</SelectItem>
+                        <SelectItem value="endsWith">結尾匹配</SelectItem>
+                        <SelectItem value="regex">正則表達式（進階）</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* 關鍵字輸入 */}
+                    <Input
+                      placeholder={
+                        blockData.matchMode === 'regex'
+                          ? "輸入正則表達式 (例如: ^hello.*)"
+                          : "輸入關鍵字或文字 (例如: hello)"
+                      }
                       value={String(blockData.pattern || '')}
                       onChange={(e) => setBlockData({...blockData, pattern: e.target.value})}
                       className="text-black"
                     />
+
+                    {/* 區分大小寫選項 */}
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -250,6 +274,16 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                       <label htmlFor={`caseSensitive-${index}`} className="text-xs text-white/80">
                         區分大小寫
                       </label>
+                    </div>
+
+                    {/* 匹配模式說明 */}
+                    <div className="text-xs text-white/60 bg-white/10 p-2 rounded">
+                      <div className="font-medium mb-1">匹配說明:</div>
+                      {blockData.matchMode === 'contains' && '訊息中包含關鍵字即觸發'}
+                      {blockData.matchMode === 'exact' && '訊息內容完全相同才觸發'}
+                      {blockData.matchMode === 'startsWith' && '訊息以關鍵字開頭才觸發'}
+                      {blockData.matchMode === 'endsWith' && '訊息以關鍵字結尾才觸發'}
+                      {blockData.matchMode === 'regex' && '使用正則表達式進行匹配（進階功能）'}
                     </div>
                   </div>
                 )}
@@ -1061,14 +1095,74 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
               <div className="mt-2 space-y-2">
                 {block.blockData.controlType === 'if' && (
                   <div className="space-y-2">
-                    <Input 
-                      placeholder="判斷條件 (例如: user_message == '你好')"
-                      value={blockData.condition || ''}
-                      onChange={(e) => setBlockData({...blockData, condition: e.target.value})}
-                      className="text-black"
-                    />
-                    <div className="text-xs text-white/60">
-                      支援的條件格式: user_message == '文字', user_id == '用戶ID', contains('關鍵字')
+                    {/* 條件類型選擇 */}
+                    <Select
+                      value={blockData.conditionType || 'message'}
+                      onValueChange={(value) => setBlockData({...blockData, conditionType: value})}
+                    >
+                      <SelectTrigger className="text-black">
+                        <SelectValue placeholder="條件類型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="message">訊息內容</SelectItem>
+                        <SelectItem value="variable">變數</SelectItem>
+                        <SelectItem value="user">用戶屬性</SelectItem>
+                        <SelectItem value="custom">自訂條件</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* 根據條件類型顯示不同的輸入 */}
+                    {blockData.conditionType !== 'custom' && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* 比較運算符 */}
+                        <Select
+                          value={blockData.operator || '=='}
+                          onValueChange={(value) => setBlockData({...blockData, operator: value})}
+                        >
+                          <SelectTrigger className="text-black">
+                            <SelectValue placeholder="運算符" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="==">等於 (==)</SelectItem>
+                            <SelectItem value="!=">不等於 (!=)</SelectItem>
+                            <SelectItem value="in">包含 (in)</SelectItem>
+                            <SelectItem value="not in">不包含 (not in)</SelectItem>
+                            <SelectItem value=">">大於 (&gt;)</SelectItem>
+                            <SelectItem value="<">小於 (&lt;)</SelectItem>
+                            <SelectItem value=">=">大於等於 (&gt;=)</SelectItem>
+                            <SelectItem value="<=">小於等於 (&lt;=)</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {/* 比較值 */}
+                        <Input
+                          placeholder="比較值"
+                          value={blockData.compareValue || ''}
+                          onChange={(e) => setBlockData({...blockData, compareValue: e.target.value})}
+                          className="text-black"
+                        />
+                      </div>
+                    )}
+
+                    {/* 自訂條件 */}
+                    {blockData.conditionType === 'custom' && (
+                      <Input
+                        placeholder="輸入條件表達式（例如: user_message == 'hello'）"
+                        value={blockData.condition || ''}
+                        onChange={(e) => setBlockData({...blockData, condition: e.target.value})}
+                        className="text-black"
+                      />
+                    )}
+
+                    {/* 條件預覽 */}
+                    <div className="text-xs text-white/60 bg-white/10 p-2 rounded">
+                      <div className="font-medium mb-1">條件預覽:</div>
+                      <code className="text-white/80">
+                        {blockData.conditionType === 'custom'
+                          ? (blockData.condition || '未設定')
+                          : `${blockData.conditionType === 'message' ? 'user_message' : blockData.conditionType === 'variable' ? '變數名稱' : 'user_id'} ${blockData.operator || '=='} "${blockData.compareValue || '值'}"`
+                        }
+                      </code>
                     </div>
                   </div>
                 )}
@@ -1116,25 +1210,52 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                 {block.blockData.controlType === 'wait' && (
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2">
-                      <Input 
+                      <Input
                         type="number"
                         placeholder="等待時間"
-                        value={blockData.duration || '1000'}
-                        onChange={(e) => setBlockData({...blockData, duration: parseInt(e.target.value) || 1000})}
+                        value={blockData.duration || '1'}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 1;
+                          const unit = blockData.unit || 'seconds';
+                          // 根據單位設定範圍限制
+                          const maxValue = unit === 'milliseconds' ? 60000 : unit === 'seconds' ? 60 : 5;
+                          const finalValue = Math.min(Math.max(value, 1), maxValue);
+                          setBlockData({...blockData, duration: finalValue});
+                        }}
                         className="text-black"
-                        min="100"
-                        max="60000"
+                        min="1"
+                        max={blockData.unit === 'milliseconds' ? '60000' : blockData.unit === 'seconds' ? '60' : '5'}
                       />
-                      <Select value={blockData.unit || 'milliseconds'} onValueChange={(value) => setBlockData({...blockData, unit: value})}>
+                      <Select
+                        value={blockData.unit || 'seconds'}
+                        onValueChange={(value) => {
+                          // 切換單位時調整數值
+                          let newDuration = blockData.duration || 1;
+                          if (value === 'milliseconds' && (blockData.unit === 'seconds' || !blockData.unit)) {
+                            newDuration = (blockData.duration || 1) * 1000;
+                          } else if (value === 'seconds' && blockData.unit === 'milliseconds') {
+                            newDuration = Math.floor((blockData.duration || 1000) / 1000);
+                          }
+                          setBlockData({...blockData, unit: value, duration: newDuration});
+                        }}
+                      >
                         <SelectTrigger className="text-black">
                           <SelectValue placeholder="時間單位" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="milliseconds">毫秒</SelectItem>
                           <SelectItem value="seconds">秒</SelectItem>
+                          <SelectItem value="milliseconds">毫秒</SelectItem>
                           <SelectItem value="minutes">分鐘</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    {/* 時間範圍提示 */}
+                    <div className="text-xs text-white/60 bg-white/10 p-2 rounded">
+                      範圍限制:
+                      {blockData.unit === 'milliseconds' && ' 100-60000 毫秒'}
+                      {(blockData.unit === 'seconds' || !blockData.unit) && ' 1-60 秒'}
+                      {blockData.unit === 'minutes' && ' 1-5 分鐘'}
                     </div>
                   </div>
                 )}
@@ -1173,19 +1294,33 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
               <div className="mt-2 space-y-2">
                 {block.blockData.settingType === 'setVariable' && (
                   <div className="space-y-2">
-                    <Input 
-                      placeholder="變數名稱"
-                      value={blockData.variableName || ''}
-                      onChange={(e) => setBlockData({...blockData, variableName: e.target.value})}
-                      className="text-black"
-                    />
-                    <Input 
-                      placeholder="變數值"
-                      value={blockData.variableValue || ''}
-                      onChange={(e) => setBlockData({...blockData, variableValue: e.target.value})}
-                      className="text-black"
-                    />
-                    <Select value={blockData.variableType || 'string'} onValueChange={(value) => setBlockData({...blockData, variableType: value})}>
+                    {/* 變數名稱 */}
+                    <div className="space-y-1">
+                      <Input
+                        placeholder="變數名稱（例如: user_count）"
+                        value={String(blockData.variableName || '')}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // 驗證變數名稱格式（只允許字母、數字、底線，且不能以數字開頭）
+                          const isValid = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value) || value === '';
+                          if (isValid) {
+                            setBlockData({...blockData, variableName: value});
+                          }
+                        }}
+                        className="text-black"
+                      />
+                      {blockData.variableName && !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(String(blockData.variableName)) && (
+                        <div className="text-xs text-red-400">
+                          ⚠️ 變數名稱只能包含字母、數字、底線，且不能以數字開頭
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 變數類型 */}
+                    <Select
+                      value={String(blockData.variableType || 'string')}
+                      onValueChange={(value) => setBlockData({...blockData, variableType: value})}
+                    >
                       <SelectTrigger className="text-black">
                         <SelectValue placeholder="變數類型" />
                       </SelectTrigger>
@@ -1197,22 +1332,117 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(({
                         <SelectItem value="object">物件</SelectItem>
                       </SelectContent>
                     </Select>
+
+                    {/* 根據類型顯示不同的輸入控件 */}
+                    {blockData.variableType === 'number' ? (
+                      <Input
+                        type="number"
+                        placeholder="數字值（例如: 0）"
+                        value={String(blockData.variableValue || '')}
+                        onChange={(e) => setBlockData({...blockData, variableValue: e.target.value})}
+                        className="text-black"
+                      />
+                    ) : blockData.variableType === 'boolean' ? (
+                      <Select
+                        value={String(blockData.variableValue || 'false')}
+                        onValueChange={(value) => setBlockData({...blockData, variableValue: value})}
+                      >
+                        <SelectTrigger className="text-black">
+                          <SelectValue placeholder="布林值" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">True（真）</SelectItem>
+                          <SelectItem value="false">False（假）</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : blockData.variableType === 'array' ? (
+                      <Input
+                        placeholder="陣列值（例如: [1, 2, 3]）"
+                        value={String(blockData.variableValue || '')}
+                        onChange={(e) => setBlockData({...blockData, variableValue: e.target.value})}
+                        className="text-black"
+                      />
+                    ) : blockData.variableType === 'object' ? (
+                      <Input
+                        placeholder="物件值（例如: {'key': 'value'}）"
+                        value={String(blockData.variableValue || '')}
+                        onChange={(e) => setBlockData({...blockData, variableValue: e.target.value})}
+                        className="text-black"
+                      />
+                    ) : (
+                      <Input
+                        placeholder="文字值（例如: Hello）"
+                        value={String(blockData.variableValue || '')}
+                        onChange={(e) => setBlockData({...blockData, variableValue: e.target.value})}
+                        className="text-black"
+                      />
+                    )}
+
+                    {/* 類型說明 */}
+                    <div className="text-xs text-white/60 bg-white/10 p-2 rounded">
+                      {blockData.variableType === 'string' && '文字類型：用於儲存文字內容'}
+                      {blockData.variableType === 'number' && '數字類型：用於儲存數值'}
+                      {blockData.variableType === 'boolean' && '布林值類型：用於儲存真/假值'}
+                      {blockData.variableType === 'array' && '陣列類型：用於儲存多個值的列表'}
+                      {blockData.variableType === 'object' && '物件類型：用於儲存鍵值對'}
+                    </div>
                   </div>
                 )}
                 {block.blockData.settingType === 'getVariable' && (
                   <div className="space-y-2">
-                    <Input 
-                      placeholder="變數名稱"
-                      value={blockData.variableName || ''}
-                      onChange={(e) => setBlockData({...blockData, variableName: e.target.value})}
-                      className="text-black"
-                    />
-                    <Input 
+                    {/* 變數選擇模式 */}
+                    <Select
+                      value={blockData.variableSelectMode || 'select'}
+                      onValueChange={(value) => setBlockData({...blockData, variableSelectMode: value})}
+                    >
+                      <SelectTrigger className="text-black">
+                        <SelectValue placeholder="選擇模式" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="select">從清單選擇</SelectItem>
+                        <SelectItem value="custom">自訂變數名稱</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* 根據模式顯示不同的輸入 */}
+                    {blockData.variableSelectMode === 'select' ? (
+                      <Select
+                        value={blockData.variableName || ''}
+                        onValueChange={(value) => setBlockData({...blockData, variableName: value})}
+                      >
+                        <SelectTrigger className="text-black">
+                          <SelectValue placeholder="選擇變數" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {/* TODO: 從工作區中收集已設定的變數 */}
+                          <SelectItem value="user_count">user_count</SelectItem>
+                          <SelectItem value="user_name">user_name</SelectItem>
+                          <SelectItem value="message_count">message_count</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        placeholder="變數名稱"
+                        value={blockData.variableName || ''}
+                        onChange={(e) => setBlockData({...blockData, variableName: e.target.value})}
+                        className="text-black"
+                      />
+                    )}
+
+                    {/* 預設值 */}
+                    <Input
                       placeholder="預設值（可選）"
                       value={blockData.defaultValue || ''}
                       onChange={(e) => setBlockData({...blockData, defaultValue: e.target.value})}
                       className="text-black"
                     />
+
+                    {/* 提示訊息 */}
+                    {!blockData.variableName && (
+                      <div className="text-xs text-yellow-400 bg-yellow-400/10 p-2 rounded">
+                        ⚠️ 請選擇或輸入變數名稱
+                      </div>
+                    )}
                   </div>
                 )}
                 {block.blockData.settingType === 'saveUserData' && (

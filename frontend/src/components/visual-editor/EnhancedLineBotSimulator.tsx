@@ -720,6 +720,31 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
                   <div className="max-w-xl">
                     <FlexMessagePreview json={message.flexMessage} />
                   </div>
+                ) : message.messageType === 'image' && message.type === 'bot' ? (
+                  // 圖片訊息渲染（僅 Bot 訊息）
+                  <div className="bg-white border border-gray-200 rounded-lg p-2 max-w-xs lg:max-w-md">
+                    <img
+                      src={message.content}
+                      alt="Bot 回覆的圖片"
+                      className="w-full rounded"
+                      onError={(e) => {
+                        // 圖片載入失敗時顯示錯誤訊息
+                        e.currentTarget.style.display = 'none';
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'text-red-500 text-xs p-2';
+                        errorDiv.textContent = `圖片載入失敗: ${message.content}`;
+                        e.currentTarget.parentElement?.appendChild(errorDiv);
+                      }}
+                    />
+                    {message.executionInfo && showDebugInfo && (
+                      <div className="text-xs mt-2 pt-2 border-t border-gray-300 opacity-70">
+                        <div>處理時間: {message.executionInfo.processingTime.toFixed(1)}ms</div>
+                        {message.executionInfo.matchedPatterns && message.executionInfo.matchedPatterns.length > 0 && (
+                          <div>匹配: {message.executionInfo.matchedPatterns.join(', ')}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
@@ -728,10 +753,9 @@ const EnhancedLineBotSimulator: React.FC<EnhancedLineBotSimulatorProps> = ({
                         : 'bg-white border border-gray-200'
                     }`}
                   >
-                      {message.messageType === 'image' ? (
+                      {message.messageType === 'sticker' ? (
                         <div className="text-sm">
-                          <div className="mb-1">📷 圖片訊息</div>
-                          <div className="text-xs opacity-70">{message.content}</div>
+                          😊 {message.content}
                         </div>
                       ) : (
                         <div className="text-sm">{message.content}</div>

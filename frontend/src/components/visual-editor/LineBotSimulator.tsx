@@ -569,7 +569,30 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
                     <div className="bg-white border rounded p-2 max-w-xl">
                       <FlexMessagePreview json={m.flexMessage} />
                     </div>
+                  ) : m.messageType === 'image' ? (
+                    // 圖片訊息渲染
+                    <div className="bg-white border rounded p-2 max-w-xs">
+                      <img
+                        src={m.content}
+                        alt="Bot 回覆的圖片"
+                        className="w-full rounded"
+                        onError={(e) => {
+                          // 圖片載入失敗時顯示錯誤訊息
+                          e.currentTarget.style.display = 'none';
+                          const errorDiv = document.createElement('div');
+                          errorDiv.className = 'text-red-500 text-xs p-2';
+                          errorDiv.textContent = `圖片載入失敗: ${m.content}`;
+                          e.currentTarget.parentElement?.appendChild(errorDiv);
+                        }}
+                      />
+                    </div>
+                  ) : m.messageType === 'sticker' ? (
+                    // 貼圖訊息渲染
+                    <div className="bg-white border rounded px-3 py-2 max-w-xs text-sm">
+                      😊 {m.content}
+                    </div>
                   ) : (
+                    // 文字訊息渲染
                     <div className="bg-white border rounded px-3 py-2 max-w-xs text-sm">{m.content}</div>
                   )}
                 </div>
