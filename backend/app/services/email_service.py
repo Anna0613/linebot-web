@@ -3,6 +3,7 @@
 處理郵件發送相關功能
 """
 import asyncio
+import logging
 from typing import List
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from itsdangerous import URLSafeTimedSerializer
@@ -34,8 +35,9 @@ class EmailService:
     
     async def _send_email_async(self, email: str, subject: str, template: str) -> None:
         """異步發送郵件"""
+        logger = logging.getLogger(__name__)
         if not settings.MAIL_USERNAME or not settings.MAIL_PASSWORD:
-            print(f"郵件配置未完成，無法發送至 {email}")
+            logger.warning("郵件配置未完成，無法發送", extra={"email": email})
             return
             
         message = MessageSchema(
@@ -47,9 +49,9 @@ class EmailService:
         
         try:
             await self.fastmail.send_message(message)
-            print(f"郵件已成功發送至 {email}")
+            logger.info("郵件已成功發送", extra={"email": email, "subject": subject})
         except Exception as e:
-            print(f"郵件發送失敗至 {email}: {str(e)}")
+            logger.error("郵件發送失敗", extra={"email": email, "error": str(e)})
             raise e
     
     def _send_email_sync(self, email: str, subject: str, template: str) -> None:
@@ -63,7 +65,7 @@ class EmailService:
                 # 運行異步郵件發送
                 loop.run_until_complete(self._send_email_async(email, subject, template))
             except Exception as e:
-                print(f"郵件發送失敗至 {email}: {str(e)}")
+                logging.getLogger(__name__).error("郵件發送失敗", extra={"email": email, "error": str(e)})
             finally:
                 loop.close()
         
@@ -187,9 +189,9 @@ class EmailService:
         try:
             email_service = EmailService._get_email_service()
             email_service._send_email_sync(email, "【LineBot-Web】信箱驗證", email_template)
-            print(f"驗證郵件發送成功至: {email}")
+            logging.getLogger(__name__).info("驗證郵件發送成功", extra={"email": email})
         except Exception as e:
-            print(f"郵件發送失敗: {str(e)}")
+            logging.getLogger(__name__).warning("驗證郵件發送失敗", extra={"email": email, "error": str(e)})
             # 不拋出異常，避免影響註冊流程
             # 在生產環境中，可以考慮記錄到日誌系統
     
@@ -310,8 +312,8 @@ class EmailService:
         try:
             email_service = EmailService._get_email_service()
             email_service._send_email_sync(email, "【LineBot-Web】密碼重設", email_template)
-            print(f"密碼重設郵件發送成功至: {email}")
+            logging.getLogger(__name__).info("密碼重設郵件發送成功", extra={"email": email})
         except Exception as e:
-            print(f"郵件發送失敗: {str(e)}")
+            logging.getLogger(__name__).error("密碼重設郵件發送失敗", extra={"email": email, "error": str(e)})
             # 對於密碼重設，郵件發送失敗應該拋出異常
             raise e

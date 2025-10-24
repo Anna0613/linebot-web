@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import "./utils/setupLogging";
 import App from "./home.tsx";
 import "./home.css";
 

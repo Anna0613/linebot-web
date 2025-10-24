@@ -21,7 +21,8 @@ engine = create_engine(
     pool_size=25,               # 核心連接池大小 (增加至25)
     max_overflow=50,            # 最大溢出連接數 (增加至50)
     pool_timeout=20,            # 連接超時 (降至20秒，快速失敗)
-    echo=settings.DEBUG,
+    # 僅在明確開啟 SQL_ECHO 時輸出 SQL
+    echo=settings.SQL_ECHO,
     
     # PostgreSQL 特定優化
     connect_args={

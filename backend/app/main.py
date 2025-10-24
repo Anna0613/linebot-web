@@ -166,21 +166,15 @@ app.add_middleware(
 # 請求日誌中間件
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    """記錄所有請求"""
-    # 特別標記 webhook 請求
-    if "/webhooks/" in str(request.url):
-        logger.info(f"🔥🔥🔥 WEBHOOK 請求: {request.method} {request.url}")
-        logger.info(f"🔥 Headers: {dict(request.headers)}")
-    else:
-        logger.info(f"收到請求: {request.method} {request.url}")
-        logger.info(f"請求標頭: {dict(request.headers)}")
+    """記錄所有請求（統一格式）"""
+    path = request.url.path
+    is_webhook = path.startswith("/api") and "/webhooks/" in path
+    logger.info(f"HTTP {request.method} {path}")
+    logger.debug(f"headers={dict(request.headers)}")
 
     response = await call_next(request)
 
-    if "/webhooks/" in str(request.url):
-        logger.info(f"🔥🔥🔥 WEBHOOK 回應: {response.status_code}")
-    else:
-        logger.info(f"回應狀態: {response.status_code}")
+    logger.info(f"HTTP {request.method} {path} -> {response.status_code}")
     return response
 
 # 信任主機中間件

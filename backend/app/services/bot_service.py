@@ -228,10 +228,10 @@ class BotService:
             bot_codes = res_codes.scalars().all()
             for code in bot_codes:
                 logger.debug(f"刪除相關的 BotCode: {code.id}")
-                db.delete(code)
-            
+                await db.delete(code)
+
             # 刪除 Bot 本身
-            db.delete(bot)
+            await db.delete(bot)
             await db.commit()
             logger.info(f"Bot 刪除成功: bot_id={bot_id}")
         except Exception as e:
@@ -832,7 +832,7 @@ class BotService:
             )
         
         try:
-            db.delete(template)
+            await db.delete(template)
             await db.commit()
             logger.info(f"邏輯模板刪除成功: template_id={template_id}")
         except Exception as e:
@@ -1033,7 +1033,7 @@ class BotService:
             )
         
         try:
-            db.delete(message)
+            await db.delete(message)
             await db.commit()
             logger.info(f"Flex 訊息刪除成功: message_id={message_id}")
         except Exception as e:

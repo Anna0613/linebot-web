@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     SHOW_DOCS: bool = os.getenv("SHOW_DOCS", "False").lower() == "true"
+    # SQL 日誌輸出（預設關閉）
+    SQL_ECHO: bool = os.getenv("SQL_ECHO", "False").lower() == "true"
     
     # 資料庫設定
     DB_HOST: str = os.getenv("DB_HOST", "sql.jkl921102.org")

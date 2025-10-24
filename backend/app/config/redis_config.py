@@ -5,22 +5,22 @@ Redis 配置和連接管理
 import os
 import json
 import logging
-from typing import Optional, Any, Dict, Union
+from typing import Optional, Any
 from datetime import timedelta
 from functools import wraps
 
+logger = logging.getLogger(__name__)
+
 # 條件導入 Redis - 如果未安裝則使用 mock
 try:
-    import redis
-    import redis.asyncio as aioredis
+    import redis  # type: ignore
+    import redis.asyncio as aioredis  # type: ignore
     REDIS_AVAILABLE = True
 except ImportError:
-    print("⚠️  Redis 未安裝，使用模擬模式")
-    redis = None
-    aioredis = None
+    logger.warning("Redis 未安裝，使用模擬模式")
+    redis = None  # type: ignore
+    aioredis = None  # type: ignore
     REDIS_AVAILABLE = False
-
-logger = logging.getLogger(__name__)
 
 # Redis 配置
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")

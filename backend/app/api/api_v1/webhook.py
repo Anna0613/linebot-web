@@ -201,11 +201,8 @@ async def handle_webhook_event(
     Returns:
         200 OK 響應
     """
-    # 強制輸出到 stdout，確保能看到
-    print(f"🚀🚀🚀 WEBHOOK 開始處理: Bot ID = {bot_id}")
-    print(f"🔧 測試日誌：webhook.py 已載入最新版本 - {datetime.now()}")
-    logger.info(f"🚀🚀🚀 WEBHOOK 開始處理: Bot ID = {bot_id}")
-    logger.info(f"🔧 測試日誌：webhook.py 已載入最新版本 - {datetime.now()}")
+    logger.info(f"Webhook 開始處理: bot_id={bot_id}")
+    logger.debug(f"webhook.py 已載入最新版本 - {datetime.now()}")
     try:
         # 獲取請求體
         body = await request.body()
@@ -240,13 +237,10 @@ async def handle_webhook_event(
         try:
             webhook_data = json.loads(body.decode('utf-8'))
             events = webhook_data.get('events', [])
-            print(f"📋 收到 {len(events)} 個事件")
-            print(f"📋 事件內容: {events}")
-            logger.info(f"📋 收到 {len(events)} 個事件")
-            logger.info(f"📋 事件內容: {events}")
+            logger.info(f"收到事件數: {len(events)}")
+            logger.debug(f"事件內容: {events}")
         except Exception as e:
-            print(f"❌ 解析 webhook 內容失敗: {e}")
-            logger.error(f"❌ 解析 webhook 內容失敗: {e}")
+            logger.error(f"解析 webhook 內容失敗: {e}")
             raise HTTPException(status_code=400, detail="無效的 JSON 格式")
 
         # 以有限併發處理每個事件（含重複檢查），避免單一事件延遲拖慢整體
@@ -257,21 +251,17 @@ async def handle_webhook_event(
         async def _process_one(i: int, event: dict):
             async with sem:
                 try:
-                    print(f"🔍 處理事件 {i+1}: type={event.get('type')}")
-                    logger.info(f"🔍 處理事件 {i+1}: type={event.get('type')}")
+                    logger.info(f"處理事件 {i+1}: type={event.get('type')}")
                     # 為避免 AsyncSession 並發問題，每個事件使用獨立的 session
                     async with AsyncSessionLocal() as event_db:
                         result = await process_single_event(event, bot_id, line_bot_service, event_db)
                     if result:
                         processed_results[i] = result
-                        print(f"✅ 事件 {i+1} 處理成功")
-                        logger.info(f"✅ 事件 {i+1} 處理成功")
+                        logger.info(f"事件 {i+1} 處理成功")
                     else:
-                        print(f"⏭️ 事件 {i+1} 跳過（重複或無需處理）")
-                        logger.info(f"⏭️ 事件 {i+1} 跳過（重複或無需處理）")
+                        logger.info(f"事件 {i+1} 跳過（重複或無需處理）")
                 except Exception as e:
-                    print(f"❌ 處理事件 {i+1} 失敗: {e}")
-                    logger.error(f"❌ 處理事件 {i+1} 失敗: {e}")
+                    logger.error(f"處理事件 {i+1} 失敗: {e}")
 
         await asyncio.gather(*[asyncio.create_task(_process_one(i, ev)) for i, ev in enumerate(events)], return_exceptions=True)
 
@@ -537,47 +527,39 @@ async def process_single_event(
         reply_token = event.get('replyToken')
         logger.info(f"📬 replyToken 存在: {bool(reply_token)}")
 
-        print(f"🔍 處理事件詳情: type={event_type}, source={source_type}, user={user_id}, webhookEventId={webhook_event_id}")
-        print(f"🔍 完整事件內容: {event}")
-        logger.info(f"🔍 處理事件詳情: type={event_type}, source={source_type}, user={user_id}, webhookEventId={webhook_event_id}")
-        logger.info(f"🔍 完整事件內容: {event}")
+        logger.info(
+            f"事件詳情 | type={event_type} source={source_type} user={user_id} webhookEventId={webhook_event_id}"
+        )
+        logger.debug(f"事件內容: {event}")
 
         # 檢查 webhookEventId 是否已處理過（防止重複處理）
         if webhook_event_id:
             from app.config.redis_config import CacheService as AsyncCache, redis_manager
-            print(f"🔍 Redis 連接狀態: {redis_manager.is_connected}")
-            logger.info(f"🔍 Redis 連接狀態: {redis_manager.is_connected}")
+            logger.debug(f"Redis 連接狀態: {redis_manager.is_connected}")
 
             if redis_manager.is_connected:
                 try:
                     webhook_cache_key = f"webhook_event:{bot_id}:{webhook_event_id}"
-                    print(f"🔍 檢查 webhook 快取鍵: {webhook_cache_key}")
-                    logger.info(f"🔍 檢查 webhook 快取鍵: {webhook_cache_key}")
+                    logger.debug(f"檢查 webhook 快取鍵: {webhook_cache_key}")
 
                     is_processed = await AsyncCache.get(webhook_cache_key)
-                    print(f"🔍 快取檢查結果: {is_processed}")
-                    logger.info(f"🔍 快取檢查結果: {is_processed}")
+                    logger.debug(f"快取檢查結果: {is_processed}")
 
                     if is_processed:
-                        print(f"⏭️ 跳過重複的 webhook 事件: {webhook_event_id}")
-                        logger.info(f"⏭️ 跳過重複的 webhook 事件: {webhook_event_id}")
+                        logger.info(f"跳過重複的 webhook 事件: {webhook_event_id}")
                         return None
 
                     # 標記此事件為已處理（TTL 24小時）
                     await AsyncCache.set(webhook_cache_key, "processed", ttl=86400)
-                    print(f"✅ 標記 webhook 事件為已處理: {webhook_event_id}")
-                    logger.info(f"✅ 標記 webhook 事件為已處理: {webhook_event_id}")
+                    logger.info(f"標記 webhook 事件為已處理: {webhook_event_id}")
                 except Exception as cache_err:
-                    print(f"⚠️ webhook 事件重複檢查失敗，繼續處理: {cache_err}")
-                    logger.warning(f"⚠️ webhook 事件重複檢查失敗，繼續處理: {cache_err}")
+                    logger.warning(f"webhook 事件重複檢查失敗，繼續處理: {cache_err}")
             else:
-                print(f"⚠️ Redis 未連接，跳過 webhook 事件重複檢查")
-                logger.warning(f"⚠️ Redis 未連接，跳過 webhook 事件重複檢查")
+                logger.warning(f"Redis 未連接，跳過 webhook 事件重複檢查")
 
         # 僅處理來自 user 的事件
         if source_type != 'user' or not user_id:
-            print(f"⏭️ 跳過非使用者來源事件: source_type={source_type}")
-            logger.info(f"⏭️ 跳過非使用者來源事件: source_type={source_type}")
+            logger.info(f"跳過非使用者來源事件: source_type={source_type}")
             return None
 
         # 根據事件類型組裝通用欄位
@@ -705,17 +687,19 @@ async def process_single_event(
                 logger.warning(f"推送用戶聊天消息到 WebSocket 失敗: {ws_err}")
 
         # 進行邏輯模板匹配與回覆（僅針對部分事件觸發）
-        print(f"🎯 檢查是否需要邏輯處理: event_type={event_type}, 支援類型=['message', 'postback', 'follow']")
+        logger.debug(
+            f"檢查是否需要邏輯處理: event_type={event_type}, 支援類型=['message','postback','follow']"
+        )
         logger.info(f"🎯 檢查是否需要邏輯處理: event_type={event_type}, 支援類型=['message', 'postback', 'follow']")
         if event_type in ['message', 'postback', 'follow']:
-            print(f"✅ 事件類型符合，開始邏輯處理")
+            logger.debug(f"事件類型符合，開始邏輯處理")
             logger.info(f"✅ 事件類型符合，開始邏輯處理")
             try:
                 from app.models.bot import Bot as BotModel
                 result = await db.execute(select(BotModel).where(BotModel.id == bot_id))
                 bot = result.scalars().first()
                 if bot:
-                    print(f"🤖 開始處理 Bot {bot.name} 的事件: {event_type}")
+                    logger.debug(f"開始處理 Bot 事件: bot={bot.name} type={event_type}")
                     logger.info(f"🤖 開始處理 Bot {bot.name} 的事件: {event_type}")
                     from app.services.logic_engine_service import LogicEngineService
                     results = await LogicEngineService.evaluate_and_reply(
@@ -725,7 +709,7 @@ async def process_single_event(
                         user_id=user_id,
                         event=event,
                     )
-                    print(f"📋 邏輯模板匹配結果: {len(results) if results else 0} 個回覆")
+                    logger.debug(f"邏輯模板匹配結果: {len(results) if results else 0} 個回覆")
                     logger.info(f"📋 邏輯模板匹配結果: {len(results) if results else 0} 個回覆")
 
                     # RAG 備援：若無符合的積木回覆、AI 接管啟用、且為文字訊息
@@ -733,12 +717,12 @@ async def process_single_event(
                     is_text_message = event_type == 'message' and event.get('message', {}).get('type') == 'text'
                     user_query = event.get('message', {}).get('text') or '' if is_text_message else ''
 
-                    print(f"🔍 AI 接管檢查:")
-                    print(f"  - 邏輯模板結果: {len(results) if results else 0} 個")
-                    print(f"  - AI 接管啟用: {ai_takeover_enabled}")
-                    print(f"  - 事件類型: {event_type}")
-                    print(f"  - 是文字訊息: {is_text_message}")
-                    print(f"  - 用戶訊息: '{user_query}'")
+                    logger.debug("AI 接管檢查:")
+                    logger.debug(f"  - 邏輯模板結果: {len(results) if results else 0} 個")
+                    logger.debug(f"  - AI 接管啟用: {ai_takeover_enabled}")
+                    logger.debug(f"  - 事件類型: {event_type}")
+                    logger.debug(f"  - 是文字訊息: {is_text_message}")
+                    logger.debug(f"  - 用戶訊息: '{user_query}'")
                     logger.info(f"🔍 AI 接管檢查:")
                     logger.info(f"  - 邏輯模板結果: {len(results) if results else 0} 個")
                     logger.info(f"  - AI 接管啟用: {ai_takeover_enabled}")
@@ -751,15 +735,13 @@ async def process_single_event(
                         and ai_takeover_enabled
                         and is_text_message
                     ):
-                        print(f"🚀 觸發 AI 接管，開始 RAG 處理...")
-                        logger.info(f"🚀 觸發 AI 接管，開始 RAG 處理...")
+                        logger.info(f"觸發 AI 接管，開始 RAG 處理")
                         try:
-                            print(f"🔧 開始導入 RAGService...")
                             # 延遲導入避免循環導入問題
                             import importlib
                             rag_module = importlib.import_module('app.services.rag_service')
                             RAGService = getattr(rag_module, 'RAGService')
-                            print(f"✅ RAGService 導入成功")
+                            logger.debug("RAGService 導入成功")
 
                             provider = getattr(bot, 'ai_model_provider', None) or 'groq'
                             model = getattr(bot, 'ai_model', None)
@@ -767,12 +749,6 @@ async def process_single_event(
                             top_k = getattr(bot, 'ai_rag_top_k', None)
                             hist_n = getattr(bot, 'ai_history_messages', None)
 
-                            print(f"🔧 RAG 參數:")
-                            print(f"  - 提供商: {provider}")
-                            print(f"  - 模型: {model}")
-                            print(f"  - 門檻: {threshold}")
-                            print(f"  - Top-K: {top_k}")
-                            print(f"  - 歷史訊息數: {hist_n}")
                             logger.info(f"🔧 RAG 參數:")
                             logger.info(f"  - 提供商: {provider}")
                             logger.info(f"  - 模型: {model}")
@@ -781,8 +757,7 @@ async def process_single_event(
                             logger.info(f"  - 歷史訊息數: {hist_n}")
 
                             # 改為背景任務執行，避免阻塞 webhook 回應
-                            print(f"🧵 排程 AI 接管背景任務...")
-                            logger.info(f"🧵 排程 AI 接管背景任務...")
+                            logger.info(f"排程 AI 接管背景任務")
                             await _schedule_ai_takeover(
                                 bot_id=str(bot_id),
                                 user_id=user_id,
@@ -795,23 +770,15 @@ async def process_single_event(
                                 hist_n=hist_n,
                                 system_prompt=getattr(bot, 'ai_system_prompt', None),
                             )
-                            print(f"✅ AI 接管背景任務已排入")
-                            logger.info(f"✅ AI 接管背景任務已排入")
+                            logger.info(f"AI 接管背景任務已排入")
                         except Exception as rag_err:
-                            print(f"❌ RAG 備援失敗: {rag_err}")
-                            logger.error(f"❌ RAG 備援失敗: {rag_err}")
-                            import traceback
-                            print(f"RAG 錯誤詳情: {traceback.format_exc()}")
-                            logger.error(f"RAG 錯誤詳情: {traceback.format_exc()}")
+                            logger.error(f"RAG 備援失敗: {rag_err}", exc_info=True)
                     else:
-                        print(f"⏭️ 跳過 AI 接管 (條件不符合)")
-                        logger.info(f"⏭️ 跳過 AI 接管 (條件不符合)")
+                        logger.info(f"跳過 AI 接管 (條件不符合)")
             except Exception as le_err:
-                print(f"❌ 邏輯引擎處理失敗: {le_err}")
                 logger.error(f"邏輯引擎處理失敗: {le_err}")
         else:
-            print(f"⏭️ 事件類型不符合邏輯處理條件: {event_type}")
-            logger.info(f"⏭️ 事件類型不符合邏輯處理條件: {event_type}")
+            logger.info(f"事件類型不符合邏輯處理條件: {event_type}")
 
         return {
             'event_type': event_type,

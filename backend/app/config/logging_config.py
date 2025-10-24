@@ -1,10 +1,12 @@
 """
 日誌配置
 包含 PDF 處理警告過濾和其他日誌優化
+統一專案日誌輸出格式與等級控制
 """
 import logging
 import logging.config
 import warnings
+import os
 from typing import Dict, Any
 
 
@@ -35,16 +37,25 @@ class PDFWarningFilter(logging.Filter):
 
 def setup_logging_config() -> Dict[str, Any]:
     """設置日誌配置"""
-    
+    # 讀取環境變數以便調整日誌行為
+    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+    # 允許自訂輸出格式（預設: 時間-記錄器-等級-訊息，採 key=value 風格訊息建議）
+    console_format = os.getenv(
+        'LOG_FORMAT', '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
+    )
+    file_format = os.getenv(
+        'LOG_FILE_FORMAT', '%(asctime)s | %(levelname)s | %(name)s | %(filename)s:%(lineno)d | %(message)s'
+    )
+
     config = {
         'version': 1,
         'disable_existing_loggers': False,
         'formatters': {
             'standard': {
-                'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                'format': console_format,
             },
             'detailed': {
-                'format': '%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
+                'format': file_format,
             },
             'simple': {
                 'format': '%(levelname)s - %(message)s'
@@ -57,7 +68,7 @@ def setup_logging_config() -> Dict[str, Any]:
         },
         'handlers': {
             'console': {
-                'level': 'INFO',
+                'level': log_level,
                 'class': 'logging.StreamHandler',
                 'formatter': 'standard',
                 'filters': ['pdf_warning_filter']
@@ -84,7 +95,24 @@ def setup_logging_config() -> Dict[str, Any]:
             # 應用程式日誌
             'app': {
                 'handlers': ['console', 'file'],
+                # 內部 application logger 設為 DEBUG（輸出位置由 handler 控制）
                 'level': 'DEBUG',
+                'propagate': False
+            },
+            # SQLAlchemy 日誌（預設抑制到 WARNING，避免大量 SQL 輸出）
+            'sqlalchemy': {
+                'handlers': ['file'],
+                'level': 'WARNING',
+                'propagate': False
+            },
+            'sqlalchemy.engine': {
+                'handlers': ['file'],
+                'level': 'WARNING',
+                'propagate': False
+            },
+            'sqlalchemy.pool': {
+                'handlers': ['file'],
+                'level': 'WARNING',
                 'propagate': False
             },
             # PDF 處理相關日誌
@@ -116,7 +144,8 @@ def setup_logging_config() -> Dict[str, Any]:
             }
         },
         'root': {
-            'level': 'INFO',
+            # root 以 LOG_LEVEL 控制，確保第三方與 __name__ logger 一致格式
+            'level': log_level,
             'handlers': ['console', 'file', 'error_file']
         }
     }

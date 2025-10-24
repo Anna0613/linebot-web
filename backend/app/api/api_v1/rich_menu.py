@@ -21,15 +21,6 @@ from app.schemas.rich_menu import (
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)  # 確保 INFO 級別的日誌會被記錄
-
-# 確保有 console handler
-if not logger.handlers:
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
 router = APIRouter()
 
 
@@ -47,7 +38,7 @@ def _process_action_for_line_api(action: dict) -> dict:
         return {}
 
     action_type = action.get("type", "")
-    logger.info(f"🔧 Processing action: type={action_type}, original_action={action}")
+    logger.debug(f"處理 Rich Menu action: type={action_type}, original={action}")
     processed_action = {"type": action_type}
 
     if action_type == "message":
@@ -101,7 +92,7 @@ def _process_action_for_line_api(action: dict) -> dict:
     # 移除 None 值
     processed_action = {k: v for k, v in processed_action.items() if v is not None}
 
-    logger.info(f"✅ Processed action result: {processed_action}")
+    logger.debug(f"處理後的 action: {processed_action}")
     return processed_action
 
 
@@ -141,11 +132,10 @@ async def _line_create_and_upload(
     content_type: str,
 ) -> Optional[str]:
     """Create LINE rich menu and upload content. Return richMenuId or None."""
-    print(f"🌐 _line_create_and_upload called")
-    print(f"🔍 Channel token length: {len(channel_token) if channel_token else 0}")
-    print(f"🔍 Payload: {payload}")
-    print(f"🔍 Image bytes length: {len(image_bytes)}")
-    print(f"🔍 Content type: {content_type}")
+    logger.debug(
+        f"開始 _line_create_and_upload | token_len={len(channel_token) if channel_token else 0} "
+        f"content_type={content_type} bytes={len(image_bytes)} payload={payload}"
+    )
 
     import aiohttp
     base = "https://api.line.me/v2/bot"
@@ -153,67 +143,60 @@ async def _line_create_and_upload(
     headers_json = {"Authorization": f"Bearer {channel_token}", "Content-Type": "application/json"}
 
     try:
-        print(f"🔍 Creating aiohttp session")
+        logger.debug("建立 aiohttp session")
         async with aiohttp.ClientSession() as session:
             rich_menu_id = None
             try:
                 # Step 1: Create Rich Menu
-                print(f"🔍 Step 1: Creating Rich Menu")
-                logger.info(f"Creating Rich Menu with payload: {payload}")
-                print(f"🌐 Making POST request to: {base}/richmenu")
+                logger.info("建立 Rich Menu 至 LINE 平台")
+                logger.debug(f"POST {base}/richmenu")
 
                 async with session.post(f"{base}/richmenu", headers=headers_json, json=payload, timeout=20) as resp:
-                    print(f"🌐 Response status: {resp.status}")
+                    logger.debug(f"建立 Rich Menu 回應狀態: {resp.status}")
                     if resp.status != 200:
                         text = await resp.text()
-                        print(f"❌ Create richmenu failed: HTTP {resp.status} - {text}")
-                        logger.error(f"Create richmenu failed: HTTP {resp.status} - {text}")
+                        logger.error(f"建立 Rich Menu 失敗: HTTP {resp.status} - {text}")
                         return None
 
                     data = await resp.json()
-                    print(f"✅ Response data: {data}")
+                    logger.debug(f"建立 Rich Menu 回應資料: {data}")
                     rich_menu_id = data.get("richMenuId")
                     if not rich_menu_id:
-                        print(f"❌ Create richmenu response missing richMenuId")
-                        logger.error("Create richmenu response missing richMenuId")
+                        logger.error("建立 Rich Menu 回應缺少 richMenuId")
                         return None
 
-                    print(f"✅ Rich Menu created successfully: {rich_menu_id}")
-                    logger.info(f"Rich Menu created successfully: {rich_menu_id}")
+                    logger.info(f"Rich Menu 建立成功: {rich_menu_id}")
 
                 # Step 2: Upload Image
-                print(f"🔍 Step 2: Uploading image")
-                logger.info(f"Uploading image to Rich Menu {rich_menu_id}, size: {len(image_bytes)} bytes, type: {content_type}")
+                logger.info(
+                    f"上傳 Rich Menu 圖片 | id={rich_menu_id} size={len(image_bytes)} type={content_type}"
+                )
 
                 # Wait a moment for Rich Menu to be ready
                 import asyncio
-                print(f"⏳ Waiting 2 seconds for Rich Menu to be ready...")
+                logger.debug("等待 2 秒以確保 Rich Menu 可用")
                 await asyncio.sleep(2)
 
                 headers_bin = {"Authorization": f"Bearer {channel_token}", "Content-Type": content_type}
                 upload_url = f"{base_data}/richmenu/{rich_menu_id}/content"
-                print(f"🌐 Upload URL: {upload_url}")
-                print(f"🔍 Upload headers: {headers_bin}")
-                print(f"🔍 Using api-data.line.me for image upload")
+                logger.debug(f"上傳 URL: {upload_url} headers={headers_bin}")
 
                 async with session.post(upload_url, headers=headers_bin, data=image_bytes, timeout=40) as resp2:
-                    print(f"🌐 Upload response status: {resp2.status}")
-                    print(f"🌐 Upload response headers: {dict(resp2.headers)}")
+                    logger.debug(f"上傳回應狀態: {resp2.status} headers={dict(resp2.headers)}")
                     if resp2.status != 200:
                         text2 = await resp2.text()
-                        print(f"❌ Upload richmenu image failed: HTTP {resp2.status} - {text2}")
-                        logger.error(f"Upload richmenu image failed: HTTP {resp2.status} - {text2}")
+                        logger.error(f"上傳 Rich Menu 圖片失敗: HTTP {resp2.status} - {text2}")
 
                         # Let's also check if the Rich Menu still exists
-                        print(f"🔍 Checking if Rich Menu {rich_menu_id} still exists...")
+                        logger.debug(f"檢查 Rich Menu 是否仍存在: {rich_menu_id}")
                         async with session.get(f"{base}/richmenu/{rich_menu_id}", headers={"Authorization": f"Bearer {channel_token}"}) as check_resp:
-                            print(f"🔍 Rich Menu check status: {check_resp.status}")
+                            logger.debug(f"檢查狀態: {check_resp.status}")
                             if check_resp.status == 200:
                                 check_data = await check_resp.json()
-                                print(f"✅ Rich Menu still exists: {check_data}")
+                                logger.debug(f"Rich Menu 仍存在: {check_data}")
                             else:
                                 check_text = await check_resp.text()
-                                print(f"❌ Rich Menu check failed: {check_text}")
+                                logger.debug(f"Rich Menu 檢查失敗: {check_text}")
 
                         # Clean up: Delete the created Rich Menu if image upload fails
                         try:
@@ -227,16 +210,12 @@ async def _line_create_and_upload(
 
                         return None
 
-                    print(f"✅ Image uploaded successfully to Rich Menu {rich_menu_id}")
-                    logger.info(f"Image uploaded successfully to Rich Menu {rich_menu_id}")
+                    logger.info(f"上傳 Rich Menu 圖片成功: {rich_menu_id}")
 
                 return rich_menu_id
 
             except Exception as e:
-                print(f"❌ Error in _line_create_and_upload: {e}")
-                logger.error(f"Error in _line_create_and_upload: {e}")
-                import traceback
-                print(f"❌ Traceback: {traceback.format_exc()}")
+                logger.error(f"_line_create_and_upload 執行錯誤: {e}", exc_info=True)
 
                 # Clean up if Rich Menu was created but something went wrong
                 if rich_menu_id:
@@ -249,10 +228,7 @@ async def _line_create_and_upload(
 
                 return None
     except Exception as outer_e:
-        print(f"❌ Outer error in _line_create_and_upload: {outer_e}")
-        logger.error(f"Outer error in _line_create_and_upload: {outer_e}")
-        import traceback
-        print(f"❌ Outer Traceback: {traceback.format_exc()}")
+        logger.error(f"_line_create_and_upload 例外（外層）: {outer_e}", exc_info=True)
         return None
 
 
@@ -308,16 +284,17 @@ async def _compress_image(image_bytes: bytes, max_size: int) -> bytes:
         from PIL import Image
         import io
 
-        print(f"🔧 Starting image compression")
-        print(f"🔍 Original size: {len(image_bytes)} bytes")
+        logger = logging.getLogger(__name__)
+        logger.debug("開始壓縮圖片")
+        logger.debug(f"原始大小: {len(image_bytes)} bytes")
 
         # Load image
         img = Image.open(io.BytesIO(image_bytes))
-        print(f"🔍 Image format: {img.format}, size: {img.size}, mode: {img.mode}")
+        logger.debug(f"圖片資訊: format={img.format} size={img.size} mode={img.mode}")
 
         # Convert to RGB if necessary (for JPEG compression)
         if img.mode in ('RGBA', 'LA', 'P'):
-            print(f"🔧 Converting {img.mode} to RGB")
+            logger.debug(f"轉換顏色模式: {img.mode} -> RGB")
             background = Image.new('RGB', img.size, (255, 255, 255))
             if img.mode == 'P':
                 img = img.convert('RGBA')
@@ -330,64 +307,61 @@ async def _compress_image(image_bytes: bytes, max_size: int) -> bytes:
             img.save(output, format='JPEG', quality=quality, optimize=True)
             compressed_bytes = output.getvalue()
 
-            print(f"🔍 Quality {quality}: {len(compressed_bytes)} bytes")
+            logger.debug(f"JPEG 品質 {quality}: {len(compressed_bytes)} bytes")
 
             if len(compressed_bytes) <= max_size:
-                print(f"✅ Compression successful at quality {quality}")
+                logger.debug(f"壓縮成功（quality={quality})")
                 return compressed_bytes
 
         # If still too large, try PNG with optimization
-        print(f"🔧 Trying PNG compression")
+        logger.debug("嘗試 PNG 壓縮")
         output = io.BytesIO()
         img.save(output, format='PNG', optimize=True)
         compressed_bytes = output.getvalue()
 
-        print(f"🔍 PNG optimized: {len(compressed_bytes)} bytes")
+        logger.debug(f"PNG 優化後大小: {len(compressed_bytes)} bytes")
 
         if len(compressed_bytes) <= max_size:
-            print(f"✅ PNG compression successful")
+            logger.debug("PNG 壓縮成功")
             return compressed_bytes
 
         # Last resort: resize image
-        print(f"🔧 Resizing image as last resort")
+        logger.debug("最後手段：縮放圖片大小")
         scale_factor = (max_size / len(compressed_bytes)) ** 0.5
         new_width = int(img.width * scale_factor)
         new_height = int(img.height * scale_factor)
 
-        print(f"🔍 Resizing from {img.size} to ({new_width}, {new_height})")
+        logger.debug(f"縮放: {img.size} -> ({new_width}, {new_height})")
         img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
         output = io.BytesIO()
         img_resized.save(output, format='JPEG', quality=85, optimize=True)
         final_bytes = output.getvalue()
 
-        print(f"✅ Final compressed size: {len(final_bytes)} bytes")
+        logger.debug(f"最終壓縮大小: {len(final_bytes)} bytes")
         return final_bytes
 
     except Exception as e:
-        print(f"❌ Image compression failed: {e}")
+        logging.getLogger(__name__).warning(f"圖片壓縮失敗：{e}")
         # Return original bytes if compression fails
         return image_bytes
 
 
 async def _get_image_bytes_for_menu(m: RichMenu) -> Optional[bytes]:
     """Try to load image bytes for a menu, from MinIO (preferred) or HTTP fallback."""
-    print(f"🖼️ _get_image_bytes_for_menu called for Rich Menu {m.id}")
-    logger.info(f"Loading image bytes for Rich Menu {m.id}, image_url: {m.image_url}")
+    logger.info(f"載入 Rich Menu 圖片: id={m.id}, image_url={m.image_url}")
 
     if not m.image_url:
-        print(f"❌ Rich Menu {m.id} has no image_url")
-        logger.error(f"Rich Menu {m.id} has no image_url")
+        logger.error(f"Rich Menu {m.id} 無 image_url")
         return None
 
     # Try MinIO first
     try:
-        print(f"🔍 Trying MinIO for Rich Menu {m.id}")
+        logger.debug(f"嘗試從 MinIO 讀取: {m.id}")
         from app.services.minio_service import get_minio_service
         from urllib.parse import urlparse, parse_qs
         svc = get_minio_service()
         if svc:
-            print(f"✅ MinIO service available")
             logger.info(f"Attempting to load image from MinIO for Rich Menu {m.id}")
             # parse object_path from proxy url
             parsed = urlparse(m.image_url)
@@ -395,71 +369,53 @@ async def _get_image_bytes_for_menu(m: RichMenu) -> Optional[bytes]:
             object_path = None
             if "object_path" in qs:
                 object_path = qs["object_path"][0]
-                print(f"✅ Extracted object_path: {object_path}")
                 logger.info(f"Extracted object_path from proxy URL: {object_path}")
 
             if object_path:
-                print(f"🔍 Loading from MinIO bucket: {svc.bucket_name}, path: {object_path}")
+                logger.debug(f"從 MinIO 載入 | bucket={svc.bucket_name}, path={object_path}")
                 import asyncio
                 data = await asyncio.to_thread(
                     lambda: svc.client.get_object(svc.bucket_name, object_path).read()
                 )
-                print(f"✅ Successfully loaded image from MinIO: {len(data)} bytes")
-                logger.info(f"Successfully loaded image from MinIO: {len(data)} bytes")
+                logger.info(f"從 MinIO 載入成功: {len(data)} bytes")
                 return data
             else:
-                print(f"❌ Could not extract object_path from URL: {m.image_url}")
                 logger.warning(f"Could not extract object_path from URL: {m.image_url}")
         else:
-            print(f"❌ MinIO service not available")
             logger.warning("MinIO service not available")
     except Exception as e:
-        print(f"❌ MinIO image loading failed: {e}")
         logger.warning(f"MinIO image loading failed for Rich Menu {m.id}: {e}")
-        import traceback
-        print(f"❌ MinIO Traceback: {traceback.format_exc()}")
 
     # Fallback to HTTP using requests (Windows compatible)
     try:
-        print(f"🔍 Trying HTTP fallback for Rich Menu {m.id}")
-        logger.info(f"Attempting HTTP fallback for Rich Menu {m.id}")
+        logger.info(f"嘗試 HTTP 下載圖片 (fallback): {m.id}")
         import requests
         import asyncio
 
         def sync_download():
-            print(f"🌐 Making HTTP request to: {m.image_url}")
             response = requests.get(m.image_url, timeout=20)
-            print(f"🌐 HTTP response status: {response.status_code}")
             if response.status_code != 200:
-                print(f"❌ HTTP image loading failed: HTTP {response.status_code}")
                 logger.error(f"HTTP image loading failed: HTTP {response.status_code}")
                 return None
-            print(f"✅ HTTP response received: {len(response.content)} bytes")
             return response.content
 
-        print(f"🔍 Starting async HTTP download")
         data = await asyncio.to_thread(sync_download)
         if data:
-            print(f"✅ Successfully loaded image via HTTP: {len(data)} bytes")
-            logger.info(f"Successfully loaded image via HTTP: {len(data)} bytes")
+            logger.info(f"透過 HTTP 載入圖片成功: {len(data)} bytes")
             return data
         else:
-            print(f"❌ HTTP image loading failed for Rich Menu {m.id}")
             logger.error(f"HTTP image loading failed for Rich Menu {m.id}")
             return None
     except Exception as e:
-        print(f"❌ HTTP image loading failed: {e}")
-        logger.error(f"HTTP image loading failed for Rich Menu {m.id}: {e}")
-        import traceback
-        print(f"❌ HTTP Traceback: {traceback.format_exc()}")
+        logger.error(f"HTTP 載入圖片失敗: {e}")
         return None
 
 
 @router.post("/{bot_id}/richmenus/{menu_id}/test")
 async def test_publish_route(bot_id: str, menu_id: str):
     """Test route to verify routing works."""
-    print(f"🧪🧪🧪 TEST ROUTE CALLED: bot_id={bot_id}, menu_id={menu_id}")
-    return {"status": "success", "bot_id": bot_id, "menu_id": menu_id, "timestamp": "2025-09-29 17:22:00"}
+    logger.info(f"TEST 路由被呼叫: bot_id={bot_id}, menu_id={menu_id}")
+    return {"status": "success", "bot_id": bot_id, "menu_id": menu_id}
 
 @router.post("/{bot_id}/richmenus/{menu_id}/publish", response_model=RichMenuResponse)
 async def publish_rich_menu(
@@ -469,44 +425,37 @@ async def publish_rich_menu(
     current_user: User = Depends(get_current_user_async),
 ):
     """Re-publish the rich menu to LINE (create new if needed, upload image, set default)."""
-    # 強制輸出日誌到控制台
-    print(f"🚀🚀🚀 PUBLISH RICH MENU CALLED: bot_id={bot_id}, menu_id={menu_id}")
-    logger.error(f"🚀🚀🚀 PUBLISH RICH MENU CALLED: bot_id={bot_id}, menu_id={menu_id}")
+    logger.info(f"開始發佈 Rich Menu: bot_id={bot_id}, menu_id={menu_id}")
 
     try:
         logger.info(f"🚀 Starting publish_rich_menu for bot {bot_id}, menu {menu_id}")
         logger.info(f"🔍 Function parameters: bot_id={bot_id}, menu_id={menu_id}")
         logger.info(f"👤 Current user: {current_user.username if current_user else 'None'}")
     except Exception as e:
-        logger.error(f"❌ Error in initial logging: {e}")
+        logger.error(f"初始化日誌錯誤: {e}")
         raise HTTPException(status_code=500, detail=f"初始化錯誤: {str(e)}")
 
-    print(f"🔍 Step 2: Verifying bot ownership")
+    logger.debug("Step 2: 驗證 Bot 擁有權")
     bot = await _assert_bot_ownership(db, bot_id, current_user.id)
-    print(f"✅ Bot ownership verified for bot {bot_id}")
-    logger.info(f"Bot ownership verified for bot {bot_id}")
+    logger.info(f"Bot 擁有權驗證通過: {bot_id}")
 
-    print(f"🔍 Step 3: Getting rich menu")
+    logger.debug("Step 3: 取得 Rich Menu 設定")
     res = await db.execute(select(RichMenu).where(RichMenu.id == menu_id, RichMenu.bot_id == bot.id))
     m: Optional[RichMenu] = res.scalars().first()
     if not m:
-        print(f"❌ Rich Menu {menu_id} not found for bot {bot_id}")
-        logger.error(f"Rich Menu {menu_id} not found for bot {bot_id}")
+        logger.error(f"找不到 Rich Menu: menu_id={menu_id}, bot_id={bot_id}")
         raise HTTPException(status_code=404, detail="Rich Menu 不存在")
 
-    print(f"✅ Found Rich Menu: {m.name}, image_url: {m.image_url}")
-    logger.info(f"Found Rich Menu: {m.name}, image_url: {m.image_url}")
+    logger.info(f"取得 Rich Menu: name={m.name}, image_url={m.image_url}")
 
     # Force reload trigger
-    print(f"🔄 Code reloaded at 17:32")
+    # 標記流程步驟
 
     # prepare payload
-    print(f"🔍 Step 4: Preparing payload")
-    print(f"🔍 m.size type: {type(m.size)}, value: {m.size}")
-    print(f"🔍 m.selected: {m.selected}")
-    print(f"🔍 m.name: {m.name}")
-    print(f"🔍 m.chat_bar_text: {m.chat_bar_text}")
-    print(f"🔍 m.areas: {m.areas}")
+    logger.debug(
+        f"Step 4: 準備 payload | size_type={type(m.size)} selected={m.selected} "
+        f"name={m.name} chat_bar_text={m.chat_bar_text} areas_count={len(m.areas or [])}"
+    )
 
     try:
         # Handle size safely
@@ -520,7 +469,7 @@ async def publish_rich_menu(
         else:
             height = 1686
 
-        print(f"✅ Height determined: {height}")
+        logger.debug(f"Rich Menu 高度: {height}")
 
         # 處理 areas，確保每個 action 都有正確的參數
         processed_areas = []
@@ -543,36 +492,27 @@ async def publish_rich_menu(
             "chatBarText": m.chat_bar_text,
             "areas": processed_areas,
         }
-        print(f"✅ Rich Menu payload prepared: {rm_payload}")
-        logger.info(f"Rich Menu payload prepared: {rm_payload}")
+        logger.debug(f"Rich Menu payload 準備完成: {rm_payload}")
     except Exception as e:
-        print(f"❌ Error preparing payload: {e}")
-        import traceback
-        print(f"❌ Payload Traceback: {traceback.format_exc()}")
+        logger.error(f"準備 Rich Menu payload 失敗: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"準備 Rich Menu 資料時發生錯誤: {str(e)}")
 
     # get image bytes
-    print(f"🔍 Step 5: Loading image bytes")
+    logger.debug("Step 5: 讀取圖片位元組")
     logger.info(f"Starting to load image bytes for Rich Menu {menu_id}")
     try:
         img_bytes = await _get_image_bytes_for_menu(m)
         if not img_bytes:
-            print(f"❌ Failed to load image bytes for Rich Menu {menu_id}")
-            logger.error(f"Failed to load image bytes for Rich Menu {menu_id}")
+            logger.error(f"載入 Rich Menu 圖片失敗: {menu_id}")
             raise HTTPException(status_code=400, detail="找不到選單圖片或無法讀取")
-        print(f"✅ Successfully loaded image bytes: {len(img_bytes)} bytes")
-        logger.info(f"Successfully loaded image bytes: {len(img_bytes)} bytes")
+        logger.info(f"已載入圖片: {len(img_bytes)} bytes")
     except Exception as e:
-        print(f"❌ Exception while loading image bytes: {e}")
-        logger.error(f"Exception while loading image bytes for Rich Menu {menu_id}: {e}")
-        import traceback
-        print(f"❌ Traceback: {traceback.format_exc()}")
+        logger.error(f"載入圖片發生例外: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"載入圖片時發生錯誤: {str(e)}")
 
-    print(f"🔍 Step 6: Determining content type")
+    logger.debug("Step 6: 判斷 content type")
     content_type = "image/jpeg" if m.image_url and m.image_url.lower().endswith((".jpg", ".jpeg")) else "image/png"
-    print(f"✅ Content type determined: {content_type}")
-    logger.info(f"Content type determined: {content_type}")
+    logger.info(f"Content type: {content_type}")
 
     try:
         logger.info(f"Publishing Rich Menu {menu_id} to LINE for bot {bot_id}")
@@ -583,24 +523,21 @@ async def publish_rich_menu(
         await db.commit()
 
         # Check and compress image if needed
-        print(f"🔍 Step 7: Checking image size")
+        logger.debug("Step 7: 檢查圖片大小")
         max_size = 1048576  # 1 MB in bytes
         if len(img_bytes) > max_size:
-            print(f"⚠️ Image too large: {len(img_bytes)} bytes > {max_size} bytes")
-            print(f"🔧 Compressing image...")
+            logger.info(f"圖片過大，開始壓縮: {len(img_bytes)} > {max_size} bytes")
             img_bytes = await _compress_image(img_bytes, max_size)
-            print(f"✅ Image compressed to: {len(img_bytes)} bytes")
+            logger.info(f"圖片壓縮完成: {len(img_bytes)} bytes")
         else:
-            print(f"✅ Image size OK: {len(img_bytes)} bytes <= {max_size} bytes")
+            logger.debug(f"圖片大小符合: {len(img_bytes)} <= {max_size}")
 
         # Create and upload new Rich Menu
-        print(f"🔍 Step 8: Calling _line_create_and_upload")
-        print(f"🔍 Channel token: {bot.channel_token[:10]}..." if bot.channel_token else "None")
+        logger.debug("Step 8: 呼叫 _line_create_and_upload")
         rid = await _line_create_and_upload(bot.channel_token, rm_payload, img_bytes, content_type)
-        print(f"🔍 Step 9: _line_create_and_upload result: {rid}")
+        logger.debug(f"Step 9: _line_create_and_upload 回傳: {rid}")
         if not rid:
-            print(f"❌ Failed to create and upload Rich Menu {menu_id} to LINE")
-            logger.error(f"Failed to create and upload Rich Menu {menu_id} to LINE")
+            logger.error(f"建立/上傳 Rich Menu 至 LINE 失敗: {menu_id}")
             raise HTTPException(status_code=502, detail="LINE 平台發佈失敗：無法建立或上傳 Rich Menu")
 
         # Update database with new Rich Menu ID
@@ -613,9 +550,9 @@ async def publish_rich_menu(
         if m.selected and m.line_rich_menu_id:
             success = await _line_set_default(bot.channel_token, m.line_rich_menu_id)
             if success:
-                logger.info(f"Rich Menu {rid} set as default successfully")
+                logger.info(f"已設定 Rich Menu 預設: {rid}")
             else:
-                logger.warning(f"Failed to set Rich Menu {rid} as default, but creation was successful")
+                logger.warning(f"設定預設 Rich Menu 失敗，已建立但未設為預設: {rid}")
 
     except HTTPException:
         raise

@@ -2,6 +2,7 @@
 認證服務模組
 處理用戶註冊、登入、LINE 登入等認證相關業務邏輯
 """
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,6 +29,7 @@ class AuthService:
     @staticmethod
     async def register_user(db: AsyncSession, user_data: UserRegister) -> Dict[str, str]:
         """用戶註冊"""
+        logger = logging.getLogger(__name__)
         # 檢查用戶名稱是否已存在
         res = await db.execute(select(User).where(User.username == user_data.username))
         exists_username = res.scalars().first()
@@ -63,10 +65,10 @@ class AuthService:
         if user_data.email:
             try:
                 EmailService.send_verification_email(user_data.email)
-                print(f"驗證郵件已發送至: {user_data.email}")
+                logger.info("驗證郵件已發送", extra={"email": user_data.email})
             except Exception as e:
                 # 郵件發送失敗不影響註冊流程，只記錄錯誤
-                print(f"郵件發送失敗: {e}")
+                logger.warning("驗證郵件發送失敗", extra={"email": user_data.email, "error": str(e)})
                 # 不拋出異常，讓註冊流程繼續
 
         return {"message": "用戶註冊成功，請檢查您的郵箱以驗證帳戶"}

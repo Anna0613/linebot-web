@@ -98,6 +98,14 @@ make -C linebot-web dev-frontend
 - 後端：請複製 `backend/env.example` 為 `backend/.env`，最少需設定資料庫與 JWT、LINE Login、Redis/MinIO（如需）。
 - 前端：請複製 `frontend/env.example` 為 `frontend/.env.local`，建議僅設定 `VITE_UNIFIED_API_URL`；其餘舊式分散 API 變數僅保留向後相容（不建議使用）。
 
+### 日誌（Logging）統一規範
+- 後端使用 Python logging，統一格式：`%(asctime)s | %(levelname)s | %(name)s | %(message)s`
+- 檔案輸出：`backend/logs/app.log`（DEBUG 以上），`backend/logs/error.log`（ERROR 以上，自動輪替）
+- 透過環境變數控制等級：`LOG_LEVEL=DEBUG|INFO|WARNING|ERROR|CRITICAL`（預設 INFO）
+- FastAPI 中介層統一記錄 `HTTP <METHOD> <PATH> -> <STATUS>`，詳細標頭在 DEBUG 等級
+- FE（開發模式）已統一 console 輸出格式（見 `frontend/src/utils/setupLogging.ts`），生產建置已移除 console 呼叫
+- SQL 查詢輸出預設關閉（避免噪音）；如需除錯可設定 `SQL_ECHO=True`，或將 `sqlalchemy.*` logger 調至 `INFO`
+
 重點說明（統一 API）
 - `VITE_UNIFIED_API_URL`：前端呼叫的統一後端 API 根路徑，例如：
   - 開發環境：`http://localhost:8000`

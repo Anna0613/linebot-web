@@ -30,7 +30,8 @@ engine = create_async_engine(
     pool_size=25,
     max_overflow=50,
     pool_recycle=1800,
-    echo=settings.DEBUG,
+    # 僅在明確開啟 SQL_ECHO 時才輸出 SQL（避免噪音）
+    echo=settings.SQL_ECHO,
 )
 
 AsyncSessionLocal = async_sessionmaker(
