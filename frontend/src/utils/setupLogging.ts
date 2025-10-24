@@ -14,12 +14,12 @@ if (typeof __DEV__ !== 'undefined' && __DEV__) {
 
   const wrap = <T extends keyof Console>(key: T) => {
     const original = console[key].bind(console);
-    return (...args: any[]) => {
+    return (...args: unknown[]) => {
       try {
         // 統一格式: 時間 | 等級 | 前綴 | 訊息
         const level = key.toUpperCase();
         if (typeof args[0] === 'string') {
-          original(`${ts()} | ${level} | ${prefix} | ${args[0]}`, ...args.slice(1));
+          original(`${ts()} | ${level} | ${prefix} | ${args[0] as string}`, ...args.slice(1));
         } else {
           original(`${ts()} | ${level} | ${prefix}`, ...args);
         }
@@ -37,4 +37,3 @@ if (typeof __DEV__ !== 'undefined' && __DEV__) {
 }
 
 export {};
-

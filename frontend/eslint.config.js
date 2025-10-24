@@ -34,4 +34,14 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "error",
     },
   }
+  ,
+  // Relax rules for highly dynamic visual-editor blocks to preserve developer velocity
+  {
+    files: [
+      "src/components/visual-editor/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  }
 );

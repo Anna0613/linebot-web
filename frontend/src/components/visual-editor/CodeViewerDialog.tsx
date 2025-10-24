@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,10 +19,18 @@ import { useToast } from '../../hooks/use-toast';
 import { UnifiedBlock } from '../../types/block';
 import LineBotCodeGenerator from '../../utils/codeGenerator';
 
+type CodeGenBlock = {
+  blockType: string;
+  blockData: Record<string, unknown>;
+  id?: string;
+  children?: string[];
+};
+
 interface CodeViewerDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  blocks: UnifiedBlock[];
+  // 接受 UnifiedBlock 或最小生成需求形狀
+  blocks: UnifiedBlock[] | CodeGenBlock[];
 }
 
 const CodeViewerDialog: React.FC<CodeViewerDialogProps> = ({
@@ -38,9 +46,18 @@ const CodeViewerDialog: React.FC<CodeViewerDialogProps> = ({
 
   const codeGeneratorRef = useRef(new LineBotCodeGenerator());
 
+  const toCodeGenBlocks = (items: (UnifiedBlock | CodeGenBlock)[]): CodeGenBlock[] =>
+    items.map((b) => ({
+      blockType: (b as UnifiedBlock).blockType,
+      blockData: (b as UnifiedBlock).blockData as Record<string, unknown>,
+      id: (b as UnifiedBlock).id,
+      children: (b as UnifiedBlock).children,
+    }));
+
   const getGeneratedCode = (): string => {
     if (blocks && blocks.length > 0) {
-      return codeGeneratorRef.current.generateCode(blocks as any);
+      const normalized = toCodeGenBlocks(blocks as (UnifiedBlock | CodeGenBlock)[]);
+      return codeGeneratorRef.current.generateCode(normalized);
     }
     return '# 請先在邏輯編輯器中加入積木來生成程式碼';
   };
@@ -143,7 +160,8 @@ const CodeViewerDialog: React.FC<CodeViewerDialogProps> = ({
 
           {/* 程式碼預覽 */}
           <div className="border rounded-lg overflow-hidden">
-            <CodePreview blocks={blocks} />
+            {/* CodePreview 只需要 blockType 與 blockData */}
+            <CodePreview blocks={toCodeGenBlocks(blocks as (UnifiedBlock | CodeGenBlock)[])} />
           </div>
         </div>
       </DialogContent>
@@ -152,4 +170,3 @@ const CodeViewerDialog: React.FC<CodeViewerDialogProps> = ({
 };
 
 export default CodeViewerDialog;
-

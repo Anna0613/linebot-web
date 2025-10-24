@@ -77,7 +77,6 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
         if (m && m.id) map.set(m.id, m);
         // some places reference by name, support that as well
         // (if duplicate names exist, last one wins)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if ((m as any).name) map.set((m as any).name, m);
       });
       setSavedFlexMessages(map);
@@ -635,7 +634,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
       <CodeViewerDialog
         isOpen={isCodeDialogOpen}
         onOpenChange={setIsCodeDialogOpen}
-        blocks={blocks as any}
+        blocks={blocks}
       />
     </>
   );

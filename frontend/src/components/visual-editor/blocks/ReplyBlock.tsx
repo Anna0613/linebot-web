@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
@@ -29,9 +29,10 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
     // ignore when provider not present
   }
 
+  const replyType = block.blockData.replyType;
   useEffect(() => {
     const loadFlexMessages = async () => {
-      if (block.blockType === 'reply' && block.blockData.replyType === 'flex') {
+      if (block.blockType === 'reply' && replyType === 'flex') {
         try {
           const messages = await getFlexMessages();
           setFlexMessages(messages);
@@ -42,7 +43,7 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
       }
     };
     loadFlexMessages();
-  }, [block.blockType, (block.blockData as any).replyType, getFlexMessages]);
+  }, [block.blockType, replyType, getFlexMessages]);
 
   const handleFlexMessageSelect = (value: string) => {
     const selectedMessage = flexMessages.find((msg) => msg.id === value);
@@ -115,7 +116,9 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
           try {
             const text = await response.text();
             if (text) message = `${message}: ${text}`;
-          } catch {}
+          } catch (_e) {
+            // ignore non-JSON body
+          }
         }
         throw new Error(message);
       }

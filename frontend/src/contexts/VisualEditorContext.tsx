@@ -6,6 +6,7 @@ interface VisualEditorContextType {
 
 const VisualEditorContext = createContext<VisualEditorContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useVisualEditorContext = () => {
   const context = useContext(VisualEditorContext);
   if (!context) {
@@ -29,4 +30,3 @@ export const VisualEditorProvider: React.FC<VisualEditorProviderProps> = ({
     </VisualEditorContext.Provider>
   );
 };
-

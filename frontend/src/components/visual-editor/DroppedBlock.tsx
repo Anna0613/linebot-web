@@ -65,7 +65,9 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
           ) {
             if (onMove) {
               onMove(dragIndex, hoverIndex);
-              (item as any).index = hoverIndex;
+              // 保持拖曳資料的 index 更新，避免抖動
+              type MutableDroppedItem = Block & { index?: number };
+              (item as MutableDroppedItem).index = hoverIndex;
             }
           }
         } else {

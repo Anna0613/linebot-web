@@ -101,7 +101,7 @@ export class LineBotCodeGenerator {
     const { eventType, condition, pattern, matchMode, caseSensitive } = block.blockData;
 
     switch (eventType) {
-      case 'message.text':
+      case 'message.text': {
         // 根據匹配模式生成條件表達式
         let textCondition = '';
         if (pattern) {
@@ -148,6 +148,7 @@ export class LineBotCodeGenerator {
           actions: []
         });
         break;
+      }
       case 'message.image':
         this.imports.add("from linebot.models import ImageMessage");
         this.eventHandlers.push({
@@ -225,7 +226,7 @@ export class LineBotCodeGenerator {
       const lastHandler = this.eventHandlers[this.eventHandlers.length - 1];
 
       switch (controlType) {
-        case 'if':
+        case 'if': {
           // 根據條件建構器生成條件表達式
           let finalCondition = condition as string;
 
@@ -251,6 +252,7 @@ export class LineBotCodeGenerator {
             condition: finalCondition || 'True'
           });
           break;
+        }
         case 'loop':
           lastHandler.actions.push({
             type: 'control_loop',
@@ -277,7 +279,7 @@ export class LineBotCodeGenerator {
       const lastHandler = this.eventHandlers[this.eventHandlers.length - 1];
 
       switch (settingType) {
-        case 'setVariable':
+        case 'setVariable': {
           // 使用 variableValue 而不是 value
           const varValue = (variableValue || value || '') as string;
           this.variables.set((variableName || 'variable') as string, varValue);
@@ -287,6 +289,7 @@ export class LineBotCodeGenerator {
             value: varValue
           });
           break;
+        }
         case 'getVariable':
           lastHandler.actions.push({
             type: 'get_variable',

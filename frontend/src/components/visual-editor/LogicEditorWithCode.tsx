@@ -32,7 +32,7 @@ const LogicEditorWithCode: React.FC<LogicEditorWithCodeProps> = ({
   onLogicTemplateSelect,
   onLogicTemplateCreate,
   onLogicTemplateSave,
-  onLogicBlocksChange,
+  onLogicBlocksChange: _onLogicBlocksChange,
   onRemoveBlock,
   onUpdateBlock,
   onMoveBlock,
@@ -49,7 +49,7 @@ const LogicEditorWithCode: React.FC<LogicEditorWithCodeProps> = ({
           onLogicTemplateSelect={onLogicTemplateSelect}
           onLogicTemplateCreate={onLogicTemplateCreate}
           onLogicTemplateSave={onLogicTemplateSave}
-          logicBlocks={logicBlocks as any}
+          logicBlocks={logicBlocks.map((b) => ({ blockType: b.blockType, blockData: b.blockData }))}
         />
       )}
 
@@ -74,8 +74,8 @@ const LogicEditorWithCode: React.FC<LogicEditorWithCodeProps> = ({
 
           <div className="flex flex-col min-h-0">
             <LineBotSimulator
-              blocks={logicBlocks as any}
-              flexBlocks={flexBlocks as any}
+              blocks={logicBlocks.map((b) => ({ blockType: b.blockType, blockData: b.blockData, id: b.id, parentId: b.parentId }))}
+              flexBlocks={flexBlocks.map((b) => ({ blockType: b.blockType, blockData: b.blockData, id: b.id, parentId: b.parentId }))}
               testAction={currentTestAction}
             />
           </div>
@@ -86,4 +86,3 @@ const LogicEditorWithCode: React.FC<LogicEditorWithCodeProps> = ({
 };
 
 export default LogicEditorWithCode;
-
