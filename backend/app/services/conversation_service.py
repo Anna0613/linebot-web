@@ -930,8 +930,8 @@ class ConversationService:
                     "weekMessages": 0,
                     "monthMessages": 0,
                     "averageMessagesPerUser": 0,
-                    "responseTime": 1.2,
-                    "successRate": 95.5,
+                    "userRetention": 0,
+                    "peakHour": 0,
                     "period": start_date.strftime("%Y-%m-%d"),
                     "startDate": start_date.isoformat(),
                     "endDate": end_date.isoformat()
@@ -963,9 +963,42 @@ class ConversationService:
                 if month_start <= msg_time <= today_end:
                     month_messages += 1
 
-            # 計算回應時間和成功率
-            response_time = 1.2
-            success_rate = 95.5
+            # 計算用戶留存率（回訪用戶比例）
+            # 查詢所有對話，計算 created_at 和 updated_at 的時間差
+            retention_pipeline = [
+                {"$match": {"bot_id": bot_id}},
+                {"$project": {
+                    "daysDiff": {
+                        "$divide": [
+                            {"$subtract": ["$updated_at", "$created_at"]},
+                            86400000  # 轉換為天數（毫秒）
+                        ]
+                    }
+                }}
+            ]
+
+            retention_results = await ConversationDocument.aggregate(retention_pipeline).to_list()
+            total_users_count = len(retention_results)
+            returning_users = sum(1 for r in retention_results if r.get("daysDiff", 0) >= 1)
+            user_retention = (returning_users / total_users_count * 100) if total_users_count > 0 else 0
+
+            # 計算高峰時段（訊息量最多的小時）
+            peak_hour_pipeline = [
+                {"$match": {"bot_id": bot_id}},
+                {"$unwind": "$messages"},
+                {"$project": {
+                    "hour": {"$hour": "$messages.timestamp"}
+                }},
+                {"$group": {
+                    "_id": "$hour",
+                    "count": {"$sum": 1}
+                }},
+                {"$sort": {"count": -1}},
+                {"$limit": 1}
+            ]
+
+            peak_hour_results = await ConversationDocument.aggregate(peak_hour_pipeline).to_list()
+            peak_hour = peak_hour_results[0]["_id"] if peak_hour_results else 0
 
             return {
                 "totalMessages": total_messages,
@@ -975,8 +1008,8 @@ class ConversationService:
                 "weekMessages": week_messages,
                 "monthMessages": month_messages,
                 "averageMessagesPerUser": total_messages / len(unique_users) if unique_users else 0,
-                "responseTime": response_time,
-                "successRate": success_rate,
+                "userRetention": round(user_retention, 1),
+                "peakHour": peak_hour,
                 "period": start_date.strftime("%Y-%m-%d"),
                 "startDate": start_date.isoformat(),
                 "endDate": end_date.isoformat()
@@ -996,8 +1029,8 @@ class ConversationService:
                 "weekMessages": 0,
                 "monthMessages": 0,
                 "averageMessagesPerUser": 0,
-                "responseTime": 1.2,
-                "successRate": 95.5,
+                "userRetention": 0,
+                "peakHour": 0,
                 "period": start_date.strftime("%Y-%m-%d"),
                 "startDate": start_date.isoformat(),
                 "endDate": end_date.isoformat()
@@ -1006,7 +1039,8 @@ class ConversationService:
     @staticmethod
     async def get_message_stats(
         bot_id: str,
-        days: int = 7
+        days: int = 7,
+        granularity: str = "day"
     ) -> List[Dict[str, Any]]:
         """
         獲取訊息統計數據（從 MongoDB）
@@ -1014,9 +1048,10 @@ class ConversationService:
         Args:
             bot_id: Bot ID
             days: 統計天數
+            granularity: 時間粒度 (hour, day, month)
 
         Returns:
-            List[Dict]: 每日訊息統計
+            List[Dict]: 訊息統計（根據粒度返回小時、天或月的統計）
         """
         try:
             from datetime import timedelta, timezone
@@ -1026,59 +1061,110 @@ class ConversationService:
             # 使用 UTC 時間確保與 MongoDB 中的時間戳一致
             utc_now = datetime.utcnow()
 
-            for i in range(days):
-                # 計算每天的 UTC 時間範圍
-                date = utc_now - timedelta(days=days-1-i)
-                day_start = datetime.combine(date.date(), datetime.min.time())
-                day_end = datetime.combine(date.date(), datetime.max.time())
+            if granularity == "hour":
+                # 小時粒度：返回今天 24 小時的數據
+                today_start = datetime.combine(utc_now.date(), datetime.min.time())
+                today_start = today_start.replace(tzinfo=timezone.utc)
 
-                # 確保時間是 UTC（使用內建的 timezone.utc）
-                day_start = day_start.replace(tzinfo=timezone.utc) if day_start.tzinfo is None else day_start
-                day_end = day_end.replace(tzinfo=timezone.utc) if day_end.tzinfo is None else day_end
+                for hour in range(24):
+                    hour_start = today_start + timedelta(hours=hour)
+                    hour_end = hour_start + timedelta(hours=1)
 
-                logger.debug(f"查詢日期範圍: {day_start} 到 {day_end}")
+                    # 使用聚合管道統計該小時的訊息
+                    pipeline = [
+                        {"$match": {"bot_id": bot_id}},
+                        {"$unwind": "$messages"},
+                        {"$match": {
+                            "messages.timestamp": {
+                                "$gte": hour_start,
+                                "$lt": hour_end
+                            }
+                        }},
+                        {"$group": {
+                            "_id": "$messages.sender_type",
+                            "count": {"$sum": 1}
+                        }}
+                    ]
 
-                # 使用聚合管道直接統計，提高效率
-                pipeline = [
-                    {"$match": {"bot_id": bot_id}},
-                    {"$unwind": "$messages"},
-                    {"$match": {
-                        "messages.timestamp": {
-                            "$gte": day_start,
-                            "$lte": day_end
-                        }
-                    }},
-                    {"$group": {
-                        "_id": "$messages.sender_type",
-                        "count": {"$sum": 1}
-                    }}
-                ]
+                    results = await ConversationDocument.aggregate(pipeline).to_list()
 
-                results = await ConversationDocument.aggregate(pipeline).to_list()
+                    received_count = 0
+                    sent_count = 0
 
-                # 處理聚合結果
-                received_count = 0
-                sent_count = 0
+                    for result in results:
+                        sender_type = result["_id"]
+                        count = result["count"]
 
-                for result in results:
-                    sender_type = result["_id"]
-                    count = result["count"]
+                        if sender_type == "user":
+                            received_count = count
+                        elif sender_type in ["admin", "bot"]:
+                            sent_count += count
 
-                    if sender_type == "user":
-                        received_count = count
-                    elif sender_type in ["admin", "bot"]:
-                        # 將 admin 和 bot 的訊息都算作"發送"
-                        sent_count += count
+                    stats.append({
+                        "date": hour_start.isoformat(),
+                        "hour": hour,
+                        "received": received_count,
+                        "sent": sent_count
+                    })
 
-                stats.append({
-                    "date": date.strftime("%Y-%m-%d"),
-                    "received": received_count,
-                    "sent": sent_count
-                })
+                logger.info(f"獲取小時訊息統計成功: bot_id={bot_id}, 結果數量={len(stats)}")
 
-                logger.debug(f"日期 {date.strftime('%Y-%m-%d')}: 接收 {received_count}, 發送 {sent_count}")
+            else:
+                # 天粒度：原有邏輯
+                for i in range(days):
+                    # 計算每天的 UTC 時間範圍
+                    date = utc_now - timedelta(days=days-1-i)
+                    day_start = datetime.combine(date.date(), datetime.min.time())
+                    day_end = datetime.combine(date.date(), datetime.max.time())
 
-            logger.info(f"獲取訊息統計成功: bot_id={bot_id}, days={days}, 結果數量={len(stats)}")
+                    # 確保時間是 UTC（使用內建的 timezone.utc）
+                    day_start = day_start.replace(tzinfo=timezone.utc) if day_start.tzinfo is None else day_start
+                    day_end = day_end.replace(tzinfo=timezone.utc) if day_end.tzinfo is None else day_end
+
+                    logger.debug(f"查詢日期範圍: {day_start} 到 {day_end}")
+
+                    # 使用聚合管道直接統計，提高效率
+                    pipeline = [
+                        {"$match": {"bot_id": bot_id}},
+                        {"$unwind": "$messages"},
+                        {"$match": {
+                            "messages.timestamp": {
+                                "$gte": day_start,
+                                "$lte": day_end
+                            }
+                        }},
+                        {"$group": {
+                            "_id": "$messages.sender_type",
+                            "count": {"$sum": 1}
+                        }}
+                    ]
+
+                    results = await ConversationDocument.aggregate(pipeline).to_list()
+
+                    # 處理聚合結果
+                    received_count = 0
+                    sent_count = 0
+
+                    for result in results:
+                        sender_type = result["_id"]
+                        count = result["count"]
+
+                        if sender_type == "user":
+                            received_count = count
+                        elif sender_type in ["admin", "bot"]:
+                            # 將 admin 和 bot 的訊息都算作"發送"
+                            sent_count += count
+
+                    stats.append({
+                        "date": date.strftime("%Y-%m-%d"),
+                        "received": received_count,
+                        "sent": sent_count
+                    })
+
+                    logger.debug(f"日期 {date.strftime('%Y-%m-%d')}: 接收 {received_count}, 發送 {sent_count}")
+
+                logger.info(f"獲取訊息統計成功: bot_id={bot_id}, days={days}, 結果數量={len(stats)}")
+
             return stats
 
         except Exception as e:

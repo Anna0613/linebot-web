@@ -176,23 +176,30 @@ async def get_bot_analytics(
 async def get_message_stats(
     bot_id: str,
     days: Optional[int] = 7,
+    granularity: Optional[str] = "day",  # 新增：時間粒度參數 (hour, day, month)
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取訊息統計數據"""
-    
+    """獲取訊息統計數據
+
+    Args:
+        bot_id: Bot ID
+        days: 統計天數
+        granularity: 時間粒度 (hour, day, month)
+    """
+
     # 驗證 Bot 所有權
     result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
     bot = result.scalars().first()
-    
+
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
-    
+
     try:
         # 使用 MongoDB ConversationService 獲取訊息統計
         from app.services.conversation_service import ConversationService
 
-        stats = await ConversationService.get_message_stats(bot_id, days)
+        stats = await ConversationService.get_message_stats(bot_id, days, granularity)
 
         return stats
 

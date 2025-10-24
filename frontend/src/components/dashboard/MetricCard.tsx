@@ -18,7 +18,7 @@ interface MetricCardProps {
   description?: string;
   isLoading?: boolean;
   className?: string;
-  variant?: "default" | "success" | "warning" | "error" | "info";
+  variant?: "default" | "success" | "warning" | "error" | "info" | "primary" | "purple" | "cyan";
   showMiniChart?: boolean;
   miniChartData?: number[];
   onClick?: () => void;
@@ -106,6 +106,9 @@ const MiniChart: React.FC<{ data: number[]; variant: string }> = ({
       case "warning": return "#f59e0b";
       case "error": return "#ef4444";
       case "info": return "#3b82f6";
+      case "primary": return "#14b8a6";
+      case "purple": return "#a855f7";
+      case "cyan": return "#00d4ff";
       default: return "#6366f1";
     }
   };
@@ -143,15 +146,21 @@ const MetricCard: React.FC<MetricCardProps> = ({
     success: "border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-green-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
     warning: "border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 hover:shadow-orange-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
     error: "border-red-200 bg-gradient-to-br from-red-50 to-rose-50 hover:shadow-red-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
-    info: "border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-blue-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon"
+    info: "border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-blue-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
+    primary: "border-teal-200 bg-gradient-to-br from-teal-50 to-emerald-50 hover:shadow-teal-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-[#00d4ff]/30 dark:hover:shadow-neon-cyan",
+    purple: "border-purple-200 bg-gradient-to-br from-purple-50 to-violet-50 hover:shadow-purple-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-[#a855f7]/30 dark:hover:shadow-neon-purple",
+    cyan: "border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 hover:shadow-cyan-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-[#00d4ff]/30 dark:hover:shadow-neon-cyan"
   };
 
   const iconVariantStyles = {
     default: "text-muted-foreground",
-    success: "text-green-600",
-    warning: "text-orange-600", 
-    error: "text-red-600",
-    info: "text-blue-600"
+    success: "text-green-600 dark:text-green-400",
+    warning: "text-orange-600 dark:text-orange-400",
+    error: "text-red-600 dark:text-red-400",
+    info: "text-blue-600 dark:text-blue-400",
+    primary: "text-teal-600 dark:text-[#00d4ff]",
+    purple: "text-purple-600 dark:text-[#a855f7]",
+    cyan: "text-cyan-600 dark:text-[#00d4ff]"
   };
 
   const trendVariantStyles = {
@@ -175,10 +184,10 @@ const MetricCard: React.FC<MetricCardProps> = ({
   }
 
   return (
-    <Card 
+    <Card
       className={cn(
         variantStyles[variant],
-        "relative overflow-hidden transition-all duration-300 hover:scale-105 group",
+        "relative overflow-hidden transition-all duration-300 hover:scale-105 group min-h-[140px]",
         onClick && "cursor-pointer",
         className
       )}

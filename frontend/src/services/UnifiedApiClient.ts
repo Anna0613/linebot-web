@@ -680,9 +680,9 @@ export class UnifiedApiClient {
     );
   }
 
-  public async getBotMessageStats(botId: string, days: number = 7): Promise<ApiResponse> {
+  public async getBotMessageStats(botId: string, days: number = 7, granularity: string = "day"): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/messages/stats?days=${days}`)
+      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/messages/stats?days=${days}&granularity=${granularity}`)
     );
   }
 

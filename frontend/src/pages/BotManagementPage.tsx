@@ -34,6 +34,8 @@ import {
   UserCheck,
   CheckSquare,
   Square,
+  TrendingUp,
+  UserPlus,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
@@ -49,7 +51,6 @@ import { getWebhookUrl } from "../config/apiConfig";
 import MetricCard from "@/components/dashboard/MetricCard";
 import ChartWidget from "@/components/dashboard/ChartWidget";
 import OptimizedActivityFeed from "@/components/optimized/OptimizedActivityFeed";
-import HeatMap from "@/components/dashboard/HeatMap";
 
 // 導入用戶管理相關元件
 import ChatPanel from "../components/users/ChatPanel";
@@ -59,8 +60,8 @@ import UserDetailsModal from "../components/users/UserDetailsModal";
 interface BotAnalytics {
   totalMessages: number;
   activeUsers: number;
-  responseTime: number;
-  successRate: number;
+  userRetention: number;
+  peakHour: number;
   todayMessages: number;
   weekMessages: number;
   monthMessages: number;
@@ -70,6 +71,7 @@ interface MessageStats {
   date: string;
   sent: number;
   received: number;
+  hour?: number;  // 小時粒度時使用（0-23）
 }
 
 interface UserActivity {
@@ -83,12 +85,7 @@ interface UsageData {
   color: string;
 }
 
-interface HeatMapDataPoint {
-  hour: number;
-  day: number;
-  value: number;
-  label?: string;
-}
+
 
 interface ActivityItem {
   id: string;
@@ -259,7 +256,6 @@ const BotManagementPage: React.FC = () => {
   const [messageStats, setMessageStats] = useState<MessageStats[]>([]);
   const [userActivity, setUserActivity] = useState<UserActivity[]>([]);
   const [usageData, setUsageData] = useState<UsageData[]>([]);
-  const [heatMapData, setHeatMapData] = useState<HeatMapDataPoint[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -375,7 +371,7 @@ const BotManagementPage: React.FC = () => {
         return;
       }
 
-      // 根據時間範圍計算查詢天數
+      // 根據時間範圍計算查詢天數和粒度
       const getDaysFromTimeRange = (range: string) => {
         switch (range) {
           case "day": return 1;
@@ -385,12 +381,22 @@ const BotManagementPage: React.FC = () => {
         }
       };
 
+      const getGranularityFromTimeRange = (range: string) => {
+        switch (range) {
+          case "day": return "hour";  // 今日使用小時粒度
+          case "week": return "day";   // 本週使用天粒度
+          case "month": return "day";  // 本月使用天粒度
+          default: return "day";
+        }
+      };
+
       const queryDays = getDaysFromTimeRange(timeRange);
+      const granularity = getGranularityFromTimeRange(timeRange);
 
       // 使用 apiClient 調用真實的後端API端點
       const [analyticsRes, messageStatsRes, userActivityRes, usageStatsRes, activitiesRes] = await Promise.all([
         apiClient.getBotAnalytics(botId, timeRange),
-        apiClient.getBotMessageStats(botId, queryDays), // 根據時間範圍動態調整天數
+        apiClient.getBotMessageStats(botId, queryDays, granularity), // 根據時間範圍動態調整天數和粒度
         apiClient.getBotUserActivity(botId),
         apiClient.getBotUsageStats(botId),
         apiClient.getBotActivities(botId, 20, 0)
@@ -423,22 +429,6 @@ const BotManagementPage: React.FC = () => {
       // 處理用戶活躍度數據
       if (userActivityRes.data && !userActivityRes.error) {
         setUserActivity(Array.isArray(userActivityRes.data) ? userActivityRes.data as UserActivity[] : []);
-
-        // 生成熱力圖數據
-        const heatData: HeatMapDataPoint[] = [];
-        if (Array.isArray(userActivityRes.data)) {
-          (userActivityRes.data as UserActivity[]).forEach((activity: UserActivity) => {
-            for (let day = 0; day < 7; day++) {
-              heatData.push({
-                hour: parseInt(activity.hour) || 0,
-                day: day,
-                value: activity.activeUsers || 0,
-                label: `${activity.hour}:00`
-              });
-            }
-          });
-        }
-        setHeatMapData(heatData);
       } else {
         errorCount++;
         if (!String(userActivityRes.error).includes('AbortError')) {
@@ -446,7 +436,6 @@ const BotManagementPage: React.FC = () => {
           hasError = true;
         }
         setUserActivity([]);
-        setHeatMapData([]);
       }
 
       // 處理使用統計數據
@@ -561,7 +550,6 @@ const BotManagementPage: React.FC = () => {
         setMessageStats([]);
         setUserActivity([]);
         setUsageData([]);
-        setHeatMapData([]);
         setActivities([]);
       }
 
@@ -1137,7 +1125,7 @@ const BotManagementPage: React.FC = () => {
       case 'analytics_update': {
         console.log('🔄 收到 analytics_update WebSocket 事件，開始更新數據...');
 
-        // 根據時間範圍計算查詢天數
+        // 根據時間範圍計算查詢天數和粒度
         const getDaysFromTimeRange = (range: string) => {
           switch (range) {
             case "day": return 1;
@@ -1147,13 +1135,23 @@ const BotManagementPage: React.FC = () => {
           }
         };
 
+        const getGranularityFromTimeRange = (range: string) => {
+          switch (range) {
+            case "day": return "hour";
+            case "week": return "day";
+            case "month": return "day";
+            default: return "day";
+          }
+        };
+
         const queryDays = getDaysFromTimeRange(timeRange);
-        console.log(`📊 當前時間範圍: ${timeRange}, 查詢天數: ${queryDays}`);
+        const granularity = getGranularityFromTimeRange(timeRange);
+        console.log(`📊 當前時間範圍: ${timeRange}, 查詢天數: ${queryDays}, 粒度: ${granularity}`);
 
         // 靜默更新所有分析相關數據，保持其他數據不變
         Promise.all([
           apiClient.getBotAnalytics(selectedBotId, timeRange),
-          apiClient.getBotMessageStats(selectedBotId, queryDays), // 根據時間範圍動態調整天數
+          apiClient.getBotMessageStats(selectedBotId, queryDays, granularity), // 根據時間範圍動態調整天數和粒度
           apiClient.getBotUserActivity(selectedBotId),
           apiClient.getBotUsageStats(selectedBotId)
         ]).then(([analyticsRes, messageStatsRes, userActivityRes, usageStatsRes]) => {
@@ -1191,25 +1189,9 @@ const BotManagementPage: React.FC = () => {
             });
           }
 
-          // 更新用戶活躍度數據和熱力圖
+          // 更新用戶活躍度數據
           if (userActivityRes.data && !userActivityRes.error) {
             setUserActivity(Array.isArray(userActivityRes.data) ? userActivityRes.data as UserActivity[] : []);
-            
-            // 生成熱力圖數據
-            const heatData: HeatMapDataPoint[] = [];
-            if (Array.isArray(userActivityRes.data)) {
-              (userActivityRes.data as UserActivity[]).forEach((activity: UserActivity) => {
-                for (let day = 0; day < 7; day++) {
-                  heatData.push({
-                    hour: parseInt(activity.hour) || 0,
-                    day: day,
-                    value: activity.activeUsers || 0,
-                    label: `${activity.hour}:00`
-                  });
-                }
-              });
-            }
-            setHeatMapData(heatData);
           }
 
           // 更新使用統計數據
@@ -1531,7 +1513,7 @@ const BotManagementPage: React.FC = () => {
                           onClick={() => {}}
                         />
                       </div>
-                      
+
                       <div>
                         <MetricCard
                           key="active-users"
@@ -1548,36 +1530,37 @@ const BotManagementPage: React.FC = () => {
                           miniChartData={userActivity.map(u => u.activeUsers)}
                         />
                       </div>
-                      
+
                       <div>
                         <MetricCard
-                          key="response-time"
-                          icon={Clock}
-                          title="平均回應時間"
-                          value={analytics?.responseTime || 0}
-                          unit="s"
-                          trend={{
-                            value: 10,
-                            isPositive: false,
-                            period: "較上週"
-                          }}
-                          variant="warning"
-                        />
-                      </div>
-                      
-                      <div>
-                        <MetricCard
-                          key="success-rate"
-                          icon={Target}
-                          title="成功率"
-                          value={analytics?.successRate || 0}
+                          key="user-retention"
+                          icon={UserPlus}
+                          title="用戶留存率"
+                          value={analytics?.userRetention || 0}
                           unit="%"
                           trend={{
-                            value: 0.3,
+                            value: 5.2,
                             isPositive: true,
                             period: "較上週"
                           }}
-                          variant="success"
+                          variant="purple"
+                          description="回訪用戶佔比"
+                        />
+                      </div>
+
+                      <div>
+                        <MetricCard
+                          key="peak-hour"
+                          icon={TrendingUp}
+                          title="高峰時段"
+                          value={analytics?.peakHour !== undefined ? `${analytics.peakHour}:00` : "N/A"}
+                          trend={{
+                            value: 0,
+                            isPositive: true,
+                            period: "訊息最多時段"
+                          }}
+                          variant="warning"
+                          description="訊息量最高的時段"
                         />
                       </div>
                     </div>
@@ -1590,20 +1573,25 @@ const BotManagementPage: React.FC = () => {
                       <ChartWidget
                         title="訊息統計趨勢"
                         data={messageStats.map(stat => {
-                          // 格式化日期顯示
-                          const formatDate = (dateStr: string) => {
-                            const date = new Date(dateStr);
+                          // 根據時間範圍格式化顯示
+                          const formatLabel = (stat: MessageStats) => {
                             if (timeRange === 'day') {
-                              return date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
-                            } else if (timeRange === 'week') {
-                              return date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
+                              // 今日：顯示小時 (0:00, 1:00, ..., 23:00)
+                              if ('hour' in stat) {
+                                return `${stat.hour}:00`;
+                              }
+                              // 如果沒有 hour 欄位，從 date 解析
+                              const date = new Date(stat.date);
+                              return `${date.getHours()}:00`;
                             } else {
+                              // 本週/本月：顯示日期 (10月18日)
+                              const date = new Date(stat.date);
                               return date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
                             }
                           };
 
                           return {
-                            name: formatDate(stat.date),
+                            name: formatLabel(stat),
                             originalDate: stat.date, // 保留原始日期用於排序
                             發送: stat.sent,
                             接收: stat.received
@@ -1611,7 +1599,7 @@ const BotManagementPage: React.FC = () => {
                         })}
                         chartType="bar"
                         isLoading={analyticsLoading}
-                        height={300}
+                        height={320}
                         showControls
                         showRefresh
                         onRefresh={handleRefreshData}
@@ -1621,8 +1609,8 @@ const BotManagementPage: React.FC = () => {
                           description: "本週較上週增長"
                         }}
                         config={{
-                          發送: { label: "發送", color: "hsl(var(--primary))" },
-                          接收: { label: "接收", color: "hsl(var(--secondary))" }
+                          發送: { label: "發送", color: "#10b981" },
+                          接收: { label: "接收", color: "#06d6a0" }
                         }}
                         timeRange={{
                           current: timeRange,
@@ -1634,38 +1622,31 @@ const BotManagementPage: React.FC = () => {
                           onChange: handleTimeRangeChange
                         }}
                       />
-                      
-                      {/* 用戶活躍度圖表 */}
+
+                      {/* 24小時用戶活躍度分布 */}
                       <ChartWidget
-                        title="用戶活躍度分析"
+                        title="24小時用戶活躍度分布"
                         data={userActivity.map(activity => ({
                           name: `${activity.hour}:00`,
                           活躍用戶: activity.activeUsers
                         }))}
-                        chartType="line"
+                        chartType="bar"
                         isLoading={analyticsLoading}
-                        height={300}
+                        height={320}
                         showControls
+                        showRefresh
+                        onRefresh={handleRefreshData}
                         trend={{
                           value: 15.2,
                           isPositive: true,
-                          description: "活躍度提升"
+                          description: "相較上週活躍度提升"
                         }}
                         config={{
-                          活躍用戶: { label: "活躍用戶", color: "hsl(222.2 84% 59%)" }
+                          活躍用戶: {
+                            label: "活躍用戶數",
+                            color: "#10b981"
+                          }
                         }}
-                      />
-                      
-                      {/* 熱力圖 */}
-                      <HeatMap
-                        data={heatMapData}
-                        title="一週用戶活躍時間分布"
-                        isLoading={analyticsLoading}
-                        colorScheme="blue"
-                        showLegend
-                        defaultView="simplified"
-                        showViewToggle={true}
-                        cellSize={18}
                       />
                     </div>
                   </div>
@@ -1677,14 +1658,14 @@ const BotManagementPage: React.FC = () => {
                       <OptimizedActivityFeed
                         activities={activities}
                         isLoading={analyticsLoading}
-                        height={400}
+                        height={360}
                         showRefresh
                         onRefresh={handleRefreshActivities}
                         autoRefresh={false} // 禁用自動刷新，依賴 WebSocket 即時更新
                         refreshInterval={30000}
                         isWebSocketConnected={checkWebSocketConnection}
                       />
-                      
+
                       {/* 功能使用統計 */}
                       <ChartWidget
                         title="功能使用統計"
@@ -1695,7 +1676,7 @@ const BotManagementPage: React.FC = () => {
                         }))}
                         chartType="pie"
                         isLoading={analyticsLoading}
-                        height={280}
+                        height={320}
                         customColors={usageData.map(u => u.color)}
                         config={{
                           value: {
