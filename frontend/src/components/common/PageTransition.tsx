@@ -90,14 +90,14 @@ export const FadeIn = ({
  * 列表項目的交錯動畫
  * 用於列表項目依序淡入
  */
-export const StaggerChildren = ({ 
+export const StaggerChildren = ({
   children,
   staggerDelay = 0.05,
-  duration = 0.3
-}: { 
+  _duration = 0.3
+}: {
   children: ReactNode;
   staggerDelay?: number;
-  duration?: number;
+  _duration?: number;
 }) => {
   return (
     <motion.div

@@ -17,8 +17,6 @@ import {
   Settings,
   Eye,
   Activity,
-  Clock,
-  Target,
   Zap,
   Send,
   Copy,
