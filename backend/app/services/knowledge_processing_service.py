@@ -432,9 +432,10 @@ class KnowledgeProcessingService:
             ai_summary = await GroqService.generate_document_summary(
                 content=text,
                 filename=job.metadata.get("filename"),
-                max_length=100
+                min_length=100,  # 最小 100 字
+                max_length=200   # 最大 200 字
             )
-            logger.info(f"文件摘要生成成功: {ai_summary[:50]}...")
+            logger.info(f"文件摘要生成成功（{len(ai_summary)} 字）: {ai_summary[:50]}...")
         except Exception as summary_err:
             logger.warning(f"生成文件摘要失敗（不影響主流程）: {summary_err}")
 

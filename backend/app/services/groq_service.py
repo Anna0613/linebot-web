@@ -513,7 +513,8 @@ class GroqService:
     async def generate_document_summary(
         content: str,
         filename: Optional[str] = None,
-        max_length: int = 100
+        min_length: int = 100,
+        max_length: int = 200
     ) -> str:
         """
         生成文件摘要
@@ -521,7 +522,8 @@ class GroqService:
         Args:
             content: 文件原文內容
             filename: 檔案名稱（可選）
-            max_length: 摘要最大字數（預設 100 字）
+            min_length: 摘要最小字數（預設 100 字）
+            max_length: 摘要最大字數（預設 200 字）
 
         Returns:
             str: AI 生成的摘要
@@ -534,13 +536,15 @@ class GroqService:
 
             # 構建系統提示詞
             system_prompt = (
-                f"你是專業的文件摘要助手。請分析以下文件內容，生成 {max_length} 字以內的重點摘要。\n\n"
+                f"你是專業的文件摘要助手。請分析以下文件內容，生成 {min_length} 到 {max_length} 字的重點摘要。\n\n"
                 "摘要要求：\n"
                 "・使用繁體中文\n"
+                f"・摘要長度必須在 {min_length} 到 {max_length} 字之間\n"
                 "・簡潔明確，涵蓋文件核心內容\n"
                 "・足以讓人理解文件主題和重點\n"
                 "・不要使用 Markdown 格式\n"
-                "・直接輸出摘要內容，不要加上「摘要：」等前綴"
+                "・不要加上「摘要：」等前綴\n"
+                "・確保摘要完整，不要在句子中間截斷"
             )
 
             # 構建用戶訊息
@@ -558,7 +562,7 @@ class GroqService:
                     {"role": "user", "content": user_message}
                 ],
                 temperature=0.3,
-                max_tokens=200,  # 摘要不需要太多 tokens
+                max_tokens=400,  # 增加 tokens 以容納 200 字的摘要
                 top_p=0.9,
                 stream=False
             )
@@ -569,18 +573,36 @@ class GroqService:
                 if choice.message and choice.message.content:
                     summary = choice.message.content.strip()
 
-                    # 確保摘要不超過指定長度
-                    if len(summary) > max_length:
-                        summary = summary[:max_length] + "..."
+                    # 檢查摘要長度
+                    summary_length = len(summary)
 
-                    logger.info(f"文件摘要生成成功: {len(summary)} 字")
+                    # 如果摘要太短（少於最小長度），記錄警告但仍返回
+                    if summary_length < min_length:
+                        logger.warning(f"摘要長度 {summary_length} 字少於最小要求 {min_length} 字")
+
+                    # 如果摘要太長，截斷到最大長度
+                    if summary_length > max_length:
+                        logger.warning(f"摘要長度 {summary_length} 字超過最大限制 {max_length} 字，將截斷")
+                        # 找到最接近 max_length 的句號、逗號或空格，避免在句子中間截斷
+                        truncate_pos = max_length
+                        for i in range(max_length - 1, max(max_length - 20, 0), -1):
+                            if summary[i] in ['。', '！', '？', '，', '、', ' ']:
+                                truncate_pos = i + 1
+                                break
+                        summary = summary[:truncate_pos].rstrip()
+                        if not summary.endswith(('。', '！', '？')):
+                            summary += "..."
+
+                    logger.info(f"文件摘要生成成功: {len(summary)} 字（要求 {min_length}-{max_length} 字）")
                     return summary
 
             # 如果沒有回應，返回預設摘要
             logger.warning("AI 未返回摘要內容，使用預設摘要")
-            return content[:max_length] + ("..." if len(content) > max_length else "")
+            fallback_length = min(max_length, len(content))
+            return content[:fallback_length] + ("..." if len(content) > fallback_length else "")
 
         except Exception as e:
             logger.error(f"生成文件摘要失敗: {e}")
             # 容錯處理：返回內容的前 max_length 字元作為摘要
-            return content[:max_length] + ("..." if len(content) > max_length else "")
+            fallback_length = min(max_length, len(content))
+            return content[:fallback_length] + ("..." if len(content) > fallback_length else "")
