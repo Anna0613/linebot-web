@@ -183,7 +183,7 @@ const Setting: React.FC = () => {
   // 載入中狀態
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-glass-card p-8">
           <div className="text-muted-foreground text-lg">載入設定頁面...</div>
         </div>
@@ -194,7 +194,7 @@ const Setting: React.FC = () => {
   // 錯誤狀態
   if (authError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-glass-card p-8">
           <Alert className="max-w-md">
             <AlertTriangle className="h-4 w-4" />
@@ -207,7 +207,7 @@ const Setting: React.FC = () => {
 
   if (!user) {
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-glass-card p-8">
           <div className="text-muted-foreground text-lg">載入用戶資料...</div>
         </div>
@@ -216,7 +216,7 @@ const Setting: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent dark:bg-background">
       <DashboardNavbar user={user || authUser} />
 
       <div className="pt-32 pb-12 px-4 sm:px-6 lg:px-8">

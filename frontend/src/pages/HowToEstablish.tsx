@@ -81,7 +81,7 @@ const HowToEstablish = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-glass-card p-8">
           <div className="text-foreground text-lg">
             載入中...
@@ -107,7 +107,7 @@ const HowToEstablish = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
       {/* 根據登入狀態顯示不同的導航欄 */}
       <DashboardNavbar user={user} />
 

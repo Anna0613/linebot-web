@@ -1363,7 +1363,7 @@ const BotManagementPage: React.FC = () => {
   // 處理加載狀態 - 改善載入體驗
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-loader-card p-8">
           <Loader fullPage={false} text="驗證身份中..." web3Style={true} />
         </div>
@@ -1374,7 +1374,7 @@ const BotManagementPage: React.FC = () => {
   // 如果用戶已認證但仍在載入 Bot 列表，顯示載入器
   if (loading && bots.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-loader-card p-8 text-center">
           <Loader fullPage={false} text="載入 Bot 列表中..." web3Style={true} />
         </div>
@@ -1385,7 +1385,7 @@ const BotManagementPage: React.FC = () => {
   const selectedBot = bots.find(bot => bot.id === selectedBotId);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-transparent dark:bg-background">
       <DashboardNavbar user={user} />
 
       <div className="flex-1 mt-20 mb-20">

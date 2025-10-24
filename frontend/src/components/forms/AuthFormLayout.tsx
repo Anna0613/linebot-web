@@ -15,7 +15,7 @@ const AuthFormLayout = ({
   children,
 }: AuthFormLayoutProps) => {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
       <Navbar />
 
       <div className="flex-1 flex items-center justify-center px-4 py-8 pt-28 sm:pt-24 md:pt-28 pb-8">

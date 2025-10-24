@@ -13,7 +13,7 @@ const AddBotPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-loader-card p-8">
           <Loader fullPage={false} text="載入中..." web3Style={true} />
         </div>
@@ -23,7 +23,7 @@ const AddBotPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-glass-card p-8 text-center max-w-md">
           <h1 className="text-2xl font-bold text-destructive mb-4">載入錯誤</h1>
           <p className="text-muted-foreground">{error}</p>
@@ -33,7 +33,7 @@ const AddBotPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent dark:bg-background">
       <DashboardNavbar user={user} />
       <main className="flex-1">
         <div className="pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6">

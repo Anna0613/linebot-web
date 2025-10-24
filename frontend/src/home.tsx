@@ -8,6 +8,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { initializeCacheEventHandler } from "@/utils/cacheEventHandler";
 import { authOptimizer } from "@/utils/authOptimizer";
 import { queryClient } from "@/hooks/useReactQuery";
+import { AnimatedOrbs } from "@/components/background";
 
 // 使用 React.lazy 進行代碼分割和懶載入，按優先級分組
 // 高優先級 - 首頁和登入相關（用戶最可能訪問）
@@ -110,6 +111,8 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        {/* 動態背景球體 - 只在亮色主題下顯示 */}
+        <AnimatedOrbs />
         <Toaster />
         <Sonner />
         <BrowserRouter

@@ -18,7 +18,7 @@ const About = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-glass-card p-8">
           <div className="text-foreground text-lg">載入中...</div>
         </div>
@@ -27,7 +27,7 @@ const About = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
       {isAuthenticated ? <DashboardNavbar user={user} /> : <Navbar />}
       {/* 主要內容區域 */}
       <main className="flex-1">

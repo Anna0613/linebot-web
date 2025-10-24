@@ -34,7 +34,7 @@ const DashboardPage = memo(() => {
   // 處理錯誤狀態顯示
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-transparent dark:bg-background">
         <div className="web3-glass-card p-8 text-center max-w-md">
           <h1 className="text-2xl font-bold text-web3-red mb-4">認證錯誤</h1>
           <p className="text-muted-foreground">{error}</p>
@@ -46,7 +46,7 @@ const DashboardPage = memo(() => {
   // 加載狀態顯示
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-transparent dark:bg-background">
         <div className="web3-loader-card p-8">
           <Loader fullPage={false} text="載入儀表板..." web3Style={true} />
         </div>
@@ -55,7 +55,7 @@ const DashboardPage = memo(() => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-transparent dark:bg-background">
       <DashboardNavbar user={user} />
       <main id="main" role="main" className="pt-24 md:pt-28 mb-20">
         <HomeBotfly user={user} />

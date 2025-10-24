@@ -97,7 +97,7 @@ const Suggest = () => {
   ]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
       {/* 主要內容區域 */}
       <DashboardNavbar user={user || authUser} />
       <main className="flex-1">

@@ -1,0 +1,301 @@
+/* 
+ * AnimatedOrbs 樣式
+ * 動態背景球體效果 - 僅在亮色主題下顯示
+ */
+
+/* 容器 - 固定在背景，不影響頁面佈局 */
+.animated-orbs-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+  /* 只在亮色主題下顯示 */
+  display: block;
+}
+
+/* 暗色主題下隱藏 */
+.dark .animated-orbs-container {
+  display: none;
+}
+
+/* 球體包裝器 */
+.orbs-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 移除毛玻璃效果層，改為直接在球體上應用模糊 */
+.orbs-blur-overlay {
+  display: none;
+}
+
+/* 基礎球體樣式 */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.35;
+  will-change: transform;
+  /* 使用 GPU 加速 */
+  transform: translate3d(0, 0, 0);
+  mix-blend-mode: normal;
+}
+
+/* 黃色球體 - 使用漸層營造立體感，增加飽和度 */
+.orb-yellow {
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 215, 0, 0.8) 0%,
+    rgba(255, 193, 7, 0.7) 30%,
+    rgba(255, 165, 0, 0.5) 60%,
+    rgba(255, 140, 0, 0.3) 100%
+  );
+  box-shadow:
+    0 0 100px rgba(255, 193, 7, 0.4),
+    0 0 160px rgba(255, 165, 0, 0.3),
+    inset -30px -30px 80px rgba(255, 140, 0, 0.3),
+    inset 30px 30px 80px rgba(255, 230, 100, 0.3);
+}
+
+/* 綠色球體 - 使用漸層營造立體感，增加飽和度 */
+.orb-green {
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(139, 195, 74, 0.8) 0%,
+    rgba(102, 187, 106, 0.7) 30%,
+    rgba(76, 175, 80, 0.5) 60%,
+    rgba(56, 142, 60, 0.3) 100%
+  );
+  box-shadow:
+    0 0 100px rgba(102, 187, 106, 0.4),
+    0 0 160px rgba(76, 175, 80, 0.3),
+    inset -30px -30px 80px rgba(56, 142, 60, 0.3),
+    inset 30px 30px 80px rgba(165, 214, 167, 0.3);
+}
+
+/* 球體 1 - 左上區域，大球 - 順時針移動 */
+.orb-1 {
+  width: 720px;
+  height: 720px;
+  top: 0%;
+  left: 0%;
+  animation: float-orb-1 14s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+/* 球體 2 - 右上區域，中球 - 逆時針移動（延遲啟動避免重疊）*/
+.orb-2 {
+  width: 680px;
+  height: 680px;
+  top: 0%;
+  right: 0%;
+  animation: float-orb-2 16s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+/* 球體 3 - 中央區域，中球 - 橢圓形移動（延遲啟動）*/
+.orb-3 {
+  width: 700px;
+  height: 700px;
+  top: 50%;
+  left: 50%;
+  animation: float-orb-3 15s ease-in-out infinite;
+  animation-delay: -7.5s;
+}
+
+/* 球體 4 - 右下區域，大球 - 垂直移動（延遲啟動）*/
+.orb-4 {
+  width: 740px;
+  height: 740px;
+  bottom: 0%;
+  right: 0%;
+  animation: float-orb-4 17s ease-in-out infinite;
+  animation-delay: -11s;
+}
+
+/* 球體 5 - 左下區域，小球 - 水平移動（延遲啟動）*/
+.orb-5 {
+  width: 660px;
+  height: 660px;
+  bottom: 0%;
+  left: 0%;
+  animation: float-orb-5 13s ease-in-out infinite;
+  animation-delay: -6.5s;
+}
+
+/* 動畫 - 球體 1 - 大範圍對角線移動（左上→右下→左上）*/
+@keyframes float-orb-1 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(50vw, 30vh, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(70vw, 60vh, 0) scale(0.95);
+  }
+  75% {
+    transform: translate3d(35vw, 30vh, 0) scale(1.02);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* 動畫 - 球體 2 - 大範圍逆對角線移動（右上→左下→右上）*/
+@keyframes float-orb-2 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(-40vw, 35vh, 0) scale(0.93);
+  }
+  50% {
+    transform: translate3d(-65vw, 70vh, 0) scale(1.07);
+  }
+  75% {
+    transform: translate3d(-30vw, 40vh, 0) scale(0.98);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* 動畫 - 球體 3 - 大範圍橢圓形移動（中央區域）*/
+@keyframes float-orb-3 {
+  0% {
+    transform: translate3d(-30vw, -25vh, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(10vw, -40vh, 0) scale(1.06);
+  }
+  50% {
+    transform: translate3d(30vw, -25vh, 0) scale(0.94);
+  }
+  75% {
+    transform: translate3d(10vw, -10vh, 0) scale(1.03);
+  }
+  100% {
+    transform: translate3d(-30vw, -25vh, 0) scale(1);
+  }
+}
+
+/* 動畫 - 球體 4 - 大範圍垂直S形移動（右下→左上→右下）*/
+@keyframes float-orb-4 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(-30vw, -25vh, 0) scale(0.96);
+  }
+  50% {
+    transform: translate3d(-55vw, -55vh, 0) scale(1.08);
+  }
+  75% {
+    transform: translate3d(-25vw, -30vh, 0) scale(0.96);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* 動畫 - 球體 5 - 大範圍波浪形移動（左下→右上→左下）*/
+@keyframes float-orb-5 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  20% {
+    transform: translate3d(25vw, -20vh, 0) scale(1.04);
+  }
+  40% {
+    transform: translate3d(45vw, -30vh, 0) scale(0.96);
+  }
+  60% {
+    transform: translate3d(60vw, -50vh, 0) scale(1.05);
+  }
+  80% {
+    transform: translate3d(35vw, -35vh, 0) scale(0.97);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* 響應式設計 - 平板 */
+@media (max-width: 1024px) {
+  .orb-1 {
+    width: 400px;
+    height: 400px;
+  }
+  
+  .orb-2 {
+    width: 280px;
+    height: 280px;
+  }
+  
+  .orb-3 {
+    width: 320px;
+    height: 320px;
+  }
+  
+  .orb-4 {
+    width: 380px;
+    height: 380px;
+  }
+  
+  .orb-5 {
+    width: 220px;
+    height: 220px;
+  }
+}
+
+/* 響應式設計 - 手機 */
+@media (max-width: 640px) {
+  .orb-1 {
+    width: 300px;
+    height: 300px;
+  }
+  
+  .orb-2 {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .orb-3 {
+    width: 240px;
+    height: 240px;
+  }
+  
+  .orb-4 {
+    width: 280px;
+    height: 280px;
+  }
+  
+  .orb-5 {
+    width: 160px;
+    height: 160px;
+  }
+  
+  /* 在小螢幕上減少模糊效果以提升效能 */
+  .orb {
+    filter: blur(30px);
+  }
+  
+  .orbs-blur-overlay {
+    backdrop-filter: blur(60px);
+    -webkit-backdrop-filter: blur(60px);
+  }
+}
+
+/* 減少動畫效果的使用者偏好設定 */
+@media (prefers-reduced-motion: reduce) {
+  .orb {
+    animation: none;
+  }
+}
+
