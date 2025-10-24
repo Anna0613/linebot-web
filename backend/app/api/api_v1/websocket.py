@@ -29,71 +29,85 @@ async def websocket_bot_endpoint(
 ):
     """Bot 專用 WebSocket 端點"""
 
-    # WebSocket 認證檢查（改用 Cookie）
-    token = websocket.cookies.get("token") or ws_token
-    if not token:
-        await websocket.close(code=4001, reason="Missing authentication")
-        return
+    # 檢查 Origin 頭（用於 CORS 驗證）
+    origin = websocket.headers.get("origin")
+    logger.info(f"WebSocket 連接請求 - Bot: {bot_id}, Origin: {origin}")
+
+    # 先接受連接（FastAPI 的 WebSocket 需要先接受才能進行後續操作）
+    # 注意：在生產環境中，Cloudflare Tunnel 會處理 CORS，這裡主要是認證檢查
+    await websocket.accept()
 
     try:
+        # WebSocket 認證檢查（改用 Cookie）
+        token = websocket.cookies.get("token") or ws_token
+        if not token:
+            logger.warning(f"WebSocket 認證失敗: 缺少 token - Bot {bot_id}")
+            await websocket.close(code=4001, reason="Missing authentication")
+            return
+
         # 驗證 token 並獲取用戶
         payload = verify_token(token)
         username = payload.get("sub")
 
         if not username:
+            logger.warning(f"WebSocket 認證失敗: 無效的 token - Bot {bot_id}")
             await websocket.close(code=4001, reason="Invalid token")
             return
 
         result = await db.execute(select(User).where(User.username == username))
         user = result.scalars().first()
         if not user:
+            logger.warning(f"WebSocket 認證失敗: 用戶不存在 - Bot {bot_id}, Username: {username}")
             await websocket.close(code=4001, reason="User not found")
             return
 
-    except Exception as e:
-        logger.error(f"WebSocket 認證失敗: {e}")
-        await websocket.close(code=4001, reason="Authentication failed")
-        return
+        # 驗證 Bot 存在且屬於該用戶
+        result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == user.id))
+        bot = result.scalars().first()
+        if not bot:
+            logger.warning(f"WebSocket 認證失敗: Bot 不存在或無權限 - Bot {bot_id}, User {user.id}")
+            await websocket.close(code=4004, reason="Bot not found or access denied")
+            return
 
-    # 驗證 Bot 存在且屬於該用戶
-    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == user.id))
-    bot = result.scalars().first()
-    if not bot:
-        await websocket.close(code=4004, reason="Bot not found or access denied")
-        return
+        logger.info(f"✅ WebSocket 連接已建立: Bot {bot_id}, User {user.username} (ID: {user.id}), Origin: {origin}")
 
-    await websocket.accept()
-    logger.info(f"WebSocket 連接已接受: Bot {bot_id}, User {user.id}")
-    
-    # 註冊連接
-    await websocket_manager.connect(bot_id, websocket)
-    
-    try:
-        while True:
-            # 接收客戶端消息
-            data = await websocket.receive_text()
-            message = json.loads(data)
-            
-            # 處理不同類型的消息
-            await handle_websocket_message(bot_id, message, websocket, db)
-            
-    except WebSocketDisconnect:
-        logger.info(f"WebSocket 連接斷開: Bot {bot_id}")
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON 解析錯誤: {e}")
-        await websocket.send_text(json.dumps({
-            'type': 'error',
-            'message': 'Invalid JSON format'
-        }))
+        # 註冊連接
+        await websocket_manager.connect(bot_id, websocket)
+
+        try:
+            while True:
+                # 接收客戶端消息
+                data = await websocket.receive_text()
+                message = json.loads(data)
+
+                # 處理不同類型的消息
+                await handle_websocket_message(bot_id, message, websocket, db)
+
+        except WebSocketDisconnect:
+            logger.info(f"WebSocket 連接斷開: Bot {bot_id}, User {user.username}")
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON 解析錯誤: {e}")
+            await websocket.send_text(json.dumps({
+                'type': 'error',
+                'message': 'Invalid JSON format'
+            }))
+        except Exception as e:
+            logger.error(f"WebSocket 錯誤: {e}")
+            await websocket.send_text(json.dumps({
+                'type': 'error',
+                'message': str(e)
+            }))
+        finally:
+            # 清理連接
+            await websocket_manager.disconnect(bot_id, websocket)
+            logger.info(f"WebSocket 連接已清理: Bot {bot_id}, User {user.username}")
+
     except Exception as e:
-        logger.error(f"WebSocket 錯誤: {e}")
-        await websocket.send_text(json.dumps({
-            'type': 'error',
-            'message': str(e)
-        }))
-    finally:
-        # 清理連接
-        await websocket_manager.disconnect(bot_id, websocket)
+        logger.error(f"WebSocket 認證或初始化失敗: {e}")
+        try:
+            await websocket.close(code=4000, reason="Authentication or initialization failed")
+        except:
+            pass
 
 
 

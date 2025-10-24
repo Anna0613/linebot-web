@@ -24,4 +24,4 @@ EXPOSE 8005
 
 # 啟動命令：使用 Gunicorn 多 worker（可透過 WEB_CONCURRENCY 覆蓋）
 ENV WEB_CONCURRENCY=2
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "${WEB_CONCURRENCY}", "-b", "0.0.0.0:8005", "app.main:app", "--timeout", "60"]
+CMD gunicorn -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY} -b 0.0.0.0:8005 app.main:app --timeout 60
