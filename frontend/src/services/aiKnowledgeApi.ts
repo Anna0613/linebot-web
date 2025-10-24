@@ -31,6 +31,25 @@ export interface KnowledgeList {
   page_size: number;
 }
 
+export interface KnowledgeDocumentItem {
+  id: string;
+  bot_id?: string | null;
+  source_type: string;  // text | file | bulk
+  title?: string | null;
+  original_file_name?: string | null;
+  ai_summary?: string | null;
+  chunk_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeDocumentList {
+  items: KnowledgeDocumentItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 export interface KnowledgeSearchItem {
   id: string;
   document_id: string;
@@ -119,6 +138,26 @@ export class AIKnowledgeApi {
     const res = await this.api.get<{ items: KnowledgeSearchItem[] }>(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/search?${params.toString()}`);
     if (!res.success) throw new Error(res.error || '搜尋失敗');
     return res.data?.items || [];
+  }
+
+  // ========== 文件列表 API（新增）==========
+
+  static async listDocuments(botId: string, scope: Scope = 'project', q = '', page = 1, pageSize = 20) {
+    const params = new URLSearchParams({ scope, page: String(page), page_size: String(pageSize) });
+    if (q) params.append('q', q);
+    const res = await this.api.get<KnowledgeDocumentList>(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/documents?${params.toString()}`);
+    if (!res.success) throw new Error(res.error || '取得文件列表失敗');
+    return res.data as KnowledgeDocumentList;
+  }
+
+  static async deleteDocument(botId: string, documentId: string) {
+    const res = await this.api.delete(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/documents/${documentId}`);
+    if (!res.success) throw new Error(res.error || '刪除文件失敗');
+  }
+
+  static async batchDeleteDocuments(botId: string, documentIds: string[]) {
+    const res = await this.api.post(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/documents/batch-delete`, { document_ids: documentIds });
+    if (!res.success) throw new Error(res.error || '批次刪除文件失敗');
   }
 }
 

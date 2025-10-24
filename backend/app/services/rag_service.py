@@ -51,12 +51,16 @@ class RAGService:
         max_distance = 1.0 - th
 
         # 單一 768 維向量欄位 embedding（pgvector）
+        # 只檢索未刪除的切塊和文件
         sql = sql_text(
             """
             SELECT kc.*,
                    (1 - (kc.embedding <=> CAST(:q AS vector))) AS score
             FROM knowledge_chunks kc
+            JOIN knowledge_documents kd ON kc.document_id = kd.id
             WHERE (kc.bot_id = :bot_id OR kc.bot_id IS NULL)
+              AND kc.deleted_at IS NULL
+              AND kd.deleted_at IS NULL
               AND (kc.embedding <=> CAST(:q AS vector)) <= :maxd
             ORDER BY (kc.embedding <=> CAST(:q AS vector))
             LIMIT :k
@@ -223,7 +227,51 @@ class RAGService:
             )
 
     @staticmethod
-    async def _classify_intent(query: str) -> str:
+    async def get_knowledge_documents_summary(
+        db: AsyncSession,
+        bot_id: str
+    ) -> List[Dict[str, str]]:
+        """
+        取得知識庫文件列表（檔案名稱 + AI 摘要）
+
+        Args:
+            db: 資料庫 session
+            bot_id: Bot ID
+
+        Returns:
+            List[Dict]: 文件列表，每個元素包含 title 和 ai_summary
+        """
+        try:
+            from app.models.knowledge import KnowledgeDocument
+
+            # 查詢該 bot 的所有文件（包含 project 和 global），只查詢未刪除的文件
+            stmt = select(KnowledgeDocument).where(
+                ((KnowledgeDocument.bot_id == bot_id) | (KnowledgeDocument.bot_id.is_(None))),
+                KnowledgeDocument.deleted_at.is_(None)
+            ).order_by(KnowledgeDocument.created_at.desc())
+
+            result = await db.execute(stmt)
+            documents = result.scalars().all()
+
+            # 構建文件列表
+            doc_list = []
+            for doc in documents:
+                # 只包含有摘要的文件
+                if doc.ai_summary:
+                    doc_list.append({
+                        "title": doc.title or doc.original_file_name or "未命名文件",
+                        "summary": doc.ai_summary
+                    })
+
+            logger.info(f"取得知識庫文件列表: {len(doc_list)} 個文件（bot_id={bot_id}）")
+            return doc_list
+
+        except Exception as e:
+            logger.error(f"取得知識庫文件列表失敗: {e}")
+            return []
+
+    @staticmethod
+    async def _classify_intent(query: str, db: Optional[AsyncSession] = None, bot_id: Optional[str] = None) -> str:
         """
         使用 Groq API 判斷用戶意圖。
 
@@ -242,7 +290,21 @@ class RAGService:
             # 使用 llama-3.1-8b-instant 模型進行意圖判斷（快速且不會產生 reasoning）
             intent_model = "llama-3.1-8b-instant"
 
-            # 通用的系統提示詞 - 避免具體範例限制 AI 思考
+            # 取得知識庫文件列表（如果有提供 db 和 bot_id）
+            knowledge_context = ""
+            if db and bot_id:
+                try:
+                    doc_list = await RAGService.get_knowledge_documents_summary(db, bot_id)
+                    if doc_list:
+                        knowledge_context = "\n\n【知識庫文件列表】\n以下是系統中已有的知識庫文件及其摘要：\n\n"
+                        for i, doc in enumerate(doc_list[:10], 1):  # 最多顯示 10 個文件
+                            knowledge_context += f"{i}. {doc['title']}\n   摘要：{doc['summary']}\n\n"
+                        knowledge_context += "【知識庫文件列表結束】\n"
+                        logger.info(f"意圖判斷加入 {len(doc_list)} 個知識庫文件摘要")
+                except Exception as e:
+                    logger.warning(f"取得知識庫文件列表失敗（不影響意圖判斷）: {e}")
+
+            # 優化的系統提示詞 - 加入知識庫文件列表參考
             intent_system_prompt = (
                 "你是一個嚴格的意圖分類器。分析用戶訊息，判斷其核心意圖。\n\n"
                 "【輸出格式要求】\n"
@@ -252,8 +314,17 @@ class RAGService:
                 "【分類原則】\n"
                 "chat：用戶的主要目的是進行社交互動、情感交流或日常對話，不需要具體資訊或答案。\n"
                 "query：用戶的主要目的是獲取特定資訊、尋求解答或需要實質性的回應內容。\n\n"
+                "【重要】如果系統提供了知識庫文件列表：\n"
+                "・只有當用戶問題與列表中的任一文件摘要相關時，才判斷為 query\n"
+                "・如果用戶問題與所有文件摘要都無關，則判斷為 chat\n"
+                "・這樣可以避免不必要的知識庫檢索\n\n"
                 "請根據訊息的核心意圖進行判斷，只輸出 chat 或 query。"
             )
+
+            # 構建用戶訊息（包含知識庫文件列表）
+            user_message = query
+            if knowledge_context:
+                user_message = f"{knowledge_context}\n【用戶問題】\n{query}"
 
             # 呼叫 Groq API
             client = GroqService._get_client(settings.GROQ_API_KEY)
@@ -262,7 +333,7 @@ class RAGService:
                 model=intent_model,
                 messages=[
                     {"role": "system", "content": intent_system_prompt},
-                    {"role": "user", "content": query}
+                    {"role": "user", "content": user_message}
                 ],
                 temperature=0.0,  # 使用 0 溫度以獲得最確定的分類
                 max_tokens=10,    # 10 個 tokens 足夠輸出 chat 或 query
@@ -425,9 +496,9 @@ class RAGService:
         bm25_weight: float = 0.3,
     ) -> Optional[str]:
         try:
-            # ========== 步驟 1: 意圖判斷 ==========
+            # ========== 步驟 1: 意圖判斷（加入知識庫文件列表優化）==========
             logger.info(f"🔍 開始意圖判斷: {query}")
-            intent = await RAGService._classify_intent(query)
+            intent = await RAGService._classify_intent(query, db=db, bot_id=bot_id)
             logger.info(f"✅ 意圖判斷完成: {intent}")
 
             # 構建對話歷史（兩種情況都需要）

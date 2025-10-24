@@ -6,7 +6,7 @@ import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from '../ui/dialog';
 import { Settings } from 'lucide-react';
-import AIKnowledgeApi, { AIToggle, KnowledgeChunkItem, Scope, KnowledgeSearchItem } from '../../services/aiKnowledgeApi';
+import AIKnowledgeApi, { AIToggle, KnowledgeChunkItem, KnowledgeDocumentItem, Scope, KnowledgeSearchItem } from '../../services/aiKnowledgeApi';
 import { apiClient } from '../../services/UnifiedApiClient';
 import { API_CONFIG } from '../../config/apiConfig';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
@@ -28,7 +28,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   const [scope, setScope] = useState<Scope>('project');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [items, setItems] = useState<KnowledgeChunkItem[]>([]);
+  const [items, setItems] = useState<KnowledgeDocumentItem[]>([]);  // 改為文件列表
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [semanticItems, setSemanticItems] = useState<KnowledgeSearchItem[] | null>(null);
@@ -74,7 +74,8 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
 
       setLoading(true);
       try {
-        const res = await AIKnowledgeApi.list(botId, scope, undefined, page, pageSize);
+        // 改為載入文件列表
+        const res = await AIKnowledgeApi.listDocuments(botId, scope, undefined, page, pageSize);
         setItems(res.items);
         setTotal(res.total);
         setSelected({});
@@ -463,17 +464,22 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     const ids = Object.entries(selected).filter(([, v]) => v).map(([k]) => k);
     if (!ids.length) return;
 
+    // 確認刪除
+    const confirmMessage = `確定要刪除 ${ids.length} 個文件嗎？\n刪除文件將同時刪除其所有切塊。`;
+    if (!window.confirm(confirmMessage)) return;
+
     const operationId = 'deleteSelected';
     setDeleting(true);
     isOperatingRef.current = true;
     currentOperationRef.current = operationId;
 
     try {
-      await AIKnowledgeApi.batchDelete(botId, ids);
+      // 改為批次刪除文件
+      await AIKnowledgeApi.batchDeleteDocuments(botId, ids);
 
       // 檢查操作是否仍然是當前操作
       if (currentOperationRef.current === operationId) {
-        toast({ title: '已刪除選取片段' });
+        toast({ title: `已刪除 ${ids.length} 個文件` });
         setSelected({});
 
         // 延遲重新載入列表，給後端處理時間
@@ -678,7 +684,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
         </div>
       </div>
 
-      {/* 列表 / 語意搜尋結果 */}
+      {/* 文件列表 / 語意搜尋結果 */}
       <div className="border rounded">
         <div className="grid grid-cols-12 px-3 py-2 text-xs text-muted-foreground border-b">
           <div className="col-span-1 flex items-center">
@@ -696,15 +702,17 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
             />
             <span className="ml-1">選取</span>
           </div>
-          <div className="col-span-7">內容預覽</div>
+          <div className="col-span-5">檔案名稱 / AI 摘要</div>
           {semanticItems ? (
             <>
               <div className="col-span-2">相關度</div>
+              <div className="col-span-2">—</div>
               <div className="col-span-2">—</div>
             </>
           ) : (
             <>
               <div className="col-span-2">來源</div>
+              <div className="col-span-2">切塊數</div>
               <div className="col-span-2">更新時間</div>
             </>
           )}
@@ -721,22 +729,37 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
                     <div className="col-span-1">
                       <input type="checkbox" checked={!!selected[it.id]} onChange={() => toggleSelect(it.id)} />
                     </div>
-                    <div className="col-span-7 text-sm pr-4 line-clamp-2">
+                    <div className="col-span-5 text-sm pr-4 line-clamp-2">
                       {it.content.length > 160 ? `${it.content.slice(0, 160)}…` : it.content}
                     </div>
                     <div className="col-span-2 text-xs">{it.score.toFixed(3)}</div>
                     <div className="col-span-2 text-xs">—</div>
+                    <div className="col-span-2 text-xs">—</div>
                   </div>
                 ))
               : items.map((it) => (
-                  <div key={it.id} className="grid grid-cols-12 px-3 py-2 items-center">
+                  <div key={it.id} className="grid grid-cols-12 px-3 py-2 items-center hover:bg-gray-50">
                     <div className="col-span-1">
                       <input type="checkbox" checked={!!selected[it.id]} onChange={() => toggleSelect(it.id)} />
                     </div>
-                    <div className="col-span-7 text-sm pr-4 line-clamp-2">
-                      {it.content.length > 160 ? `${it.content.slice(0, 160)}…` : it.content}
+                    <div className="col-span-5 text-sm pr-4">
+                      <div className="font-medium text-gray-900 line-clamp-1">
+                        {it.title || it.original_file_name || '未命名文件'}
+                      </div>
+                      {it.ai_summary && (
+                        <div className="text-xs text-gray-500 line-clamp-2 mt-1">
+                          {it.ai_summary}
+                        </div>
+                      )}
                     </div>
-                    <div className="col-span-2 text-xs">{it.source_type}</div>
+                    <div className="col-span-2 text-xs">
+                      <span className="inline-block px-2 py-1 rounded bg-blue-100 text-blue-700">
+                        {it.source_type}
+                      </span>
+                    </div>
+                    <div className="col-span-2 text-xs text-center">
+                      {it.chunk_count} 個切塊
+                    </div>
                     <div className="col-span-2 text-xs">{it.updated_at?.slice(0, 19).replace('T', ' ')}</div>
                   </div>
                 )))

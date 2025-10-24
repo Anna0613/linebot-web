@@ -508,3 +508,79 @@ class GroqService:
         except Exception as e:
             logger.error(f"上下文管理 Groq API 調用失敗: {e}")
             raise RuntimeError(f"Groq API 調用失敗: {str(e)}")
+
+    @staticmethod
+    async def generate_document_summary(
+        content: str,
+        filename: Optional[str] = None,
+        max_length: int = 100
+    ) -> str:
+        """
+        生成文件摘要
+
+        Args:
+            content: 文件原文內容
+            filename: 檔案名稱（可選）
+            max_length: 摘要最大字數（預設 100 字）
+
+        Returns:
+            str: AI 生成的摘要
+        """
+        try:
+            # 檢查內容長度，如果太長則截取前 8000 字元
+            if len(content) > 8000:
+                content = content[:8000] + "..."
+                logger.info(f"文件內容過長，截取前 8000 字元進行摘要")
+
+            # 構建系統提示詞
+            system_prompt = (
+                f"你是專業的文件摘要助手。請分析以下文件內容，生成 {max_length} 字以內的重點摘要。\n\n"
+                "摘要要求：\n"
+                "・使用繁體中文\n"
+                "・簡潔明確，涵蓋文件核心內容\n"
+                "・足以讓人理解文件主題和重點\n"
+                "・不要使用 Markdown 格式\n"
+                "・直接輸出摘要內容，不要加上「摘要：」等前綴"
+            )
+
+            # 構建用戶訊息
+            user_message = f"【文件內容】\n{content}"
+            if filename:
+                user_message = f"【檔案名稱】\n{filename}\n\n{user_message}"
+
+            # 使用 llama-3.1-8b-instant 模型（快速且高效）
+            client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+
+            completion: ChatCompletion = await client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=0.3,
+                max_tokens=200,  # 摘要不需要太多 tokens
+                top_p=0.9,
+                stream=False
+            )
+
+            # 解析回應
+            if completion.choices and len(completion.choices) > 0:
+                choice = completion.choices[0]
+                if choice.message and choice.message.content:
+                    summary = choice.message.content.strip()
+
+                    # 確保摘要不超過指定長度
+                    if len(summary) > max_length:
+                        summary = summary[:max_length] + "..."
+
+                    logger.info(f"文件摘要生成成功: {len(summary)} 字")
+                    return summary
+
+            # 如果沒有回應，返回預設摘要
+            logger.warning("AI 未返回摘要內容，使用預設摘要")
+            return content[:max_length] + ("..." if len(content) > max_length else "")
+
+        except Exception as e:
+            logger.error(f"生成文件摘要失敗: {e}")
+            # 容錯處理：返回內容的前 max_length 字元作為摘要
+            return content[:max_length] + ("..." if len(content) > max_length else "")

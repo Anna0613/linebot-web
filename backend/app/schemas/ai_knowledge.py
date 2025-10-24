@@ -79,3 +79,29 @@ class KnowledgeSearchResponse(BaseModel):
 
 class BatchDeleteRequest(BaseModel):
     chunk_ids: List[str]
+
+
+class KnowledgeDocumentResponse(BaseModel):
+    """知識庫文件回應"""
+    id: str
+    bot_id: Optional[str]
+    source_type: str  # text | file | bulk
+    title: Optional[str]
+    original_file_name: Optional[str]
+    ai_summary: Optional[str]
+    chunk_count: int  # 關聯的切塊數量
+    created_at: str
+    updated_at: str
+
+
+class KnowledgeDocumentListResponse(BaseModel):
+    """知識庫文件列表回應"""
+    items: List[KnowledgeDocumentResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class BatchDeleteDocumentsRequest(BaseModel):
+    """批次刪除文件請求"""
+    document_ids: List[str]

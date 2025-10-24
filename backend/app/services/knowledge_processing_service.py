@@ -425,6 +425,19 @@ class KnowledgeProcessingService:
         if file_data:
             object_path = await cls._upload_to_minio(job, file_data)
 
+        # 生成 AI 摘要（背景任務，不阻塞主流程）
+        ai_summary = None
+        try:
+            from app.services.groq_service import GroqService
+            ai_summary = await GroqService.generate_document_summary(
+                content=text,
+                filename=job.metadata.get("filename"),
+                max_length=100
+            )
+            logger.info(f"文件摘要生成成功: {ai_summary[:50]}...")
+        except Exception as summary_err:
+            logger.warning(f"生成文件摘要失敗（不影響主流程）: {summary_err}")
+
         # 創建文檔記錄
         doc = KnowledgeDocument(
             bot_id=scope_bot,
@@ -433,11 +446,14 @@ class KnowledgeProcessingService:
             original_file_name=job.metadata.get("filename"),
             object_path=object_path,
             chunked=len(chunks) > 1,
+            ai_summary=ai_summary,  # 儲存 AI 生成的摘要
+            original_content=text,  # 儲存檔案原文內容
             meta={
                 "source_type": "file" if file_data else "text",
                 "filename": job.metadata.get("filename"),
                 "content_type": job.metadata.get("content_type"),
-                "job_id": job.job_id
+                "job_id": job.job_id,
+                "content_length": len(text)  # 記錄原文長度
             }
         )
         db.add(doc)

@@ -24,6 +24,7 @@ from app.schemas.ai_knowledge import (
     KnowledgeCreateTextRequest, KnowledgeCreateBulkRequest,
     KnowledgeChunkUpdateRequest, KnowledgeListResponse, KnowledgeChunkResponse,
     KnowledgeSearchResponse, KnowledgeSearchResponseItem, BatchDeleteRequest,
+    KnowledgeDocumentResponse, KnowledgeDocumentListResponse, BatchDeleteDocumentsRequest,
 )
 from app.services.text_chunker import recursive_split
 from app.services.embedding_service import embed_text, embed_texts
@@ -177,7 +178,12 @@ async def list_knowledge(
     # Filter by scope
     target_bot_id = _scope_to_bot_id(scope, bot_id)
 
-    base = select(KnowledgeChunk).join(KnowledgeDocument, KnowledgeChunk.document_id == KnowledgeDocument.id)
+    # 只查詢未刪除的切塊和文件
+    base = select(KnowledgeChunk).join(KnowledgeDocument, KnowledgeChunk.document_id == KnowledgeDocument.id).where(
+        KnowledgeChunk.deleted_at.is_(None),
+        KnowledgeDocument.deleted_at.is_(None)
+    )
+
     if target_bot_id is None:
         base = base.where(KnowledgeChunk.bot_id == None)  # noqa: E711
     else:
@@ -576,3 +582,188 @@ async def search_knowledge(
             for kc, score in items
         ]
     )
+
+
+# ========== 文件列表 API（新增）==========
+
+@router.get("/{bot_id}/knowledge/documents", response_model=KnowledgeDocumentListResponse)
+async def list_knowledge_documents(
+    bot_id: str,
+    scope: str = Query("project", regex="^(project|global)$"),
+    q: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async),
+):
+    """
+    取得知識庫文件列表（而非切塊列表）
+
+    Args:
+        bot_id: Bot ID
+        scope: project（專案）或 global（全域）
+        q: 搜尋關鍵字（搜尋標題或檔案名稱）
+        page: 頁碼
+        page_size: 每頁筆數
+    """
+    await _ensure_bot_owned(db, bot_id, current_user.id)
+    page = max(1, page)
+    page_size = min(100, max(1, page_size))
+    offset = (page - 1) * page_size
+
+    # Filter by scope
+    target_bot_id = _scope_to_bot_id(scope, bot_id)
+
+    # 基礎查詢：只查詢未刪除的文件
+    base = select(KnowledgeDocument).where(KnowledgeDocument.deleted_at.is_(None))
+
+    if target_bot_id is None:
+        base = base.where(KnowledgeDocument.bot_id == None)  # noqa: E711
+    else:
+        base = base.where(KnowledgeDocument.bot_id == bot_id)
+
+    # 搜尋標題或檔案名稱
+    if q:
+        base = base.where(
+            (KnowledgeDocument.title.ilike(f"%{q}%")) |
+            (KnowledgeDocument.original_file_name.ilike(f"%{q}%"))
+        )
+
+    # 計算總數
+    total = (await db.execute(select(func.count()).select_from(base.subquery()))).scalar() or 0
+
+    # 取得文件列表
+    res = await db.execute(base.order_by(KnowledgeDocument.created_at.desc()).offset(offset).limit(page_size))
+    documents = res.scalars().all()
+
+    # 為每個文件計算切塊數量
+    items = []
+    for doc in documents:
+        # 計算未刪除的切塊數量
+        chunk_count_query = select(func.count()).where(
+            KnowledgeChunk.document_id == doc.id,
+            KnowledgeChunk.deleted_at.is_(None)
+        )
+        chunk_count = (await db.execute(chunk_count_query)).scalar() or 0
+
+        items.append(KnowledgeDocumentResponse(
+            id=str(doc.id),
+            bot_id=str(doc.bot_id) if doc.bot_id else None,
+            source_type=doc.source_type,
+            title=doc.title,
+            original_file_name=doc.original_file_name,
+            ai_summary=doc.ai_summary,
+            chunk_count=chunk_count,
+            created_at=doc.created_at.isoformat() if doc.created_at else "",
+            updated_at=doc.updated_at.isoformat() if doc.updated_at else "",
+        ))
+
+    return KnowledgeDocumentListResponse(
+        items=items,
+        total=int(total),
+        page=page,
+        page_size=page_size
+    )
+
+
+# ========== 軟刪除文件 API（新增）==========
+
+async def _soft_delete_document_logic(
+    db: AsyncSession,
+    document_id: str,
+) -> bool:
+    """
+    軟刪除文件的核心邏輯
+    返回 True 表示成功，False 表示文件不存在或已刪除
+    """
+    from datetime import datetime, timezone
+
+    # 查詢文件
+    res = await db.execute(
+        select(KnowledgeDocument).where(
+            KnowledgeDocument.id == document_id,
+            KnowledgeDocument.deleted_at.is_(None)
+        )
+    )
+    doc = res.scalars().first()
+    if not doc:
+        return False
+
+    # 設定文件的 deleted_at
+    now = datetime.now(timezone.utc)
+    doc.deleted_at = now
+
+    # 同時軟刪除所有關聯的切塊
+    await db.execute(
+        sql_text("""
+            UPDATE knowledge_chunks
+            SET deleted_at = :now
+            WHERE document_id = :doc_id AND deleted_at IS NULL
+        """),
+        {"now": now, "doc_id": str(document_id)}
+    )
+
+    await db.flush()
+    return True
+
+
+@router.delete("/{bot_id}/knowledge/documents/{document_id}")
+async def soft_delete_document(
+    bot_id: str,
+    document_id: str,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async),
+):
+    """軟刪除單個文件（同時軟刪除所有關聯的切塊）"""
+    await _ensure_bot_owned(db, bot_id, current_user.id)
+
+    success = await _soft_delete_document_logic(db, document_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="文件不存在或已刪除")
+
+    await db.commit()
+    return {"success": True, "message": "文件已刪除"}
+
+
+@router.post("/{bot_id}/knowledge/documents/batch-delete")
+async def batch_soft_delete_documents(
+    bot_id: str,
+    payload: BatchDeleteDocumentsRequest,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async),
+):
+    """批次軟刪除文件（同時軟刪除所有關聯的切塊）"""
+    await _ensure_bot_owned(db, bot_id, current_user.id)
+
+    deleted_count = 0
+    failed_documents = []
+
+    try:
+        # 在單一事務中處理所有刪除操作
+        for doc_id in payload.document_ids:
+            try:
+                success = await _soft_delete_document_logic(db, doc_id)
+                if success:
+                    deleted_count += 1
+                else:
+                    failed_documents.append(doc_id)
+                    logger.warning(f"文件不存在或已刪除: {doc_id}")
+            except Exception as e:
+                failed_documents.append(doc_id)
+                logger.error(f"刪除文件失敗 {doc_id}: {e}")
+
+        await db.commit()
+
+        result = {"success": True, "deleted_count": deleted_count}
+        if failed_documents:
+            result["failed_documents"] = failed_documents
+            result["message"] = f"成功刪除 {deleted_count} 個文件，{len(failed_documents)} 個失敗"
+        else:
+            result["message"] = f"成功刪除 {deleted_count} 個文件"
+
+        return result
+
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"批量刪除文件失敗: {e}")
+        raise HTTPException(status_code=500, detail=f"批量刪除失敗: {str(e)}")

@@ -37,9 +37,15 @@ class KnowledgeDocument(Base):
     original_file_name = Column(String(255), nullable=True)
     object_path = Column(String(512), nullable=True)  # MinIO object path when file
     chunked = Column(Boolean, nullable=False, server_default="true")
+    # AI 生成的文件摘要（用於意圖判斷優化）
+    ai_summary = Column(Text, nullable=True)
+    # 檔案原文內容（用於重新生成摘要或其他用途）
+    original_content = Column(Text, nullable=True)
     meta = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    # 軟刪除時間戳記
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     chunks = relationship("KnowledgeChunk", back_populates="document", cascade="all, delete-orphan")
@@ -68,6 +74,8 @@ class KnowledgeChunk(Base):
     meta = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    # 軟刪除時間戳記
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     document = relationship("KnowledgeDocument", back_populates="chunks")
 
