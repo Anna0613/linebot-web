@@ -14,9 +14,9 @@
     <!-- Preload critical resources -->
     <!-- 使用 prefetch 避免未即時使用造成的 preload 警告 -->
     <link rel="prefetch" href="/assets/images/webp/LOGO.webp" as="image" type="image/webp" />
-    <link rel="preload" href="/src/start.tsx" as="script" crossorigin />
 
     <!-- Prefetch likely next resources -->
+    <!-- start.tsx 由 Vite 自動處理，不需要手動 preload -->
     <link rel="prefetch" href="/src/pages/DashboardPage.tsx" as="script" />
     <link rel="prefetch" href="/src/pages/LoginPage.tsx" as="script" />
 
