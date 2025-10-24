@@ -32,6 +32,8 @@ settings = config_module.settings
 from app.database import init_database
 from app.database_enhanced import init_database_enhanced
 from app.database_mongo import init_mongodb, close_mongodb
+from app.db_read_write_split import db_manager
+from app.db_session_context import reset_session_context
 from app.api.api_v1.api import api_router
 from app.config.redis_config import init_redis, close_redis
 from app.services.background_tasks import get_task_manager, PerformanceOptimizer
@@ -125,12 +127,16 @@ async def lifespan(app: FastAPI):
         task_manager = get_task_manager()
         await task_manager.stop()
         logger.info("背景任務管理器已停止")
-        
+
         await close_redis()
         logger.info("Redis 連接已關閉")
-        
+
         await close_mongodb()
         logger.info("MongoDB 連接處理完成")
+
+        # 關閉資料庫連線
+        await db_manager.close()
+        logger.info("資料庫連線已關閉")
     except Exception as e:
         logger.error(f"關閉服務失敗: {e}")
 
@@ -162,6 +168,17 @@ app.add_middleware(
     minimum_size=1000,  # 只壓縮大於 1KB 的響應
     compresslevel=6     # 壓縮等級 1-9，6 是效能與壓縮率的平衡點
 )
+
+# Session 上下文管理中間件
+@app.middleware("http")
+async def session_context_middleware(request: Request, call_next):
+    """管理資料庫 session 上下文的生命週期"""
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        # 請求結束時重置 session 上下文
+        await reset_session_context()
 
 # 請求日誌中間件
 @app.middleware("http")

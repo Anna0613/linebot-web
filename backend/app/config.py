@@ -27,17 +27,43 @@ class Settings(BaseSettings):
     # SQL 日誌輸出（預設關閉）
     SQL_ECHO: bool = os.getenv("SQL_ECHO", "False").lower() == "true"
     
-    # 資料庫設定
+    # 資料庫設定 - 主庫（寫入）
     DB_HOST: str = os.getenv("DB_HOST", "sql.jkl921102.org")
     DB_PORT: int = int(os.getenv("DB_PORT", "5432"))
     DB_NAME: str = os.getenv("DB_NAME", "LineBot_01")
     DB_USER: str = os.getenv("DB_USER", "11131230")
     DB_PASSWORD: str = os.getenv("DB_PASSWORD", "11131230")
-    
+
+    # 資料庫設定 - 從庫（讀取）
+    # 如果未設定，則使用主庫的設定
+    DB_REPLICA_HOST: Optional[str] = os.getenv("DB_REPLICA_HOST")
+    DB_REPLICA_PORT: Optional[int] = int(os.getenv("DB_REPLICA_PORT", "5433")) if os.getenv("DB_REPLICA_PORT") else None
+    DB_REPLICA_NAME: Optional[str] = os.getenv("DB_REPLICA_NAME")
+    DB_REPLICA_USER: Optional[str] = os.getenv("DB_REPLICA_USER")
+    DB_REPLICA_PASSWORD: Optional[str] = os.getenv("DB_REPLICA_PASSWORD")
+
+    # 讀寫分離開關（預設關閉，需明確啟用）
+    ENABLE_READ_WRITE_SPLITTING: bool = os.getenv("ENABLE_READ_WRITE_SPLITTING", "False").lower() == "true"
+
     @property
     def DATABASE_URL(self) -> str:
-        """資料庫連線 URL"""
+        """資料庫連線 URL（主庫 - 寫入）"""
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    @property
+    def DATABASE_REPLICA_URL(self) -> Optional[str]:
+        """資料庫連線 URL（從庫 - 讀取）"""
+        if not self.ENABLE_READ_WRITE_SPLITTING:
+            return None
+
+        # 使用從庫設定，若未設定則使用主庫設定
+        host = self.DB_REPLICA_HOST or self.DB_HOST
+        port = self.DB_REPLICA_PORT or self.DB_PORT
+        name = self.DB_REPLICA_NAME or self.DB_NAME
+        user = self.DB_REPLICA_USER or self.DB_USER
+        password = self.DB_REPLICA_PASSWORD or self.DB_PASSWORD
+
+        return f"postgresql://{user}:{password}@{host}:{port}/{name}"
     
     # JWT 設定
     JWT_SECRET: str = os.getenv("JWT_SECRET", "your-secret-key-here")

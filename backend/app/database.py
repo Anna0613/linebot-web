@@ -1,49 +1,26 @@
 """
 資料庫連接和會話管理模組
+支援讀寫分離功能
 """
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
 import tenacity
 import logging
 
 from .config import settings
+from .db_read_write_split import db_manager, DatabaseRole
 
 logger = logging.getLogger(__name__)
 
-# 創建資料庫引擎 - 進階優化連接池設定
-engine = create_engine(
-    settings.DATABASE_URL,
-    # 連接池設定 - 效能優化
-    pool_pre_ping=True,         # 連接前檢查，避免死連接
-    pool_recycle=1800,          # 30分鐘回收連接，避免長時間佔用
-    pool_size=25,               # 核心連接池大小 (增加至25)
-    max_overflow=50,            # 最大溢出連接數 (增加至50)
-    pool_timeout=20,            # 連接超時 (降至20秒，快速失敗)
-    # 僅在明確開啟 SQL_ECHO 時輸出 SQL
-    echo=settings.SQL_ECHO,
-    
-    # PostgreSQL 特定優化
-    connect_args={
-        "application_name": "linebot-web-api",
-        # 連接級別優化
-        "keepalives_idle": "600",        # 10分鐘保持連接
-        "keepalives_interval": "30",     # 30秒檢查間隔
-        "keepalives_count": "3",         # 最多重試3次
-        "tcp_user_timeout": "30000",     # TCP 用戶超時 30秒
-    },
-    
-    # 執行選項優化
-    execution_options={
-        "postgresql_readonly": False,
-        "postgresql_autocommit": False,
-        "compiled_cache": {},            # 啟用 SQL 編譯快取
-    }
-)
+# 初始化連線管理器
+db_manager.initialize()
 
-# 創建會話工廠
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# 取得主庫引擎（向後相容）
+engine = db_manager.get_engine(DatabaseRole.PRIMARY)
+
+# 取得主庫 session factory（向後相容）
+SessionLocal = db_manager.get_session_factory(DatabaseRole.PRIMARY)
 
 # 創建基礎模型類別
 Base = declarative_base()
@@ -161,10 +138,17 @@ def init_database():
         logger.error(f"資料庫初始化失敗: {str(e)}", exc_info=True)
         raise
 
-def get_db():
-    """取得資料庫會話"""
-    db = SessionLocal()
+def get_db(use_replica: bool = False):
+    """
+    取得資料庫會話
+
+    Args:
+        use_replica: 是否使用從庫（僅用於讀取操作）
+    """
+    role = DatabaseRole.REPLICA if use_replica else DatabaseRole.PRIMARY
+    session_factory = db_manager.get_session_factory(role)
+    db = session_factory()
     try:
         yield db
     finally:
-        db.close() 
+        db.close()

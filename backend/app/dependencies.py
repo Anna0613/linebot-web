@@ -2,7 +2,7 @@
 FastAPI 依賴注入模組
 包含認證、資料庫會話等依賴項
 """
-from typing import Optional
+from typing import Optional, Callable
 from fastapi import Depends, HTTPException, status, Request
 from sqlalchemy.orm import joinedload
 from sqlalchemy import select
@@ -15,9 +15,30 @@ from .config import settings
 # 已移除 OAuth2 Bearer 方案，統一採用 HttpOnly Cookie
 
 
+# 資料庫 session 依賴工廠
+def get_db_session(use_replica: bool = False) -> Callable:
+    """
+    建立資料庫 session 依賴
+
+    Args:
+        use_replica: 是否使用從庫（僅用於讀取操作）
+    """
+    async def _get_db() -> AsyncSession:
+        async for session in get_async_db(use_replica=use_replica):
+            yield session
+    return _get_db
+
+
+# 預設使用主庫的 session（向後相容）
+get_db_primary = get_db_session(use_replica=False)
+
+# 讀取專用的 session（優先使用從庫）
+get_db_read = get_db_session(use_replica=True)
+
+
 async def get_current_user_async(
     request: Request,
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_db_primary)
 ) -> User:
     """Async version of current user dependency"""
     import logging

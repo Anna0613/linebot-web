@@ -1,49 +1,41 @@
 """
 Async SQLAlchemy engine and session management
+支援讀寫分離功能
 """
 from __future__ import annotations
 
 import logging
 from typing import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import settings
+from .db_read_write_split import db_manager, DatabaseRole
 
 logger = logging.getLogger(__name__)
 
+# 初始化連線管理器（如果尚未初始化）
+if not db_manager._initialized:
+    db_manager.initialize()
 
-def _build_async_url(url: str) -> str:
-    # Convert sync URL to asyncpg URL if needed
-    if url.startswith("postgresql+asyncpg://"):
-        return url
-    if url.startswith("postgresql://"):
-        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    return url
+# 取得主庫 async 引擎（向後相容）
+engine = db_manager.get_async_engine(DatabaseRole.PRIMARY)
 
-
-ASYNC_DATABASE_URL = _build_async_url(settings.DATABASE_URL)
-
-engine = create_async_engine(
-    ASYNC_DATABASE_URL,
-    pool_pre_ping=True,
-    pool_size=25,
-    max_overflow=50,
-    pool_recycle=1800,
-    # 僅在明確開啟 SQL_ECHO 時才輸出 SQL（避免噪音）
-    echo=settings.SQL_ECHO,
-)
-
-AsyncSessionLocal = async_sessionmaker(
-    bind=engine,
-    expire_on_commit=False,
-    class_=AsyncSession,
-)
+# 取得主庫 async session factory（向後相容）
+AsyncSessionLocal = db_manager.get_async_session_factory(DatabaseRole.PRIMARY)
 
 
-async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
-    """Yield an AsyncSession for request scope."""
-    async with AsyncSessionLocal() as session:
+async def get_async_db(use_replica: bool = False) -> AsyncGenerator[AsyncSession, None]:
+    """
+    Yield an AsyncSession for request scope.
+
+    Args:
+        use_replica: 是否使用從庫（僅用於讀取操作）
+    """
+    role = DatabaseRole.REPLICA if use_replica else DatabaseRole.PRIMARY
+    session_factory = db_manager.get_async_session_factory(role)
+
+    async with session_factory() as session:
         try:
             yield session
         finally:
