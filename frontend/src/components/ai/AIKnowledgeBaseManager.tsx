@@ -6,7 +6,7 @@ import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from '../ui/dialog';
 import { Settings } from 'lucide-react';
-import AIKnowledgeApi, { AIToggle, KnowledgeChunkItem, KnowledgeDocumentItem, Scope, KnowledgeSearchItem } from '../../services/aiKnowledgeApi';
+import AIKnowledgeApi, { AIToggle, KnowledgeDocumentItem, Scope, KnowledgeSearchItem } from '../../services/aiKnowledgeApi';
 import { apiClient } from '../../services/UnifiedApiClient';
 import { API_CONFIG } from '../../config/apiConfig';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';

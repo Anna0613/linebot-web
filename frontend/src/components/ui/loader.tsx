@@ -9,7 +9,7 @@ interface LoaderProps {
   size?: "sm" | "md" | "lg";
 }
 
-export function Loader({ fullPage = false, text, web3Style = true, size = "md" }: LoaderProps) {
+export function Loader({ fullPage = false, text, web3Style: _web3Style = true, size: _size = "md" }: LoaderProps) {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {

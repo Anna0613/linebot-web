@@ -13,7 +13,7 @@ type ToasterToast = ToastProps & {
   duration?: number; // 自動關閉的時間（毫秒），0 表示不自動關閉
 };
 
-const _actionTypes = {
+const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
   UPDATE_TOAST: "UPDATE_TOAST",
   DISMISS_TOAST: "DISMISS_TOAST",

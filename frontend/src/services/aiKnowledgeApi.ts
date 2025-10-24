@@ -75,7 +75,7 @@ export class AIKnowledgeApi {
 
   static async setAIAdvanced(
     botId: string,
-    params: { rag_threshold?: number; rag_top_k?: number; history_messages?: number; provider?: string; model?: string; enabled?: boolean }
+    params: { rag_threshold?: number; rag_top_k?: number; history_messages?: number; provider?: string; model?: string; enabled?: boolean; system_prompt?: string }
   ) {
     const res = await this.api.post<AIToggle>(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/ai/settings`, params);
     if (!res.success) throw new Error(res.error || '更新 AI 設定失敗');
