@@ -15,6 +15,22 @@ services:
     restart: unless-stopped
     networks:
       - linebot-network
+    # 資源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # 日誌配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+        labels: "service=linebot-backend"
 
   # 前端服務
   frontend:
@@ -41,6 +57,22 @@ services:
     restart: unless-stopped
     networks:
       - linebot-network
+    # 資源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    # 日誌配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+        labels: "service=linebot-frontend"
 
 networks:
   linebot-network:

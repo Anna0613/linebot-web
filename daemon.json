@@ -1,0 +1,22 @@
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m",
+    "max-file": "3",
+    "labels": "com.example.vendor=Acme"
+  },
+  "storage-driver": "btrfs",
+  "storage-opts": [
+    "btrfs.min_space=2G"
+  ],
+  "max-concurrent-downloads": 3,
+  "max-concurrent-uploads": 3,
+  "live-restore": true,
+  "userland-proxy": false,
+  "metrics-addr": "127.0.0.1:9323",
+  "experimental": false,
+  "features": {
+    "buildkit": true
+  }
+}
+
