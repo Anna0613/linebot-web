@@ -542,7 +542,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
               currentTestAction={currentTestAction}
               onLogicTemplateSelect={onLogicTemplateSelect || (() => {})}
               onLogicTemplateCreate={onLogicTemplateCreate || (async () => '')}
-              onLogicTemplateSave={onLogicTemplateSave || (async () => {})}
+              onLogicTemplateSave={onLogicTemplateSave || (async (_templateId, _data) => {})}
               onLogicBlocksChange={onLogicBlocksChange}
               onRemoveBlock={removeLogicBlock}
               onUpdateBlock={updateLogicBlock}

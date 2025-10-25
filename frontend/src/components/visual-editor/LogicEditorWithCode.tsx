@@ -13,7 +13,7 @@ interface LogicEditorWithCodeProps {
   currentTestAction?: string;
   onLogicTemplateSelect: (templateId: string) => void;
   onLogicTemplateCreate: (name: string) => Promise<string>;
-  onLogicTemplateSave: () => Promise<void>;
+  onLogicTemplateSave: (templateId: string, data: { logicBlocks: UnifiedBlock[], generatedCode: string }) => Promise<void>;
   onLogicBlocksChange: (blocks: UnifiedBlock[] | ((prev: UnifiedBlock[]) => UnifiedBlock[])) => void;
   onRemoveBlock: (index: number) => void;
   onUpdateBlock: (index: number, data: Record<string, unknown>) => void;
@@ -50,7 +50,7 @@ const LogicEditorWithCode: React.FC<LogicEditorWithCodeProps> = ({
             onLogicTemplateSelect={onLogicTemplateSelect}
             onLogicTemplateCreate={onLogicTemplateCreate}
             onLogicTemplateSave={onLogicTemplateSave}
-            logicBlocks={logicBlocks.map((b) => ({ blockType: b.blockType, blockData: b.blockData }))}
+            logicBlocks={logicBlocks}
           />
         )}
       </div>

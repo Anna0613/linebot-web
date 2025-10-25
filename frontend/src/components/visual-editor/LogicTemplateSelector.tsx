@@ -7,23 +7,15 @@ import { Plus, Save } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import VisualEditorApi, { LogicTemplateSummary } from '../../services/visualEditorApi';
 import { generateUnifiedCode } from '../../utils/unifiedCodeGenerator';
-
-interface BlockData {
-  [key: string]: unknown;
-}
-
-interface Block {
-  blockType: string;
-  blockData: BlockData;
-}
+import { UnifiedBlock } from '../../types/block';
 
 interface LogicTemplateSelectorProps {
   selectedBotId: string;
   selectedLogicTemplateId?: string;
   onLogicTemplateSelect?: (templateId: string) => void;
   onLogicTemplateCreate?: (name: string) => void;
-  onLogicTemplateSave?: (templateId: string, data: { logicBlocks: Block[], generatedCode: string }) => void;
-  logicBlocks: Block[];
+  onLogicTemplateSave?: (templateId: string, data: { logicBlocks: UnifiedBlock[], generatedCode: string }) => void;
+  logicBlocks: UnifiedBlock[];
   disabled?: boolean;
 }
 
