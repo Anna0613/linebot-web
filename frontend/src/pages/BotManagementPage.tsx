@@ -34,6 +34,8 @@ import {
   Square,
   TrendingUp,
   UserPlus,
+  QrCode,
+  Download,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +46,7 @@ import DashboardFooter from "../components/layout/DashboardFooter";
 import { apiClient } from "../services/UnifiedApiClient";
 import { Bot as BotType, LogicTemplate } from "@/types/bot";
 import { getWebhookUrl } from "../config/apiConfig";
+import { QRCodeSVG } from 'qrcode.react';
 
 // 導入新的儀表板元件
 import MetricCard from "@/components/dashboard/MetricCard";
@@ -1775,6 +1778,144 @@ const BotManagementPage: React.FC = () => {
                       </CardContent>
                     </Card>
 
+                    {/* LINE Bot QR Code 卡片 */}
+                    {selectedBot && webhookStatus && (webhookStatus as {basic_id?: string})?.basic_id && (
+                      <Card className="shadow-sm hover:shadow-md transition">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <QrCode className="h-5 w-5" />
+                            LINE Bot QR Code
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex flex-col items-center">
+                            {/* QR Code */}
+                            <div className="bg-white p-4 rounded-lg border-2 border-border" id="qrcode-container">
+                              <QRCodeSVG
+                                value={`https://line.me/R/ti/p/${encodeURIComponent((webhookStatus as {basic_id?: string}).basic_id!)}`}
+                                size={200}
+                                level="H"
+                                includeMargin={true}
+                                className="qrcode-svg"
+                              />
+                            </div>
+
+                            {/* Bot 名稱 */}
+                            <p className="text-sm text-muted-foreground mt-3 text-center">
+                              掃描 QR Code 加入 {selectedBot.name}
+                            </p>
+
+                            {/* 操作按鈕 */}
+                            <div className="flex gap-2 mt-4 w-full">
+                              <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={async () => {
+                                  try {
+                                    const canvas = document.createElement('canvas');
+                                    const svg = document.querySelector('.qrcode-svg') as SVGElement;
+                                    if (!svg) return;
+
+                                    const svgData = new XMLSerializer().serializeToString(svg);
+                                    const img = new Image();
+                                    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                                    const url = URL.createObjectURL(svgBlob);
+
+                                    img.onload = async () => {
+                                      canvas.width = img.width;
+                                      canvas.height = img.height;
+                                      const ctx = canvas.getContext('2d');
+                                      if (ctx) {
+                                        ctx.drawImage(img, 0, 0);
+                                        canvas.toBlob(async (blob) => {
+                                          if (blob) {
+                                            try {
+                                              await navigator.clipboard.write([
+                                                new ClipboardItem({ 'image/png': blob })
+                                              ]);
+                                              toast({
+                                                title: "複製成功",
+                                                description: "QR Code 已複製到剪貼簿",
+                                              });
+                                            } catch (err) {
+                                              console.error('複製失敗:', err);
+                                              toast({
+                                                title: "複製失敗",
+                                                description: "無法複製 QR Code 到剪貼簿",
+                                                variant: "destructive",
+                                              });
+                                            }
+                                          }
+                                        });
+                                      }
+                                      URL.revokeObjectURL(url);
+                                    };
+                                    img.src = url;
+                                  } catch (error) {
+                                    console.error('複製失敗:', error);
+                                    toast({
+                                      title: "複製失敗",
+                                      description: "無法複製 QR Code",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                              >
+                                <Copy className="h-4 w-4 mr-2" />
+                                複製圖片
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => {
+                                  const svg = document.querySelector('.qrcode-svg') as SVGElement;
+                                  if (!svg) return;
+
+                                  const svgData = new XMLSerializer().serializeToString(svg);
+                                  const canvas = document.createElement('canvas');
+                                  const ctx = canvas.getContext('2d');
+                                  const img = new Image();
+
+                                  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                                  const url = URL.createObjectURL(svgBlob);
+
+                                  img.onload = () => {
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    if (ctx) {
+                                      ctx.drawImage(img, 0, 0);
+                                      canvas.toBlob((blob) => {
+                                        if (blob) {
+                                          const downloadUrl = URL.createObjectURL(blob);
+                                          const link = document.createElement('a');
+                                          link.href = downloadUrl;
+                                          link.download = `${selectedBot.name}_QRCode.png`;
+                                          document.body.appendChild(link);
+                                          link.click();
+                                          document.body.removeChild(link);
+                                          URL.revokeObjectURL(downloadUrl);
+
+                                          toast({
+                                            title: "下載成功",
+                                            description: "QR Code 已下載",
+                                          });
+                                        }
+                                      });
+                                    }
+                                    URL.revokeObjectURL(url);
+                                  };
+                                  img.src = url;
+                                }}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                下載圖片
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
 
                   </div>
 

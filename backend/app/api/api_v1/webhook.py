@@ -427,6 +427,7 @@ async def get_webhook_status(
         line_api_accessible = False
         webhook_endpoint_info = None
         last_webhook_time = None
+        bot_info = None
 
         if is_configured:
             try:
@@ -441,6 +442,13 @@ async def get_webhook_status(
                     webhook_endpoint_info.get("is_set", False) and
                     webhook_endpoint_info.get("active", False)
                 )
+
+                # 獲取 Bot 資訊以取得 channel_id
+                try:
+                    bot_info = await asyncio.to_thread(line_bot_service.get_bot_info)
+                except Exception as e:
+                    logger.warning(f"獲取 Bot 資訊失敗: {e}")
+                    bot_info = None
 
             except Exception as e:
                 logger.error(f"檢查 LINE API 連接失敗: {e}")
@@ -468,7 +476,7 @@ async def get_webhook_status(
         import os
         webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
 
-        return {
+        result = {
             "bot_id": bot_id,
             "bot_name": bot.name,
             "status": status,
@@ -481,6 +489,17 @@ async def get_webhook_status(
             "last_webhook_time": last_webhook_time,
             "checked_at": datetime.now().isoformat()
         }
+
+        # 如果成功獲取 Bot 資訊，添加 channel_id 和 basic_id
+        if bot_info:
+            if bot_info.get("channel_id"):
+                result["channel_id"] = bot_info["channel_id"]
+                logger.info(f"Bot {bot_id} - 獲取到 Channel ID: {bot_info['channel_id']}")
+            if bot_info.get("basic_id"):
+                result["basic_id"] = bot_info["basic_id"]
+                logger.info(f"Bot {bot_id} - 獲取到 Basic ID: {bot_info['basic_id']}")
+
+        return result
 
     except Exception as e:
         logger.error(f"獲取 Webhook 狀態失敗: {str(e)}")
