@@ -196,13 +196,25 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
             </div>
           ) : block.blockData.replyType === 'image' ? (
             <div className="space-y-3">
-              <label className="text-xs text-white/80">圖片回覆設定：</label>
+              <label className="text-xs text-white/80 dark:text-white/80">圖片回覆設定：</label>
               <div className="flex gap-2">
-                <Button type="button" size="sm" variant={imageUploadMode === 'upload' ? 'default' : 'outline'} onClick={() => setImageUploadMode('upload')} className="flex-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={imageUploadMode === 'upload' ? 'default' : 'outline'}
+                  onClick={() => setImageUploadMode('upload')}
+                  className={`flex-1 ${imageUploadMode === 'upload' ? '' : 'text-foreground'}`}
+                >
                   <Upload className="w-4 h-4 mr-1" />
                   上傳圖片
                 </Button>
-                <Button type="button" size="sm" variant={imageUploadMode === 'url' ? 'default' : 'outline'} onClick={() => setImageUploadMode('url')} className="flex-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={imageUploadMode === 'url' ? 'default' : 'outline'}
+                  onClick={() => setImageUploadMode('url')}
+                  className={`flex-1 ${imageUploadMode === 'url' ? '' : 'text-foreground'}`}
+                >
                   <LinkIcon className="w-4 h-4 mr-1" />
                   輸入網址
                 </Button>
