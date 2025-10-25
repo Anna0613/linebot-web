@@ -523,8 +523,20 @@ class LineBotService:
             raise ValueError("LINE Bot 未正確配置")
 
         try:
+            # 驗證 URL 格式
+            if not image_url or not image_url.strip():
+                raise ValueError("圖片 URL 不能為空")
+
+            if not image_url.startswith('https://'):
+                raise ValueError(f"圖片 URL 必須使用 HTTPS 協議: {image_url}")
+
             if not preview_url:
                 preview_url = image_url
+
+            if not preview_url.startswith('https://'):
+                raise ValueError(f"預覽圖片 URL 必須使用 HTTPS 協議: {preview_url}")
+
+            logger.info(f"準備發送圖片訊息: user_id={user_id}, image_url={image_url}, preview_url={preview_url}")
 
             message = ImageSendMessage(
                 original_content_url=image_url,
@@ -532,14 +544,26 @@ class LineBotService:
             )
             self.line_bot_api.push_message(user_id, message)
 
+            logger.info(f"圖片訊息發送成功: user_id={user_id}")
             return {
                 "success": True,
                 "message": "圖片訊息發送成功",
                 "timestamp": datetime.now().isoformat()
             }
         except LineBotApiError as e:
-            logger.error(f"發送圖片訊息失敗: {e}")
+            # 詳細記錄 LINE API 錯誤
+            error_details = {
+                "status_code": getattr(e, 'status_code', None),
+                "request_id": getattr(e, 'request_id', None),
+                "message": getattr(e, 'message', str(e)),
+                "error": getattr(e, 'error', None)
+            }
+            logger.error(f"發送圖片訊息失敗 (LINE API): {error_details}")
+            logger.error(f"圖片 URL: {image_url}, 預覽 URL: {preview_url}")
             raise Exception(f"LINE API 錯誤: {e.message}")
+        except ValueError as e:
+            logger.error(f"圖片 URL 驗證失敗: {e}")
+            raise
         except Exception as e:
             logger.error(f"發送圖片訊息失敗: {e}")
             raise Exception(f"發送失敗: {str(e)}")

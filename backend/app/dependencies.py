@@ -101,7 +101,7 @@ async def get_current_user_async(
             )
             # 如果有 line_account 資訊，也要設定
             if cached_user_data.get('line_account'):
-                from app.models.line_user import LineUser
+                from app.models.user import LineUser
                 line_data = cached_user_data['line_account']
                 user.line_account = LineUser(
                     id=line_data['id'],
