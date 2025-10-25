@@ -128,12 +128,14 @@ interface WorkspaceProps {
   onFlexMessageSelect?: (messageId: string) => void;
   onFlexMessageCreate?: (name: string) => void;
   onFlexMessageSave?: (messageId: string, data: { flexBlocks: Block[] }) => void;
+  // 初始活動標籤
+  initialActiveTab?: string;
 }
 
-const Workspace: React.FC<WorkspaceProps> = ({ 
-  logicBlocks, 
-  flexBlocks, 
-  onLogicBlocksChange, 
+const Workspace: React.FC<WorkspaceProps> = ({
+  logicBlocks,
+  flexBlocks,
+  onLogicBlocksChange,
   onFlexBlocksChange,
   currentLogicTemplateName,
   currentFlexMessageName,
@@ -145,10 +147,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
   selectedFlexMessageId,
   onFlexMessageSelect,
   onFlexMessageCreate,
-  onFlexMessageSave
+  onFlexMessageSave,
+  initialActiveTab = 'logic'
 }) => {
   // const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('logic');
+  const [activeTab, setActiveTab] = useState(initialActiveTab);
   const [showAllBlocks, setShowAllBlocks] = useState(true);
   // 已移除舊的預覽模擬器控制狀態（useEnhancedSimulator / showDebugInfo）
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import DragDropProvider from './DragDropProvider';
 import Workspace from './Workspace';
@@ -11,10 +11,11 @@ import { UnifiedBlock } from '../../types/block';
 import VisualEditorApi, { FlexMessage } from '../../services/visualEditorApi';
 import { VisualEditorProvider } from '../../contexts/VisualEditorContext';
 
-// 專案資料介面（未使用，已移除）
+// 專案資料介面（未使用,已移除）
 
 export const VisualBotEditor: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [logicBlocks, setLogicBlocks] = useState<UnifiedBlock[]>([]);
   const [flexBlocks, setFlexBlocks] = useState<UnifiedBlock[]>([]);
   const [projectVersion, _setProjectVersion] = useState<string>('2.0'); // 新版本使用統一積木系統
@@ -24,6 +25,9 @@ export const VisualBotEditor: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [currentLogicTemplateName, setCurrentLogicTemplateName] = useState<string>('');
   const [currentFlexMessageName, setCurrentFlexMessageName] = useState<string>('');
+
+  // 從 location state 獲取初始活動標籤
+  const initialActiveTab = (location.state as { activeTab?: string })?.activeTab || 'logic';
 
   // 延遲儲存相關狀態
   const [saveStatus, setSaveStatus] = useState<SaveStatus>(SaveStatus.SAVED);
@@ -477,7 +481,7 @@ export const VisualBotEditor: React.FC = () => {
             </div>
           )}
           
-          <Workspace 
+          <Workspace
             logicBlocks={logicBlocks}
             flexBlocks={flexBlocks}
             onLogicBlocksChange={setLogicBlocks}
@@ -493,6 +497,7 @@ export const VisualBotEditor: React.FC = () => {
             onFlexMessageSelect={handleFlexMessageSelect}
             onFlexMessageCreate={handleFlexMessageCreate}
             onFlexMessageSave={handleFlexMessageSave}
+            initialActiveTab={initialActiveTab}
           />
         </div>
       </div>
