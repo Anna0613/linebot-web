@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, CheckCircle, Infinity, RefreshCw, TrendingUp } from 'lucide-react';
+import { AlertCircle, CheckCircle, Infinity as InfinityIcon, RefreshCw, TrendingUp } from 'lucide-react';
 import { QuotaStatus } from '@/hooks/useQuotaStatus';
 import { Loader } from '@/components/ui/loader';
 
@@ -70,7 +70,7 @@ export function QuotaStatusCard({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Infinity className="h-4 w-4 text-green-500" />
+            <InfinityIcon className="h-4 w-4 text-green-500" />
             <span className="text-sm font-medium">訊息配額</span>
           </div>
           <Badge variant="default" className="bg-green-500">
