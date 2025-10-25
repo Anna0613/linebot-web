@@ -336,11 +336,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       }
       return <div className="break-words whitespace-pre-wrap">{textContent}</div>;
     } else if (message.message_type === "image") {
+      // 嘗試從 media_url 或 message_content 中獲取圖片 URL
+      let imageUrl = message.media_url;
+      if (!imageUrl && typeof content === 'object' && content) {
+        // 從 message_content 中提取圖片 URL（用於舊訊息的向後兼容）
+        imageUrl = (content as { originalContentUrl?: string }).originalContentUrl;
+      }
+
       return (
         <div>
-          {message.media_url ? (
+          {imageUrl ? (
             <img
-              src={message.media_url}
+              src={imageUrl}
               alt="用戶發送的圖片"
               className="max-w-xs rounded-lg"
               onError={(e) => {

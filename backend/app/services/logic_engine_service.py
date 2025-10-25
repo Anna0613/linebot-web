@@ -469,6 +469,7 @@ class LogicEngineService:
                                     line_user_id=user_id,
                                     message_content={"originalContentUrl": image_url, "previewImageUrl": preview_url},
                                     message_type="image",
+                                    media_url=image_url,  # 設定 media_url 以便前端顯示
                                 )
                                 # 推播 WebSocket 訊息讓前端即時更新
                                 try:
