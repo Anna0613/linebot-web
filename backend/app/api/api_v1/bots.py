@@ -486,11 +486,17 @@ async def upload_logic_template_image(
         if not object_path:
             raise HTTPException(status_code=500, detail="圖片上傳失敗")
 
-        # 以後端 base_url 產生代理 URL，確保本機與雲端皆可用
+        # 生成代理 URL - 使用 MinIO 服務的方法確保 HTTPS
         from urllib.parse import quote
         encoded = quote(object_path, safe='/')
-        base = str(request.base_url).rstrip('/') if request else ''
-        proxy_url = f"{base}/api/v1/minio/proxy?object_path={encoded}" if base else f"/api/v1/minio/proxy?object_path={encoded}"
+
+        # 使用 MinIO 服務的 get_presigned_url 方法生成正確的 HTTPS URL
+        proxy_url = minio_service.get_presigned_url(object_path)
+
+        if not proxy_url:
+            # 回退方案：如果 MinIO 服務無法生成 URL，使用相對路徑
+            proxy_url = f"/api/v1/minio/proxy?object_path={encoded}"
+            logger.warning(f"MinIO 服務無法生成代理 URL，使用相對路徑: {proxy_url}")
 
         logger.info(f"邏輯模板圖片上傳成功: bot_id={bot_id}, url={proxy_url}")
 
