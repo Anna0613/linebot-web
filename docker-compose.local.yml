@@ -15,16 +15,24 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
+      - ./scripts/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./scripts/pg_hba.conf:/etc/postgresql/pg_hba.conf
     restart: unless-stopped
     networks:
       - linebot-network
+    command:
+      - "postgres"
+      - "-c"
+      - "config_file=/etc/postgresql/postgresql.conf"
+      - "-c"
+      - "hba_file=/etc/postgresql/pg_hba.conf"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U linebot_user -d linebot"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # PostgreSQL 從庫（讀取副本）
+  # PostgreSQL 從庫（讀取副本）- 獨立實例
   postgres-replica:
     image: pgvector/pgvector:pg16
     container_name: linebot-postgres-replica
@@ -37,6 +45,7 @@ services:
       - "5433:5432"
     volumes:
       - postgres_replica_data:/var/lib/postgresql/data
+      - ./scripts/init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
     restart: unless-stopped
     networks:
       - linebot-network
@@ -48,16 +57,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    command: >
-      bash -c "
-      until pg_basebackup -h postgres -D /var/lib/postgresql/data -U linebot_user -v -P -W; do
-        echo 'Waiting for primary to be ready...';
-        sleep 1s;
-      done;
-      echo 'standby_mode = on' >> /var/lib/postgresql/data/recovery.conf;
-      echo 'primary_conninfo = \"host=postgres port=5432 user=linebot_user password=linebot_password\"' >> /var/lib/postgresql/data/recovery.conf;
-      postgres
-      "
 
   # Redis 快取服務
   redis:

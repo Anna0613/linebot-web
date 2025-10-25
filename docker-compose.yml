@@ -1,4 +1,134 @@
+version: '3.8'
+
 services:
+  # PostgreSQL 主庫
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: linebot-postgres
+    environment:
+      POSTGRES_DB: linebot
+      POSTGRES_USER: linebot_user
+      POSTGRES_PASSWORD: linebot_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
+    restart: unless-stopped
+    networks:
+      - linebot-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linebot_user -d linebot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL 從庫（讀取副本）
+  postgres-replica:
+    image: pgvector/pgvector:pg16
+    container_name: linebot-postgres-replica
+    environment:
+      POSTGRES_DB: linebot
+      POSTGRES_USER: linebot_user
+      POSTGRES_PASSWORD: linebot_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+      - ./scripts/init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
+    restart: unless-stopped
+    networks:
+      - linebot-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linebot_user -d linebot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 緩存
+  redis:
+    image: redis:7-alpine
+    container_name: linebot-redis
+    command: redis-server --requirepass redis_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - linebot-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO 物件儲存
+  minio:
+    image: minio/minio:latest
+    container_name: linebot-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/minio_data
+    restart: unless-stopped
+    networks:
+      - linebot-network
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # MinIO 初始化（創建 bucket）
+  minio-init:
+    image: minio/mc:latest
+    container_name: linebot-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin123;
+      /usr/bin/mc mb myminio/message-store;
+      /usr/bin/mc policy download myminio/message-store;
+      exit 0;
+      "
+    networks:
+      - linebot-network
+
+  # MongoDB 文檔數據庫
+  mongodb:
+    image: mongo:7
+    container_name: linebot-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo_user
+      MONGO_INITDB_ROOT_PASSWORD: mongo_password
+      MONGO_INITDB_DATABASE: linebot_conversations
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js
+    restart: unless-stopped
+    networks:
+      - linebot-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # 後端 API 服務
   backend:
     build:
@@ -6,7 +136,7 @@ services:
       dockerfile: Dockerfile
     container_name: linebot-web-backend
     ports:
-      - "8001:8005"
+      - "8000:8005"
     env_file:
       - ./backend/.env
     volumes:
@@ -15,6 +145,27 @@ services:
     restart: unless-stopped
     networks:
       - linebot-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-replica:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_REPLICA_HOST=postgres-replica
+      - DB_REPLICA_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MINIO_ENDPOINT=minio:9000
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
 
   # 前端服務
   frontend:
@@ -22,14 +173,14 @@ services:
       context: .  # 使用專案根目錄作為構建上下文
       dockerfile: ./frontend/Dockerfile
       args:
-        - VITE_UNIFIED_API_URL=https://api.jkl921102.org
-        - VITE_WEBHOOK_DOMAIN=https://api.jkl921102.org
-        - VITE_DOMAIN=https://api.jkl921102.org
-        - REACT_APP_DOMAIN=https://api.jkl921102.org
-        - VITE_ALLOWED_HOSTS=localhost,127.0.0.1,linebot.jkl921102.org,api.jkl921102.org
+        - VITE_UNIFIED_API_URL=http://localhost:8000
+        - VITE_WEBHOOK_DOMAIN=http://localhost:8000
+        - VITE_DOMAIN=http://localhost
+        - REACT_APP_DOMAIN=http://localhost
+        - VITE_ALLOWED_HOSTS=localhost,127.0.0.1
         - VITE_DEV_SERVER_HOST=0.0.0.0
         - VITE_DEV_SERVER_PORT=3000
-        - VITE_PROXY_SECURE=true
+        - VITE_PROXY_SECURE=false
         - VITE_PROXY_CHANGE_ORIGIN=true
     container_name: linebot-web-frontend
     ports:
@@ -41,6 +192,13 @@ services:
     restart: unless-stopped
     networks:
       - linebot-network
+
+volumes:
+  postgres_data:
+  postgres_replica_data:
+  redis_data:
+  minio_data:
+  mongodb_data:
 
 networks:
   linebot-network:
