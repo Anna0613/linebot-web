@@ -19,11 +19,10 @@ const StepThree = () => {
                 <span>第三步</span>
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
-                建立 <span className="text-gradient">Channel</span>
+                設計 <span className="text-gradient">對話流程</span>
               </h2>
               <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                Channel 是您 LINE Bot 的核心，透過 Messaging API channel
-                讓您的機器人與用戶互動。
+                使用視覺化編輯器設計您的 Bot 對話邏輯、Flex 訊息和 Rich Menu，無需撰寫程式碼。
               </p>
             </div>
 
@@ -38,7 +37,7 @@ const StepThree = () => {
                       <span className="text-xs font-bold text-line">1</span>
                     </div>
                     <span className="text-muted-foreground text-sm sm:text-base">
-                      在Provider頁面中選擇「Channels」
+                      前往「LINE Bot 編輯器」頁面
                     </span>
                   </li>
                   <li className="flex items-start space-x-3">
@@ -46,7 +45,7 @@ const StepThree = () => {
                       <span className="text-xs font-bold text-line">2</span>
                     </div>
                     <span className="text-muted-foreground text-sm sm:text-base">
-                      點選「Create a Messaging API channel」
+                      選擇您的 Bot 並開始設計邏輯流程
                     </span>
                   </li>
                   <li className="flex items-start space-x-3">
@@ -54,7 +53,7 @@ const StepThree = () => {
                       <span className="text-xs font-bold text-line">3</span>
                     </div>
                     <span className="text-muted-foreground text-sm sm:text-base">
-                      填寫頻道資訊並選擇地區與類別
+                      使用拖拉式積木建立對話邏輯
                     </span>
                   </li>
                   <li className="flex items-start space-x-3">
@@ -62,7 +61,7 @@ const StepThree = () => {
                       <span className="text-xs font-bold text-line">4</span>
                     </div>
                     <span className="text-muted-foreground text-sm sm:text-base">
-                      同意條款並點擊「Create」
+                      設計 Flex 訊息和 Rich Menu（選用）
                     </span>
                   </li>
                 </ul>
@@ -76,10 +75,10 @@ const StepThree = () => {
                     </div>
                     <div>
                       <h4 className="font-medium text-foreground mb-1 text-sm sm:text-base">
-                        必填欄位
+                        功能特色
                       </h4>
                       <p className="text-xs sm:text-sm text-muted-foreground">
-                        頻道名稱、描述、地區、應用類別都是必填項目
+                        支援邏輯積木、Flex 訊息設計器、Rich Menu 管理和 AI 知識庫整合
                       </p>
                     </div>
                   </div>
@@ -92,10 +91,10 @@ const StepThree = () => {
                     </div>
                     <div>
                       <h4 className="font-medium text-foreground mb-1 text-sm sm:text-base">
-                        注意事項
+                        小提示
                       </h4>
                       <p className="text-xs sm:text-sm text-muted-foreground">
-                        頻道名稱建立後可以修改，但建議使用易識別的名稱
+                        記得隨時儲存您的設計，系統會自動同步到您的 LINE Bot
                       </p>
                     </div>
                   </div>
@@ -103,19 +102,24 @@ const StepThree = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto bg-line hover:bg-line-dark text-white rounded-full shadow-lg hover:shadow-xl transition-all group text-sm sm:text-base"
+                <a
+                  href="/bots/visual-editor"
+                  className="inline-flex w-full sm:w-auto"
                 >
-                  <MessageSquare className="mr-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
-                  建立 Channel
-                </Button>
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto bg-line hover:bg-line-dark text-white rounded-full shadow-lg hover:shadow-xl transition-all group text-sm sm:text-base"
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
+                    開始設計
+                  </Button>
+                </a>
                 <Button
                   variant="outline"
                   size="lg"
                   className="w-full sm:w-auto rounded-full text-sm sm:text-base"
                 >
-                  查看範例設定
+                  查看範例
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </div>
@@ -132,12 +136,12 @@ const StepThree = () => {
                 <div className="space-y-3 sm:space-y-4">
                   <ProjectImage
                     projectNumber={5}
-                    alt="LINE Channel 建立頁面"
+                    alt="視覺化編輯器頁面"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />
                   <ProjectImage
                     projectNumber={6}
-                    alt="Channel 設定表單"
+                    alt="Flex 訊息設計器"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />
                 </div>

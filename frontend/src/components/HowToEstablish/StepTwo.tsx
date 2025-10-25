@@ -20,7 +20,7 @@ const StepTwo = () => {
                   <div className="relative">
                     <ProjectImage
                       projectNumber={3}
-                      alt="LINE Developers Provider 建立頁面"
+                      alt="Bot 建立頁面"
                       className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                     />
                     {/* Highlight indicator - 在手機版縮小 */}
@@ -30,7 +30,7 @@ const StepTwo = () => {
                   <div className="relative">
                     <ProjectImage
                       projectNumber={4}
-                      alt="Provider 建立表單"
+                      alt="Bot 管理頁面"
                       className="w-full h-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                     />
                   </div>
@@ -56,11 +56,10 @@ const StepTwo = () => {
                 <span>第二步</span>
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
-                建立 <span className="text-gradient">Provider</span>
+                建立 <span className="text-gradient">LINE Bot</span>
               </h2>
               <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                Provider 是管理您所有 LINE Bot
-                服務的容器，每個開發者都需要先建立 Provider。
+                登入後，您可以開始建立您的第一個 LINE Bot，填寫基本資訊和 LINE Channel 金鑰即可完成設定。
               </p>
             </div>
 
@@ -75,7 +74,7 @@ const StepTwo = () => {
                       <span className="text-xs font-bold text-accent">1</span>
                     </div>
                     <span className="text-muted-foreground text-sm sm:text-base">
-                      登入LINE Developers後，點選「Create」按鈕
+                      點擊導航列的「建立 LINE Bot」按鈕
                     </span>
                   </li>
                   <li className="flex items-start space-x-3">
@@ -83,7 +82,7 @@ const StepTwo = () => {
                       <span className="text-xs font-bold text-accent">2</span>
                     </div>
                     <span className="text-muted-foreground text-sm sm:text-base">
-                      輸入Provider名稱（建議使用英文）
+                      填寫 Bot 名稱、Channel Access Token 和 Channel Secret
                     </span>
                   </li>
                   <li className="flex items-start space-x-3">
@@ -91,7 +90,7 @@ const StepTwo = () => {
                       <span className="text-xs font-bold text-accent">3</span>
                     </div>
                     <span className="text-muted-foreground text-sm sm:text-base">
-                      點擊「Create」完成Provider建立
+                      點擊「建立 Bot」完成設定
                     </span>
                   </li>
                 </ul>
@@ -107,28 +106,40 @@ const StepTwo = () => {
                       小提示
                     </h4>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                      Provider名稱建議使用有意義的英文名稱，之後無法修改。一個開發者可以建立多個Provider來管理不同的專案。
+                      Channel Access Token 和 Channel Secret 可以從 LINE Developers 的 Messaging API 設定頁面取得。如果還沒有 LINE Channel，請先前往 LINE Developers 建立。
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all group text-sm sm:text-base"
+                <a
+                  href="/bots/create"
+                  className="inline-flex w-full sm:w-auto"
                 >
-                  <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
-                  建立 Provider
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto rounded-full text-sm sm:text-base"
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all group text-sm sm:text-base"
+                  >
+                    <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
+                    建立 LINE Bot
+                  </Button>
+                </a>
+                <a
+                  href="https://developers.line.biz/zh-hant/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full sm:w-auto"
                 >
-                  查看範例
-                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full sm:w-auto rounded-full text-sm sm:text-base"
+                  >
+                    前往 LINE Developers
+                    <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                  </Button>
+                </a>
               </div>
             </div>
           </div>

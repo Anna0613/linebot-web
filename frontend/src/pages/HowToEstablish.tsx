@@ -29,10 +29,10 @@ const HowToEstablish = () => {
 
   const steps = useMemo(
     () => [
-      { id: 1, title: "註冊 LINE Developer", completed: false },
-      { id: 2, title: "建立 Provider", completed: false },
-      { id: 3, title: "建立 Channel", completed: false },
-      { id: 4, title: "取得 API 金鑰", completed: false },
+      { id: 1, title: "註冊 LINE Developer", shortTitle: "註冊帳號", completed: false },
+      { id: 2, title: "建立 Provider", shortTitle: "建立 Provider", completed: false },
+      { id: 3, title: "建立 Channel", shortTitle: "建立 Channel", completed: false },
+      { id: 4, title: "取得 API 金鑰", shortTitle: "取得金鑰", completed: false },
     ],
     []
   );
@@ -138,12 +138,12 @@ const HowToEstablish = () => {
 
             {/* 桌面版進度指示器 */}
             <div className="hidden sm:grid sm:grid-cols-4 gap-3 md:gap-4">
-              {[1, 2, 3, 4].map((step) => {
-                const state = step === currentStep ? "current" : step < currentStep ? "done" : "todo";
+              {steps.map((step) => {
+                const state = step.id === currentStep ? "current" : step.id < currentStep ? "done" : "todo";
                 return (
                   <button
-                    key={step}
-                    onClick={() => goToStep(step)}
+                    key={step.id}
+                    onClick={() => goToStep(step.id)}
                     className={`p-3 md:p-4 rounded-lg text-center transition-all duration-200 ${
                       state === "current"
                         ? "text-white shadow-neon-cyan scale-105 bg-web3-cyan"
@@ -152,12 +152,9 @@ const HowToEstablish = () => {
                           : "text-muted-foreground hover:bg-secondary"
                     }`}
                   >
-                    <div className="font-bold text-base md:text-lg mb-1">步驟 {step}</div>
+                    <div className="font-bold text-base md:text-lg mb-1">步驟 {step.id}</div>
                     <div className="text-xs md:text-sm">
-                      {step === 1 && "建立頻道"}
-                      {step === 2 && "設定 Webhook"}
-                      {step === 3 && "取得金鑰"}
-                      {step === 4 && "完成設定"}
+                      {step.shortTitle}
                     </div>
                   </button>
                 );
@@ -166,36 +163,33 @@ const HowToEstablish = () => {
 
             {/* 手機版進度指示器 */}
             <div className="sm:hidden space-y-3">
-              {[1, 2, 3, 4].map((step) => (
+              {steps.map((step) => (
                 <button
-                  key={step}
-                  onClick={() => goToStep(step)}
+                  key={step.id}
+                  onClick={() => goToStep(step.id)}
                   className={`w-full p-3 rounded-lg text-left transition-all duration-200 flex items-center justify-between ${
-                    step === currentStep
+                    step.id === currentStep
                       ? "bg-[hsl(var(--primary))] text-white shadow-lg"
-                      : step < currentStep
+                      : step.id < currentStep
                         ? "bg-[hsl(var(--line-green))]/30 text-foreground"
                         : "bg-secondary text-muted-foreground hover:bg-gray-200"
                   }`}
                   style={
-                    step === currentStep
+                    step.id === currentStep
                       ? { backgroundColor: ACCENT }
-                      : step < currentStep
+                      : step.id < currentStep
                       ? { backgroundColor: ACCENT_LT }
                       : {}
                   }
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="font-bold text-lg">步驟 {step}</div>
+                    <div className="font-bold text-lg">步驟 {step.id}</div>
                     <div className="text-sm">
-                      {step === 1 && "建立頻道"}
-                      {step === 2 && "設定 Webhook"}
-                      {step === 3 && "取得金鑰"}
-                      {step === 4 && "完成設定"}
+                      {step.shortTitle}
                     </div>
                   </div>
-                  {step === currentStep && <div className="w-3 h-3 bg-card border border-border rounded-full"></div>}
-                  {step < currentStep && (
+                  {step.id === currentStep && <div className="w-3 h-3 bg-card border border-border rounded-full"></div>}
+                  {step.id < currentStep && (
                     <div className="w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center dark:neon-ring">
                       <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                         <path

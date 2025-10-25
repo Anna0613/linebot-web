@@ -7,7 +7,7 @@ const demoTabs = [
     title: "機器人生成器",
     description: "直覺的拖放介面，用於創建機器人對話流。",
     preview: (
-          <div className="w-full bg-card text-card-foreground border border-border rounded-lg shadow-sm overflow-hidden dark:shadow-neon">
+          <div className="w-full bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden dark:shadow-neon">
         <div className="bg-secondary px-4 py-3 flex items-center justify-between border-b border-border">
           <div className="flex items-center space-x-3">
             <div className="h-3 w-3 rounded-full bg-red-400"></div>
@@ -67,7 +67,7 @@ const demoTabs = [
               <div className="absolute top-[120px] left-1/2 transform -translate-x-1/2 w-2 h-2 rounded-full bg-border"></div>
 
               {/* Message Node */}
-              <div className="absolute top-32 left-1/2 transform -translate-x-1/2 w-48 bg-card text-card-foreground shadow-sm rounded-lg p-3 border border-border">
+              <div className="absolute top-32 left-1/2 transform -translate-x-1/2 w-48 bg-card text-card-foreground shadow-sm rounded-lg p-3">
                 <div className="h-5 w-24 bg-muted rounded mb-2 mx-auto"></div>
                 <div className="h-20 bg-secondary rounded p-2">
                   <div className="h-3 w-full bg-muted rounded mb-1"></div>
@@ -87,12 +87,12 @@ const demoTabs = [
               </div>
 
               {/* Condition Nodes */}
-              <div className="absolute top-72 left-[calc(50%-90px)] transform -translate-x-1/2 w-40 bg-card text-card-foreground shadow-sm rounded-lg p-3 border border-border">
+              <div className="absolute top-72 left-[calc(50%-90px)] transform -translate-x-1/2 w-40 bg-card text-card-foreground shadow-sm rounded-lg p-3">
                 <div className="h-5 w-20 bg-primary/20 rounded mb-2 mx-auto"></div>
                 <div className="h-4 w-32 bg-secondary rounded mx-auto"></div>
               </div>
 
-              <div className="absolute top-72 left-[calc(50%+90px)] transform -translate-x-1/2 w-40 bg-card text-card-foreground shadow-sm rounded-lg p-3 border border-border">
+              <div className="absolute top-72 left-[calc(50%+90px)] transform -translate-x-1/2 w-40 bg-card text-card-foreground shadow-sm rounded-lg p-3">
                 <div className="h-5 w-20 bg-primary/20 rounded mb-2 mx-auto"></div>
                 <div className="h-4 w-28 bg-secondary rounded mx-auto"></div>
               </div>
@@ -134,7 +134,7 @@ const demoTabs = [
     title: "Flex 訊息編輯器",
     description: "使用視覺化編輯器設計豐富的 LINE Flex 訊息。",
     preview: (
-      <div className="w-full bg-card text-card-foreground border border-border rounded-lg shadow-sm overflow-hidden dark:shadow-neon">
+      <div className="w-full bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden dark:shadow-neon">
         <div className="bg-secondary px-4 py-3 flex items-center justify-between border-b border-border">
           <div className="flex items-center space-x-3">
             <div className="h-3 w-3 rounded-full bg-red-400"></div>
@@ -197,7 +197,7 @@ const demoTabs = [
                 {/* Conversation */}
                 <div className="flex-1 bg-secondary p-3">
                   {/* Message Bubble */}
-                  <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden mb-3 w-48 mx-auto">
+                  <div className="bg-card rounded-lg shadow-sm overflow-hidden mb-3 w-48 mx-auto">
                     {/* Header Image */}
                     <div className="h-20 bg-gradient-to-r from-blue-100 to-green-100"></div>
 
@@ -257,7 +257,7 @@ const demoTabs = [
     title: "分析儀表板",
     description: "透過詳細的分析監控您的機器人的性能。",
     preview: (
-      <div className="w-full bg-card text-card-foreground border border-border rounded-lg shadow-sm overflow-hidden">
+      <div className="w-full bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden">
         <div className="bg-secondary px-4 py-3 flex items-center justify-between border-b border-border">
           <div className="flex items-center space-x-3">
             <div className="h-3 w-3 rounded-full bg-red-400"></div>
@@ -344,17 +344,19 @@ const DemoPreview = () => {
 
   return (
     <section id="demo" className="section py-24">
-      <div className="text-center mb-16 fade-in-element">
-        <h2 className="section-title">
-          觀看<span className="text-gradient">實際操作</span>
-        </h2>
-        <p className="section-subtitle mx-auto">
-          探索我們的互動式演示，了解使用我們的平台創建和管理 LINE
-          機器人是多麼容易。
-        </p>
-      </div>
+      {/* 半透明背景容器 */}
+      <div className="glass-card p-8 md:p-12">
+        <div className="text-center mb-16 fade-in-element">
+          <h2 className="section-title">
+            觀看<span className="text-gradient">實際操作</span>
+          </h2>
+          <p className="section-subtitle mx-auto">
+            探索我們的互動式演示，了解使用我們的平台創建和管理 LINE
+            機器人是多麼容易。
+          </p>
+        </div>
 
-      <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto">
         <Tabs
           defaultValue="builder"
           value={activeTab}
@@ -398,6 +400,7 @@ const DemoPreview = () => {
             </TabsContent>
           ))}
         </Tabs>
+      </div>
       </div>
     </section>
   );

@@ -21,11 +21,10 @@ const StepOne = () => {
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
                 註冊並登入
                 <br />
-                <span className="text-gradient">LINE Developer</span>
+                <span className="text-gradient">平台帳號</span>
               </h2>
               <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                開始建立您的LINE Bot之前，需要先在LINE
-                Developers網站建立開發者帳號。
+                開始使用 LINE Bot 製作輔助系統之前，需要先註冊平台帳號並登入。
               </p>
             </div>
 
@@ -40,7 +39,7 @@ const StepOne = () => {
                       <span className="text-xs font-bold text-line">1</span>
                     </div>
                     <span className="text-muted-foreground text-sm sm:text-base">
-                      前往LINE Developers網站
+                      點擊右上角「註冊」按鈕
                     </span>
                   </li>
                   <li className="flex items-start space-x-3">
@@ -48,7 +47,7 @@ const StepOne = () => {
                       <span className="text-xs font-bold text-line">2</span>
                     </div>
                     <span className="text-muted-foreground text-sm sm:text-base">
-                      使用LINE帳號登入或註冊新帳號
+                      填寫 Email、密碼和使用者名稱
                     </span>
                   </li>
                   <li className="flex items-start space-x-3">
@@ -56,7 +55,7 @@ const StepOne = () => {
                       <span className="text-xs font-bold text-line">3</span>
                     </div>
                     <span className="text-muted-foreground text-sm sm:text-base">
-                      同意開發者條款並完成驗證
+                      完成註冊後使用 Email 和密碼登入
                     </span>
                   </li>
                 </ul>
@@ -64,27 +63,30 @@ const StepOne = () => {
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <a
-                  href="https://developers.line.biz/zh-hant/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/register"
                   className="inline-flex w-full sm:w-auto"
                 >
                   <Button
                     size="lg"
                     className="w-full sm:w-auto bg-line hover:bg-line-dark text-white rounded-full shadow-lg hover:shadow-xl transition-all group text-sm sm:text-base"
                   >
-                    前往 LINE Developers
+                    立即註冊
                     <ExternalLink className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
                   </Button>
                 </a>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto rounded-full text-sm sm:text-base"
+                <a
+                  href="/login"
+                  className="inline-flex w-full sm:w-auto"
                 >
-                  查看詳細教學
-                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full sm:w-auto rounded-full text-sm sm:text-base"
+                  >
+                    已有帳號？登入
+                    <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                  </Button>
+                </a>
               </div>
             </div>
           </div>
@@ -99,12 +101,12 @@ const StepOne = () => {
                 <div className="space-y-3 sm:space-y-4">
                   <ProjectImage
                     projectNumber={1}
-                    alt="LINE Developers 登入頁面"
+                    alt="平台註冊頁面"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />
                   <ProjectImage
                     projectNumber={2}
-                    alt="LINE Developers 註冊流程"
+                    alt="平台登入頁面"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />
                 </div>

@@ -18,11 +18,11 @@ const features = [
     details: [
       "帶有拖拉式節點的可視化流程建構器",
       "實時預覽你的機器人的回應",
-      "很多LINE Flex Messages的媒體訊息編輯器",
-      "有預先建立對話流程的範本庫",
+      "豐富的 LINE Flex Messages 訊息編輯器",
+      "支援多種事件觸發與回應類型",
     ],
     image: (
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="flex items-center justify-between mb-6">
           <div className="h-8 w-32 bg-primary/20 rounded"></div>
           <div className="flex space-x-2">
@@ -45,16 +45,16 @@ const features = [
   {
     id: "server",
     icon: <Server className="h-6 w-6" />,
-    title: "簡單的伺服器管理",
-    description: "只需點擊幾下即可部署和管理機器人的伺服器基礎架構。",
+    title: "完整的 Bot 管理",
+    description: "輕鬆管理您的 LINE Bot，包含設定、測試與監控功能。",
     details: [
-      "使用 Docker 容器進行一鍵部署",
-      "根據流量自動擴展",
-      "內建 NGINX 配置以實現最佳效能",
-      "伺服器健康監控和警報",
+      "簡單的 Bot 建立與設定流程",
+      "Webhook 連線狀態即時監控",
+      "支援多個 Bot 同時管理",
+      "完整的 Bot 資訊編輯功能",
     ],
     image: (
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-6">
           <div className="h-6 w-36 bg-primary/20 rounded"></div>
           <div className="h-8 w-8 rounded-full bg-secondary"></div>
@@ -82,17 +82,17 @@ const features = [
   {
     id: "database",
     icon: <Database className="h-6 w-6" />,
-    title: "資料庫管理",
+    title: "AI 知識庫管理",
     description:
-      "無需 SQL 知識即可管理您的機器人的資料。輕鬆儲存使用者互動和偏好。",
+      "建立專屬的 AI 知識庫，讓您的 Bot 能夠智能回答問題。",
     details: [
-      "可視化資料庫模式設計器",
-      "自動資料備份和還原",
-      "內建資料驗證規則",
-      "以多種格式匯出和匯入資料",
+      "支援文字與檔案上傳建立知識庫",
+      "智能文件分塊與向量化處理",
+      "AI 接管模式自動回應用戶問題",
+      "知識庫內容搜尋與管理功能",
     ],
     image: (
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="flex justify-between mb-6">
           <div className="h-6 w-32 bg-primary/20 rounded"></div>
           <div className="flex space-x-2">
@@ -106,17 +106,17 @@ const features = [
             <div className="h-5 w-16 bg-muted rounded"></div>
           </div>
           <div className="space-y-2">
-            <div className="h-8 bg-card border border-border rounded flex items-center px-2">
+            <div className="h-8 bg-card rounded flex items-center px-2">
               <div className="h-4 w-4 bg-line/20 rounded-full mr-2"></div>
               <div className="h-4 w-32 bg-muted rounded"></div>
               <div className="ml-auto h-4 w-16 bg-muted rounded"></div>
             </div>
-            <div className="h-8 bg-card border border-border rounded flex items-center px-2">
+            <div className="h-8 bg-card rounded flex items-center px-2">
               <div className="h-4 w-4 bg-line/20 rounded-full mr-2"></div>
               <div className="h-4 w-40 bg-muted rounded"></div>
               <div className="ml-auto h-4 w-16 bg-muted rounded"></div>
             </div>
-            <div className="h-8 bg-card border border-border rounded flex items-center px-2">
+            <div className="h-8 bg-card rounded flex items-center px-2">
               <div className="h-4 w-4 bg-line/20 rounded-full mr-2"></div>
               <div className="h-4 w-36 bg-muted rounded"></div>
               <div className="ml-auto h-4 w-16 bg-muted rounded"></div>
@@ -133,16 +133,16 @@ const features = [
   {
     id: "analytics",
     icon: <BarChart3 className="h-6 w-6" />,
-    title: "強大的分析功能",
-    description: "從使用者互動中獲得見解並衡量機器人的性能。",
+    title: "使用者互動分析",
+    description: "追蹤與分析使用者與 Bot 的互動記錄。",
     details: [
-      "包含關鍵指標的即時儀表板",
-      "用戶參與度和對話分析",
-      "訊息回覆率監控",
-      "自訂報告和數據視覺化",
+      "完整的對話歷史記錄查詢",
+      "使用者列表與詳細資訊管理",
+      "訊息統計與活躍度分析",
+      "即時 WebSocket 更新對話狀態",
     ],
     image: (
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="h-6 w-32 bg-primary/20 rounded mb-6"></div>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="bg-secondary rounded-lg p-3">
@@ -180,7 +180,7 @@ const features = [
       "定期安全審核和更新",
     ],
     image: (
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="h-6 w-32 bg-primary/20 rounded mb-6"></div>
         <div className="bg-secondary rounded-lg p-4 mb-4">
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
@@ -202,13 +202,13 @@ const features = [
     title: "豐富的訊息傳遞功能",
     description: "利用 LINE 豐富的訊息格式創造引人入勝的對話。",
     details: [
-      "支援所有 LINE 訊息類型，包括 Flex Messages",
-      "圖像、視訊和音訊資訊處理",
-      "互動式按鈕和選單",
-      "快速回覆和持久選單選項",
+      "支援文字、圖片、影片等多種訊息類型",
+      "完整的 Flex Messages 視覺化編輯器",
+      "Rich Menu 圖形化選單設計與管理",
+      "推播訊息與管理者訊息功能",
     ],
     image: (
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 w-full max-w-md">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm p-6 w-full max-w-md">
         <div className="flex justify-between mb-6">
           <div className="h-6 w-32 bg-primary/20 rounded"></div>
           <div className="h-6 w-6 rounded bg-secondary"></div>
@@ -216,7 +216,7 @@ const features = [
         <div className="space-y-4">
           <div className="bg-secondary rounded-lg p-3 flex items-start">
             <div className="h-8 w-8 rounded-full bg-line/20 mr-3 flex-shrink-0"></div>
-            <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
+            <div className="bg-card rounded-lg p-3 shadow-sm">
               <div className="h-4 w-40 bg-muted rounded mb-2"></div>
               <div className="h-4 w-32 bg-muted rounded"></div>
             </div>
@@ -239,17 +239,19 @@ const Features = () => {
 
   return (
     <section id="features" className="section py-24">
-      <div className="text-center mb-16 fade-in-element">
-        <h2 className="section-title">
-          強大的功能， <span className="text-gradient">簡單的介面</span>
-        </h2>
-        <p className="section-subtitle mx-auto">
-          我們的平台提供創建、部署和管理 LINE
-          機器人所需的一切，無需編寫任何程式碼。
-        </p>
-      </div>
+      {/* 半透明背景容器 */}
+      <div className="glass-card p-8 md:p-12">
+        <div className="text-center mb-16 fade-in-element">
+          <h2 className="section-title">
+            強大的功能， <span className="text-gradient">簡單的介面</span>
+          </h2>
+          <p className="section-subtitle mx-auto">
+            我們的平台提供創建、部署和管理 LINE
+            機器人所需的一切，無需編寫任何程式碼。
+          </p>
+        </div>
 
-      <Tabs
+        <Tabs
         defaultValue="design"
         value={activeTab}
         onValueChange={setActiveTab}
@@ -332,6 +334,7 @@ const Features = () => {
           </TabsContent>
         ))}
       </Tabs>
+      </div>
     </section>
   );
 };

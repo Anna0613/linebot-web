@@ -3,10 +3,10 @@ import { ArrowRight } from "lucide-react";
 const steps = [
   {
     number: "01",
-    title: "註冊並建立項目",
-    description: "註冊一個帳戶並點擊幾下即可建立您的第一個 LINE Bot 專案。",
+    title: "註冊帳號並登入",
+    description: "使用 Email 註冊帳號或透過 LINE Login 快速登入，開始使用平台功能。",
     image: (
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 dark:shadow-neon">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm p-6 dark:shadow-neon">
         <div className="flex justify-between mb-6">
           <div className="h-6 w-32 bg-primary/20 rounded"></div>
           <div className="flex space-x-2">
@@ -34,11 +34,11 @@ const steps = [
   },
   {
     number: "02",
-    title: "設計機器人流程",
+    title: "建立並設定 Bot",
     description:
-      "使用我們的視覺化拖放編輯器來設計您的機器人的對話流程，無需編碼。",
+      "填寫 Bot 名稱、Channel Access Token 和 Channel Secret，快速建立您的 LINE Bot。",
     image: (
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 dark:shadow-neon">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm p-6 dark:shadow-neon">
         <div className="flex justify-between items-center mb-4">
           <div className="h-6 w-32 bg-primary/20 rounded"></div>
           <div className="flex space-x-2">
@@ -50,19 +50,19 @@ const steps = [
           <div className="col-span-2 p-3 bg-secondary rounded-lg">
             <div className="h-5 w-20 bg-muted rounded mb-2"></div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="h-10 bg-card rounded border border-border"></div>
-              <div className="h-10 bg-card rounded border border-border"></div>
+              <div className="h-10 bg-card rounded"></div>
+              <div className="h-10 bg-card rounded"></div>
             </div>
           </div>
           <div className="p-3 bg-secondary rounded-lg">
             <div className="h-5 w-16 bg-muted rounded mb-2"></div>
-            <div className="h-20 bg-card rounded border border-border flex items-center justify-center">
+            <div className="h-20 bg-card rounded flex items-center justify-center">
               <div className="h-10 w-10 rounded-full bg-line/20"></div>
             </div>
           </div>
           <div className="p-3 bg-secondary rounded-lg">
             <div className="h-5 w-16 bg-muted rounded mb-2"></div>
-            <div className="h-20 bg-card rounded border border-border"></div>
+            <div className="h-20 bg-card rounded"></div>
           </div>
         </div>
         <div className="flex justify-between">
@@ -74,10 +74,10 @@ const steps = [
   },
   {
     number: "03",
-    title: "配置和自訂",
-    description: "自訂機器人的外觀、設定自動響應並配置設定。",
+    title: "設計對話流程",
+    description: "使用視覺化拖拉式編輯器設計 Bot 的對話邏輯、Flex 訊息和 Rich Menu。",
     image: (
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 dark:shadow-neon">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm p-6 dark:shadow-neon">
         <div className="flex items-center mb-6">
           <div className="h-8 w-8 bg-line/20 rounded-full mr-3"></div>
           <div className="h-5 w-32 bg-primary/20 rounded"></div>
@@ -116,10 +116,10 @@ const steps = [
   },
   {
     number: "04",
-    title: "部署並上線",
-    description: "一鍵啟動您的機器人並將其連接到您的 LINE 商業帳戶。",
+    title: "測試與上線",
+    description: "設定 Webhook URL，測試 Bot 功能，並透過儀表板監控使用者互動與數據分析。",
     image: (
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-sm p-6 dark:shadow-neon">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm p-6 dark:shadow-neon">
         <div className="h-6 w-32 bg-primary/20 rounded mb-6"></div>
         <div className="bg-secondary rounded-lg p-5 flex flex-col items-center justify-center mb-6">
           <div className="w-20 h-20 rounded-full bg-green-100 mb-4 flex items-center justify-center">
@@ -138,18 +138,20 @@ const steps = [
 
 const HowItWorks = () => {
   return (
-    <section id="how-it-works" className="section py-24 bg-background">
-      <div className="text-center mb-16 fade-in-element">
-        <h2 className="section-title">
-          它如何<span className="text-gradient">工作</span>
-        </h2>
-        <p className="section-subtitle mx-auto">
-          使用我們的平台可以輕鬆建立和部署您的自訂 LINE
-          Bot。按照這些簡單的步驟即可開始。
-        </p>
-      </div>
+    <section id="how-it-works" className="section py-24">
+      {/* 半透明背景容器 */}
+      <div className="glass-card p-8 md:p-12">
+        <div className="text-center mb-16 fade-in-element">
+          <h2 className="section-title">
+            它如何<span className="text-gradient">工作</span>
+          </h2>
+          <p className="section-subtitle mx-auto">
+            使用我們的平台可以輕鬆建立和部署您的自訂 LINE
+            Bot。按照這些簡單的步驟即可開始。
+          </p>
+        </div>
 
-      <div className="relative">
+        <div className="relative">
         {/* Connection Line */}
         <div className="hidden lg:block absolute left-1/2 top-24 bottom-24 w-0.5 bg-border -translate-x-1/2"></div>
 
@@ -179,7 +181,7 @@ const HowItWorks = () => {
                     <div className="hidden lg:flex absolute top-1/2 -translate-y-1/2 items-center justify-center z-10">
                       {index % 2 === 1 ? (
                         <div className="right-0 translate-x-1/2">
-                          <div className="h-16 w-16 rounded-full bg-card border border-border shadow-lg flex items-center justify-center dark:neon-ring">
+                          <div className="h-16 w-16 rounded-full bg-card shadow-lg flex items-center justify-center dark:neon-ring">
                             <span className="text-2xl font-bold text-line">
                               {step.number}
                             </span>
@@ -187,7 +189,7 @@ const HowItWorks = () => {
                         </div>
                       ) : (
                         <div className="left-0 -translate-x-1/2">
-                          <div className="h-16 w-16 rounded-full bg-card border border-border shadow-lg flex items-center justify-center dark:neon-ring">
+                          <div className="h-16 w-16 rounded-full bg-card shadow-lg flex items-center justify-center dark:neon-ring">
                             <span className="text-2xl font-bold text-line">
                               {step.number}
                             </span>
@@ -229,6 +231,7 @@ const HowItWorks = () => {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </section>
   );

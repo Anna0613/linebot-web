@@ -14,7 +14,7 @@ const sharp = require('sharp');
 const CONFIG = {
   // 輸入目錄
   inputDirs: [
-    path.join(__dirname, '../assets/images')
+    path.join(__dirname, '../assets/images/origin')
   ],
   // 輸出目錄
   webpOutputDir: path.join(__dirname, '../assets/images/webp'),

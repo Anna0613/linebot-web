@@ -55,8 +55,8 @@ const Hero = () => {
               <div className="w-8 h-8 rounded-full bg-blue-400"></div>
             </div>
             <p>
-              深受台灣 <span className="font-medium text-foreground">500+</span>{" "}
-              家企業的信賴
+              簡單易用的 <span className="font-medium text-foreground">LINE Bot</span>{" "}
+              建立平台
             </p>
           </div>
         </div>

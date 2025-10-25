@@ -20,12 +20,12 @@ const StepFour = () => {
                 <div className="space-y-3 sm:space-y-4">
                   <ProjectImage
                     projectNumber={7}
-                    alt="LINE Channel secret 設定頁面"
+                    alt="Rich Menu 管理頁面"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />
                   <ProjectImage
                     projectNumber={8}
-                    alt="Channel access token 設定頁面"
+                    alt="Bot 管理儀表板"
                     className="w-full rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow"
                   />
                 </div>
@@ -54,11 +54,10 @@ const StepFour = () => {
                 <span>第四步</span>
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
-                取得 <span className="text-gradient">API 金鑰</span>
+                測試與<span className="text-gradient">上線</span>
               </h2>
               <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                取得 Channel secret 和 Channel access token，這兩個金鑰是您的
-                LINE Bot 與 LINE 平台通訊的重要憑證。
+                設定 Webhook URL，測試 Bot 功能，並透過管理儀表板監控使用者互動與數據分析。
               </p>
             </div>
 
@@ -68,11 +67,11 @@ const StepFour = () => {
                   操作步驟：
                 </h3>
 
-                {/* Channel Secret */}
+                {/* 設定 Webhook */}
                 <div className="mb-6">
                   <h4 className="text-base sm:text-lg font-medium text-foreground mb-3 flex items-center">
                     <Key className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-primary" />
-                    取得 Channel Secret
+                    設定 Webhook URL
                   </h4>
                   <ul className="space-y-2 ml-6 sm:ml-7">
                     <li className="flex items-start space-x-3">
@@ -82,7 +81,7 @@ const StepFour = () => {
                         </span>
                       </div>
                       <span className="text-muted-foreground text-xs sm:text-sm">
-                        進入 Basic settings 頁面
+                        前往 LINE Developers 的 Messaging API 設定頁面
                       </span>
                     </li>
                     <li className="flex items-start space-x-3">
@@ -92,7 +91,7 @@ const StepFour = () => {
                         </span>
                       </div>
                       <span className="text-muted-foreground text-xs sm:text-sm">
-                        往下滑找到 Channel secret 欄位
+                        在 Webhook URL 欄位填入您的伺服器網址
                       </span>
                     </li>
                     <li className="flex items-start space-x-3">
@@ -102,17 +101,17 @@ const StepFour = () => {
                         </span>
                       </div>
                       <span className="text-muted-foreground text-xs sm:text-sm">
-                        複製 Channel secret 值
+                        啟用 Webhook 並驗證連線
                       </span>
                     </li>
                   </ul>
                 </div>
 
-                {/* Channel Access Token */}
+                {/* 測試與監控 */}
                 <div>
                   <h4 className="text-base sm:text-lg font-medium text-foreground mb-3 flex items-center">
                     <Copy className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-accent" />
-                    取得 Channel Access Token
+                    測試與監控
                   </h4>
                   <ul className="space-y-2 ml-6 sm:ml-7">
                     <li className="flex items-start space-x-3">
@@ -120,7 +119,7 @@ const StepFour = () => {
                         <span className="text-xs font-bold text-accent">1</span>
                       </div>
                       <span className="text-muted-foreground text-xs sm:text-sm">
-                        前往 Messaging API settings 頁面
+                        使用 LINE 掃描 QR Code 加入您的 Bot
                       </span>
                     </li>
                     <li className="flex items-start space-x-3">
@@ -128,7 +127,7 @@ const StepFour = () => {
                         <span className="text-xs font-bold text-accent">2</span>
                       </div>
                       <span className="text-muted-foreground text-xs sm:text-sm">
-                        找到 Channel access token 區塊
+                        傳送訊息測試 Bot 的回應功能
                       </span>
                     </li>
                     <li className="flex items-start space-x-3">
@@ -136,15 +135,7 @@ const StepFour = () => {
                         <span className="text-xs font-bold text-accent">3</span>
                       </div>
                       <span className="text-muted-foreground text-xs sm:text-sm">
-                        點擊「Issue」按鈕產生 token
-                      </span>
-                    </li>
-                    <li className="flex items-start space-x-3">
-                      <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-xs font-bold text-accent">4</span>
-                      </div>
-                      <span className="text-muted-foreground text-xs sm:text-sm">
-                        複製產生的 access token
+                        前往管理中心查看即時數據和使用者互動
                       </span>
                     </li>
                   </ul>
@@ -161,8 +152,7 @@ const StepFour = () => {
                       重要提醒
                     </h4>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                      請妥善保管這兩個金鑰，不要公開分享。這些是您的 LINE Bot
-                      身份驗證憑證。
+                      確保您的伺服器已正確部署並可從外部訪問，Webhook URL 必須使用 HTTPS 協定。
                     </p>
                   </div>
                 </div>
@@ -173,34 +163,40 @@ const StepFour = () => {
                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-medium text-foreground mb-1 text-sm sm:text-base">
-                      下一步
+                      完成設定
                     </h4>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                      取得金鑰後，將它們貼到我們的網站中，就可以開始設定您的
-                      LINE Bot 伺服器了。
+                      恭喜！您的 LINE Bot 已經準備就緒。前往管理中心查看即時數據和使用者互動分析。
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <Link to="/bots/create" className="inline-flex w-full sm:w-auto">
+                <Link to="/bots/management" className="inline-flex w-full sm:w-auto">
                   <Button
                     size="lg"
                   className="w-full bg-[hsl(var(--primary))] hover:bg-[hsl(var(--line-green-hover))] text-[hsl(var(--primary-foreground))] rounded-full shadow-lg hover:shadow-xl transition-all group text-sm sm:text-base"
                   >
-                    開始設定伺服器
+                    前往管理中心
                     <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
                   </Button>
                 </Link>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto rounded-full text-sm sm:text-base"
+                <a
+                  href="https://developers.line.biz/zh-hant/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full sm:w-auto"
                 >
-                  查看範例設定
-                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full sm:w-auto rounded-full text-sm sm:text-base"
+                  >
+                    LINE Developers
+                    <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                  </Button>
+                </a>
               </div>
             </div>
           </div>
