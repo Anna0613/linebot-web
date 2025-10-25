@@ -1,0 +1,155 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 資料庫
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: linebot-postgres
+    environment:
+      POSTGRES_DB: linebot
+      POSTGRES_USER: linebot_user
+      POSTGRES_PASSWORD: linebot_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
+    restart: unless-stopped
+    networks:
+      - linebot-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linebot_user -d linebot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL 從庫（讀取副本）
+  postgres-replica:
+    image: pgvector/pgvector:pg16
+    container_name: linebot-postgres-replica
+    environment:
+      POSTGRES_DB: linebot
+      POSTGRES_USER: linebot_user
+      POSTGRES_PASSWORD: linebot_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - linebot-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linebot_user -d linebot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      bash -c "
+      until pg_basebackup -h postgres -D /var/lib/postgresql/data -U linebot_user -v -P -W; do
+        echo 'Waiting for primary to be ready...';
+        sleep 1s;
+      done;
+      echo 'standby_mode = on' >> /var/lib/postgresql/data/recovery.conf;
+      echo 'primary_conninfo = \"host=postgres port=5432 user=linebot_user password=linebot_password\"' >> /var/lib/postgresql/data/recovery.conf;
+      postgres
+      "
+
+  # Redis 快取服務
+  redis:
+    image: redis:7-alpine
+    container_name: linebot-redis
+    command: redis-server --requirepass redis_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - linebot-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # MinIO 物件儲存服務
+  minio:
+    image: minio/minio:latest
+    container_name: linebot-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"  # API 端口
+      - "9001:9001"  # Web Console 端口
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    networks:
+      - linebot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # MongoDB 文件資料庫
+  mongodb:
+    image: mongo:7
+    container_name: linebot-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo_user
+      MONGO_INITDB_ROOT_PASSWORD: mongo_password
+      MONGO_INITDB_DATABASE: linebot_conversations
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js
+    restart: unless-stopped
+    networks:
+      - linebot-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # MinIO 初始化服務（創建 bucket）
+  minio-init:
+    image: minio/mc:latest
+    container_name: linebot-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin123;
+      mc mb myminio/message-store --ignore-existing;
+      mc policy set public myminio/message-store;
+      echo 'MinIO bucket created successfully';
+      "
+    networks:
+      - linebot-network
+
+volumes:
+  postgres_data:
+    driver: local
+  postgres_replica_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  mongodb_data:
+    driver: local
+
+networks:
+  linebot-network:
+    driver: bridge
