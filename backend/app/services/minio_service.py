@@ -233,13 +233,34 @@ class MinIOService:
             # 生成代理 URL
             if settings.MINIO_PUBLIC_URL:
                 # 使用外部域名的 API 代理
-                base_url = settings.MINIO_PUBLIC_URL.replace('minio.', 'api.')
+                # 注意：在生產環境中，MINIO_PUBLIC_URL 可能是 https://minio.jkl921102.org
+                # 但我們需要通過 API 代理訪問，所以應該使用 API 域名
+                # 優先使用 ALLOWED_ORIGINS 中的 API 域名，或者從 MINIO_PUBLIC_URL 推導
+
+                # 方案 1: 直接使用 API 域名（推薦用於 Cloudflare Tunnel）
+                # 從 MINIO_PUBLIC_URL 提取協議和域名，然後替換為 API 域名
+                from urllib.parse import urlparse
+                parsed = urlparse(settings.MINIO_PUBLIC_URL)
+                protocol = parsed.scheme  # https 或 http
+
+                # 嘗試從 MINIO_PUBLIC_URL 推導 API 域名
+                # 例如：https://minio.jkl921102.org -> https://api.jkl921102.org
+                hostname = parsed.hostname or parsed.netloc
+                if hostname.startswith('minio.'):
+                    api_hostname = hostname.replace('minio.', 'api.', 1)
+                else:
+                    # 如果不是 minio 開頭，直接使用 hostname
+                    api_hostname = hostname
+
+                base_url = f"{protocol}://{api_hostname}"
                 proxy_url = f"{base_url}/api/v1/minio/proxy?object_path={encoded_path}"
+
+                logger.debug(f"生成代理 URL: {object_path} -> {proxy_url} (from MINIO_PUBLIC_URL: {settings.MINIO_PUBLIC_URL})")
             else:
                 # 回退到內部地址
                 proxy_url = f"http://localhost:8005/api/v1/minio/proxy?object_path={encoded_path}"
+                logger.debug(f"生成代理 URL (本地): {object_path} -> {proxy_url}")
 
-            logger.debug(f"生成代理 URL: {object_path} -> {proxy_url}")
             return proxy_url
 
         except Exception as e:
