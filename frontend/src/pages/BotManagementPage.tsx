@@ -1779,12 +1779,6 @@ const BotManagementPage: React.FC = () => {
                                     </span>
                                   </div>
                                 </div>
-                                <div>
-                                  <label className="text-xs font-medium text-muted-foreground block mb-1">Bot 狀態</label>
-                                  <Badge variant={selectedBot.is_active ? "default" : "secondary"} className="text-xs">
-                                    {selectedBot.is_active ? "啟用中" : "已停用"}
-                                  </Badge>
-                                </div>
                               </div>
                             </div>
                             <div className="pt-3 border-t mt-auto">
