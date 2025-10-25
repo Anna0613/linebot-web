@@ -1141,3 +1141,148 @@ class LineBotService:
     # 此方法已移除，請使用 ConversationService.get_usage_stats() 替代
 
     # 此方法已移除，請使用 ConversationService.get_bot_activities() 替代
+
+    # ==================== 配額管理相關方法 ====================
+
+    async def get_message_quota(self) -> Optional[Dict]:
+        """
+        取得訊息配額資訊
+
+        Returns:
+            Dict: {
+                "type": "limited" | "none",
+                "value": int  # 配額上限（type=limited 時）
+            }
+        """
+        if not self.is_configured():
+            logger.warning("LINE Bot 未正確配置，無法取得配額資訊")
+            return None
+
+        try:
+            url = "https://api.line.me/v2/bot/message/quota"
+            headers = {"Authorization": f"Bearer {self.channel_token}"}
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10.0)) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                    logger.info(f"成功取得訊息配額: {data}")
+                    return data
+        except aiohttp.ClientError as e:
+            logger.error(f"取得訊息配額失敗 (網路錯誤): {e}")
+            return None
+        except Exception as e:
+            logger.error(f"取得訊息配額失敗: {e}")
+            return None
+
+    async def get_quota_consumption(self) -> Optional[Dict]:
+        """
+        取得本月已使用的配額
+
+        Returns:
+            Dict: {
+                "totalUsage": int  # 本月已發送訊息數
+            }
+        """
+        if not self.is_configured():
+            logger.warning("LINE Bot 未正確配置，無法取得配額使用量")
+            return None
+
+        try:
+            url = "https://api.line.me/v2/bot/message/quota/consumption"
+            headers = {"Authorization": f"Bearer {self.channel_token}"}
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10.0)) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                    logger.info(f"成功取得配額使用量: {data}")
+                    return data
+        except aiohttp.ClientError as e:
+            logger.error(f"取得配額使用量失敗 (網路錯誤): {e}")
+            return None
+        except Exception as e:
+            logger.error(f"取得配額使用量失敗: {e}")
+            return None
+
+    async def get_quota_status(self) -> Dict:
+        """
+        取得完整的配額狀態（整合配額與使用量）
+
+        Returns:
+            Dict: {
+                "quota_type": str,           # "limited", "none", "unknown"
+                "quota_limit": int | None,   # 配額上限（limited 時）
+                "quota_used": int,           # 已使用數量
+                "quota_remaining": int | None, # 剩餘配額（limited 時）
+                "usage_percentage": float,   # 使用率百分比
+                "is_near_limit": bool,       # 是否接近上限（>80%）
+                "is_exceeded": bool,         # 是否超過上限
+                "last_updated": str          # 最後更新時間
+            }
+        """
+        # 並行取得配額資訊和使用量
+        quota_info, consumption_info = await asyncio.gather(
+            self.get_message_quota(),
+            self.get_quota_consumption(),
+            return_exceptions=True
+        )
+
+        # 處理錯誤情況
+        if isinstance(quota_info, Exception):
+            logger.error(f"取得配額資訊時發生錯誤: {quota_info}")
+            quota_info = None
+
+        if isinstance(consumption_info, Exception):
+            logger.error(f"取得配額使用量時發生錯誤: {consumption_info}")
+            consumption_info = None
+
+        # 如果無法取得資訊，返回錯誤狀態
+        if not quota_info or not consumption_info:
+            return {
+                "error": "無法取得配額資訊",
+                "quota_type": "unknown",
+                "quota_limit": None,
+                "quota_used": 0,
+                "quota_remaining": None,
+                "usage_percentage": 0.0,
+                "is_near_limit": False,
+                "is_exceeded": False,
+                "last_updated": datetime.now().isoformat()
+            }
+
+        # 解析配額類型和上限
+        quota_type = quota_info.get("type", "unknown")
+        quota_limit = quota_info.get("value") if quota_type == "limited" else None
+        quota_used = consumption_info.get("totalUsage", 0)
+
+        # 計算剩餘配額和使用率
+        if quota_type == "none":
+            # 無限制方案
+            quota_remaining = None
+            usage_percentage = 0.0
+            is_near_limit = False
+            is_exceeded = False
+        elif quota_type == "limited" and quota_limit is not None:
+            # 有限制方案
+            quota_remaining = max(0, quota_limit - quota_used)
+            usage_percentage = (quota_used / quota_limit * 100) if quota_limit > 0 else 0.0
+            is_near_limit = usage_percentage >= 80.0
+            is_exceeded = quota_used >= quota_limit
+        else:
+            # 未知狀態
+            quota_remaining = None
+            usage_percentage = 0.0
+            is_near_limit = False
+            is_exceeded = False
+
+        return {
+            "quota_type": quota_type,
+            "quota_limit": quota_limit,
+            "quota_used": quota_used,
+            "quota_remaining": quota_remaining,
+            "usage_percentage": round(usage_percentage, 2),
+            "is_near_limit": is_near_limit,
+            "is_exceeded": is_exceeded,
+            "last_updated": datetime.now().isoformat()
+        }

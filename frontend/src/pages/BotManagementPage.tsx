@@ -60,6 +60,10 @@ import OptimizedActivityFeed from "@/components/optimized/OptimizedActivityFeed"
 import ChatPanel from "../components/users/ChatPanel";
 import UserDetailsModal from "../components/users/UserDetailsModal";
 
+// 導入配額管理相關元件
+import { useQuotaStatus } from "../hooks/useQuotaStatus";
+import { QuotaStatusCard } from "../components/quota/QuotaStatusCard";
+
 // 類型定義
 interface BotAnalytics {
   totalMessages: number;
@@ -69,6 +73,8 @@ interface BotAnalytics {
   todayMessages: number;
   weekMessages: number;
   monthMessages: number;
+  responseTime?: number;  // 可選：平均回應時間（毫秒）
+  successRate?: number;   // 可選：成功率（百分比）
 }
 
 interface MessageStats {
@@ -307,6 +313,18 @@ const BotManagementPage: React.FC = () => {
 
   // 創建穩定的 WebSocket 連接檢查函數，避免每次渲染都創建新函數
   const checkWebSocketConnection = useCallback(() => isConnected, [isConnected]);
+
+  // 配額狀態查詢 - 每 5 分鐘自動刷新一次
+  const {
+    quotaStatus,
+    isLoading: quotaLoading,
+    error: quotaError,
+    refetch: refetchQuota
+  } = useQuotaStatus({
+    botId: selectedBotId,
+    enabled: !!selectedBotId && activeTab === "control", // 只在控制頁籤時啟用
+    refreshInterval: 5 * 60 * 1000 // 5 分鐘
+  });
 
   // 圖表配置
   const _chartConfig = {
@@ -1780,6 +1798,17 @@ const BotManagementPage: React.FC = () => {
                                   </div>
                                 </div>
                               </div>
+                            </div>
+
+                            {/* 配額狀態顯示 */}
+                            <div className="pt-3 border-t">
+                              <QuotaStatusCard
+                                quotaStatus={quotaStatus}
+                                isLoading={quotaLoading}
+                                error={quotaError}
+                                onRefresh={refetchQuota}
+                                compact={true}
+                              />
                             </div>
                             <div className="pt-3 border-t mt-auto">
                               <Button

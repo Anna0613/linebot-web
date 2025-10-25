@@ -2,7 +2,7 @@
 FastAPI 依賴注入模組
 包含認證、資料庫會話等依賴項
 """
-from typing import Optional, Callable, Dict, Any
+from typing import Optional, Callable, Dict, Any, AsyncGenerator
 from fastapi import Depends, HTTPException, status, Request
 from sqlalchemy.orm import joinedload
 from sqlalchemy import select
@@ -21,14 +21,14 @@ import json
 
 
 # 資料庫 session 依賴工廠
-def get_db_session(use_replica: bool = False) -> Callable:
+def get_db_session(use_replica: bool = False) -> Callable[[], AsyncGenerator[AsyncSession, None]]:
     """
     建立資料庫 session 依賴
 
     Args:
         use_replica: 是否使用從庫（僅用於讀取操作）
     """
-    async def _get_db() -> AsyncSession:
+    async def _get_db() -> AsyncGenerator[AsyncSession, None]:
         async for session in get_async_db(use_replica=use_replica):
             yield session
     return _get_db

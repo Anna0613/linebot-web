@@ -985,3 +985,92 @@ async def get_bot_activities(
     except Exception as e:
         logger.error(f"獲取活動記錄失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取活動記錄失敗: {str(e)}")
+
+
+@router.get("/{bot_id}/quota")
+async def get_bot_quota_status(
+    bot_id: str,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
+):
+    """
+    取得 Bot 的訊息配額狀態
+
+    Returns:
+        {
+            "bot_id": str,
+            "bot_name": str,
+            "quota_status": {
+                "quota_type": "limited" | "none" | "unknown",
+                "quota_limit": int | None,
+                "quota_used": int,
+                "quota_remaining": int | None,
+                "usage_percentage": float,
+                "is_near_limit": bool,
+                "is_exceeded": bool,
+                "last_updated": str
+            },
+            "timestamp": str
+        }
+    """
+    # 驗證 Bot 所有權
+    result = await db.execute(
+        select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id)
+    )
+    bot = result.scalars().first()
+
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
+
+    # 檢查 Bot 是否已配置
+    if not bot.channel_token or not bot.channel_secret:
+        return {
+            "bot_id": bot_id,
+            "bot_name": bot.name,
+            "quota_status": {
+                "error": "Bot 尚未配置 Channel Token",
+                "quota_type": "unknown",
+                "quota_limit": None,
+                "quota_used": 0,
+                "quota_remaining": None,
+                "usage_percentage": 0.0,
+                "is_near_limit": False,
+                "is_exceeded": False,
+                "last_updated": datetime.now().isoformat()
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
+    try:
+        # 取得配額狀態
+        line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+        quota_status = await line_bot_service.get_quota_status()
+
+        logger.info(f"成功取得 Bot {bot_id} 的配額狀態: {quota_status}")
+
+        return {
+            "bot_id": bot_id,
+            "bot_name": bot.name,
+            "quota_status": quota_status,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"取得 Bot 配額狀態失敗: {str(e)}")
+        # 返回錯誤狀態而不是拋出異常，讓前端可以正常顯示
+        return {
+            "bot_id": bot_id,
+            "bot_name": bot.name,
+            "quota_status": {
+                "error": f"取得配額狀態失敗: {str(e)}",
+                "quota_type": "unknown",
+                "quota_limit": None,
+                "quota_used": 0,
+                "quota_remaining": None,
+                "usage_percentage": 0.0,
+                "is_near_limit": False,
+                "is_exceeded": False,
+                "last_updated": datetime.now().isoformat()
+            },
+            "timestamp": datetime.now().isoformat()
+        }
