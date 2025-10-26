@@ -239,38 +239,56 @@ class HybridSearchService:
         query: str,
         top_k: int
     ) -> List[Tuple[KnowledgeChunk, float]]:
-        """BM25 搜尋（自實作版本）"""
-        
-        # 獲取所有相關文檔
-        stmt = select(KnowledgeChunk).where(
-            (KnowledgeChunk.bot_id == bot_id) | 
-            (KnowledgeChunk.bot_id.is_(None))
-        )
-        result = await db.execute(stmt)
-        chunks = result.scalars().all()
-        
-        if not chunks:
+        """
+        BM25 搜尋（優化版本）
+
+        使用 PostgreSQL 的全文搜尋功能，避免載入所有數據到記憶體
+        這比自實作的 BM25 更高效，因為計算在資料庫層完成
+        """
+
+        # 使用 PostgreSQL 的 ts_rank_cd (BM25-like ranking)
+        # ts_rank_cd 使用類似 BM25 的排序算法
+        sql = sql_text("""
+            SELECT kc.*,
+                   ts_rank_cd(
+                       to_tsvector('english', kc.content),
+                       plainto_tsquery('english', :query),
+                       32  -- normalization flag: divides rank by document length
+                   ) as score
+            FROM knowledge_chunks kc
+            JOIN knowledge_documents kd ON kc.document_id = kd.id
+            WHERE (kc.bot_id = CAST(:bot_id AS UUID) OR kc.bot_id IS NULL)
+              AND kc.deleted_at IS NULL
+              AND kd.deleted_at IS NULL
+              AND to_tsvector('english', kc.content) @@ plainto_tsquery('english', :query)
+            ORDER BY score DESC
+            LIMIT :k
+        """)
+
+        try:
+            rows = (await db.execute(sql, {
+                "query": query,
+                "bot_id": bot_id,
+                "k": top_k
+            })).mappings().all()
+
+            results = []
+            for r in rows:
+                kc = KnowledgeChunk()
+                kc.id = r["id"]
+                kc.document_id = r["document_id"]
+                kc.bot_id = r["bot_id"]
+                kc.content = r["content"]
+                kc.created_at = r["created_at"]
+                kc.updated_at = r["updated_at"]
+                results.append((kc, float(r["score"]) if r["score"] else 0.0))
+
+            logger.info(f"BM25 搜尋找到 {len(results)} 個相關片段")
+            return results
+
+        except Exception as e:
+            logger.error(f"BM25 搜尋失敗: {e}")
             return []
-        
-        # 分詞
-        query_terms = self.bm25_calculator.tokenize(query)
-        
-        # 計算語料庫統計
-        corpus_stats = await self._calculate_corpus_stats(chunks)
-        
-        # 計算每個文檔的 BM25 分數
-        scored_chunks = []
-        for chunk in chunks:
-            doc_terms = self.bm25_calculator.tokenize(chunk.content)
-            score = self.bm25_calculator.calculate_bm25_score(
-                query_terms, doc_terms, corpus_stats
-            )
-            if score > 0:
-                scored_chunks.append((chunk, score))
-        
-        # 排序並返回 top_k
-        scored_chunks.sort(key=lambda x: x[1], reverse=True)
-        return scored_chunks[:top_k]
     
     async def _calculate_corpus_stats(self, chunks: List[KnowledgeChunk]) -> Dict[str, Any]:
         """計算語料庫統計資訊"""

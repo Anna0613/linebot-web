@@ -1,10 +1,13 @@
 """
 RAG (Retrieval-Augmented Generation) service.
 Implements retrieval over Postgres+pgvector and generation via existing AIAnalysisService.
+優化版本：添加查詢結果快取以提升效能
+深度優化版本：添加效能分析和優化首次查詢速度
 """
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text as sql_text
@@ -15,6 +18,8 @@ from app.services.ai_analysis_service import AIAnalysisService
 from app.services.rerank_service import RerankService, HybridRanker
 from app.services.hybrid_search_service import HybridSearchService
 from app.services.context_manager import global_context_manager, MessageRole
+from app.services.rag_cache import get_rag_cache
+from app.services.performance_profiler import PerformanceProfiler, profile_async
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +36,58 @@ class RAGService:
         *,
         threshold: Optional[float] = None,
         top_k: Optional[int] = None,
-        model_name: Optional[str] = None
+        model_name: Optional[str] = None,
+        use_cache: bool = True,
+        profiler: Optional[PerformanceProfiler] = None
     ) -> List[Tuple[KnowledgeChunk, float]]:
         """
         Retrieve top chunks across project and global scopes using cosine similarity.
         支援新的嵌入模型和向後相容性。
+        優化版本：支援查詢結果快取和效能分析
         """
-        # 使用指定的模型生成查詢嵌入
-        emb = await embed_text(query, model_name)
+        # 創建效能分析器（如果未提供）
+        if profiler is None:
+            profiler = PerformanceProfiler("retrieve")
+
+        # 嘗試從快取獲取結果
+        if use_cache:
+            async with profiler.measure("cache_lookup"):
+                cache = get_rag_cache()
+                cached_results = cache.get(
+                    bot_id=bot_id,
+                    query=query,
+                    search_type='vector',
+                    threshold=threshold,
+                    top_k=top_k,
+                    model_name=model_name
+                )
+
+                if cached_results is not None:
+                    logger.info(f"✅ 快取命中: {query[:50]}...")
+                    # 將字典轉換回 KnowledgeChunk 對象
+                    items = []
+                    for chunk_dict, score in cached_results:
+                        kc = KnowledgeChunk()
+                        kc.id = chunk_dict['id']
+                        kc.document_id = chunk_dict['document_id']
+                        kc.bot_id = chunk_dict['bot_id']
+                        kc.content = chunk_dict['content']
+                        items.append((kc, score))
+                    return items
+
+        logger.info(f"🔍 快取未命中，執行完整檢索: {query[:50]}...")
+        logger.info(f"📊 [RAG] 查詢參數 - bot_id: {bot_id}, model: {model_name}, use_cache: {use_cache}")
+
+        # 快取未命中，執行實際查詢
+        # 使用指定的模型生成查詢嵌入（embed_text 內部已有快取）
+        logger.info(f"🚀 [RAG] 開始生成 embedding...")
+        import time
+        embedding_start = time.time()
+        async with profiler.measure("embedding_generation", query_length=len(query)):
+            emb = await embed_text(query, model_name, use_cache=use_cache)
+
+        embedding_time = (time.time() - embedding_start) * 1000
+        logger.info(f"⏱️ [RAG] Embedding 生成完成，耗時: {embedding_time:.2f}ms")
 
         # 轉換為 pgvector 格式字串
         embedding_str = "[" + ",".join(map(str, emb)) + "]"
@@ -52,33 +101,65 @@ class RAGService:
 
         # 單一 768 維向量欄位 embedding（pgvector）
         # 只檢索未刪除的切塊和文件
-        sql = sql_text(
-            """
-            SELECT kc.*,
-                   (1 - (kc.embedding <=> CAST(:q AS vector))) AS score
-            FROM knowledge_chunks kc
-            JOIN knowledge_documents kd ON kc.document_id = kd.id
-            WHERE (kc.bot_id = :bot_id OR kc.bot_id IS NULL)
-              AND kc.deleted_at IS NULL
-              AND kd.deleted_at IS NULL
-              AND (kc.embedding <=> CAST(:q AS vector)) <= :maxd
-            ORDER BY (kc.embedding <=> CAST(:q AS vector))
-            LIMIT :k
-            """
-        )
+        # 優化：使用 HNSW 索引加速查詢
 
-        rows = (await db.execute(sql, {"q": embedding_str, "bot_id": bot_id, "maxd": max_distance, "k": k})).mappings().all()
-        items: List[Tuple[KnowledgeChunk, float]] = []
-        for r in rows:
-            # Build transient KnowledgeChunk-like object for return
-            kc = KnowledgeChunk()
-            kc.id = r["id"]
-            kc.document_id = r["document_id"]
-            kc.bot_id = r["bot_id"]
-            kc.content = r["content"]
-            kc.created_at = r["created_at"]
-            kc.updated_at = r["updated_at"]
-            items.append((kc, float(r["score"])))
+        async with profiler.measure("database_query", top_k=k, threshold=th):
+            # 先設置 ef_search 參數（需要分開執行）
+            try:
+                await db.execute(sql_text("SET LOCAL hnsw.ef_search = 100"))
+            except Exception as e:
+                logger.debug(f"設置 hnsw.ef_search 失敗（可能不支援）: {e}")
+
+            sql = sql_text(
+                """
+                SELECT kc.*,
+                       (1 - (kc.embedding <=> CAST(:q AS vector))) AS score
+                FROM knowledge_chunks kc
+                JOIN knowledge_documents kd ON kc.document_id = kd.id
+                WHERE (kc.bot_id = CAST(:bot_id AS UUID) OR kc.bot_id IS NULL)
+                  AND kc.deleted_at IS NULL
+                  AND kd.deleted_at IS NULL
+                  AND (kc.embedding <=> CAST(:q AS vector)) <= :maxd
+                ORDER BY (kc.embedding <=> CAST(:q AS vector))
+                LIMIT :k
+                """
+            )
+
+            rows = (await db.execute(sql, {"q": embedding_str, "bot_id": bot_id, "maxd": max_distance, "k": k})).mappings().all()
+
+        async with profiler.measure("result_processing", result_count=len(rows)):
+            items: List[Tuple[KnowledgeChunk, float]] = []
+            for r in rows:
+                # Build transient KnowledgeChunk-like object for return
+                kc = KnowledgeChunk()
+                kc.id = r["id"]
+                kc.document_id = r["document_id"]
+                kc.bot_id = r["bot_id"]
+                kc.content = r["content"]
+                kc.created_at = r["created_at"]
+                kc.updated_at = r["updated_at"]
+                items.append((kc, float(r["score"])))
+
+        # 存入快取
+        if use_cache and items:
+            async with profiler.measure("cache_store"):
+                cache = get_rag_cache()
+                cache.set(
+                    bot_id=bot_id,
+                    query=query,
+                    search_type='vector',
+                    results=items,
+                    threshold=threshold,
+                    top_k=top_k,
+                    model_name=model_name
+                )
+
+        # 打印效能摘要
+        summary = profiler.get_summary()
+        logger.info(f"📊 檢索效能: 總耗時 {summary['total_time_ms']:.2f}ms")
+        for metric in summary['metrics']:
+            logger.info(f"  - {metric['name']}: {metric['duration_ms']:.2f}ms ({metric['percentage']:.1f}%)")
+
         return items
 
     @staticmethod
