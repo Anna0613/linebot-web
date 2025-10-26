@@ -20,10 +20,10 @@ services:
       resources:
         limits:
           cpus: '1'
-          memory: 1G
+          memory: 1.5G
         reservations:
           cpus: '0.5'
-          memory: 512M
+          memory: 768M
     # 日誌配置
     logging:
       driver: "json-file"
