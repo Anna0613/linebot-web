@@ -138,10 +138,15 @@ class AIAnalysisService:
         - 依 updated_at 取對話，若提供 time_range_days 則僅取該期間內訊息。
         - 最多包含 max_messages 筆（越新的訊息優先）。
         - 使用 ContextFormatter 進行格式優化以減少 token 消耗。
+
+        Returns:
+            str: 格式化的對話上下文，如果沒有對話則返回提示訊息
         """
         try:
             # 先嘗試從快取獲取對話歷史（改為非同步 Redis 方案）
             messages = None
+            cache_hit = False
+
             if redis_manager.is_connected:
                 try:
                     cache_key = f"conversation:{bot_id}:{line_user_id}"
@@ -149,32 +154,60 @@ class AIAnalysisService:
                     if isinstance(cached_obj, dict):
                         messages = cached_obj.get('messages')
                         if messages is not None:
-                            logger.debug(f"使用快取的對話歷史: {bot_id}:{line_user_id}")
+                            cache_hit = True
+                            logger.debug(f"✓ 使用快取的對話歷史: {bot_id}:{line_user_id}, 訊息數: {len(messages)}")
                 except Exception as cache_err:
                     logger.warning(f"讀取對話快取失敗: {cache_err}")
 
             if messages is None:
                 # 快取不存在，從 MongoDB 讀取
                 logger.debug(f"從 MongoDB 讀取對話歷史: {bot_id}:{line_user_id}")
-                conversation = await ConversationDocument.find_one(
-                    {"bot_id": bot_id, "line_user_id": line_user_id}
-                )
-                if not conversation or not conversation.messages:
-                    return "(無歷史對話)"
+
+                try:
+                    conversation = await ConversationDocument.find_one(
+                        {"bot_id": bot_id, "line_user_id": line_user_id}
+                    )
+                except Exception as db_err:
+                    logger.error(f"MongoDB 查詢失敗: {db_err}")
+                    return "(無法連接到資料庫，請稍後再試)"
+
+                # 檢查對話是否存在
+                if not conversation:
+                    logger.info(f"未找到對話記錄: bot_id={bot_id}, line_user_id={line_user_id}")
+                    return "(此用戶尚無對話記錄，請先與用戶進行互動後再進行分析)"
+
+                # 檢查訊息是否存在
+                if not conversation.messages or len(conversation.messages) == 0:
+                    logger.info(f"對話記錄為空: bot_id={bot_id}, line_user_id={line_user_id}")
+                    return "(此用戶的對話記錄為空，請先與用戶進行互動後再進行分析)"
 
                 # 將 MongoDB 文檔轉換為字典格式以便快取
                 messages = []
                 for msg in conversation.messages:
-                    message_dict = {
-                        'sender_type': msg.sender_type,
-                        'content': msg.content,
-                        'timestamp': msg.timestamp,
-                        'message_type': getattr(msg, 'message_type', 'text')
-                    }
-                    messages.append(message_dict)
+                    try:
+                        # 確保 timestamp 是 datetime 物件
+                        timestamp = msg.timestamp
+                        if isinstance(timestamp, str):
+                            try:
+                                timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                            except (ValueError, AttributeError):
+                                timestamp = datetime.utcnow()
+
+                        message_dict = {
+                            'sender_type': msg.sender_type,
+                            'content': msg.content,
+                            'timestamp': timestamp.isoformat() if isinstance(timestamp, datetime) else str(timestamp),
+                            'message_type': getattr(msg, 'message_type', 'text')
+                        }
+                        messages.append(message_dict)
+                    except Exception as msg_err:
+                        logger.warning(f"訊息轉換失敗，跳過: {msg_err}")
+                        continue
+
+                logger.info(f"✓ 從 MongoDB 載入對話: bot_id={bot_id}, line_user_id={line_user_id}, 訊息數: {len(messages)}")
 
                 # 設定快取（30 分鐘，非同步 Redis）
-                if redis_manager.is_connected:
+                if redis_manager.is_connected and messages:
                     try:
                         cache_key = f"conversation:{bot_id}:{line_user_id}"
                         cache_data = {
@@ -183,37 +216,71 @@ class AIAnalysisService:
                             'message_count': len(messages)
                         }
                         await AsyncCache.set(cache_key, cache_data, ttl=1800)
+                        logger.debug(f"✓ 對話快取已設定: {cache_key}")
                     except Exception as cache_err:
                         logger.warning(f"設定對話快取失敗: {cache_err}")
 
+            # 再次檢查訊息列表
+            if not messages or len(messages) == 0:
+                return "(對話記錄為空，無法進行分析)"
+
+            # 標準化時間戳格式（確保都是 datetime 物件）
+            for msg in messages:
+                if isinstance(msg['timestamp'], str):
+                    try:
+                        # 嘗試解析 ISO 格式的時間戳
+                        msg['timestamp'] = datetime.fromisoformat(msg['timestamp'].replace('Z', '+00:00'))
+                    except (ValueError, AttributeError) as e:
+                        logger.warning(f"時間戳解析失敗: {msg.get('timestamp')}, 錯誤: {e}")
+                        # 使用當前時間作為後備
+                        msg['timestamp'] = datetime.utcnow()
+
             # 依時間範圍過濾
+            original_count = len(messages)
             if time_range_days and time_range_days > 0:
                 since = datetime.utcnow() - timedelta(days=time_range_days)
                 messages = [m for m in messages if m['timestamp'] >= since]
+                logger.debug(f"時間範圍過濾: {original_count} -> {len(messages)} 筆訊息 (最近 {time_range_days} 天)")
 
             # 依時間排序（舊→新），然後截取最後 max_messages 筆
             messages.sort(key=lambda m: m['timestamp'])
             if len(messages) > max_messages:
                 messages = messages[-max_messages:]
+                logger.debug(f"訊息數量限制: 截取最新 {max_messages} 筆")
+
+            # 最終檢查
+            if not messages:
+                return f"(在指定的時間範圍內沒有找到對話記錄)"
 
             # 轉換為適合 ContextFormatter 的格式
             formatted_messages = []
             for msg in messages:
-                # 建立模擬的訊息物件
-                class MockMessage:
-                    def __init__(self, data):
-                        self.sender_type = data['sender_type']
-                        self.content = data['content']
-                        self.timestamp = data['timestamp']
-                        self.message_type = data.get('message_type', 'text')
+                try:
+                    # 建立模擬的訊息物件
+                    class MockMessage:
+                        def __init__(self, data):
+                            self.sender_type = data['sender_type']
+                            self.content = data['content']
+                            self.timestamp = data['timestamp']
+                            self.message_type = data.get('message_type', 'text')
 
-                formatted_messages.append(MockMessage(msg))
+                    formatted_messages.append(MockMessage(msg))
+                except Exception as format_err:
+                    logger.warning(f"訊息格式化失敗，跳過: {format_err}")
+                    continue
+
+            if not formatted_messages:
+                return "(訊息格式化失敗，無法進行分析)"
 
             # 使用 ContextFormatter 進行格式化
-            return ContextFormatter.format_context(formatted_messages, context_format)
+            context_text = ContextFormatter.format_context(formatted_messages, context_format)
+            logger.info(f"✓ 上下文建立完成: {len(formatted_messages)} 筆訊息, 格式: {context_format}, 快取命中: {cache_hit}")
+
+            return context_text
+
         except Exception as e:
-            logger.error(f"建立用戶上下文失敗: {e}")
-            return "(讀取對話歷史時發生錯誤，可能無資料)"
+            logger.error(f"建立用戶上下文失敗: {e}", exc_info=True)
+            return f"(讀取對話歷史時發生錯誤: {str(e)})"
 
     @staticmethod
     def _build_contents_for_gemini(
