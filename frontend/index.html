@@ -7,9 +7,44 @@
 
     <!-- Critical resource hints for performance -->
     <link rel="preconnect" href="https://infragrid.v.network" crossorigin />
-    <link rel="preconnect" href="http://localhost:8000" crossorigin />
+    <!-- API 伺服器連接提示 - 將在運行時由 JavaScript 動態設置 -->
     <link rel="dns-prefetch" href="//infragrid.v.network" />
-    <link rel="dns-prefetch" href="//localhost:8000" />
+    <script>
+      // 動態設置 API 伺服器的 preconnect 和 dns-prefetch
+      (function() {
+        // 根據當前頁面位置決定 API 伺服器
+        let apiOrigin = 'http://localhost:8000';
+
+        if (typeof window !== 'undefined') {
+          const hostname = window.location.hostname;
+          const protocol = window.location.protocol;
+
+          // 如果不是本地開發環境，使用當前域名或其 API 子域名
+          if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+            if (hostname.includes('linebot.')) {
+              // linebot.jkl921102.org -> api.jkl921102.org
+              apiOrigin = protocol + '//api.' + hostname.replace('linebot.', '');
+            } else {
+              // 使用當前域名
+              apiOrigin = protocol + '//' + hostname;
+            }
+          }
+        }
+
+        // 添加 preconnect
+        const preconnect = document.createElement('link');
+        preconnect.rel = 'preconnect';
+        preconnect.href = apiOrigin;
+        preconnect.crossOrigin = 'anonymous';
+        document.head.appendChild(preconnect);
+
+        // 添加 dns-prefetch
+        const dnsPrefetch = document.createElement('link');
+        dnsPrefetch.rel = 'dns-prefetch';
+        dnsPrefetch.href = '//' + new URL(apiOrigin).hostname;
+        document.head.appendChild(dnsPrefetch);
+      })();
+    </script>
 
     <!-- Preload critical resources -->
     <!-- 使用 prefetch 避免未即時使用造成的 preload 警告 -->

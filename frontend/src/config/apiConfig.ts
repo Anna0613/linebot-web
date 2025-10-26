@@ -1,6 +1,29 @@
 // 統一的 API 端點 - 現在所有服務都通過一個後端提供
-const UNIFIED_API_URL =
-  import.meta.env.VITE_UNIFIED_API_URL || "http://localhost:8000";
+// 注意：在生產環境中，此值應該由 Vite 構建時的環境變數設定
+// 如果環境變數未被正確設定，將使用 window.location.origin 作為備選方案
+const UNIFIED_API_URL = (() => {
+  const envUrl = import.meta.env.VITE_UNIFIED_API_URL;
+  if (envUrl) {
+    return envUrl;
+  }
+
+  // 生產環境備選方案：使用當前頁面的 origin
+  // 這樣可以確保在生產環境中正確指向 API 伺服器
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // 生產環境：使用當前域名的 API 子域名或相同域名
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    // 如果是 linebot.jkl921102.org，則使用 api.jkl921102.org
+    if (hostname.includes('linebot.')) {
+      return `${protocol}//api.${hostname.replace('linebot.', '')}`;
+    }
+    // 否則使用當前域名
+    return `${protocol}//${hostname}`;
+  }
+
+  // 開發環境預設值
+  return "http://localhost:8000";
+})();
 
 // Webhook 域名配置
 const WEBHOOK_DOMAIN = 
