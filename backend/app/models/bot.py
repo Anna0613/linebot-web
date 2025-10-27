@@ -31,6 +31,10 @@ class Bot(Base):
     user = relationship("User", back_populates="bots")
     bot_code = relationship("BotCode", back_populates="bot", uselist=False, cascade="all, delete-orphan")
     logic_templates = relationship("LogicTemplate", back_populates="bot", cascade="all, delete-orphan")
+    # LINE Bot 相關的關聯關係 - 使用 passive_deletes=True 讓資料庫處理級聯刪除
+    line_bot_users = relationship("LineBotUser", back_populates="bot", cascade="all, delete-orphan", passive_deletes=True)
+    rich_menus = relationship("RichMenu", back_populates="bot", cascade="all, delete-orphan", passive_deletes=True)
+    admin_messages = relationship("AdminMessage", back_populates="bot", cascade="all, delete-orphan", passive_deletes=True)
     
     # 表級約束和索引
     __table_args__ = (

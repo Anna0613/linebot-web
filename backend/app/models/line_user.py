@@ -26,7 +26,7 @@ class LineBotUser(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # 關聯關係
-    bot = relationship("Bot", backref="line_bot_users")
+    bot = relationship("Bot", back_populates="line_bot_users")
     
     # 表級約束和索引 - 優化查詢效能
     __table_args__ = (
@@ -58,7 +58,7 @@ class RichMenu(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # 關聯關係
-    bot = relationship("Bot", backref="rich_menus")
+    bot = relationship("Bot", back_populates="rich_menus")
     
     # 表級約束和索引
     __table_args__ = (
@@ -86,8 +86,8 @@ class AdminMessage(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # 關聯關係
-    bot = relationship("Bot", backref="admin_messages")
-    admin_user = relationship("User", backref="admin_messages")
+    bot = relationship("Bot", back_populates="admin_messages")
+    admin_user = relationship("User", back_populates="admin_messages")
     
     # 表級約束和索引
     __table_args__ = (
