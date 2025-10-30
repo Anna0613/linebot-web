@@ -131,34 +131,78 @@ class LogicEngineService:
                     })
                 elif ctype == "button":
                     action = data.get("action") or {}
-                    push(target, {
+                    action_type = action.get("type") or "message"
+
+                    # 構建 action 物件，只包含非 None 的欄位
+                    action_obj = {
+                        "type": action_type,
+                        "label": action.get("label") or data.get("label") or "按鈕",
+                    }
+
+                    # 根據 action 類型添加必要的欄位
+                    if action_type == "message":
+                        action_obj["text"] = action.get("text") or data.get("text") or data.get("label") or "按鈕"
+                    elif action_type == "postback":
+                        # postback 需要 data 欄位，如果沒有則使用預設值
+                        action_obj["data"] = action.get("data") or "action=default"
+                        # postback 可選的 displayText
+                        if action.get("displayText"):
+                            action_obj["displayText"] = action.get("displayText")
+                    elif action_type == "uri":
+                        action_obj["uri"] = action.get("uri") or "https://example.com"
+
+                    # 構建 button 物件，只包含非 None 的欄位
+                    button_obj = {
                         "type": "button",
-                        "action": {
-                            "type": action.get("type") or "message",
-                            "label": action.get("label") or data.get("label") or "按鈕",
-                            "text": action.get("text") or data.get("text") or data.get("label") or "按鈕",
-                            "data": action.get("data")
-                        },
+                        "action": action_obj,
                         "style": data.get("style") or "primary",
-                        "color": data.get("color") or None
-                    })
+                    }
+
+                    # 只在有值時添加 color
+                    if data.get("color"):
+                        button_obj["color"] = data.get("color")
+
+                    push(target, button_obj)
                 elif ctype == "separator":
-                    push(target, {
+                    # separator 的 margin 必須是字串，不能是物件
+                    margin_value = data.get("margin") or "md"
+                    if isinstance(margin_value, dict):
+                        # 如果是物件（如 {"all": "md"}），取出值
+                        margin_value = margin_value.get("all") or margin_value.get("top") or "md"
+
+                    separator_obj = {
                         "type": "separator",
-                        "margin": data.get("margin") or "md",
-                        "color": data.get("color") or "#E0E0E0",
-                    })
+                        "margin": margin_value,
+                    }
+
+                    # 只在有值時添加 color
+                    color_value = data.get("color")
+                    if color_value:
+                        separator_obj["color"] = color_value
+                    else:
+                        separator_obj["color"] = "#E0E0E0"
+
+                    push(target, separator_obj)
             elif btype == "flex-layout":
                 layout_type = data.get("layoutType")
                 if layout_type == "spacer":
                     push(target, {"type": "spacer", "size": data.get("size") or "md"})
                 elif layout_type == "box":
+                    # box 的 margin 和 spacing 必須是字串
+                    margin_value = data.get("margin") or "none"
+                    if isinstance(margin_value, dict):
+                        margin_value = margin_value.get("all") or margin_value.get("top") or "none"
+
+                    spacing_value = data.get("spacing") or "md"
+                    if isinstance(spacing_value, dict):
+                        spacing_value = spacing_value.get("all") or "md"
+
                     push(target, {
                         "type": "box",
                         "layout": data.get("layout") or "vertical",
                         "contents": [],
-                        "spacing": data.get("spacing") or "md",
-                        "margin": data.get("margin") or "none",
+                        "spacing": spacing_value,
+                        "margin": margin_value,
                     })
 
         bubble: Dict[str, Any] = {"type": "bubble"}
@@ -172,6 +216,43 @@ class LogicEngineService:
         if footer_blocks:
             bubble["footer"] = {"type": "box", "layout": "vertical", "contents": footer_blocks}
         return bubble
+
+    @staticmethod
+    def _remove_null_values(obj: Any) -> Any:
+        """遞迴移除 JSON 物件中所有值為 None 的欄位，LINE API 不接受 null 值。"""
+        if isinstance(obj, dict):
+            return {k: LogicEngineService._remove_null_values(v) for k, v in obj.items() if v is not None}
+        elif isinstance(obj, list):
+            return [LogicEngineService._remove_null_values(item) for item in obj]
+        else:
+            return obj
+
+    @staticmethod
+    def _normalize_flex_structure(obj: Any) -> Any:
+        """
+        遞迴標準化 Flex 訊息結構，確保符合 LINE API 規範：
+        1. 移除所有 null 值
+        2. 將 margin/spacing/padding 等屬性從物件轉換為字串
+        """
+        if isinstance(obj, dict):
+            result = {}
+            for k, v in obj.items():
+                if v is None:
+                    continue
+
+                # 處理 margin, spacing, padding 等屬性
+                if k in ("margin", "spacing", "padding") and isinstance(v, dict):
+                    # 如果是物件（如 {"all": "md"}），取出值
+                    v = v.get("all") or v.get("top") or "md"
+
+                # 遞迴處理
+                result[k] = LogicEngineService._normalize_flex_structure(v)
+
+            return result
+        elif isinstance(obj, list):
+            return [LogicEngineService._normalize_flex_structure(item) for item in obj]
+        else:
+            return obj
 
     @staticmethod
     def _to_flex_contents(stored_content: Any) -> Dict[str, Any]:
@@ -195,12 +276,15 @@ class LogicEngineService:
         # 若是設計器格式（帶 blocks）
         if isinstance(stored_content, dict) and isinstance(stored_content.get("blocks"), list):
             blocks = LogicEngineService._normalize_blocks(stored_content.get("blocks"))
-            return LogicEngineService._to_flex_contents_from_blocks(blocks)
+            result = LogicEngineService._to_flex_contents_from_blocks(blocks)
+            # 標準化 Flex 結構（移除 null 值並轉換物件屬性為字串）
+            return LogicEngineService._normalize_flex_structure(result)
 
         # 若本身即為 bubble/contents 結構
         if isinstance(stored_content, dict):
             if stored_content.get("type") in ("bubble", "carousel") or stored_content.get("body") or stored_content.get("contents"):
-                return stored_content
+                # 標準化 Flex 結構（移除 null 值並轉換物件屬性為字串）
+                return LogicEngineService._normalize_flex_structure(stored_content)
 
         # 其他情況：序列化為文字
         return {"type": "bubble", "body": {"type": "box", "layout": "vertical", "contents": [{"type": "text", "text": str(stored_content)}]}}
@@ -293,10 +377,24 @@ class LogicEngineService:
             for i, tpl in enumerate(templates):
                 logger.info(f"🔍 檢查邏輯模板 {i+1}/{len(templates)}: {tpl.name}")
                 blocks = LogicEngineService._normalize_blocks(tpl.logic_blocks)
+                logger.info(f"📦 邏輯模板 {tpl.name} 共有 {len(blocks)} 個 blocks")
+
                 event_blocks = LogicEngineService._extract_event_blocks(blocks)
                 reply_blocks = LogicEngineService._extract_reply_blocks(blocks)
+
+                logger.info(f"📋 邏輯模板 {tpl.name}: event_blocks={len(event_blocks)}, reply_blocks={len(reply_blocks)}")
+
+                if event_blocks:
+                    for idx, eb in enumerate(event_blocks):
+                        eb_data = eb.get("blockData") or {}
+                        logger.info(f"  事件 {idx+1}: eventType={eb_data.get('eventType')}, condition={eb_data.get('condition')}, pattern={eb_data.get('pattern')}")
+
                 if not event_blocks or not reply_blocks:
+                    logger.info(f"❌ 邏輯模板 {tpl.name} 缺少事件或回覆積木，跳過")
                     continue
+
+                # 記錄收到的事件資訊
+                logger.info(f"📨 收到的事件: type={event.get('type')}, message_type={event.get('message', {}).get('type')}, text={event.get('message', {}).get('text')}")
 
                 pair = LogicEngineService._select_reply_block(event_blocks, reply_blocks, event)
                 if not pair:
@@ -421,6 +519,14 @@ class LogicEngineService:
 
                         if not contents:
                             contents = {"type": "bubble", "body": {"type": "box", "layout": "vertical", "contents": [{"type": "text", "text": "Flex 無內容"}]}}
+
+                        # 最後再次標準化 Flex 結構，確保符合 LINE API 規範
+                        contents = LogicEngineService._normalize_flex_structure(contents)
+
+                        # 詳細記錄 Flex 訊息內容以便除錯
+                        import json as _json
+                        logger.info(f"📤 準備發送 Flex 訊息: alt_text='{alt_text}'")
+                        logger.info(f"📋 Flex 訊息完整內容: {_json.dumps(contents, ensure_ascii=False, indent=2)}")
 
                         send_result = await asyncio.to_thread(line_bot_service.send_flex_message, user_id, alt_text, contents)
                         try:

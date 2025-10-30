@@ -584,10 +584,18 @@ class LineBotService:
             raise ValueError("LINE Bot 未正確配置")
 
         try:
+            # 記錄發送前的 Flex 內容
+            import json
+            logger.info(f"🔍 LINE Bot Service 準備發送 Flex 訊息給 {user_id}")
+            logger.info(f"📋 Flex content type: {flex_content.get('type')}")
+            logger.info(f"📋 完整 Flex content: {json.dumps(flex_content, ensure_ascii=False)}")
+
             message = FlexSendMessage(
                 alt_text=alt_text,
                 contents=flex_content
             )
+
+            logger.info(f"✅ FlexSendMessage 物件創建成功，準備推送")
             self.line_bot_api.push_message(user_id, message)
 
             return {
@@ -596,10 +604,13 @@ class LineBotService:
                 "timestamp": datetime.now().isoformat()
             }
         except LineBotApiError as e:
-            logger.error(f"發送 Flex 訊息失敗: {e}")
+            logger.error(f"❌ LINE API 錯誤: status={e.status_code}, message={e.message}")
+            logger.error(f"❌ 錯誤詳情: {e.error.message if hasattr(e, 'error') else 'N/A'}")
             raise Exception(f"LINE API 錯誤: {e.message}")
         except Exception as e:
-            logger.error(f"發送 Flex 訊息失敗: {e}")
+            logger.error(f"❌ 發送 Flex 訊息失敗: {e}")
+            import traceback
+            logger.error(f"❌ 錯誤堆疊: {traceback.format_exc()}")
             raise Exception(f"發送失敗: {str(e)}")
 
     def send_sticker_message(self, user_id: str, package_id: str, sticker_id: str) -> Dict:
