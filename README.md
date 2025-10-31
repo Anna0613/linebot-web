@@ -206,7 +206,7 @@ MINIO_PUBLIC_URL=http://localhost:9000
    ```ini
    AI_PROVIDER=groq
    GROQ_API_KEY=your_groq_api_key_here
-   GROQ_MODEL=llama-3.1-70b-versatile
+   GROQ_MODEL=llama-3.3-70b-versatile
    ```
 
 **Gemini（備選）**

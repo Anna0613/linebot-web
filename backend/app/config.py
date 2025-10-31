@@ -147,7 +147,8 @@ class Settings(BaseSettings):
 
     # Groq 設定
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
+    # 預設對齊內建清單的可用型號，避免未知模型警告
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
     # Gemini 設定（向後相容）
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")

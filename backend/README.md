@@ -312,7 +312,7 @@ LINE_REDIRECT_URI=http://localhost:8000/api/v1/auth/line/callback
 ```ini
 AI_PROVIDER=groq
 GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=llama-3.1-70b-versatile
+GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
 完整的環境變數列表請參考 [主 README](../README.md#外部服務設定)。
