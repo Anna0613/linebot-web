@@ -111,7 +111,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
 
   // 當高度改變時，重新計算 imageMeta（如果有圖片的話）
   useEffect(() => {
-    if (imageUrl && imageMeta) {
+    if (imageUrl && imageMeta?.iw && imageMeta?.ih) {
       const expectedW = 2500;
       const expectedH = Number(height);
       const scale = Math.max(expectedW / imageMeta.iw, expectedH / imageMeta.ih);
