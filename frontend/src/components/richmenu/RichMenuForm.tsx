@@ -68,6 +68,28 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
       setHeight(String(isRichMenuSize(menu.size) ? (menu.size as { height: number }).height : 1686) === '843' ? '843' : '1686');
       setAreas((menu.areas as RichMenuArea[]) || []);
       setImageUrl(menu.image_url);
+
+      // 如果選單已有圖片，載入圖片並計算 imageMeta 以便預覽
+      if (menu.image_url) {
+        const img = new Image();
+        img.onload = () => {
+          const iw = img.width;
+          const ih = img.height;
+          const expectedW = 2500;
+          const expectedH = isRichMenuSize(menu.size) ? (menu.size as { height: number }).height : 1686;
+          const scale = Math.max(expectedW / iw, expectedH / ih);
+          const dsW = iw * scale;
+          const dsH = ih * scale;
+          const offset = { x: Math.round((expectedW - dsW) / 2), y: Math.round((expectedH - dsH) / 2) };
+          setImageMeta({ iw, ih, offset });
+        };
+        img.onerror = () => {
+          console.error('無法載入選單圖片:', menu.image_url);
+        };
+        img.src = menu.image_url;
+      } else {
+        setImageMeta(null);
+      }
     }
   }, [menu]);
 
@@ -86,6 +108,19 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
     };
     loadAvailableMenus();
   }, [botId, menu?.id]);
+
+  // 當高度改變時，重新計算 imageMeta（如果有圖片的話）
+  useEffect(() => {
+    if (imageUrl && imageMeta) {
+      const expectedW = 2500;
+      const expectedH = Number(height);
+      const scale = Math.max(expectedW / imageMeta.iw, expectedH / imageMeta.ih);
+      const dsW = imageMeta.iw * scale;
+      const dsH = imageMeta.ih * scale;
+      const offset = { x: Math.round((expectedW - dsW) / 2), y: Math.round((expectedH - dsH) / 2) };
+      setImageMeta(prev => prev ? { ...prev, offset } : null);
+    }
+  }, [height, imageUrl, imageMeta?.iw, imageMeta?.ih]);
 
   // 同步預覽資料
   useEffect(() => {
