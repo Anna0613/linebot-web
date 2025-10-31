@@ -18,6 +18,8 @@ import importlib.util
 import os
 
 # 避免 transformers 嘗試導入 TensorFlow/Flax，防止與本機 NumPy/TensorFlow 不相容造成啟動失敗
+os.environ.setdefault("USE_TF", "0")
+os.environ.setdefault("USE_FLAX", "0")
 os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
 os.environ.setdefault("TRANSFORMERS_NO_FLAX", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")

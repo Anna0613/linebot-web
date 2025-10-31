@@ -80,6 +80,9 @@ class EmbeddingManager:
             normalize_embeddings: bool = True,
             convert_to_numpy: bool = True,
             show_progress_bar: bool = False,
+            # 與 sentence-transformers 介面對齊，忽略不支援參數
+            batch_size: Optional[int] = None,
+            **_: Any,
         ):
             def _embed_one(t: str) -> np.ndarray:
                 # 以 MD5 作為種子，產生可重現的偽隨機向量
@@ -177,10 +180,14 @@ class EmbeddingManager:
                 logger.info(f"✅ [Gemini] API 調用完成，耗時: {call_time:.2f}ms")
                 return result['embedding']
 
-            # 在線程池中執行以避免阻塞
-            logger.info(f"🔄 [Gemini] 使用 asyncio.to_thread 執行...")
+            # 在線程池中執行以避免阻塞，並加入超時保護
+            logger.info(f"🔄 [Gemini] 使用 asyncio.to_thread 執行 (含超時保護)...")
             thread_start = time.time()
-            embedding = await asyncio.to_thread(_generate)
+            try:
+                embedding = await asyncio.wait_for(asyncio.to_thread(_generate), timeout=8.0)
+            except asyncio.TimeoutError:
+                logger.warning("⏰ [Gemini] 生成超時（>8s），降級到本地模型")
+                return None
             thread_time = (time.time() - thread_start) * 1000
 
             total_time = (time.time() - api_start) * 1000
@@ -237,9 +244,14 @@ class EmbeddingManager:
             
             try:
                 # 在匯入 transformers/sentence-transformers 前，顯式停用 TensorFlow/Flax 後端以避免不必要的相依導入
+                # 注意：Transformers 主要讀取 USE_TF/USE_FLAX，故一併設定
+                os.environ.setdefault("USE_TF", "0")
+                os.environ.setdefault("USE_FLAX", "0")
                 os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
                 os.environ.setdefault("TRANSFORMERS_NO_FLAX", "1")
                 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+                # 降低 TensorFlow 相關噪音（若環境中存在 TF，也不會被載入）
+                os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
 
                 from sentence_transformers import SentenceTransformer as _SentenceTransformer
 

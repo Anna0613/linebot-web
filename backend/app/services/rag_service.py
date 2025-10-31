@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import time
+import asyncio
 from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text as sql_text
@@ -430,19 +431,22 @@ class RAGService:
                     f"   用戶問題: '{query}'"
                 )
 
-            # 呼叫 Groq API
+            # 呼叫 Groq API（加入超時保護，避免卡住 webhook 背景流程）
             client = GroqService._get_client(settings.GROQ_API_KEY)
 
-            completion = await client.chat.completions.create(
-                model=intent_model,
-                messages=[
-                    {"role": "system", "content": intent_system_prompt},
-                    {"role": "user", "content": user_message}
-                ],
-                temperature=0.0,  # 使用 0 溫度以獲得最確定的分類
-                max_tokens=10,    # 10 個 tokens 足夠輸出 chat 或 query
-                top_p=1.0,        # 使用確定性採樣
-                stream=False
+            completion = await asyncio.wait_for(
+                client.chat.completions.create(
+                    model=intent_model,
+                    messages=[
+                        {"role": "system", "content": intent_system_prompt},
+                        {"role": "user", "content": user_message}
+                    ],
+                    temperature=0.0,  # 使用 0 溫度以獲得最確定的分類
+                    max_tokens=10,    # 10 個 tokens 足夠輸出 chat 或 query
+                    top_p=1.0,        # 使用確定性採樣
+                    stream=False
+                ),
+                timeout=12.0
             )
 
             # 記錄完整的 API 回應以便除錯
@@ -695,6 +699,21 @@ class RAGService:
                         model_name=embedding_model
                     )
 
+                # 若沒有檢索到任何片段，回退到混合搜尋以提升召回率
+                if not items:
+                    try:
+                        logger.info("⚠️ 向量檢索為空，回退到混合搜尋（降低門檻並加入 BM25）")
+                        items = await RAGService.hybrid_search(
+                            db, bot_id, query,
+                            vector_weight=vector_weight,
+                            bm25_weight=bm25_weight,
+                            top_k=top_k or RAGService.TOP_K,
+                            vector_threshold=(threshold or RAGService.MIN_SIMILARITY) * 0.8,
+                            model_name=embedding_model
+                        )
+                    except Exception as fb_e:
+                        logger.warning(f"混合搜尋回退失敗: {fb_e}")
+
                 contexts = [kc.content for kc, _ in items] if items else []
                 logger.info(f"📖 檢索到 {len(contexts)} 個知識片段")
 
@@ -781,6 +800,21 @@ class RAGService:
                     top_k=top_k,
                     model_name=embedding_model
                 )
+
+            # 若未命中任何向量結果，回退到混合搜尋以提升召回率
+            if not items:
+                try:
+                    logger.info("⚠️ 向量檢索為空，回退到混合搜尋（降低門檻並加入 BM25）")
+                    items = await RAGService.hybrid_search(
+                        db, bot_id, query,
+                        vector_weight=vector_weight,
+                        bm25_weight=bm25_weight,
+                        top_k=top_k or RAGService.TOP_K,
+                        vector_threshold=(threshold or RAGService.MIN_SIMILARITY) * 0.8,
+                        model_name=embedding_model
+                    )
+                except Exception as fb_e:
+                    logger.warning(f"混合搜尋回退失敗: {fb_e}")
 
             # 構建知識庫上下文
             contexts = [kc.content for kc, _ in items] if items else []

@@ -348,13 +348,16 @@ class GroqService:
 
         try:
             # 調用 Groq API
-            completion: ChatCompletion = await client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0.3,
-                max_tokens=actual_max_tokens,
-                top_p=0.9,
-                stream=False
+            completion: ChatCompletion = await asyncio.wait_for(
+                client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=actual_max_tokens,
+                    top_p=0.9,
+                    stream=False
+                ),
+                timeout=30.0
             )
 
             # 解析回應
@@ -478,13 +481,16 @@ class GroqService:
                 actual_max_tokens = min(max_tokens, model_config["max_tokens"])
 
             # 調用 API
-            completion: ChatCompletion = await client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0.3,
-                max_tokens=actual_max_tokens,
-                top_p=0.9,
-                stream=False
+            completion: ChatCompletion = await asyncio.wait_for(
+                client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=actual_max_tokens,
+                    top_p=0.9,
+                    stream=False
+                ),
+                timeout=30.0
             )
 
             # 解析回應
@@ -555,16 +561,19 @@ class GroqService:
             # 使用 llama-3.1-8b-instant 模型（快速且高效）
             client = AsyncGroq(api_key=settings.GROQ_API_KEY)
 
-            completion: ChatCompletion = await client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message}
-                ],
-                temperature=0.3,
-                max_tokens=400,  # 增加 tokens 以容納 200 字的摘要
-                top_p=0.9,
-                stream=False
+            completion: ChatCompletion = await asyncio.wait_for(
+                client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_message}
+                    ],
+                    temperature=0.3,
+                    max_tokens=400,  # 增加 tokens 以容納 200 字的摘要
+                    top_p=0.9,
+                    stream=False
+                ),
+                timeout=30.0
             )
 
             # 解析回應

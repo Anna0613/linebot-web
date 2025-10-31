@@ -59,6 +59,8 @@ class RerankService:
             try:
                 # 在匯入 transformers/sentence-transformers 前，顯式停用 TensorFlow/Flax 後端以避免不必要的相依導入
                 import os
+                os.environ.setdefault("USE_TF", "0")
+                os.environ.setdefault("USE_FLAX", "0")
                 os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
                 os.environ.setdefault("TRANSFORMERS_NO_FLAX", "1")
                 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")

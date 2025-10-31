@@ -325,6 +325,16 @@ class PerformanceOptimizer:
             self._metrics_collector,
             priority=TaskPriority.LOW
         )
+
+        # 預熱嵌入模型（避免首次查詢等待模型下載/載入）
+        await self.task_manager.add_task(
+            "embedding_warmup",
+            "嵌入模型預熱",
+            self._warmup_embeddings,
+            priority=TaskPriority.LOW,
+            delay=0,
+            max_retries=1
+        )
     
     async def _metrics_collector(self):
         """指標收集任務"""
@@ -340,6 +350,41 @@ class PerformanceOptimizer:
         """優化資料庫查詢"""
         # 這裡可以添加資料庫查詢優化邏輯
         pass
+
+    async def _warmup_embeddings(self):
+        """在背景中預熱嵌入模型與外部服務，降低首查延遲"""
+        try:
+            from app.services.embedding_manager import EmbeddingManager
+
+            logger.info("🔧 [Warmup] 開始預熱嵌入服務與模型…")
+
+            # 優先初始化 Gemini（若環境有設定）
+            try:
+                EmbeddingManager.enable_gemini(True)
+            except Exception as e:
+                logger.info(f"[Warmup] 跳過 Gemini 初始化: {e}")
+
+            # 在背景線程中預載入本地備援模型權重，並做一次輕量 encode
+            async def _load_local_model():
+                def _load():
+                    try:
+                        model = EmbeddingManager.get_model("all-mpnet-base-v2")
+                        _ = model.encode(["warmup"], convert_to_numpy=True)
+                        return True
+                    except Exception as e:
+                        logger.info(f"[Warmup] 本地模型預載入失敗: {e}")
+                        return False
+                loop = asyncio.get_event_loop()
+                return await loop.run_in_executor(None, _load)
+
+            ok = await asyncio.wait_for(_load_local_model(), timeout=120.0)
+            if ok:
+                logger.info("✅ [Warmup] 本地嵌入模型已就緒")
+            else:
+                logger.info("⚠️ [Warmup] 本地嵌入模型未就緒（將在首次使用時再嘗試）")
+
+        except Exception as e:
+            logger.info(f"[Warmup] 預熱流程非致命錯誤: {e}")
     
     def get_optimization_report(self) -> Dict[str, Any]:
         """生成優化報告"""
