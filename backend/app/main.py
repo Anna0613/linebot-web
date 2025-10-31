@@ -235,11 +235,15 @@ async def session_context_middleware(request: Request, call_next):
 # 請求日誌中間件
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    """記錄所有請求（統一格式）"""
+    """記錄所有請求（統一格式，避免過度詳盡以降低 I/O 負擔）"""
     path = request.url.path
-    is_webhook = path.startswith("/api") and "/webhooks/" in path
     logger.info(f"HTTP {request.method} {path}")
-    logger.debug(f"headers={dict(request.headers)}")
+    # 僅在顯式啟用時輸出標頭，避免每請求大量 debug 日誌
+    try:
+        if getattr(settings, "LOG_REQUEST_HEADERS", False):
+            logger.debug(f"headers={dict(request.headers)}")
+    except Exception:
+        ...
 
     response = await call_next(request)
 

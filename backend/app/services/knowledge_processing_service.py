@@ -22,6 +22,7 @@ from app.services.file_text_extractor import extract_text_by_mime
 from app.services.background_tasks import get_task_manager, TaskPriority
 from app.services.minio_service import get_minio_service
 from app.services.adaptive_concurrency import get_adaptive_concurrency_manager
+from app.services.stream_file_processor import get_stream_file_processor
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +144,10 @@ class KnowledgeProcessingService:
         
         cls._active_jobs[job_id] = job
         
+        # 先以流式處理方式讀取檔案（含大小/記憶體防護）以避免一次性讀入造成壓力
+        stream_processor = get_stream_file_processor()
+        safe_bytes = await stream_processor.process_upload_stream(file)
+
         # 提交到背景任務管理器
         task_manager = get_task_manager()
         await task_manager.add_task(
@@ -151,7 +156,7 @@ class KnowledgeProcessingService:
             cls._process_file_async,
             kwargs={
                 "job_id": job_id,
-                "file_data": await file.read(),
+                "file_data": safe_bytes,
                 "progress_callback": progress_callback
             },
             priority=TaskPriority.NORMAL

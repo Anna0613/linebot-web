@@ -15,6 +15,7 @@ from app.config import settings
 from app.models.mongodb.conversation import ConversationDocument
 from app.services.groq_service import GroqService
 from app.services.context_formatter import ContextFormatter
+from app.services.prompt_templates import PromptTemplates
 from app.config.redis_config import CacheService as AsyncCache, redis_manager
 
 logger = logging.getLogger(__name__)
@@ -290,74 +291,50 @@ class AIAnalysisService:
         system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        建立 Gemini REST API 的請求 payload。
-        - history: List[{role: 'user'|'assistant', content: str}]
-        - system_prompt: 自訂系統提示詞，若未提供則使用預設值
+        建立 Gemini REST API 的請求 payload（使用優化的提示詞模板）
+
+        Args:
+            question: 當前用戶問題
+            context_text: 知識庫檢索到的內容
+            history: 對話歷史 [{"role": "user"|"assistant", "content": "..."}]
+            system_prompt: 自訂系統提示詞（可選）
+
+        Returns:
+            Gemini API 格式的 payload
         """
         contents: List[Dict[str, Any]] = []
 
-        # 將歷史對話（管理者與 AI 的往返）帶入，作為多輪上下文
+        # 添加對話歷史（如果有）
         if history:
-            # 在歷史對話前加入明確的分隔標記
-            contents.append({
-                "role": "user",
-                "parts": [{"text": "=== 以下是之前的對話歷史 ==="}]
-            })
-            for turn in history:
-                role = "user" if turn.get("role") == "user" else "model"
-                contents.append({"role": role, "parts": [{"text": str(turn.get("content", ""))}]})
-            contents.append({
-                "role": "user",
-                "parts": [{"text": "=== 對話歷史結束 ==="}]
-            })
+            history_content = PromptTemplates.wrap_conversation_history(history)
+            if history_content:
+                contents.append({
+                    "role": "user",
+                    "parts": [{"text": history_content}]
+                })
 
-        # 注入知識庫檢索片段（不是對話歷史！）
+        # 添加知識庫資料（如果有）
         if context_text and context_text.strip():
-            context_message = (
-                "【知識庫資料】\n"
-                "以下是系統從知識庫中檢索到的相關資料片段，請參考這些資料來回答問題：\n\n"
-                f"{context_text}\n\n"
-                "【知識庫資料結束】"
-            )
+            kb_content = PromptTemplates.wrap_knowledge_base(context_text)
             contents.append({
                 "role": "user",
-                "parts": [{"text": context_message}]
+                "parts": [{"text": kb_content}]
             })
 
-        # 當前用戶問題
+        # 添加當前問題
+        query_content = PromptTemplates.wrap_current_query(question)
         contents.append({
             "role": "user",
-            "parts": [{"text": f"【當前問題】\n{question}"}]
+            "parts": [{"text": query_content}]
         })
 
-        # 系統提示（支援自訂）
-        base_system_instruction = (
-            "【系統基礎規則】\n"
-            "- 你會收到不同類型的資訊，請注意區分：\n"
-            "  * 【知識庫資料】：系統檢索到的參考資料，優先使用這些資料回答\n"
-            "  * 對話歷史：之前的對話內容，用於理解上下文\n"
-            "  * 【當前問題】：用戶現在提出的問題，這是你需要回答的主要內容\n"
-            "- 回答時請基於【知識庫資料】，用自己的話重新組織，不要直接複製\n\n"
-        )
-
-        if not system_prompt:
-            system_prompt = (
-                "【預設角色設定】\n"
-                "你是一位專精客服對話洞察的分析助手。"
-                "請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、"
-                "有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。"
-            )
-        else:
-            # 如果有自訂提示詞，加上標記
-            system_prompt = f"【創建者自訂角色】\n{system_prompt}"
-
-        # 合併基礎規則和角色設定
-        combined_system_prompt = f"{base_system_instruction}{system_prompt}"
+        # 建構系統提示詞
+        full_system_prompt = PromptTemplates.build_system_prompt(system_prompt)
 
         payload: Dict[str, Any] = {
             "systemInstruction": {
                 "role": "system",
-                "parts": [{"text": combined_system_prompt}]
+                "parts": [{"text": full_system_prompt}]
             },
             "contents": contents,
             "generationConfig": {

@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     # SQL 日誌輸出（預設關閉）
     SQL_ECHO: bool = os.getenv("SQL_ECHO", "False").lower() == "true"
 
+    # 日誌/請求細節控制
+    LOG_REQUEST_HEADERS: bool = os.getenv("LOG_REQUEST_HEADERS", "False").lower() == "true"
+    LOG_WEBHOOK_VERBOSE: bool = os.getenv("LOG_WEBHOOK_VERBOSE", "False").lower() == "true"
+
+    # 安全限制：Webhook 請求主體大小上限（避免惡意/異常大 payload）
+    MAX_WEBHOOK_BODY_BYTES: int = int(os.getenv("MAX_WEBHOOK_BODY_BYTES", str(256 * 1024)))  # 256KB
+
     # 連線池設定（可由環境變數覆蓋）
     POOL_SIZE: int = int(os.getenv("POOL_SIZE", "10"))
     POOL_MAX_OVERFLOW: int = int(os.getenv("POOL_MAX_OVERFLOW", "20"))

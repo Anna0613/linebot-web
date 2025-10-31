@@ -233,9 +233,72 @@ class LogicEngineService:
         遞迴標準化 Flex 訊息結構，確保符合 LINE API 規範：
         1. 移除所有 null 值
         2. 將 margin/spacing/padding 等屬性從物件轉換為字串
+        3. 清理 action 物件中不應該存在的欄位
         """
         if isinstance(obj, dict):
             result = {}
+
+            # 特殊處理：如果是 action 物件，只保留該 action type 允許的欄位
+            if "type" in obj and obj.get("type") in ("message", "uri", "postback", "datetimepicker", "camera", "cameraRoll", "location"):
+                action_type = obj["type"]
+
+                # 所有 action 都需要 type 和 label
+                result["type"] = action_type
+                if "label" in obj and obj["label"] is not None:
+                    result["label"] = obj["label"]
+
+                # 根據 action type 添加特定欄位
+                if action_type == "message":
+                    # message action: type, label, text (必要)
+                    text_value = obj.get("text")
+                    if text_value is not None:
+                        result["text"] = text_value
+                    else:
+                        # 如果沒有 text，使用 label 或預設值
+                        result["text"] = obj.get("label") or "訊息"
+
+                elif action_type == "uri":
+                    # uri action: type, label, uri (必要)
+                    uri_value = obj.get("uri")
+                    if uri_value is not None:
+                        result["uri"] = uri_value
+                    else:
+                        # 如果沒有 uri，使用預設值
+                        result["uri"] = "https://example.com"
+
+                elif action_type == "postback":
+                    # postback action: type, label, data (必要), displayText(可選)
+                    data_value = obj.get("data")
+                    if data_value is not None:
+                        result["data"] = data_value
+                    else:
+                        # 如果沒有 data，使用預設值
+                        result["data"] = "action=default"
+                    if "displayText" in obj and obj["displayText"] is not None:
+                        result["displayText"] = obj["displayText"]
+
+                elif action_type == "datetimepicker":
+                    # datetimepicker action: type, label, data, mode, initial, max, min
+                    data_value = obj.get("data")
+                    if data_value is not None:
+                        result["data"] = data_value
+                    else:
+                        result["data"] = "action=datetime"
+                    if "mode" in obj and obj["mode"] is not None:
+                        result["mode"] = obj["mode"]
+                    else:
+                        result["mode"] = "datetime"
+                    for optional_field in ("initial", "max", "min"):
+                        if optional_field in obj and obj[optional_field] is not None:
+                            result[optional_field] = obj[optional_field]
+
+                elif action_type in ("camera", "cameraRoll", "location"):
+                    # camera/cameraRoll/location action: type, label
+                    pass  # 只需要 type 和 label，已經處理過了
+
+                return result
+
+            # 一般物件處理
             for k, v in obj.items():
                 if v is None:
                     continue

@@ -39,6 +39,10 @@ def setup_logging_config() -> Dict[str, Any]:
     """設置日誌配置"""
     # 讀取環境變數以便調整日誌行為
     log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+    # 獨立控制檔案日誌等級，預設與 LOG_LEVEL 一致
+    file_log_level = os.getenv('LOG_FILE_LEVEL', log_level).upper()
+    # 可透過環境變數完全關閉檔案日誌（降低 IO 壓力）
+    log_to_file = os.getenv('LOG_TO_FILE', 'true').lower() == 'true'
     # 允許自訂輸出格式（預設: 時間-記錄器-等級-訊息，採 key=value 風格訊息建議）
     console_format = os.getenv(
         'LOG_FORMAT', '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
@@ -74,7 +78,7 @@ def setup_logging_config() -> Dict[str, Any]:
                 'filters': ['pdf_warning_filter']
             },
             'file': {
-                'level': 'DEBUG',
+                'level': file_log_level,
                 'class': 'logging.handlers.RotatingFileHandler',
                 'filename': 'logs/app.log',
                 'maxBytes': 10485760,  # 10MB
@@ -146,10 +150,10 @@ def setup_logging_config() -> Dict[str, Any]:
         'root': {
             # root 以 LOG_LEVEL 控制，確保第三方與 __name__ logger 一致格式
             'level': log_level,
-            'handlers': ['console', 'file', 'error_file']
+            'handlers': ['console'] + (['file', 'error_file'] if log_to_file else [])
         }
     }
-    
+
     return config
 
 

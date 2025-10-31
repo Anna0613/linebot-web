@@ -22,6 +22,17 @@ COPY . .
 # 暴露端口（統一使用 8005）
 EXPOSE 8005
 
-# 啟動命令：使用 Gunicorn 多 worker（可透過 WEB_CONCURRENCY 覆蓋）
+# 啟動命令：使用 Gunicorn 多 worker（可透過環境變數覆蓋）
 ENV WEB_CONCURRENCY=2
-CMD gunicorn -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY} -b 0.0.0.0:8005 app.main:app --timeout 60
+ENV MAX_REQUESTS=1000
+ENV MAX_REQUESTS_JITTER=200
+ENV KEEP_ALIVE=30
+CMD gunicorn \
+    -k uvicorn.workers.UvicornWorker \
+    -w ${WEB_CONCURRENCY} \
+    -b 0.0.0.0:8005 \
+    --timeout 60 \
+    --keep-alive ${KEEP_ALIVE} \
+    --max-requests ${MAX_REQUESTS} \
+    --max-requests-jitter ${MAX_REQUESTS_JITTER} \
+    app.main:app

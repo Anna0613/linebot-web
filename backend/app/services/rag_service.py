@@ -21,6 +21,7 @@ from app.services.hybrid_search_service import HybridSearchService
 from app.services.context_manager import global_context_manager, MessageRole
 from app.services.rag_cache import get_rag_cache
 from app.services.performance_profiler import PerformanceProfiler, profile_async
+from app.services.prompt_templates import PromptTemplates
 
 logger = logging.getLogger(__name__)
 
@@ -540,42 +541,29 @@ class RAGService:
         history: Optional[List[dict]] = None,
         system_prompt: Optional[str] = None,
     ) -> str:
-        """Use existing AIAnalysisService to generate an answer with given contexts."""
+        """
+        使用 AI 生成答案（基於知識庫檢索結果）
+
+        使用優化的提示詞模板，明確區分資訊來源：
+        - contexts: 知識庫檢索到的相關片段
+        - history: 對話歷史（用於上下文理解）
+        - query: 當前用戶問題
+        """
+        # 格式化知識庫內容
         context_text = "\n\n".join([f"[片段{i+1}]\n{c}" for i, c in enumerate(contexts)])
+
+        # 使用新的提示詞模板（如果沒有自訂系統提示詞）
+        if not system_prompt:
+            system_prompt = PromptTemplates.RAG_SYSTEM_PROMPT
+
         result = await AIAnalysisService.ask_ai(
             query,
             context_text=context_text,
             history=history,
             model=model,
             provider=provider,
-            system_prompt=(
-                system_prompt
-                or (
-                    "你是 LINE 聊天機器人，正在回答用戶的問題。系統已提供相關的知識庫資料。\n\n"
-                    "回覆要求：\n"
-                    "・用自己的話整理資訊，不要直接複製貼上原文\n"
-                    "・簡潔明確，直接回答重點（避免冗長的開場白或結尾）\n"
-                    "・分段清楚，方便在 LINE 上閱讀\n"
-                    "・如果資料不足，簡單說明即可，不需要過度道歉\n"
-                    "・語氣自然友善，但保持專業準確\n\n"
-                    "【格式規範 - 重要！】\n"
-                    "你的回覆會顯示在 LINE 卡片中，請嚴格遵守以下規則：\n\n"
-                    "✗ 絕對禁止使用這些符號：\n"
-                    "  **文字**（粗體）、*文字*（斜體）、`代碼`、# 標題、- 列表、* 列表、> 引用、[連結](網址)\n\n"
-                    "✓ 請改用這些方式：\n"
-                    "  【標題】用中文括號強調\n"
-                    "  ・項目 用日文中點列舉\n"
-                    "  1. 項目 用數字編號\n"
-                    "  直接換行分段即可\n\n"
-                    "範例（正確）：\n"
-                    "【營業時間】\n"
-                    "・週一至週五：9:00-18:00\n"
-                    "・週末：休息\n"
-                    "\n"
-                    "如有特殊需求，請提前聯繫。"
-                )
-            ),
-            max_tokens=None,  # 移除硬編碼限制，讓 Groq 服務自動計算合適的 max_tokens
+            system_prompt=system_prompt,
+            max_tokens=None,
         )
         answer = (result or {}).get("answer", "")
         answer = (answer or "").strip()

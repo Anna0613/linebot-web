@@ -21,6 +21,7 @@ from sqlalchemy.sql import func
 from app.services.conversation_service import ConversationService
 from app.services.background_tasks import get_task_manager, TaskPriority
 from app.database_async import AsyncSessionLocal
+from app.config import settings
 
 
 def _build_ai_reply_flex_message(answer: str) -> Dict[str, Any]:
@@ -277,8 +278,22 @@ async def handle_webhook_event(
     try:
         # 獲取請求體
         body = await request.body()
-        logger.info(f"📥 收到 Webhook 請求: Bot ID = {bot_id}, 內容長度 = {len(body)}")
-        logger.info(f"📋 請求內容: {body.decode('utf-8') if body else 'Empty'}")
+        body_len = len(body) if body else 0
+        logger.info(f"📥 收到 Webhook 請求: Bot ID = {bot_id}, 內容長度 = {body_len}")
+
+        # 安全限制：過大 payload 直接拒絕，避免造成伺服器負擔
+        max_bytes = getattr(settings, "MAX_WEBHOOK_BODY_BYTES", 256 * 1024)
+        if body_len > max_bytes:
+            logger.warning(f"Webhook 請求體超過限制 {body_len} > {max_bytes}，直接拒絕")
+            raise HTTPException(status_code=413, detail="Payload Too Large")
+
+        # 僅在顯式開啟詳細日誌時輸出部分內容（避免大量 I/O）
+        if getattr(settings, "LOG_WEBHOOK_VERBOSE", False):
+            try:
+                text = body.decode('utf-8') if body else ''
+                logger.debug(f"📋 請求內容片段: {text[:500]}{'…' if len(text) > 500 else ''}")
+            except Exception:
+                ...
 
         # 查找對應的 Bot
         result = await db.execute(select(Bot).where(Bot.id == bot_id))
@@ -308,8 +323,14 @@ async def handle_webhook_event(
         try:
             webhook_data = json.loads(body.decode('utf-8'))
             events = webhook_data.get('events', [])
-            logger.info(f"收到事件數: {len(events)}")
-            logger.debug(f"事件內容: {events}")
+            # 彙總事件類型，避免逐條 info 級別日誌
+            type_counts: Dict[str, int] = {}
+            for ev in events:
+                t = ev.get('type') or 'unknown'
+                type_counts[t] = type_counts.get(t, 0) + 1
+            logger.info(f"收到事件數: {len(events)} | 類型統計: {type_counts}")
+            if getattr(settings, "LOG_WEBHOOK_VERBOSE", False):
+                logger.debug(f"事件內容: {events}")
         except Exception as e:
             logger.error(f"解析 webhook 內容失敗: {e}")
             raise HTTPException(status_code=400, detail="無效的 JSON 格式")
@@ -328,9 +349,9 @@ async def handle_webhook_event(
                         result = await process_single_event(event, bot_id, line_bot_service, event_db)
                     if result:
                         processed_results[i] = result
-                        logger.info(f"事件 {i+1} 處理成功")
+                        logger.debug(f"事件 {i+1} 處理成功")
                     else:
-                        logger.info(f"事件 {i+1} 跳過（重複或無需處理）")
+                        logger.debug(f"事件 {i+1} 跳過（重複或無需處理）")
                 except Exception as e:
                     logger.error(f"處理事件 {i+1} 失敗: {e}")
 
@@ -780,17 +801,14 @@ async def process_single_event(
         logger.debug(
             f"檢查是否需要邏輯處理: event_type={event_type}, 支援類型=['message','postback','follow']"
         )
-        logger.info(f"🎯 檢查是否需要邏輯處理: event_type={event_type}, 支援類型=['message', 'postback', 'follow']")
         if event_type in ['message', 'postback', 'follow']:
             logger.debug(f"事件類型符合，開始邏輯處理")
-            logger.info(f"✅ 事件類型符合，開始邏輯處理")
             try:
                 from app.models.bot import Bot as BotModel
                 result = await db.execute(select(BotModel).where(BotModel.id == bot_id))
                 bot = result.scalars().first()
                 if bot:
                     logger.debug(f"開始處理 Bot 事件: bot={bot.name} type={event_type}")
-                    logger.info(f"🤖 開始處理 Bot {bot.name} 的事件: {event_type}")
                     from app.services.logic_engine_service import LogicEngineService
                     results = await LogicEngineService.evaluate_and_reply(
                         db=db,
@@ -800,7 +818,6 @@ async def process_single_event(
                         event=event,
                     )
                     logger.debug(f"邏輯模板匹配結果: {len(results) if results else 0} 個回覆")
-                    logger.info(f"📋 邏輯模板匹配結果: {len(results) if results else 0} 個回覆")
 
                     # RAG 備援：若無符合的積木回覆、AI 接管啟用、且為文字訊息
                     ai_takeover_enabled = bool(getattr(bot, 'ai_takeover_enabled', False))
