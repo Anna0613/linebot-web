@@ -221,7 +221,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         <div className="web3-dashboard-card p-6 web3-hover-glow">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
             <h3 className="text-lg font-medium text-web3-cyan">創建新 LINE Bot</h3>
-            <Plus className="h-6 w-6 text-web3-cyan animate-neon-pulse" />
+            <Plus className="h-6 w-6 text-web3-cyan dark:animate-neon-pulse" />
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-4">
@@ -236,7 +236,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         <div className="web3-dashboard-card p-6 web3-hover-glow">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
             <h3 className="text-lg font-medium text-web3-purple">LINE Bot 編輯器</h3>
-            <Bot className="h-6 w-6 text-web3-purple animate-web3-glow" />
+            <Bot className="h-6 w-6 text-web3-purple dark:animate-web3-glow" />
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-4">
@@ -251,7 +251,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         <div className="web3-dashboard-card p-6 web3-hover-glow">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
             <h3 className="text-lg font-medium text-web3-pink">管理 LINE Bot</h3>
-            <Settings className="h-6 w-6 text-web3-pink animate-cosmic-flow" />
+            <Settings className="h-6 w-6 text-web3-pink dark:animate-cosmic-flow" />
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-4">
