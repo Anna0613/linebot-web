@@ -1083,7 +1083,7 @@ const BotManagementPage: React.FC = () => {
     initializeData();
   }, [user, fetchBots, selectedBotId, toast]); // 加入缺少的依賴項
 
-  // 當選擇的 Bot 變化時獲取相關數據
+  // 當選擇的 Bot 變化時清空舊資料並獲取新資料
   useEffect(() => {
     const abortController = new AbortController();
     let isMounted = true;
@@ -1091,6 +1091,25 @@ const BotManagementPage: React.FC = () => {
 
     const fetchBotData = async () => {
       if (selectedBotId && isMounted) {
+        // 清空前一個 Bot 的所有相關資料
+        setUsers([]);
+        setTotalCount(0);
+        setPagination({
+          limit: 20,
+          offset: 0,
+          has_next: false,
+          has_prev: false
+        });
+        setSelectedUser(null);
+        setShowChatPanel(false);
+        setShowUserDetails(false);
+        setCurrentChatUser(null);
+        setSelectedUserIds(new Set());
+        setSearchTerm("");
+        setBroadcastMessage("");
+        setLogicTemplates([]);
+        setWebhookStatus(null);
+
         try {
           // 順序載入，避免並發問題
           // 1. 先載入邏輯模板和 Webhook 狀態（較快的 API）
@@ -1098,7 +1117,7 @@ const BotManagementPage: React.FC = () => {
             fetchLogicTemplates(selectedBotId),
             fetchWebhookStatus(selectedBotId)
           ]);
-          
+
           // 2. 檢查是否還在載入中且未被取消
           if (isMounted && !abortController.signal.aborted) {
             // 延遲載入分析數據，給其他 API 更多時間完成
@@ -1129,10 +1148,11 @@ const BotManagementPage: React.FC = () => {
 
   // 當切換到用戶管理 Tab 時載入用戶數據
   useEffect(() => {
-    if (activeTab === "users" && selectedBotId && users.length === 0) {
+    if (activeTab === "users" && selectedBotId) {
+      // 移除 users.length === 0 的條件，確保每次切換 Bot 或進入用戶 Tab 時都會重新載入
       fetchUsers();
     }
-  }, [activeTab, selectedBotId, users.length, fetchUsers]);
+  }, [activeTab, selectedBotId, fetchUsers]);
 
   // 處理 WebSocket 即時更新消息
   useEffect(() => {
