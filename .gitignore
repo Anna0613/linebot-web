@@ -104,3 +104,4 @@ coverage.xml
 # Local configuration
 local_settings.py
 local_config.json
+data/*

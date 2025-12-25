@@ -70,7 +70,63 @@ LineBot-Web 是一個現代化的 LINE Bot 管理平台，採用前後端分離�
 
 ## 🚀 快速開始
 
-### 環境需求
+### Windows 一鍵部署 🪟
+
+**前置需求：**
+- Docker Desktop (已啟動)
+- Python 3.11+
+- Node.js 18+
+
+**部署步驟：**
+
+1. **執行部署腳本**
+   ```powershell
+   # 在專案根目錄執行
+   .\linebot-web\scripts\deploy-windows.ps1
+   ```
+   或直接雙擊 `linebot-web\scripts\deploy-windows.ps1`
+
+2. **設定 LINE Bot API**
+
+   編輯 `linebot-web\backend\.env`，填入您的 LINE Bot 資訊：
+   ```env
+   LINE_CHANNEL_ID=你的_Channel_ID
+   LINE_CHANNEL_SECRET=你的_Channel_Secret
+   ```
+
+   取得方式：前往 [LINE Developers Console](https://developers.line.biz/console/) 建立 Channel
+
+3. **重啟後端服務**
+   ```powershell
+   docker restart linebot-web-backend
+   ```
+
+4. **開始使用**
+   - 🌐 前端: http://localhost:3000
+   - 🔧 後端 API: http://localhost:8001
+   - 📚 API 文檔: http://localhost:8001/docs
+   - 📦 MinIO 控制台: http://localhost:9001
+
+**常用命令：**
+```powershell
+# 查看服務狀態
+docker ps
+
+# 查看日誌
+docker-compose logs -f
+
+# 停止服務
+docker-compose down
+
+# 重新啟動
+docker-compose restart
+```
+
+---
+
+### 手動部署 (Linux/macOS)
+
+#### 環境需求
 - Python 3.11+
 - Node.js 18+
 - pnpm（前端套件管理）
@@ -79,7 +135,7 @@ LineBot-Web 是一個現代化的 LINE Bot 管理平台，採用前後端分離�
 - MongoDB（選用，用於對話記錄）
 - MinIO（選用，用於媒體儲存）
 
-### 前端啟動
+#### 前端啟動
 
 ```bash
 cd linebot-web/frontend
