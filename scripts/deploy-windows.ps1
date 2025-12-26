@@ -1,44 +1,44 @@
 # ============================================
-# LineBot-Web Windows ה¸€יµיƒ¨ח½²ט…³ז¬
+# LineBot-Web Windows ₪@ֱה³¡¸p¸}¥»
 # ============================================
-# ה½¿ח”¨ז–¹ו¼ן¼
-#   1. י›™ז“ו·ט¡ז­₪ז×”ז¡ˆ
-#   2. זˆ–ו¨ PowerShell ה¸­ו·ט¡ן¼.\deploy-windows.ps1
+# ¨ֿ¥־₪ט¦¡¡G
+#   1. ֲשְ»°ץ¦ז¦¹ְֹ®׳
+#   2. ©־¦b PowerShell ₪₪°ץ¦ז¡G.\deploy-windows.ps1
 #
-# וטƒ½ן¼
-#   - ט‡×ו‹•יƒ¨ח½²ז‰€ז‰ו¿…ט¦ח„ Docker זו‹™
-#   - ו®‰ט£ו‰ו¾ח«¯ה¾ט³´ו¥—ה»¶
-#   - ו»÷ח«‹ח’°ו¢ƒי…ח½®ז×”ז¡ˆ
-#   - ו•ו‹•ז‡‰ח”¨ו®¹ו™¨
+# ¥\¯א¡G
+#   - ¦Û°Ê³¡¸p©ׂ¦³¥²­n×÷ Docker ×A°ָ
+#   - ¦w¸ֻ«e«ב÷Ý¨ּ¿א®M¥ף
+#   - «״¥ßְפ¹ׂ°t¸mְֹ®׳
+#   - ±ׂ°Êְ³¥־®e¾¹
 # ============================================
 
 $ErrorActionPreference = "Stop"
 
-# ט¼¸ו‡÷ו‡½ז•¸
+# ¿י¥X¨ח¼ֶ
 function Write-ColorOutput {
     param([string]$Message, [string]$Color = "White")
     Write-Host $Message -ForegroundColor $Color
 }
 
-function Write-Success { param([string]$Message) Write-ColorOutput "ג“ $Message" "Green" }
-function Write-Info { param([string]$Message) Write-ColorOutput "ג„¹ $Message" "Cyan" }
-function Write-Warning { param([string]$Message) Write-ColorOutput "ג  $Message" "Yellow" }
-function Write-Error { param([string]$Message) Write-ColorOutput "ג— $Message" "Red" }
+function Write-Success { param([string]$Message) Write-ColorOutput "? $Message" "Green" }
+function Write-Info { param([string]$Message) Write-ColorOutput "? $Message" "Cyan" }
+function Write-Warning { param([string]$Message) Write-ColorOutput "? $Message" "Yellow" }
+function Write-Error { param([string]$Message) Write-ColorOutput "? $Message" "Red" }
 
-# ז¨™י¡
+# ¼׀ֳD
 function Show-Banner {
     Clear-Host
     Write-Host ""
-    Write-ColorOutput "ג•”ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•—" "Cyan"
-    Write-ColorOutput "ג•‘   LineBot-Web Windows ה¸€יµיƒ¨ח½²ט…³ז¬        ג•‘" "Cyan"
-    Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Cyan"
+    Write-ColorOutput "שÝשששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששß" "Cyan"
+    Write-ColorOutput "שר   LineBot-Web Windows ₪@ֱה³¡¸p¸}¥»        שר" "Cyan"
+    Write-ColorOutput "שדשששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששו" "Cyan"
     Write-Host ""
 }
 
-# ו–ו¾—ט³‡ז–™ו„²ו­˜ט·¯ו¾‘
+# ¨ת±o¸ך®ְֶx¦s¸פ®|
 function Get-DataStoragePath {
     Write-Host ""
-    Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג• ט³‡ז–™ו„²ו­˜ט·¯ו¾‘ט¨­ו® ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Cyan"
+    Write-ColorOutput "שששששששששששששששששששששששששששששש ¸ך®ְֶx¦s¸פ®|³]©w שששששששששששששששששששששששששששששש" "Cyan"
     Write-Host ""
 
     $defaultPath = Resolve-Path "$PSScriptRoot\..\data" -ErrorAction SilentlyContinue
@@ -46,63 +46,63 @@ function Get-DataStoragePath {
         $defaultPath = Join-Path (Split-Path $PSScriptRoot -Parent) "data"
     }
 
-    Write-Info "י ט¨­ט·¯ו¾‘: $defaultPath"
+    Write-Info "¹w³]¸פ®|: $defaultPath"
     Write-Host ""
-    Write-Host "ט«‹י¸ז“‡ן¼"
-    Write-Host "  [Enter] ה½¿ח”¨י ט¨­ט·¯ו¾‘"
-    Write-Host "  זˆ–ט¼¸ו…¥ט‡×ט¨‚ט·¯ו¾‘ (ה¾‹ו¦‚: D:\linebot-data)"
+    Write-Host "½׀¿ן¾Ü¡G"
+    Write-Host "  [Enter] ¨ֿ¥־¹w³]¸פ®|"
+    Write-Host "  ©־¿י₪J¦Û­q¸פ®| (¨ׂ¦p: D:\linebot-data)"
     Write-Host ""
 
-    $input = Read-Host "ו„²ו­˜ט·¯ו¾‘"
+    $input = Read-Host "ְx¦s¸פ®|"
 
-    # ה½¿ח”¨י ט¨­ט·¯ו¾‘
+    # ¨ֿ¥־¹w³]¸פ®|
     if ([string]::IsNullOrWhiteSpace($input)) {
-        Write-Success "ה½¿ח”¨י ט¨­ט·¯ו¾‘"
+        Write-Success "¨ֿ¥־¹w³]¸פ®|"
         return $defaultPath
     }
 
-    # ט™•ח†ט‡×ט¨‚ט·¯ו¾‘
+    # ³B²z¦Û­q¸פ®|
     $customPath = [System.Environment]::ExpandEnvironmentVariables($input)
 
     if (-not [System.IO.Path]::IsPathRooted($customPath)) {
         $customPath = Join-Path (Get-Location) $customPath
     }
 
-    # ו»÷ח«‹ה¸¦י©—ט­‰ח›®י„
+    # «״¥ß¨ֳֵחֳׂ¥״¿‎
     try {
         if (-not (Test-Path $customPath)) {
             New-Item -ItemType Directory -Path $customPath -Force | Out-Null
         }
 
-        # ז¸¬ט©¦ו¯«ו…¥ז¬י™
+        # ´ת¸ױ¼g₪Jֵv­­
         $testFile = Join-Path $customPath ".test"
         "test" | Out-File -FilePath $testFile -ErrorAction Stop
         Remove-Item $testFile -ErrorAction SilentlyContinue
 
-        Write-Success "ה½¿ח”¨ט‡×ט¨‚ט·¯ו¾‘: $customPath"
+        Write-Success "¨ֿ¥־¦Û­q¸פ®|: $customPath"
         return $customPath
     }
     catch {
-        Write-Warning "ח„¡ז³•ה½¿ח”¨ט©²ט·¯ו¾‘ן¼ז”¹ח”¨י ט¨­ט·¯ו¾‘"
+        Write-Warning "µL×k¨ֿ¥־¸׃¸פ®|¡A§ן¥־¹w³]¸פ®|"
         return $defaultPath
     }
 }
 
-# י¸ז“‡ט³‡ז–™ו„²ו­˜ט·¯ו¾‘
+# ¿ן¾Ü¸ך®ְֶx¦s¸פ®|
 function Select-DataPath {
     Write-Host ""
-    Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג• ט³‡ז–™ו„²ו­˜ט·¯ו¾‘ט¨­ו® ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Cyan"
+    Write-ColorOutput "שששששששששששששששששששששששששששששש ¸ך®ְֶx¦s¸פ®|³]©w שששששששששששששששששששששששששששששש" "Cyan"
     Write-Host ""
-    Write-Info "ט«‹י¸ז“‡ט³‡ז–™ו„²ו­˜ה½ח½®ן¼"
+    Write-Info "½׀¿ן¾Ü¸ך®ְֶx¦s¦ל¸m¡G"
     Write-Host ""
-    Write-Host "1. ה½¿ח”¨ו°ˆז¡ˆח›®י„ (י ט¨­)"
-    Write-Host "   ט·¯ו¾‘: $PSScriptRoot\..\data"
+    Write-Host "1. ¨ֿ¥־±M®׳¥״¿‎ (¹w³])"
+    Write-Host "   ¸פ®|: $PSScriptRoot\..\data"
     Write-Host ""
-    Write-Host "2. ה½¿ח”¨ט‡×ט¨‚ט·¯ו¾‘"
-    Write-Host "   ז‚¨ו¯ה»¥ז‡ו®ה»»ה½•ז‰ט¶³ו₪ ח©÷י–“ח„ח£ח¢ה½ח½®"
+    Write-Host "2. ¨ֿ¥־¦Û­q¸פ®|"
+    Write-Host "   ±z¥i¥H«ü©w¥פ¦ף¦³¨¬°ק×ֵ¶¡×÷÷ֿ÷׀¦ל¸m"
     Write-Host ""
 
-    $choice = Read-Host "ט«‹ט¼¸ו…¥י¸י … (1 זˆ– 2ן¼ח›´ז¥ז‰ Enter ה½¿ח”¨י ט¨­)"
+    $choice = Read-Host "½׀¿י₪J¿ן¶µ (1 ©־ 2¡A×½±µ«צ Enter ¨ֿ¥־¹w³])"
 
     if ([string]::IsNullOrWhiteSpace($choice)) {
         $choice = "1"
@@ -110,56 +110,56 @@ function Select-DataPath {
 
     if ($choice -eq "2") {
         Write-Host ""
-        Write-Info "ט«‹ט¼¸ו…¥ט‡×ט¨‚ט·¯ו¾‘ן¼ˆה¾‹ו¦‚ן¼D:\LineBot-Dataן¼‰"
-        $customPath = Read-Host "ט·¯ו¾‘"
+        Write-Info "½׀¿י₪J¦Û­q¸פ®|¡]¨ׂ¦p¡GD:\LineBot-Data¡^"
+        $customPath = Read-Host "¸פ®|"
 
         if ([string]::IsNullOrWhiteSpace($customPath)) {
-            Write-Warning "ז×ט¼¸ו…¥ט·¯ו¾‘ן¼ה½¿ח”¨י ט¨­ט·¯ו¾‘"
+            Write-Warning "¥¼¿י₪J¸פ®|¡A¨ֿ¥־¹w³]¸פ®|"
             return "$PSScriptRoot\..\data"
         }
 
-        # י©—ט­‰ט·¯ו¾‘
+        # ֵחֳׂ¸פ®|
         try {
             if (-not (Test-Path $customPath)) {
-                Write-Info "ו»÷ח«‹ח›®י„: $customPath"
+                Write-Info "«״¥ß¥״¿‎: $customPath"
                 New-Item -ItemType Directory -Path $customPath -Force | Out-Null
             }
 
-            # ז¸¬ט©¦ו¯«ו…¥ז¬י™
+            # ´ת¸ױ¼g₪Jֵv­­
             $testFile = Join-Path $customPath "test.tmp"
             "test" | Out-File $testFile -ErrorAction Stop
             Remove-Item $testFile -ErrorAction SilentlyContinue
 
-            Write-Success "ה½¿ח”¨ט‡×ט¨‚ט·¯ו¾‘: $customPath"
+            Write-Success "¨ֿ¥־¦Û­q¸פ®|: $customPath"
             return $customPath
         }
         catch {
-            Write-Error "ח„¡ז³•ה½¿ח”¨ט©²ט·¯ו¾‘: $_"
-            Write-Warning "ז”¹ח”¨י ט¨­ט·¯ו¾‘"
+            Write-Error "µL×k¨ֿ¥־¸׃¸פ®|: $_"
+            Write-Warning "§ן¥־¹w³]¸פ®|"
             return "$PSScriptRoot\..\data"
         }
     }
     else {
-        Write-Success "ה½¿ח”¨י ט¨­ט·¯ו¾‘: $PSScriptRoot\..\data"
+        Write-Success "¨ֿ¥־¹w³]¸פ®|: $PSScriptRoot\..\data"
         return "$PSScriptRoot\..\data"
     }
 }
 
-# ז×¢ז¥ Docker ז˜¯ו¦י‹ט¡
+# ְֻ¬d Docker ¬O§_¹B¦ז
 function Test-DockerRunning {
-    Write-Info "ז×¢ז¥ Docker זו‹™ח‹€ז…‹..."
+    Write-Info "ְֻ¬d Docker ×A°ָ×¬÷A..."
     try {
         $null = docker ps 2>&1
-        Write-Success "Docker זו‹™ז­£ו¨י‹ט¡"
+        Write-Success "Docker ×A°ָ¥¿¦b¹B¦ז"
         return $true
     }
     catch {
-        Write-Error "Docker זו‹™ז×י‹ט¡ן¼ט«‹ו…ˆו•ו‹• Docker Desktop"
+        Write-Error "Docker ×A°ָ¥¼¹B¦ז¡A½׀¥‎±ׂ°Ê Docker Desktop"
         return $false
     }
 }
 
-# ז×¢ז¥ו®¹ו™¨ז˜¯ו¦ו­˜ו¨ה¸¦י‹ט¡
+# ְֻ¬d®e¾¹¬O§_¦s¦b¨ֳ¹B¦ז
 function Test-ContainerRunning {
     param([string]$ContainerName)
 
@@ -168,12 +168,12 @@ function Test-ContainerRunning {
         return ($null -ne $container -and $container -eq $ContainerName)
     }
     catch {
-        Write-Warning "ז×¢ז¥ו®¹ו™¨ $ContainerName ז™‚ח™¼ח”י¯ט×₪: $_"
+        Write-Warning "ְֻ¬d®e¾¹ $ContainerName ®ֹµo¥ֽ¿ש»~: $_"
         return $false
     }
 }
 
-# ז×¢ז¥ו®¹ו™¨ז˜¯ו¦ו­˜ו¨ן¼ˆה¸ט«–ז˜¯ו¦י‹ט¡ן¼‰
+# ְֻ¬d®e¾¹¬O§_¦s¦b¡]₪£½׳¬O§_¹B¦ז¡^
 function Test-ContainerExists {
     param([string]$ContainerName)
 
@@ -186,38 +186,38 @@ function Test-ContainerExists {
     }
 }
 
-# ז×¢ז¥ה¸¦יƒ¨ח½² PostgreSQL
+# ְֻ¬d¨ֳ³¡¸p PostgreSQL
 function Deploy-PostgreSQL {
     param([string]$DataBasePath)
 
-    Write-Info "ז×¢ז¥ PostgreSQL זו‹™..."
+    Write-Info "ְֻ¬d PostgreSQL ×A°ָ..."
 
     if (Test-ContainerRunning "postgresql15") {
-        Write-Success "PostgreSQL ו·²ו¨י‹ט¡"
+        Write-Success "PostgreSQL ₪w¦b¹B¦ז"
         return
     }
 
-    Write-Info "יƒ¨ח½² PostgreSQL..."
+    Write-Info "³¡¸p PostgreSQL..."
 
-    # ו»÷ח«‹ט³‡ז–™ח›®י„
+    # «״¥ß¸ך®ֶ¥״¿‎
     $dataDir = Join-Path $DataBasePath "postgresql"
     if (-not (Test-Path $dataDir)) {
         New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
     }
 
-    Write-Info "ט³‡ז–™ו„²ו­˜ה½ח½®: $dataDir"
+    Write-Info "¸ך®ְֶx¦s¦ל¸m: $dataDir"
 
-    # ו…ˆז‹‰ו–ז˜ וƒז×”
-    Write-Info "ה¸‹ט¼‰ PostgreSQL ז˜ וƒז×”..."
+    # ¥‎©װ¨ת¬M¹³ְֹ
+    Write-Info "₪U¸ü PostgreSQL ¬M¹³ְֹ..."
     docker pull postgres:15
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "ח„¡ז³•ה¸‹ט¼‰ PostgreSQL ז˜ וƒז×”"
+        Write-Error "µL×k₪U¸ü PostgreSQL ¬M¹³ְֹ"
         return
     }
 
-    # י‹ט¡ו®¹ו™¨
-    Write-Info "ו•ו‹• PostgreSQL ו®¹ו™¨..."
+    # ¹B¦ז®e¾¹
+    Write-Info "±ׂ°Ê PostgreSQL ®e¾¹..."
     docker run -d `
         --name postgresql15 `
         -e POSTGRES_USER=linebot `
@@ -229,55 +229,55 @@ function Deploy-PostgreSQL {
         --restart unless-stopped `
         postgres:15
     
-    # ח­‰ו¾… PostgreSQL ו•ו‹•
-    Write-Info "ח­‰ו¾… PostgreSQL ו•ו‹•..."
+    # µ¥«Ý PostgreSQL ±ׂ°Ê
+    Write-Info "µ¥«Ý PostgreSQL ±ׂ°Ê..."
     Start-Sleep -Seconds 5
 
-    # ו®‰ט£ pgvector ז“´ו±•
-    Write-Info "ו®‰ט£ pgvector ז“´ו±•..."
+    # ¦w¸ֻ pgvector ֲX®i
+    Write-Info "¦w¸ֻ pgvector ֲX®i..."
     docker exec postgresql15 bash -c "DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-15-pgvector" 2>&1 | Out-Null
 
-    # ח­‰ו¾…ו®‰ט£ו®זˆ
+    # µ¥«Ý¦w¸ֻ§¹¦¨
     Start-Sleep -Seconds 2
 
-    # ו»÷ח«‹ pgvector ז“´ו±•
-    Write-Info "ו»÷ח«‹ pgvector ז“´ו±•..."
+    # «״¥ß pgvector ֲX®i
+    Write-Info "«״¥ß pgvector ֲX®i..."
     docker exec postgresql15 psql -U linebot -d linebot -c "CREATE EXTENSION IF NOT EXISTS vector;" 2>&1 | Out-Null
 
-    Write-Success "PostgreSQL יƒ¨ח½²ו®זˆ"
+    Write-Success "PostgreSQL ³¡¸p§¹¦¨"
 }
 
-# ז×¢ז¥ה¸¦יƒ¨ח½² Redis
+# ְֻ¬d¨ֳ³¡¸p Redis
 function Deploy-Redis {
     param([string]$DataBasePath)
 
-    Write-Info "ז×¢ז¥ Redis זו‹™..."
+    Write-Info "ְֻ¬d Redis ×A°ָ..."
 
     if (Test-ContainerRunning "redis") {
-        Write-Success "Redis ו·²ו¨י‹ט¡"
+        Write-Success "Redis ₪w¦b¹B¦ז"
         return
     }
 
-    Write-Info "יƒ¨ח½² Redis..."
+    Write-Info "³¡¸p Redis..."
 
     $dataDir = Join-Path $DataBasePath "redis"
     if (-not (Test-Path $dataDir)) {
         New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
     }
 
-    Write-Info "ט³‡ז–™ו„²ו­˜ה½ח½®: $dataDir"
+    Write-Info "¸ך®ְֶx¦s¦ל¸m: $dataDir"
 
-    # ו…ˆז‹‰ו–ז˜ וƒז×”
-    Write-Info "ה¸‹ט¼‰ Redis ז˜ וƒז×”..."
+    # ¥‎©װ¨ת¬M¹³ְֹ
+    Write-Info "₪U¸ü Redis ¬M¹³ְֹ..."
     docker pull redis:7-alpine
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "ח„¡ז³•ה¸‹ט¼‰ Redis ז˜ וƒז×”"
+        Write-Error "µL×k₪U¸ü Redis ¬M¹³ְֹ"
         return
     }
 
-    # י‹ט¡ו®¹ו™¨
-    Write-Info "ו•ו‹• Redis ו®¹ו™¨..."
+    # ¹B¦ז®e¾¹
+    Write-Info "±ׂ°Ê Redis ®e¾¹..."
     docker run -d `
         --name redis `
         -p 6379:6379 `
@@ -286,67 +286,67 @@ function Deploy-Redis {
         redis:7-alpine redis-server --appendonly yes
 
     if ($LASTEXITCODE -eq 0) {
-        Write-Success "Redis יƒ¨ח½²ו®זˆ"
+        Write-Success "Redis ³¡¸p§¹¦¨"
     }
     else {
-        Write-Warning "Redis יƒ¨ח½²ו¯טƒ½ו₪±ז•—ן¼ט«‹ז×¢ז¥ז—¥ט×: docker logs redis"
+        Write-Warning "Redis ³¡¸p¥i¯א¥¢±ׁ¡A½׀ְֻ¬d₪י»x: docker logs redis"
     }
 }
 
-# ז×¢ז¥ה¸¦יƒ¨ח½² MongoDB
+# ְֻ¬d¨ֳ³¡¸p MongoDB
 function Deploy-MongoDB {
     param([string]$DataBasePath)
 
-    Write-Info "ז×¢ז¥ MongoDB זו‹™..."
+    Write-Info "ְֻ¬d MongoDB ×A°ָ..."
 
     if (Test-ContainerRunning "mongodb") {
-        Write-Success "MongoDB ו·²ו¨י‹ט¡"
+        Write-Success "MongoDB ₪w¦b¹B¦ז"
         return
     }
 
-    # ו¦‚זו®¹ו™¨ו­˜ו¨ה½†ז×י‹ט¡ן¼ו…ˆוˆ×י™₪
+    # ¦p×G®e¾¹¦s¦b¦‎¥¼¹B¦ז¡A¥‎§R°£
     if (Test-ContainerExists "mongodb") {
-        Write-Info "ח§»י™₪טˆח„ MongoDB ו®¹ו™¨..."
+        Write-Info "²¾°£ֲֲ×÷ MongoDB ®e¾¹..."
         docker rm -f mongodb 2>&1 | Out-Null
     }
 
-    Write-Info "יƒ¨ח½² MongoDB..."
+    Write-Info "³¡¸p MongoDB..."
 
     $dataDir = Join-Path $DataBasePath "mongodb"
     if (-not (Test-Path $dataDir)) {
         New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
     }
 
-    Write-Info "ט³‡ז–™ו„²ו­˜ה½ח½®: $dataDir"
+    Write-Info "¸ך®ְֶx¦s¦ל¸m: $dataDir"
 
     try {
-        # ז×¢ז¸¬ח³»חµ±ז¶ז§‹
+        # ְֻ´ת¨t²־¬[÷c
         $arch = docker version --format '{{.Server.Arch}}' 2>$null
-        Write-Info "ח³»חµ±ז¶ז§‹: $arch"
+        Write-Info "¨t²־¬[÷c: $arch"
 
-        # MongoDB 7 ה¸ז”¯ז´ 32 ה½ו…ƒח³»חµ±ן¼ה½¿ח”¨ט¼ƒטˆח‰ˆז¬
+        # MongoDB 7 ₪£₪ה´© 32 ¦ל₪¸¨t²־¡A¨ֿ¥־¸ûֲֲ×©¥»
         $mongoImage = "mongo:7"
 
         if ($arch -match "386" -or $arch -match "x86") {
-            Write-Warning "וµז¸¬וˆ° 32 ה½ו…ƒח³»חµ±ן¼MongoDB 7 ה¸ז”¯ז´"
-            Write-Info "ז”¹ח”¨ MongoDB 4.4 ח‰ˆז¬ן¼ˆז€ו¾ז”¯ז´ 32 ה½ו…ƒח„ח‰ˆז¬ן¼‰"
+            Write-Warning "°»´ת¨ל 32 ¦ל₪¸¨t²־¡AMongoDB 7 ₪£₪ה´©"
+            Write-Info "§ן¥־ MongoDB 4.4 ×©¥»¡]³ּ«ב₪ה´© 32 ¦ל₪¸×÷×©¥»¡^"
             $mongoImage = "mongo:4.4"
         }
         elseif ($arch -match "amd64" -or $arch -match "x86_64") {
-            Write-Info "וµז¸¬וˆ° 64 ה½ו…ƒח³»חµ±ן¼ה½¿ח”¨ MongoDB 7"
+            Write-Info "°»´ת¨ל 64 ¦ל₪¸¨t²־¡A¨ֿ¥־ MongoDB 7"
             $mongoImage = "mongo:7"
         }
 
-        # ו…ˆז‹‰ו–ז˜ וƒז×”
-        Write-Info "ה¸‹ט¼‰ MongoDB ז˜ וƒז×” ($mongoImage)..."
+        # ¥‎©װ¨ת¬M¹³ְֹ
+        Write-Info "₪U¸ü MongoDB ¬M¹³ְֹ ($mongoImage)..."
         docker pull $mongoImage
 
         if ($LASTEXITCODE -ne 0) {
-            throw "ח„¡ז³•ה¸‹ט¼‰ MongoDB ז˜ וƒז×”"
+            throw "µL×k₪U¸ü MongoDB ¬M¹³ְֹ"
         }
 
-        # י‹ט¡ו®¹ו™¨
-        Write-Info "ו•ו‹• MongoDB ו®¹ו™¨..."
+        # ¹B¦ז®e¾¹
+        Write-Info "±ׂ°Ê MongoDB ®e¾¹..."
         docker run -d `
             --name mongodb `
             -p 27017:27017 `
@@ -355,79 +355,79 @@ function Deploy-MongoDB {
             $mongoImage
 
         if ($LASTEXITCODE -eq 0) {
-            # ח­‰ו¾…ו®¹ו™¨ו•ו‹•ה¸¦ז×¢ז¥ח‹€ז…‹
-            Write-Info "ח­‰ו¾… MongoDB ו•ו‹•..."
+            # µ¥«Ý®e¾¹±ׂ°Ê¨ְֳֻ¬d×¬÷A
+            Write-Info "µ¥«Ý MongoDB ±ׂ°Ê..."
             Start-Sleep -Seconds 5
 
             $containerStatus = docker inspect -f '{{.State.Status}}' mongodb 2>$null
 
             if ($containerStatus -eq "running") {
-                Write-Success "MongoDB יƒ¨ח½²ו®זˆ (ח‰ˆז¬: $mongoImage)"
+                Write-Success "MongoDB ³¡¸p§¹¦¨ (×©¥»: $mongoImage)"
             }
             else {
-                # י¡¯ח₪÷י¯ט×₪ז—¥ט×
+                # ֵד¥Ü¿ש»~₪י»x
                 $logs = docker logs mongodb 2>&1 | Select-Object -Last 20
-                Write-Warning "MongoDB ו®¹ו™¨ו•ו‹•ח•°ו¸¸"
-                Write-Host "ז€ט¿‘ח„י¯ט×₪ז—¥ט×:" -ForegroundColor Yellow
+                Write-Warning "MongoDB ®e¾¹±ׂ°Ê²§±`"
+                Write-Host "³ּ×ס×÷¿ש»~₪י»x:" -ForegroundColor Yellow
                 $logs | ForEach-Object { Write-Host $_ -ForegroundColor Gray }
 
-                # ז¸…ח†ו₪±ז•—ח„ו®¹ו™¨
+                # ²M²z¥¢±ׁ×÷®e¾¹
                 docker rm -f mongodb 2>&1 | Out-Null
-                throw "MongoDB ו®¹ו™¨ח„¡ז³•ז­£ו¸¸י‹ט¡"
+                throw "MongoDB ®e¾¹µL×k¥¿±`¹B¦ז"
             }
         }
         else {
-            throw "MongoDB ו®¹ו™¨ו•ו‹•ו₪±ז•—"
+            throw "MongoDB ®e¾¹±ׂ°Ê¥¢±ׁ"
         }
     }
     catch {
-        Write-Warning "MongoDB יƒ¨ח½²ו₪±ז•—: $_"
+        Write-Warning "MongoDB ³¡¸p¥¢±ׁ: $_"
         Write-Host ""
-        Write-Info "ו¯טƒ½ח„ט§£ז±÷ז–¹ז¡ˆן¼"
-        Write-Host "  1. ח¢÷ט× Docker Desktop ז­£ו¨י‹ט¡" -ForegroundColor Cyan
-        Write-Host "  2. ז‰‹ו‹•יƒ¨ח½²: docker run -d --name mongodb -p 27017:27017 -v ${dataDir}:/data/db mongo:7" -ForegroundColor Cyan
-        Write-Host "  3. ז¥ח‹ז—¥ט×: docker logs mongodb" -ForegroundColor Cyan
+        Write-Info "¥i¯א×÷¸ׁ¨M₪ט®׳¡G"
+        Write-Host "  1. ½T»{ Docker Desktop ¥¿¦b¹B¦ז" -ForegroundColor Cyan
+        Write-Host "  2. ₪ג°Ê³¡¸p: docker run -d --name mongodb -p 27017:27017 -v ${dataDir}:/data/db mongo:7" -ForegroundColor Cyan
+        Write-Host "  3. ¬d¬Ý₪י»x: docker logs mongodb" -ForegroundColor Cyan
         Write-Host ""
     }
 }
 
-# ז×¢ז¥ה¸¦יƒ¨ח½² MinIO
+# ְֻ¬d¨ֳ³¡¸p MinIO
 function Deploy-MinIO {
     param([string]$DataBasePath)
 
-    Write-Info "ז×¢ז¥ MinIO זו‹™..."
+    Write-Info "ְֻ¬d MinIO ×A°ָ..."
 
     if (Test-ContainerRunning "minio") {
-        Write-Success "MinIO ו·²ו¨י‹ט¡"
+        Write-Success "MinIO ₪w¦b¹B¦ז"
         return
     }
 
-    # ו¦‚זו®¹ו™¨ו­˜ו¨ה½†ז×י‹ט¡ן¼ו…ˆוˆ×י™₪
+    # ¦p×G®e¾¹¦s¦b¦‎¥¼¹B¦ז¡A¥‎§R°£
     if (Test-ContainerExists "minio") {
-        Write-Info "ח§»י™₪טˆח„ MinIO ו®¹ו™¨..."
+        Write-Info "²¾°£ֲֲ×÷ MinIO ®e¾¹..."
         docker rm -f minio 2>&1 | Out-Null
     }
 
-    Write-Info "יƒ¨ח½² MinIO..."
+    Write-Info "³¡¸p MinIO..."
 
     $dataDir = Join-Path $DataBasePath "minio"
     if (-not (Test-Path $dataDir)) {
         New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
     }
 
-    Write-Info "ט³‡ז–™ו„²ו­˜ה½ח½®: $dataDir"
+    Write-Info "¸ך®ְֶx¦s¦ל¸m: $dataDir"
 
     try {
-        # ו…ˆז‹‰ו–ז˜ וƒז×”
-        Write-Info "ה¸‹ט¼‰ MinIO ז˜ וƒז×”..."
+        # ¥‎©װ¨ת¬M¹³ְֹ
+        Write-Info "₪U¸ü MinIO ¬M¹³ְֹ..."
         docker pull minio/minio:latest
 
         if ($LASTEXITCODE -ne 0) {
-            throw "ח„¡ז³•ה¸‹ט¼‰ MinIO ז˜ וƒז×”"
+            throw "µL×k₪U¸ü MinIO ¬M¹³ְֹ"
         }
 
-        # י‹ט¡ו®¹ו™¨
-        Write-Info "ו•ו‹• MinIO ו®¹ו™¨..."
+        # ¹B¦ז®e¾¹
+        Write-Info "±ׂ°Ê MinIO ®e¾¹..."
         docker run -d `
             --name minio `
             -p 9000:9000 `
@@ -439,53 +439,53 @@ function Deploy-MinIO {
             minio/minio server /data --console-address ":9001"
 
         if ($LASTEXITCODE -eq 0) {
-            # ח­‰ו¾…ו®¹ו™¨ו•ו‹•ה¸¦ז×¢ז¥ח‹€ז…‹
-            Write-Info "ח­‰ו¾… MinIO ו•ו‹•..."
+            # µ¥«Ý®e¾¹±ׂ°Ê¨ְֳֻ¬d×¬÷A
+            Write-Info "µ¥«Ý MinIO ±ׂ°Ê..."
             Start-Sleep -Seconds 5
 
             $containerStatus = docker inspect -f '{{.State.Status}}' minio 2>$null
 
             if ($containerStatus -eq "running") {
-                Write-Success "MinIO יƒ¨ח½²ו®זˆ"
+                Write-Success "MinIO ³¡¸p§¹¦¨"
             }
             else {
-                # י¡¯ח₪÷י¯ט×₪ז—¥ט×
+                # ֵד¥Ü¿ש»~₪י»x
                 $logs = docker logs minio 2>&1 | Select-Object -Last 20
-                Write-Warning "MinIO ו®¹ו™¨ו•ו‹•ח•°ו¸¸"
-                Write-Host "ז€ט¿‘ח„י¯ט×₪ז—¥ט×:" -ForegroundColor Yellow
+                Write-Warning "MinIO ®e¾¹±ׂ°Ê²§±`"
+                Write-Host "³ּ×ס×÷¿ש»~₪י»x:" -ForegroundColor Yellow
                 $logs | ForEach-Object { Write-Host $_ -ForegroundColor Gray }
 
-                # ז¸…ח†ו₪±ז•—ח„ו®¹ו™¨
+                # ²M²z¥¢±ׁ×÷®e¾¹
                 docker rm -f minio 2>&1 | Out-Null
-                throw "MinIO ו®¹ו™¨ח„¡ז³•ז­£ו¸¸י‹ט¡"
+                throw "MinIO ®e¾¹µL×k¥¿±`¹B¦ז"
             }
         }
         else {
-            throw "MinIO ו®¹ו™¨ו•ו‹•ו₪±ז•—"
+            throw "MinIO ®e¾¹±ׂ°Ê¥¢±ׁ"
         }
     }
     catch {
-        Write-Warning "MinIO יƒ¨ח½²ו₪±ז•—: $_"
+        Write-Warning "MinIO ³¡¸p¥¢±ׁ: $_"
         Write-Host ""
-        Write-Info "ו¯טƒ½ח„ט§£ז±÷ז–¹ז¡ˆן¼"
-        Write-Host "  1. ח¢÷ט× Docker Desktop ז­£ו¨י‹ט¡" -ForegroundColor Cyan
-        Write-Host "  2. ז‰‹ו‹•יƒ¨ח½²: docker run -d --name minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin -v ${dataDir}:/data minio/minio server /data --console-address :9001" -ForegroundColor Cyan
-        Write-Host "  3. ז¥ח‹ז—¥ט×: docker logs minio" -ForegroundColor Cyan
+        Write-Info "¥i¯א×÷¸ׁ¨M₪ט®׳¡G"
+        Write-Host "  1. ½T»{ Docker Desktop ¥¿¦b¹B¦ז" -ForegroundColor Cyan
+        Write-Host "  2. ₪ג°Ê³¡¸p: docker run -d --name minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin -v ${dataDir}:/data minio/minio server /data --console-address :9001" -ForegroundColor Cyan
+        Write-Host "  3. ¬d¬Ý₪י»x: docker logs minio" -ForegroundColor Cyan
         Write-Host ""
     }
 }
 
-# ז×¢ז¥ה¸¦ו»÷ח«‹ח’°ו¢ƒי…ח½®ז×”ז¡ˆ
+# ְֻ¬d¨ֳ«״¥ßְפ¹ׂ°t¸mְֹ®׳
 function Setup-EnvironmentFiles {
-    Write-Info "ז×¢ז¥ח’°ו¢ƒי…ח½®ז×”ז¡ˆ..."
+    Write-Info "ְֻ¬dְפ¹ׂ°t¸mְֹ®׳..."
 
-    # ו¾ח«¯ח’°ו¢ƒז×”ז¡ˆ
+    # «ב÷Ýְפ¹ְֹׂ®׳
     $backendEnv = "$PSScriptRoot\..\backend\.env"
     if (-not (Test-Path $backendEnv)) {
-        Write-Info "ו»÷ח«‹ו¾ח«¯ח’°ו¢ƒי…ח½®ז×”ז¡ˆ..."
+        Write-Info "«״¥ß«ב÷Ýְפ¹ׂ°t¸mְֹ®׳..."
         Copy-Item "$PSScriptRoot\..\backend\env.example" $backendEnv
 
-        # ז›´ז–°ט³‡ז–™ו÷«י€£ח·ט³‡ט¨
+        # §ף·s¸ך®ֶ®w³s½u¸ך°T
         (Get-Content $backendEnv) `
             -replace 'DB_HOST=localhost', 'DB_HOST=host.docker.internal' `
             -replace 'DB_NAME=your_database_name', 'DB_NAME=linebot' `
@@ -496,48 +496,48 @@ function Setup-EnvironmentFiles {
             -replace 'MINIO_ENDPOINT=localhost:9000', 'MINIO_ENDPOINT=host.docker.internal:9000' |
             Set-Content $backendEnv
 
-        Write-Success "ו·²ו»÷ח«‹ backend\.env"
-        Write-Warning "ט«‹ח·¨ט¼¯ backend\.env ט¨­ו® LINE API י‡‘י‘°ו’ו…¶ה»–ו¿…ט¦וƒז•¸"
+        Write-Success "₪w«״¥ß backend\.env"
+        Write-Warning "½׀½s¿ט backend\.env ³]©w LINE API ×קֶ_©M¨ה¥L¥²­n°ׁ¼ֶ"
     }
     else {
-        Write-Success "ו¾ח«¯ח’°ו¢ƒי…ח½®ז×”ז¡ˆו·²ו­˜ו¨"
+        Write-Success "«ב÷Ýְפ¹ׂ°t¸mְֹ®׳₪w¦s¦b"
     }
 
-    # ו‰ח«¯ח’°ו¢ƒז×”ז¡ˆ
+    # «e÷Ýְפ¹ְֹׂ®׳
     $frontendEnv = "$PSScriptRoot\..\frontend\.env"
     if (-not (Test-Path $frontendEnv)) {
-        Write-Info "ו»÷ח«‹ו‰ח«¯ח’°ו¢ƒי…ח½®ז×”ז¡ˆ..."
+        Write-Info "«״¥ß«e÷Ýְפ¹ׂ°t¸mְֹ®׳..."
         Copy-Item "$PSScriptRoot\..\frontend\env.example" $frontendEnv
-        Write-Success "ו·²ו»÷ח«‹ frontend\.env"
+        Write-Success "₪w«״¥ß frontend\.env"
     }
     else {
-        Write-Success "ו‰ח«¯ח’°ו¢ƒי…ח½®ז×”ז¡ˆו·²ו­˜ו¨"
+        Write-Success "«e÷Ýְפ¹ׂ°t¸mְֹ®׳₪w¦s¦b"
     }
 }
 
-# ו®‰ט£ו‰ח«¯ה¾ט³´
+# ¦w¸ֻ«e÷Ý¨ּ¿א
 function Install-FrontendDependencies {
-    Write-Info "ז×¢ז¥ו‰ח«¯ה¾ט³´..."
+    Write-Info "ְֻ¬d«e÷Ý¨ּ¿א..."
 
     Push-Location "$PSScriptRoot\..\frontend"
 
     try {
-        # ז×¢ז¥ pnpm ז˜¯ו¦ו®‰ט£
+        # ְֻ¬d pnpm ¬O§_¦w¸ֻ
         $pnpmExists = Get-Command pnpm -ErrorAction SilentlyContinue
 
         if (-not $pnpmExists) {
-            Write-Warning "pnpm ז×ו®‰ט£ן¼ה½¿ח”¨ npm ו®‰ט£ה¾ט³´..."
+            Write-Warning "pnpm ¥¼¦w¸ֻ¡A¨ֿ¥־ npm ¦w¸ֻ¨ּ¿א..."
             npm install
         }
         else {
-            Write-Info "ה½¿ח”¨ pnpm ו®‰ט£ו‰ח«¯ה¾ט³´..."
+            Write-Info "¨ֿ¥־ pnpm ¦w¸ֻ«e÷Ý¨ּ¿א..."
             pnpm install
         }
 
-        Write-Success "ו‰ח«¯ה¾ט³´ו®‰ט£ו®זˆ"
+        Write-Success "«e÷Ý¨ּ¿א¦w¸ֻ§¹¦¨"
     }
     catch {
-        Write-Error "ו‰ח«¯ה¾ט³´ו®‰ט£ו₪±ז•—: $_"
+        Write-Error "«e÷Ý¨ּ¿א¦w¸ֻ¥¢±ׁ: $_"
         throw
     }
     finally {
@@ -545,29 +545,29 @@ function Install-FrontendDependencies {
     }
 }
 
-# ו®‰ט£ו¾ח«¯ה¾ט³´
+# ¦w¸ֻ«ב÷Ý¨ּ¿א
 function Install-BackendDependencies {
-    Write-Info "ז×¢ז¥ו¾ח«¯ה¾ט³´..."
+    Write-Info "ְֻ¬d«ב÷Ý¨ּ¿א..."
 
     Push-Location "$PSScriptRoot\..\backend"
 
     try {
-        # ז×¢ז¥ט™›ז“¬ח’°ו¢ƒ
+        # ְֻ¬dµךְְְפ¹ׂ
         if (-not (Test-Path "venv")) {
-            Write-Info "ו»÷ח«‹ Python ט™›ז“¬ח’°ו¢ƒ..."
+            Write-Info "«״¥ß Python µךְְְפ¹ׂ..."
             python -m venv venv
         }
 
-        # ו•ו‹•ט™›ז“¬ח’°ו¢ƒה¸¦ו®‰ט£ה¾ט³´
-        Write-Info "ו®‰ט£ו¾ח«¯ה¾ט³´..."
+        # ±ׂ°Êµךְְְפ¹ׂ¨ֳ¦w¸ֻ¨ּ¿א
+        Write-Info "¦w¸ֻ«ב÷Ý¨ּ¿א..."
         & ".\venv\Scripts\Activate.ps1"
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-        Write-Success "ו¾ח«¯ה¾ט³´ו®‰ט£ו®זˆ"
+        Write-Success "«ב÷Ý¨ּ¿א¦w¸ֻ§¹¦¨"
     }
     catch {
-        Write-Error "ו¾ח«¯ה¾ט³´ו®‰ט£ו₪±ז•—: $_"
+        Write-Error "«ב÷Ý¨ּ¿א¦w¸ֻ¥¢±ׁ: $_"
         throw
     }
     finally {
@@ -575,37 +575,37 @@ function Install-BackendDependencies {
     }
 }
 
-# ו·ט¡ט³‡ז–™ו÷«י·ח§»
+# °ץ¦ז¸ך®ֶ®w¾E²¾
 function Run-DatabaseMigration {
-    Write-Info "ו·ט¡ט³‡ז–™ו÷«י·ח§»..."
+    Write-Info "°ץ¦ז¸ך®ֶ®w¾E²¾..."
 
     Push-Location "$PSScriptRoot\..\backend"
 
     try {
         & ".\venv\Scripts\Activate.ps1"
 
-        # ז×¢ז¥ alembic ז˜¯ו¦ו·²וˆו§‹ו–
+        # ְֻ¬d alembic ¬O§_₪w×ל©l₪ֶ
         if (Test-Path "alembic.ini") {
-            Write-Info "ו·ט¡ Alembic י·ח§»..."
+            Write-Info "°ץ¦ז Alembic ¾E²¾..."
             alembic upgrade head
-            Write-Success "ט³‡ז–™ו÷«י·ח§»ו®זˆ"
+            Write-Success "¸ך®ֶ®w¾E²¾§¹¦¨"
         }
         else {
-            Write-Warning "ז×ז‰¾וˆ° alembic.iniן¼ט·³יט³‡ז–™ו÷«י·ח§»"
+            Write-Warning "¥¼§ה¨ל alembic.ini¡A¸ץ¹L¸ך®ֶ®w¾E²¾"
         }
     }
     catch {
-        Write-Warning "ט³‡ז–™ו÷«י·ח§»ו₪±ז•—: $_"
-        Write-Warning "ט«‹ח¨ו¾ז‰‹ו‹•ו·ט¡י·ח§»"
+        Write-Warning "¸ך®ֶ®w¾E²¾¥¢±ׁ: $_"
+        Write-Warning "½׀µy«ב₪ג°Ê°ץ¦ז¾E²¾"
     }
     finally {
         Pop-Location
     }
 }
 
-# ו»÷ח«‹ו¿…ט¦ח›®י„
+# «״¥ß¥²­n¥״¿‎
 function Create-RequiredDirectories {
-    Write-Info "ו»÷ח«‹ו¿…ט¦ח›®י„..."
+    Write-Info "«״¥ß¥²­n¥״¿‎..."
 
     $directories = @(
         "$PSScriptRoot\..\logs",
@@ -622,23 +622,23 @@ function Create-RequiredDirectories {
         }
     }
 
-    Write-Success "ח›®י„ו»÷ח«‹ו®זˆ"
+    Write-Success "¥״¿‎«״¥ß§¹¦¨"
 }
 
-# ו•ו‹•ז‡‰ח”¨ו®¹ו™¨
+# ±ׂ°Êְ³¥־®e¾¹
 function Start-ApplicationContainers {
-    Write-Info "ו•ו‹•ז‡‰ח”¨ו®¹ו™¨..."
+    Write-Info "±ׂ°Êְ³¥־®e¾¹..."
 
     Push-Location "$PSScriptRoot\.."
 
     try {
-        # ה½¿ח”¨ docker-compose ו•ו‹•
+        # ¨ֿ¥־ docker-compose ±ׂ°Ê
         docker-compose up -d --build
 
-        Write-Success "ז‡‰ח”¨ו®¹ו™¨ו•ו‹•ו®זˆ"
+        Write-Success "ְ³¥־®e¾¹±ׂ°Ê§¹¦¨"
     }
     catch {
-        Write-Error "ז‡‰ח”¨ו®¹ו™¨ו•ו‹•ו₪±ז•—: $_"
+        Write-Error "ְ³¥־®e¾¹±ׂ°Ê¥¢±ׁ: $_"
         throw
     }
     finally {
@@ -646,9 +646,9 @@ function Start-ApplicationContainers {
     }
 }
 
-# ו¥ו÷·ז×¢ז¥
+# °·±dְֻ¬d
 function Test-ServicesHealth {
-    Write-Info "ו·ט¡זו‹™ו¥ו÷·ז×¢ז¥..."
+    Write-Info "°ץ¦ז×A°ָ°·±dְֻ¬d..."
     Write-Host ""
 
     $services = @(
@@ -666,10 +666,10 @@ function Test-ServicesHealth {
         $isRunning = Test-ContainerRunning $service.Container
 
         if ($isRunning) {
-            Write-Success "$($service.Name) י‹ט¡ז­£ו¸¸ (Port: $($service.Port))"
+            Write-Success "$($service.Name) ¹B¦ז¥¿±` (Port: $($service.Port))"
         }
         else {
-            Write-Warning "$($service.Name) ז×י‹ט¡"
+            Write-Warning "$($service.Name) ¥¼¹B¦ז"
             $allHealthy = $false
         }
     }
@@ -678,174 +678,174 @@ function Test-ServicesHealth {
     return $allHealthy
 }
 
-# י¡¯ח₪÷ט¨×ו•ט³‡ט¨
+# ֵד¥Ü³X°Ý¸ך°T
 function Show-AccessInfo {
     param([string]$DataBasePath)
 
     Write-Host ""
-    Write-ColorOutput "ג•”ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•—" "Green"
-    Write-ColorOutput "ג•‘          יƒ¨ח½²ו®זˆן¼זו‹™ט¨×ו•ט³‡ט¨            ג•‘" "Green"
-    Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Green"
+    Write-ColorOutput "שÝשששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששß" "Green"
+    Write-ColorOutput "שר          ³¡¸p§¹¦¨¡I×A°ָ³X°Ý¸ך°T            שר" "Green"
+    Write-ColorOutput "שדשששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששו" "Green"
     Write-Host ""
 
-    Write-ColorOutput "נ ז‡‰ח”¨זו‹™ן¼" "Cyan"
-    Write-Host "   ו‰ח«¯ז‡‰ח”¨:     http://localhost:3000"
-    Write-Host "   ו¾ח«¯ API:     http://localhost:8001"
-    Write-Host "   API ז–‡ז×”:     http://localhost:8001/docs"
+    Write-ColorOutput "?? ְ³¥־×A°ָ¡G" "Cyan"
+    Write-Host "   «e÷Ýְ³¥־:     http://localhost:3000"
+    Write-Host "   «ב÷Ý API:     http://localhost:8001"
+    Write-Host "   API ₪וְֹ:     http://localhost:8001/docs"
     Write-Host ""
 
-    Write-ColorOutput "נ—„ן¸  ט³‡ז–™ו÷«זו‹™ן¼" "Cyan"
+    Write-ColorOutput "???  ¸ך®ֶ®w×A°ָ¡G" "Cyan"
     Write-Host "   PostgreSQL:   localhost:5432"
     Write-Host "   Redis:        localhost:6379"
     Write-Host "   MongoDB:      localhost:27017"
     Write-Host ""
 
-    Write-ColorOutput "נ“¦ ו„²ו­˜זו‹™ן¼" "Cyan"
+    Write-ColorOutput "?? ְx¦s×A°ָ¡G" "Cyan"
     Write-Host "   MinIO:        http://localhost:9000"
-    Write-Host "   MinIO ז§וˆ¶ו°: http://localhost:9001"
-    Write-Host "   (ו¸³ט™/ו¯†ח¢¼: minioadmin/minioadmin)"
+    Write-Host "   MinIO ±±¨מ¥x: http://localhost:9001"
+    Write-Host "   (±b¸¹/±K½X: minioadmin/minioadmin)"
     Write-Host ""
 
     if ($DataBasePath) {
-        Write-ColorOutput "נ’¾ ט³‡ז–™ו„²ו­˜ה½ח½®ן¼" "Cyan"
+        Write-ColorOutput "?? ¸ך®ְֶx¦s¦ל¸m¡G" "Cyan"
         Write-Host "   $DataBasePath"
         Write-Host ""
     }
 
-    Write-ColorOutput "נ“ ה¸‹ה¸€ז­¥ן¼" "Yellow"
-    Write-Host "   1. ח·¨ט¼¯ backend\.env ט¨­ו® LINE API י‡‘י‘°"
-    Write-Host "   2. י‡ו•ו¾ח«¯ו®¹ו™¨: docker restart linebot-web-backend"
-    Write-Host "   3. ז¥ח‹ז—¥ט×: docker-compose logs -f"
+    Write-ColorOutput "?? ₪U₪@¨B¡G" "Yellow"
+    Write-Host "   1. ½s¿ט backend\.env ³]©w LINE API ×קֶ_"
+    Write-Host "   2. ­«±ׂ«ב÷Ý®e¾¹: docker restart linebot-web-backend"
+    Write-Host "   3. ¬d¬Ý₪י»x: docker-compose logs -f"
     Write-Host ""
 }
 
-# ה¸»ח¨‹ו¼
+# ¥Dµ{¦¡
 function Main {
     try {
         Show-Banner
 
-        Write-Info "ז­£ו¨ז×¢ז¥ח³»חµ±ח’°ו¢ƒ..."
+        Write-Info "¥¿¦bְֻ¬d¨t²־ְפ¹ׂ..."
 
-        # ז×¢ז¥ Docker
+        # ְֻ¬d Docker
         if (-not (Test-DockerRunning)) {
             Write-Host ""
-            Write-Error "ט«‹ו…ˆו•ו‹• Docker Desktop ו¾ו†ו·ט¡ז­₪ט…³ז¬"
-            Read-Host "ז‰ Enter יµי€€ו‡÷"
+            Write-Error "½׀¥‎±ׂ°Ê Docker Desktop «ב¦A°ץ¦ז¦¹¸}¥»"
+            Read-Host "«צ Enter ֱה°h¥X"
             exit 1
         }
 
-        # י¸ז“‡ט³‡ז–™ו„²ו­˜ט·¯ו¾‘
+        # ¿ן¾Ü¸ך®ְֶx¦s¸פ®|
         $dataBasePath = Get-DataStoragePath
         Write-Host ""
 
-        # י–‹ו§‹יƒ¨ח½²
-        Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Magenta"
-        Write-ColorOutput "  י–‹ו§‹יƒ¨ח½² LineBot-Web ו°ˆז¡ˆ" "Magenta"
-        Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Magenta"
+        # ¶}©l³¡¸p
+        Write-ColorOutput "שששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששש" "Magenta"
+        Write-ColorOutput "  ¶}©l³¡¸p LineBot-Web ±M®׳" "Magenta"
+        Write-ColorOutput "שששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששש" "Magenta"
         Write-Host ""
 
-        # 1. יƒ¨ח½²ו÷ח₪זו‹™
-        Write-ColorOutput "ג–¶ ז­¥י© 1/7: יƒ¨ח½²ו÷ח₪זו‹™ (PostgreSQL, Redis, MongoDB, MinIO)" "Yellow"
+        # 1. ³¡¸p°עֲ¦×A°ָ
+        Write-ColorOutput "? ¨BֶJ 1/7: ³¡¸p°עֲ¦×A°ָ (PostgreSQL, Redis, MongoDB, MinIO)" "Yellow"
         Deploy-PostgreSQL -DataBasePath $dataBasePath
         Deploy-Redis -DataBasePath $dataBasePath
         Deploy-MongoDB -DataBasePath $dataBasePath
         Deploy-MinIO -DataBasePath $dataBasePath
         Write-Host ""
 
-        # 2. ו»÷ח«‹ח’°ו¢ƒי…ח½®
-        Write-ColorOutput "ג–¶ ז­¥י© 2/7: ו»÷ח«‹ח’°ו¢ƒי…ח½®ז×”ז¡ˆ" "Yellow"
+        # 2. «״¥ßְפ¹ׂ°t¸m
+        Write-ColorOutput "? ¨BֶJ 2/7: «״¥ßְפ¹ׂ°t¸mְֹ®׳" "Yellow"
         Setup-EnvironmentFiles
         Write-Host ""
 
-        # 3. ו»÷ח«‹ו¿…ט¦ח›®י„
-        Write-ColorOutput "ג–¶ ז­¥י© 3/7: ו»÷ח«‹ו¿…ט¦ח›®י„" "Yellow"
+        # 3. «״¥ß¥²­n¥״¿‎
+        Write-ColorOutput "? ¨BֶJ 3/7: «״¥ß¥²­n¥״¿‎" "Yellow"
         Create-RequiredDirectories
         Write-Host ""
 
-        # 4. ו®‰ט£ו‰ח«¯ה¾ט³´
-        Write-ColorOutput "ג–¶ ז­¥י© 4/7: ו®‰ט£ו‰ח«¯ה¾ט³´" "Yellow"
+        # 4. ¦w¸ֻ«e÷Ý¨ּ¿א
+        Write-ColorOutput "? ¨BֶJ 4/7: ¦w¸ֻ«e÷Ý¨ּ¿א" "Yellow"
         Install-FrontendDependencies
         Write-Host ""
 
-        # 5. ו®‰ט£ו¾ח«¯ה¾ט³´
-        Write-ColorOutput "ג–¶ ז­¥י© 5/7: ו®‰ט£ו¾ח«¯ה¾ט³´" "Yellow"
+        # 5. ¦w¸ֻ«ב÷Ý¨ּ¿א
+        Write-ColorOutput "? ¨BֶJ 5/7: ¦w¸ֻ«ב÷Ý¨ּ¿א" "Yellow"
         Install-BackendDependencies
         Write-Host ""
 
-        # 6. ו·ט¡ט³‡ז–™ו÷«י·ח§»
-        Write-ColorOutput "ג–¶ ז­¥י© 6/7: ו·ט¡ט³‡ז–™ו÷«י·ח§»" "Yellow"
+        # 6. °ץ¦ז¸ך®ֶ®w¾E²¾
+        Write-ColorOutput "? ¨BֶJ 6/7: °ץ¦ז¸ך®ֶ®w¾E²¾" "Yellow"
         Run-DatabaseMigration
         Write-Host ""
 
-        # 7. ו•ו‹•ז‡‰ח”¨ו®¹ו™¨
-        Write-ColorOutput "ג–¶ ז­¥י© 7/7: ו•ו‹•ז‡‰ח”¨ו®¹ו™¨" "Yellow"
+        # 7. ±ׂ°Êְ³¥־®e¾¹
+        Write-ColorOutput "? ¨BֶJ 7/7: ±ׂ°Êְ³¥־®e¾¹" "Yellow"
         Start-ApplicationContainers
         Write-Host ""
 
-        # ח­‰ו¾…זו‹™ו•ו‹•
-        Write-Info "ח­‰ו¾…זו‹™ו®ו…¨ו•ו‹•..."
+        # µ¥«Ý×A°ָ±ׂ°Ê
+        Write-Info "µ¥«Ý×A°ָ§¹¥‏±ׂ°Ê..."
         Start-Sleep -Seconds 10
 
-        # ו¥ו÷·ז×¢ז¥
-        Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Cyan"
-        Write-ColorOutput "  זו‹™ו¥ו÷·ז×¢ז¥" "Cyan"
-        Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Cyan"
+        # °·±dְֻ¬d
+        Write-ColorOutput "שששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששש" "Cyan"
+        Write-ColorOutput "  ×A°ָ°·±dְֻ¬d" "Cyan"
+        Write-ColorOutput "שששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששש" "Cyan"
         Write-Host ""
         $healthy = Test-ServicesHealth
 
-        # י¡¯ח₪÷ט¨×ו•ט³‡ט¨
+        # ֵד¥Ü³X°Ý¸ך°T
         Show-AccessInfo -DataBasePath $dataBasePath
 
         if (-not $healthy) {
-            Write-Warning "יƒ¨וˆ†זו‹™ז×ז­£ו¸¸י‹ט¡ן¼ט«‹ז×¢ז¥ז—¥ט×: docker-compose logs -f"
+            Write-Warning "³¡₪ְ×A°ָ¥¼¥¿±`¹B¦ז¡A½׀ְֻ¬d₪י»x: docker-compose logs -f"
         }
 
-        # ז¸…ח† Docker ז§‹ו»÷ח·©ו­˜
+        # ²M²z Docker ÷c«״½w¦s
         Write-Host ""
-        Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Yellow"
-        Write-Info "ז¸…ח† Docker ז§‹ו»÷ח·©ו­˜..."
+        Write-ColorOutput "שששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששש" "Yellow"
+        Write-Info "²M²z Docker ÷c«״½w¦s..."
 
         try {
-            # ז¸…ח†ז×ה½¿ח”¨ח„ז§‹ו»÷ח·©ו­˜
+            # ²M²z¥¼¨ֿ¥־×÷÷c«״½w¦s
             $pruneResult = docker builder prune -f 2>&1
 
             if ($LASTEXITCODE -eq 0) {
-                Write-Success "Docker ז§‹ו»÷ח·©ו­˜ו·²ז¸…ח†"
+                Write-Success "Docker ÷c«״½w¦s₪w²M²z"
 
-                # י¡¯ח₪÷ז¸…ח†חµז
+                # ֵד¥Ü²M²zµ²×G
                 if ($pruneResult -match "Total:\s+(.+)") {
-                    Write-Info "י‡‹ז”¾ח©÷י–“: $($matches[1])"
+                    Write-Info "ְִ©ס×ֵ¶¡: $($matches[1])"
                 }
             }
             else {
-                Write-Info "ט·³יח·©ו­˜ז¸…ח†"
+                Write-Info "¸ץ¹L½w¦s²M²z"
             }
         }
         catch {
-            Write-Info "ח„¡ז³•ז¸…ח†ז§‹ו»÷ח·©ו­˜ן¼ו·²ט·³י"
+            Write-Info "µL×k²M²z÷c«״½w¦s¡A₪w¸ץ¹L"
         }
 
         Write-Host ""
-        Write-Success "נ‰ יƒ¨ח½²ו®זˆן¼"
+        Write-Success "?? ³¡¸p§¹¦¨¡I"
         Write-Host ""
-        Write-Host "ז‰ Enter יµי€€ו‡÷..."
+        Write-Host "«צ Enter ֱה°h¥X..."
         Read-Host
 
     }
     catch {
         Write-Host ""
-        Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Red"
-        Write-Error "יƒ¨ח½²ו₪±ז•—: $($_.Exception.Message)"
-        Write-ColorOutput "ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•ג•" "Red"
+        Write-ColorOutput "שששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששש" "Red"
+        Write-Error "³¡¸p¥¢±ׁ: $($_.Exception.Message)"
+        Write-ColorOutput "שששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששששש" "Red"
         Write-Host ""
-        Write-Host "ט«‹ז×¢ז¥י¯ט×₪ט¨ז¯ה¸¦י‡ט©¦"
+        Write-Host "½׀ְֻ¬d¿ש»~°T®§¨ֳ­«¸ױ"
         Write-Host ""
-        Write-Host "ז‰ Enter יµי€€ו‡÷..."
+        Write-Host "«צ Enter ֱה°h¥X..."
         Read-Host
         exit 1
     }
 }
 
-# ו·ט¡ה¸»ח¨‹ו¼
+# °ץ¦ז¥Dµ{¦¡
 Main
 
