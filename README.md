@@ -1,6 +1,6 @@
 # LineBot-Web 管理平台
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: All Rights Reserved](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)](#-授權)
 ![Status](https://img.shields.io/badge/Status-Active-green)
 
 LineBot-Web 是一個現代化的 LINE Bot 管理平台，採用前後端分離架構，提供完整的 Web 介面來建立、管理與分析 LINE Bot。
@@ -13,6 +13,7 @@ LineBot-Web 是一個現代化的 LINE Bot 管理平台，採用前後端分離�
 - [外部服務設定](#-外部服務設定)
 - [Docker 部署](#-docker-部署)
 - [開發指南](#️-開發指南)
+- [授權](#-授權)
 
 ## ✨ 專案特色功能
 
@@ -525,4 +526,8 @@ pytest
 
 ## 📄 授權
 
-本專案採用 MIT 授權條款。
+本專案採用 All Rights Reserved 的閉源授權條款。未經著作權人事先書面授權，不得使用、複製、修改、發布、散布、再授權或銷售本系統與相關文件。
+
+聯絡授權方式：
+email:jkl921102@gmail.com
+name:JerryLin
