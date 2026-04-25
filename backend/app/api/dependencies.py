@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 import logging
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from sqlalchemy import select
 from app.models.user import User
 from app.core.security import verify_token

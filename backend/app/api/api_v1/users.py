@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.dependencies import get_current_user_async
 from app.models.user import User
 from app.schemas.user import UserProfile, UserUpdate, AvatarUpload
 from app.schemas.auth import PasswordChange
-from app.services.user_service import UserService
+from app.services.auth.user_service import UserService
 
 router = APIRouter()
 

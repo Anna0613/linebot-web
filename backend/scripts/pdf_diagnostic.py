@@ -12,8 +12,8 @@ from typing import List, Dict, Any
 # 添加專案路徑
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.services.enhanced_pdf_processor import get_enhanced_pdf_processor, PDFExtractionResult
-from app.services.file_text_extractor import extract_text_by_mime
+from app.services.storage.enhanced_pdf_processor import get_enhanced_pdf_processor, PDFExtractionResult
+from app.services.storage.file_text_extractor import extract_text_by_mime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

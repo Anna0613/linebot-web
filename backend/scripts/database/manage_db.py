@@ -16,7 +16,7 @@ backend_dir = os.path.dirname(scripts_dir)
 sys.path.append(backend_dir)
 
 from app.config import settings
-from app.database import init_database
+from app.db.database import init_database
 import subprocess
 
 class DatabaseManager:
@@ -255,7 +255,7 @@ class DatabaseManager:
         print("=" * 50)
         
         try:
-            from app.database import clean_unused_schemas, check_database_connection
+            from app.db.database import clean_unused_schemas, check_database_connection
             
             # 檢查資料庫連接
             check_database_connection()

@@ -8,9 +8,9 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.dependencies import get_db_primary
-from app.services.auth_service import AuthService
+from app.services.auth.auth_service import AuthService
 from app.schemas.auth import UserRegister, UserLogin, Token, EmailVerification, ForgotPassword, RefreshToken
 from app.core.security import get_cookie_settings, get_refresh_cookie_settings
 from app.models.user import User

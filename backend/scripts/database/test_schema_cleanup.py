@@ -12,8 +12,8 @@ scripts_dir = current_dir.parent
 backend_dir = scripts_dir.parent
 sys.path.append(str(backend_dir))
 
-from app.database import clean_unused_schemas, check_database_connection
-from app.schema_config import SchemaConfig
+from app.db.database import clean_unused_schemas, check_database_connection
+from app.db.schema_config import SchemaConfig
 from sqlalchemy import create_engine, text
 from app.config import settings
 import logging
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def list_all_schemas():
     """列出所有 schemas"""
     try:
-        from app.database import engine
+        from app.db.database import engine
         with engine.connect() as connection:
             result = connection.execute(text("""
                 SELECT schema_name, 

@@ -10,11 +10,11 @@ import json
 import logging
 import asyncio
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.dependencies import get_current_user_async, get_db_primary
 from app.models.user import User
 from app.models.bot import Bot
-from app.services.line_bot_service import LineBotService
+from app.services.line.line_bot_service import LineBotService
 from sqlalchemy import select, func
 
 logger = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ async def get_bot_analytics(
             start_date = end_date - timedelta(weeks=1)
 
         # 使用 MongoDB ConversationService 獲取分析數據
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation.conversation_service import ConversationService
 
         analytics_data = await ConversationService.get_bot_analytics(bot_id, start_date, end_date)
         analytics_data.update({
@@ -197,7 +197,7 @@ async def get_message_stats(
 
     try:
         # 使用 MongoDB ConversationService 獲取訊息統計
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation.conversation_service import ConversationService
 
         stats = await ConversationService.get_message_stats(bot_id, days, granularity)
 
@@ -224,7 +224,7 @@ async def get_user_activity(
     
     try:
         # 使用 MongoDB ConversationService 獲取用戶活躍度數據
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation.conversation_service import ConversationService
 
         activity = await ConversationService.get_user_activity(bot_id)
 
@@ -251,7 +251,7 @@ async def get_usage_stats(
     
     try:
         # 使用 MongoDB ConversationService 獲取功能使用統計
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation.conversation_service import ConversationService
 
         usage_stats = await ConversationService.get_usage_stats(bot_id)
 
@@ -280,7 +280,7 @@ async def get_bot_users(
 
     try:
         from app.models.line_user import LineBotUser
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation.conversation_service import ConversationService
 
         # 首先從 MongoDB 獲取有對話記錄的用戶
         conversations, total_conversations = await ConversationService.get_bot_conversations(
@@ -436,7 +436,7 @@ async def get_user_interactions(
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
 
     try:
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation.conversation_service import ConversationService
 
         # 使用 ConversationService 獲取聊天記錄
         chat_history, total_count = await ConversationService.get_chat_history(
@@ -487,8 +487,8 @@ async def broadcast_message(
         # 取得廣播對象清單（若未指定 user_ids，取該 Bot 的所有關注者）
         try:
             from app.models.line_user import LineBotUser
-            from app.services.conversation_service import ConversationService
-            from app.services.websocket_manager import websocket_manager
+            from app.services.conversation.conversation_service import ConversationService
+            from app.services.realtime.websocket_manager import websocket_manager
             targets: List[str]
             if user_ids:
                 targets = list(user_ids)
@@ -567,7 +567,7 @@ async def send_message_to_user(
     
     try:
         from app.models.line_user import AdminMessage
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation.conversation_service import ConversationService
         
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
         
@@ -593,7 +593,7 @@ async def send_message_to_user(
         
         # 同時記錄到 MongoDB 聊天記錄並推送到 WebSocket（增量更新）
         try:
-            from app.services.websocket_manager import websocket_manager
+            from app.services.realtime.websocket_manager import websocket_manager
             added = await ConversationService.add_admin_message(
                 bot_id=bot_id,
                 line_user_id=line_user_id,
@@ -678,7 +678,7 @@ async def selective_broadcast_message(
         result = await asyncio.to_thread(line_bot_service.broadcast_message, message, selected_user_ids)
         
         # 為每個選中的用戶記錄管理者發送的訊息（PostgreSQL + MongoDB）
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation.conversation_service import ConversationService
         for line_user_id in selected_user_ids:
             # PostgreSQL 紀錄（保留既有行為）
             admin_message = AdminMessage(
@@ -735,7 +735,7 @@ async def get_chat_history(
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
     try:
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation.conversation_service import ConversationService
         
         # 使用 ConversationService 獲取聊天記錄
         chat_history, total_count = await ConversationService.get_chat_history(
@@ -786,7 +786,7 @@ async def get_bot_activities(
 
     try:
         # 使用 MongoDB ConversationService 獲取活動記錄
-        from app.services.conversation_service import ConversationService
+        from app.services.conversation.conversation_service import ConversationService
 
         logger.info(f"獲取 Bot 活動記錄: bot_id={bot_id}, limit={limit}, offset={offset}")
 

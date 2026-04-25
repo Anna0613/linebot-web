@@ -28,7 +28,7 @@ except ImportError as e:
 
 try:
     from app.database_enhanced import DatabaseInitializer, init_database_enhanced
-    from app.database import check_database_connection
+    from app.db.database import check_database_connection
 except ImportError as e:
     print(f"❌ 導入模組失敗: {e}")
     print("請確保在正確的專案目錄中執行此腳本")
@@ -44,12 +44,8 @@ logger = logging.getLogger(__name__)
 def load_settings():
     """載入設定"""
     try:
-        import importlib.util
-        config_path = os.path.join(project_root, 'app', 'config.py')
-        spec = importlib.util.spec_from_file_location("config", config_path)
-        config_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(config_module)
-        return config_module.settings
+        from app.config import settings
+        return settings
     except Exception as e:
         logger.error(f"載入設定失敗: {e}")
         return None
@@ -207,7 +203,7 @@ def cmd_clean(args):
         return False
     
     try:
-        from app.database import clean_unused_schemas
+        from app.db.database import clean_unused_schemas
         clean_unused_schemas()
         logger.info("✅ 資料庫清理完成")
         return True

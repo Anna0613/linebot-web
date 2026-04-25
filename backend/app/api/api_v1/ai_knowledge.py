@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.sql import text as sql_text
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.dependencies import get_current_user_async
 from app.models.user import User
 from app.models.bot import Bot
@@ -22,8 +22,8 @@ from app.schemas.ai_knowledge import (
     KnowledgeSearchResponse, KnowledgeSearchResponseItem,
     KnowledgeDocumentResponse, KnowledgeDocumentListResponse, BatchDeleteDocumentsRequest,
 )
-from app.services.text_chunker import recursive_split
-from app.services.embedding_service import embed_texts
+from app.services.storage.text_chunker import recursive_split
+from app.services.embedding.embedding_service import embed_texts
 
 # 導入 pgvector 支援
 try:
@@ -108,7 +108,7 @@ async def set_ai_settings(
         # validate if groq
         try:
             if (payload.provider or bot.ai_model_provider) == 'groq':
-                from app.services.groq_service import GroqService
+                from app.services.ai.groq_service import GroqService
                 if not GroqService.validate_model(payload.model):
                     raise HTTPException(status_code=400, detail='不支援的 Groq 模型')
         except ImportError:
@@ -215,7 +215,7 @@ async def search_knowledge(
 ):
     await _ensure_bot_owned(db, bot_id, current_user.id)
     # vector search using raw SQL to compute cosine similarity
-    from app.services.rag_service import RAGService
+    from app.services.rag.rag_service import RAGService
     items = await RAGService.retrieve(db, bot_id, q)
     return KnowledgeSearchResponse(
         items=[

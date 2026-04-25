@@ -18,8 +18,8 @@ async def update_media_info():
         print("🔍 開始更新媒體信息...")
         
         # 初始化數據庫
-        from app.database_mongo import mongodb_manager
-        from app.services.conversation_service import ConversationService
+        from app.db.database_mongo import mongodb_manager
+        from app.services.conversation.conversation_service import ConversationService
         
         # 連接 MongoDB
         await mongodb_manager.connect()

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 import logging
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.dependencies import get_current_user_async
 from app.models.user import User
 from app.schemas.bot import (
@@ -15,8 +15,8 @@ from app.schemas.bot import (
     BotSummary,
     LogicTemplateCreate, LogicTemplateUpdate, LogicTemplateResponse, LogicTemplateSummary
 )
-from app.services.bot_service import BotService
-from app.services.minio_service import get_minio_service, get_minio_last_error
+from app.services.bot.bot_service import BotService
+from app.services.storage.minio_service import get_minio_service, get_minio_last_error
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

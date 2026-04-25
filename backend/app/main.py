@@ -13,8 +13,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
-# 直接導入 config.py 模組中的設定
-import importlib.util
 import os
 
 # 避免 transformers 嘗試導入 TensorFlow/Flax，防止與本機 NumPy/TensorFlow 不相容造成啟動失敗
@@ -24,24 +22,19 @@ os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
 os.environ.setdefault("TRANSFORMERS_NO_FLAX", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
-# 直接載入 config.py 檔案
-config_path = os.path.join(os.path.dirname(__file__), 'config.py')
-spec = importlib.util.spec_from_file_location("config", config_path)
-config_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(config_module)
-settings = config_module.settings
+from app.config import settings
 
-from app.database import init_database
+from app.db.database import init_database
 from app.database_enhanced import init_database_enhanced
-from app.database_mongo import init_mongodb, close_mongodb
-from app.db_read_write_split import db_manager
-from app.db_context import reset_session_context, SessionContext
+from app.db.database_mongo import init_mongodb, close_mongodb
+from app.db.db_read_write_split import db_manager
+from app.db.db_context import reset_session_context, SessionContext
 from app.api.api_v1.api import api_router
 from app.config.redis_config import init_redis, close_redis
-from app.services.background_tasks import get_task_manager, PerformanceOptimizer
-from app.services.cache_service import get_cache
-from app.services.minio_service import init_minio_service
-from app.services.websocket_manager import websocket_manager
+from app.services.runtime.background_tasks import get_task_manager, PerformanceOptimizer
+from app.services.runtime.cache_service import get_cache
+from app.services.storage.minio_service import init_minio_service
+from app.services.realtime.websocket_manager import websocket_manager
 from app.middleware import TokenRefreshMiddleware
 
 # 配置日誌（使用增強的日誌配置）
@@ -115,7 +108,7 @@ async def lifespan(app: FastAPI):
             logger.warning(f"WebSocket Redis 訂閱啟動失敗: {e}")
         
         # 添加定期效能報告任務
-        from app.services.background_tasks import generate_performance_report, TaskPriority
+        from app.services.runtime.background_tasks import generate_performance_report, TaskPriority
         await task_manager.add_task(
             "performance_report",
             "定期效能報告",
@@ -363,7 +356,7 @@ async def health_check():
 @app.get("/api/database-status")
 async def database_status():
     """資料庫狀態檢查（相容舊版）"""
-    from app.database import check_database_connection
+    from app.db.database import check_database_connection
     import asyncio
     try:
         await asyncio.to_thread(check_database_connection)
