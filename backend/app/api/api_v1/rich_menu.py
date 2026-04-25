@@ -10,7 +10,7 @@ import logging
 import uuid
 
 from app.dependencies import get_current_user_async  # use standard HTTP auth dependency
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.models.user import User
 from app.models.bot import Bot
 from app.models.line_user import RichMenu
@@ -358,7 +358,7 @@ async def _get_image_bytes_for_menu(m: RichMenu) -> Optional[bytes]:
     # Try MinIO first
     try:
         logger.debug(f"嘗試從 MinIO 讀取: {m.id}")
-        from app.services.minio_service import get_minio_service
+        from app.services.storage.minio_service import get_minio_service
         from urllib.parse import urlparse, parse_qs
         svc = get_minio_service()
         if svc:
@@ -721,7 +721,7 @@ async def upload_rich_menu_image(
         except Exception as _pil_err:
             logger.warning(f"PIL 驗證/校正失敗，將直接儲存原圖: {_pil_err}")
 
-        from app.services.minio_service import get_minio_service
+        from app.services.storage.minio_service import get_minio_service
         svc = get_minio_service()
         if not svc:
             raise RuntimeError("MinIO 服務不可用")

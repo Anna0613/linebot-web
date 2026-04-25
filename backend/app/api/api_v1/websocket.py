@@ -8,10 +8,10 @@ from typing import Optional
 import json
 import logging
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.models.bot import Bot
 from app.models.user import User
-from app.services.websocket_manager import websocket_manager
+from app.services.realtime.websocket_manager import websocket_manager
 from sqlalchemy import select
 from app.core.security import verify_token
 

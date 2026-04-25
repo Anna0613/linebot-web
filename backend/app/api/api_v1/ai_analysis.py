@@ -11,12 +11,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.dependencies import get_current_user_async
 from app.models.bot import Bot
 from app.models.user import User
 from app.schemas.ai import AIQueryRequest, AIQueryResponse, AIModelsResponse, AIModelInfo
-from app.services.ai_analysis_service import AIAnalysisService
+from app.services.ai.ai_analysis_service import AIAnalysisService
 from app.config import settings
 
 logger = logging.getLogger(__name__)

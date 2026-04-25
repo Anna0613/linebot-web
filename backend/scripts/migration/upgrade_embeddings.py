@@ -15,9 +15,9 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from sqlalchemy import select, update, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database_async import get_async_session
+from app.db.database_async import get_async_session
 from app.models.knowledge import KnowledgeChunk
-from app.services.embedding_manager import EmbeddingManager
+from app.services.embedding.embedding_manager import EmbeddingManager
 
 # 設定日誌
 logging.basicConfig(

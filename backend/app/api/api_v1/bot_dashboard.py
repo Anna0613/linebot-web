@@ -9,12 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Optional, Any
 from datetime import datetime, timedelta
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.dependencies import get_current_user_async
 from app.models.user import User
 from app.models.bot import Bot, LogicTemplate
 from app.models.line_user import LineBotUser
-from app.services.line_bot_service import LineBotService
+from app.services.line.line_bot_service import LineBotService
 from app.config.redis_config import (
     CacheKeys,
     cache_result,
@@ -22,7 +22,7 @@ from app.config.redis_config import (
     WEBHOOK_STATUS_TTL,
     BOT_DASHBOARD_TTL
 )
-from app.services.cache_service import cache_async
+from app.services.runtime.cache_service import cache_async
 
 logger = logging.getLogger(__name__)
 
@@ -425,7 +425,7 @@ async def get_bot_dashboard_light(
     # 去除未使用的同步子查詢，避免不必要的阻塞
     
     # 使用 MongoDB 獲取今日訊息數量
-    from app.services.conversation_service import ConversationService
+    from app.services.conversation.conversation_service import ConversationService
     today_interactions = await ConversationService.get_today_message_count(bot_id)
     
     return {

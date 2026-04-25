@@ -12,45 +12,45 @@ import { AnimatedOrbs } from "@/components/background";
 
 // 使用 React.lazy 進行代碼分割和懶載入，按優先級分組
 // 高優先級 - 首頁和登入相關（用戶最可能訪問）
-const HomePage = lazy(() => import("./pages/HomePage"));
-const LoginPage = lazy(() => import("./pages/LoginPage"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const HomePage = lazy(() => import("./features/home/pages/HomePage"));
+const LoginPage = lazy(() => import("./features/auth/pages/LoginPage"));
+const DashboardPage = lazy(() => import("./features/dashboard/pages/DashboardPage"));
 
 // 中優先級 - 認證流程
-const ForgetThePassword = lazy(() => import("./pages/ForgetThePassword"));
-const Register = lazy(() => import("./pages/Register"));
-const LINELogin = lazy(() => import("./pages/LINELogin"));
-const LoginSuccess = lazy(() => import("./pages/LoginSuccess"));
-const LoginError = lazy(() => import("./pages/LoginError"));
-const EmailVerification = lazy(() => import("./pages/EmailVerification"));
-const EmailVerificationPending = lazy(() => import("./pages/EmailVerificationPending"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const ForgetThePassword = lazy(() => import("./features/auth/pages/ForgetThePassword"));
+const Register = lazy(() => import("./features/auth/pages/Register"));
+const LINELogin = lazy(() => import("./features/auth/pages/LINELogin"));
+const LoginSuccess = lazy(() => import("./features/auth/pages/LoginSuccess"));
+const LoginError = lazy(() => import("./features/auth/pages/LoginError"));
+const EmailVerification = lazy(() => import("./features/auth/pages/EmailVerification"));
+const EmailVerificationPending = lazy(() => import("./features/auth/pages/EmailVerificationPending"));
+const ResetPassword = lazy(() => import("./features/auth/pages/ResetPassword"));
 
 // 低優先級 - Bot 管理功能（需要登入後才能訪問）
 const AddBotPage = lazy(() =>
-  import("./pages/AddBotPage").then(module => ({ default: module.default }))
+  import("./features/bots/pages/AddBotPage").then(module => ({ default: module.default }))
 );
 const BotEditorPage = lazy(() =>
-  import("./pages/BotEditorPage").then(module => ({ default: module.default }))
+  import("./features/bots/pages/BotEditorPage").then(module => ({ default: module.default }))
 );
 const VisualBotEditorPage = lazy(() =>
-  import("./pages/VisualBotEditorPage").then(module => ({ default: module.default }))
+  import("./features/visual-editor/pages/VisualBotEditorPage").then(module => ({ default: module.default }))
 );
 const BotManagementPage = lazy(() =>
-  import("./pages/BotManagementPage").then(module => ({ default: module.default }))
+  import("./features/bot-management/pages/BotManagementPage").then(module => ({ default: module.default }))
 );
 const RichMenuManagementPage = lazy(() =>
-  import("./pages/RichMenuManagementPage").then(module => ({ default: module.default }))
+  import("./features/rich-menu/pages/RichMenuManagementPage").then(module => ({ default: module.default }))
 );
 
 // 最低優先級 - 輔助頁面
-const HowToEstablish = lazy(() => import("./pages/HowToEstablish"));
-const Setting = lazy(() => import("./pages/Setting"));
-const About = lazy(() => import("./pages/About"));
-const Language = lazy(() => import("./pages/Language"));
-const Suggest = lazy(() => import("./pages/Suggest"));
-const LegalPage = lazy(() => import("./pages/LegalPage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const HowToEstablish = lazy(() => import("./features/how-to-establish/pages/HowToEstablish"));
+const Setting = lazy(() => import("./features/settings/pages/Setting"));
+const About = lazy(() => import("./features/support/pages/About"));
+const Language = lazy(() => import("./features/support/pages/Language"));
+const Suggest = lazy(() => import("./features/support/pages/Suggest"));
+const LegalPage = lazy(() => import("./features/support/pages/LegalPage"));
+const NotFound = lazy(() => import("./features/support/pages/NotFound"));
 
 // 測試頁面
 

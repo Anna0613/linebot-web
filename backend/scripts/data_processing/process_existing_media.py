@@ -15,11 +15,11 @@ scripts_dir = current_dir.parent
 backend_dir = scripts_dir.parent
 sys.path.insert(0, str(backend_dir))
 
-from app.database import SessionLocal
+from app.db.database import SessionLocal
 from app.models.line_user import LineBotUser
 # TODO: LineBotUserInteraction 已遷移到 MongoDB
 from app.models.bot import Bot
-from app.services.line_bot_service import LineBotService
+from app.services.line.line_bot_service import LineBotService
 
 # 設定日誌
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

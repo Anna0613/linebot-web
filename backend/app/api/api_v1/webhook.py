@@ -11,16 +11,16 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Dict, Any
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from sqlalchemy import select
 from app.models.bot import Bot
-from app.services.line_bot_service import LineBotService
+from app.services.line.line_bot_service import LineBotService
 from app.models.line_user import LineBotUser
 from uuid import UUID as PyUUID
 from sqlalchemy.sql import func
-from app.services.conversation_service import ConversationService
-from app.services.background_tasks import get_task_manager, TaskPriority
-from app.database_async import AsyncSessionLocal
+from app.services.conversation.conversation_service import ConversationService
+from app.services.runtime.background_tasks import get_task_manager, TaskPriority
+from app.db.database_async import AsyncSessionLocal
 from app.config import settings
 
 
@@ -106,7 +106,7 @@ async def _ai_takeover_background_task(
     try:
         # 延遲導入以避免循環相依
         import importlib
-        rag_module = importlib.import_module('app.services.rag_service')
+        rag_module = importlib.import_module('app.services.rag.rag_service')
         RAGService = getattr(rag_module, 'RAGService')
 
         # 資料庫工作階段（獨立於請求生命週期）
@@ -236,7 +236,7 @@ async def _schedule_ai_takeover(
         logger.info(f"已排入 AI 接管背景任務: {task_id}")
     except Exception as e:
         logger.error(f"排入 AI 接管背景任務失敗: {e}")
-from app.services.websocket_manager import websocket_manager
+from app.services.realtime.websocket_manager import websocket_manager
 
 logger = logging.getLogger(__name__)
 
@@ -640,7 +640,7 @@ async def process_single_event(
         # 即時推送完整聊天訊息到 WebSocket，讓前端增量插入（message/postback/follow）
         if event_type in ['message', 'postback', 'follow']:
             try:
-                from app.services.websocket_manager import websocket_manager
+                from app.services.realtime.websocket_manager import websocket_manager
                 admin_user_info = None
                 await websocket_manager.broadcast_to_bot(bot_id, {
                     'type': 'chat_message',
@@ -676,7 +676,7 @@ async def process_single_event(
                 bot = result.scalars().first()
                 if bot:
                     logger.debug(f"開始處理 Bot 事件: bot={bot.name} type={event_type}")
-                    from app.services.logic_engine_service import LogicEngineService
+                    from app.services.line.logic_engine_service import LogicEngineService
                     results = await LogicEngineService.evaluate_and_reply(
                         db=db,
                         bot=bot,
@@ -713,7 +713,7 @@ async def process_single_event(
                         try:
                             # 延遲導入避免循環導入問題
                             import importlib
-                            rag_module = importlib.import_module('app.services.rag_service')
+                            rag_module = importlib.import_module('app.services.rag.rag_service')
                             RAGService = getattr(rag_module, 'RAGService')
                             logger.debug("RAGService 導入成功")
 
@@ -782,7 +782,7 @@ async def process_media_async(
     try:
         logger.info(f"開始處理媒體檔案: {message_type}, {line_message_id}")
 
-        from app.services.minio_service import get_minio_service
+        from app.services.storage.minio_service import get_minio_service
         minio_service = get_minio_service()
 
         if not minio_service:
@@ -816,7 +816,7 @@ async def process_media_async(
                 # 推送更新後的完整訊息，讓前端就地更新（不新增）
                 try:
                     if updated_message is not None:
-                        from app.services.websocket_manager import websocket_manager
+                        from app.services.realtime.websocket_manager import websocket_manager
                         await websocket_manager.broadcast_to_bot(bot_id, {
                             'type': 'chat_message',
                             'bot_id': bot_id,

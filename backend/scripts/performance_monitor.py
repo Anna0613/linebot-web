@@ -16,9 +16,9 @@ import os
 # 添加專案路徑
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.services.stream_file_processor import get_stream_file_processor
-from app.services.adaptive_concurrency import get_adaptive_concurrency_manager
-from app.services.embedding_manager import EmbeddingManager
+from app.services.storage.stream_file_processor import get_stream_file_processor
+from app.services.runtime.adaptive_concurrency import get_adaptive_concurrency_manager
+from app.services.embedding.embedding_manager import EmbeddingManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

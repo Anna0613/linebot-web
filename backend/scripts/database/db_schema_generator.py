@@ -17,7 +17,7 @@ backend_dir = os.path.dirname(scripts_dir)
 sys.path.insert(0, backend_dir)
 
 from app.config import settings
-from app.database import engine
+from app.db.database import engine
 
 
 def get_database_schema() -> Dict[str, Any]:

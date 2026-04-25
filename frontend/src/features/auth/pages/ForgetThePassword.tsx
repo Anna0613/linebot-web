@@ -1,0 +1,168 @@
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader } from "@/components/ui/loader";
+import { useToast } from "@/hooks/use-toast";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import "@/components/ui/loader.css";
+import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
+
+const ForgetPassword = () => {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const validateEmail = (email: string) => {
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "輸入錯誤",
+        description: "請輸入電子郵件地址",
+      });
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        variant: "destructive",
+        title: "格式錯誤",
+        description: "請輸入有效的電子郵件地址",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (!validateEmail(email)) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        getApiUrl(
+          API_CONFIG.AUTH.BASE_URL,
+          API_CONFIG.AUTH.ENDPOINTS.FORGOT_PASSWORD
+        ),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        let errorMessage;
+        // 處理後端返回的錯誤訊息
+        const backendError = data.detail || data.error || data.message;
+        
+        // 根據後端返回的具體錯誤訊息進行映射
+        if (backendError?.includes("郵箱地址不存在") || backendError?.includes("EMAIL_NOT_FOUND")) {
+          errorMessage = "此電子郵件地址未註冊";
+        } else if (backendError?.includes("電子郵件格式") || backendError?.includes("INVALID_EMAIL")) {
+          errorMessage = "電子郵件格式不正確";
+        } else if (backendError?.includes("請稍後再試") || backendError?.includes("RATE_LIMIT") || backendError?.includes("頻繁")) {
+          errorMessage = "請求過於頻繁，請稍後再試";
+        } else if (backendError?.includes("郵件發送失敗") || backendError?.includes("EMAIL_SEND_FAILED")) {
+          errorMessage = "郵件發送失敗，請稍後再試";
+        } else {
+          // 直接使用後端返回的錯誤訊息，如果沒有則使用預設訊息
+          errorMessage = backendError || "發送重設連結失敗，請稍後再試";
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      toast({
+        title: "郵件已發送",
+        description: "重設連結已寄出，請檢查您的信箱",
+      });
+      setEmail("");
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
+    } catch (error: unknown) {
+      console.error("Error occurred:", _error);
+      toast({
+        variant: "destructive",
+        title: "發送失敗",
+        description:
+          error instanceof Error ? error.message : "密碼重設郵件發送失敗",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
+      {loading && <Loader fullPage />}
+
+      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-10 fade-in-element">
+            <h2 className="text-3xl font-bold neon-text-gradient">忘記密碼</h2>
+            <p className="text-sm text-muted-foreground mt-2">
+              請輸入您的電子郵件地址以重設密碼
+            </p>
+          </div>
+
+          <div
+            className="web3-glass-card p-8 web3-hover-glow fade-in-element"
+            style={{ animationDelay: "0.2s" }}
+          >
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div className="space-y-1">
+                <Label htmlFor="email">電子郵件：</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="rounded-lg h-11"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="web3-primary-button w-full rounded-full text-base font-bold h-11"
+              >
+                {loading ? "載入中..." : "寄送重設連結"}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center text-sm">
+              <Link
+                to="/login"
+                className="text-primary hover:text-primary/80 hover-underline"
+              >
+                返回登入頁面
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+};
+
+export default ForgetPassword;

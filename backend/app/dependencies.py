@@ -7,12 +7,12 @@ from fastapi import Depends, HTTPException, status, Request
 from sqlalchemy.orm import joinedload
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.models.user import User
 from app.core.security import verify_token
-from .config import settings
-from app.db_session_context import get_read_db_session, get_write_db_session
-from app.db_context import SessionContext
+from app.config import settings
+from app.db.db_session_context import get_read_db_session, get_write_db_session
+from app.db.db_context import SessionContext
 from app.config.redis_config import CacheService, CacheKeys, USER_SESSION_TTL
 import json
 

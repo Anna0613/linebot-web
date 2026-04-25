@@ -7,10 +7,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database_async import get_async_db
+from app.db.database_async import get_async_db
 from app.models.user import User
 from app.dependencies import get_current_user_async
-from app.services.knowledge_processing_service import (
+from app.services.knowledge.knowledge_processing_service import (
     KnowledgeProcessingService, 
     ProcessingJob
 )

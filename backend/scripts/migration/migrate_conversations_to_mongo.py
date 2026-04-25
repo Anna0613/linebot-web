@@ -35,8 +35,8 @@ from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.config import settings
-from app.database import get_db
-from app.database_mongo import init_mongodb
+from app.db.database import get_db
+from app.db.database_mongo import init_mongodb
 from app.models.line_user import LineBotUser
 from app.models.user import User
 from app.models.mongodb.conversation import ConversationDocument, MessageDocument, AdminUserInfo
@@ -46,7 +46,7 @@ from sqlalchemy import Column, String, DateTime, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from app.database import Base
+from app.db.database import Base
 
 class LineBotUserInteraction(Base):
     """臨時的 LINE Bot 用戶互動記錄模型（僅用於遷移）"""
@@ -117,7 +117,7 @@ class ConversationMigrator:
         """初始化資料庫連接"""
         try:
             # 初始化 PostgreSQL 連接
-            from app.database import engine
+            from app.db.database import engine
             self.db_engine = engine
             
             # 初始化 MongoDB 連接

@@ -28,7 +28,7 @@ from sqlalchemy import create_engine, text, MetaData
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.database import engine
+from app.db.database import engine
 
 # 設置日誌
 logging.basicConfig(

@@ -39,7 +39,7 @@ def test_database_connection():
     print("\n=== 測試資料庫連接 ===")
     
     try:
-        from app.database import get_db
+        from app.db.database import get_db
         from sqlalchemy import create_engine, text
         
         # 測試基本連接
@@ -68,7 +68,7 @@ def test_specific_query():
     try:
         from app.models.line_user import LineBotUser
         # TODO: LineBotUserInteraction 已遷移到 MongoDB
-        from app.database import get_db
+        from app.db.database import get_db
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
         
