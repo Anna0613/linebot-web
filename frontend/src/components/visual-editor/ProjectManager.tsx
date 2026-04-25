@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Button } from '../ui/button';
 import { Loader } from '../ui/loader';
 import { useToast } from '../../hooks/use-toast';
+import { Plus } from 'lucide-react';
 import VisualEditorApi, { BotSummary } from '../../services/visualEditorApi';
 
 interface ProjectManagerProps {
@@ -13,6 +16,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   selectedBotId,
   onBotSelect
 }) => {
+  const navigate = useNavigate();
   const [bots, setBots] = useState<BotSummary[]>([]);
   const [isLoadingBots, setIsLoadingBots] = useState(false);
   const { toast } = useToast();
@@ -85,6 +89,16 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
             <div className="scale-50">
               <Loader fullPage={false} web3Style={true} />
             </div>
+          )}
+          {!isLoadingBots && bots.length === 0 && (
+            <Button
+              size="sm"
+              onClick={() => navigate('/bots/create')}
+              className="web3-primary-button"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              建立 Bot
+            </Button>
           )}
         </div>
 

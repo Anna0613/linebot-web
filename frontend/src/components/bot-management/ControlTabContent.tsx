@@ -517,7 +517,12 @@ const ControlTabContent: React.FC<ControlTabContentProps> = ({
                 className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer group"
                 onClick={() =>
                   navigate("/bots/visual-editor", {
-                    state: { activeTab: "richmenu" },
+                    state: {
+                      activeTab: "richmenu",
+                      selectedBotId,
+                      returnTo: "/bots/management",
+                      returnLabel: "返回管理中心",
+                    },
                   })
                 }
               >
@@ -536,7 +541,12 @@ const ControlTabContent: React.FC<ControlTabContentProps> = ({
                 className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition cursor-pointer group"
                 onClick={() =>
                   navigate("/bots/visual-editor", {
-                    state: { activeTab: "logic" },
+                    state: {
+                      activeTab: "logic",
+                      selectedBotId,
+                      returnTo: "/bots/management",
+                      returnLabel: "返回管理中心",
+                    },
                   })
                 }
               >
@@ -555,7 +565,12 @@ const ControlTabContent: React.FC<ControlTabContentProps> = ({
                 className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed border-gray-200 hover:border-green-400 hover:bg-green-50 transition cursor-pointer group"
                 onClick={() =>
                   navigate("/bots/visual-editor", {
-                    state: { activeTab: "flex" },
+                    state: {
+                      activeTab: "flex",
+                      selectedBotId,
+                      returnTo: "/bots/management",
+                      returnLabel: "返回管理中心",
+                    },
                   })
                 }
               >
@@ -574,7 +589,12 @@ const ControlTabContent: React.FC<ControlTabContentProps> = ({
                 className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed border-gray-200 hover:border-orange-400 hover:bg-orange-50 transition cursor-pointer group"
                 onClick={() =>
                   navigate("/bots/visual-editor", {
-                    state: { activeTab: "preview" },
+                    state: {
+                      activeTab: "preview",
+                      selectedBotId,
+                      returnTo: "/bots/management",
+                      returnLabel: "返回管理中心",
+                    },
                   })
                 }
               >

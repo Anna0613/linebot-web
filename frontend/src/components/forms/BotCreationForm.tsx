@@ -20,6 +20,7 @@ const AddServerPage = () => {
     channelSecret: "",
   });
   const [success, setSuccess] = useState(false);
+  const [createdBotId, setCreatedBotId] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [_showToast, _setShowToast] = useState(false);
   const [_toastMessage, _setToastMessage] = useState("");
@@ -133,6 +134,7 @@ const AddServerPage = () => {
         console.log("Bot 創建成功:", createdBot);
 
         // 顯示成功訊息
+        setCreatedBotId((createdBot as { id?: string })?.id || null);
         setSuccess(true);
 
         // 移除自動跳轉，讓用戶停留在當前頁面
@@ -295,17 +297,33 @@ const AddServerPage = () => {
         <div className="text-center space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate("/bots/management")}
+              onClick={() =>
+                navigate("/bots/visual-editor", {
+                  state: {
+                    selectedBotId: createdBotId,
+                    activeTab: "logic",
+                    returnTo: "/bots/management",
+                    returnLabel: "返回管理中心",
+                  },
+                })
+              }
               className="web3-primary-button px-8 py-4 font-bold rounded-lg shadow-lg transition-all duration-200 text-lg"
             >
-              查看我的機器人
+              開始設計流程
+            </button>
+            <button
+              onClick={() => navigate("/bots/management")}
+              className="web3-button px-8 py-4 font-bold rounded-lg shadow-lg transition-all duration-200 text-lg"
+            >
+              前往管理中心
             </button>
             <button
               onClick={() => {
                 setSuccess(false);
+                setCreatedBotId(null);
                 setFormData({ name: "", accessToken: "", channelSecret: "" });
               }}
-              className="web3-button px-8 py-4 font-bold rounded-lg shadow-lg transition-all duration-200 text-lg"
+              className="px-8 py-4 font-bold rounded-lg border border-border bg-background text-foreground shadow-lg transition-all duration-200 text-lg hover:bg-secondary"
             >
               建立其他機器人
             </button>

@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-// import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Button } from '../ui/button';
 import DropZone from './DropZone';
 import FlexMessagePreview from './FlexMessagePreview';
 import { BlockPalette } from './BlockPalette';
@@ -17,7 +18,7 @@ import {
 } from '../../types/block';
 import { validateWorkspace } from '../../utils/blockCompatibility';
 import { useToast } from '../../hooks/use-toast';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Bot, LayoutDashboard, Plus } from 'lucide-react';
 import VisualEditorApi, { FlexMessage as StoredFlexMessage } from '../../services/visualEditorApi';
 
 // 簡化的 Flex Message 生成器
@@ -150,7 +151,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   onFlexMessageSave,
   initialActiveTab = 'logic'
 }) => {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialActiveTab);
   const [showAllBlocks, setShowAllBlocks] = useState(true);
   // 已移除舊的預覽模擬器控制狀態（useEnhancedSimulator / showDebugInfo）
@@ -468,6 +469,10 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   // 渲染左側面板
   const renderLeftPanel = () => {
+    if (!selectedBotId) {
+      return null;
+    }
+
     switch (activeTab) {
       case 'logic':
       case 'flex':
@@ -488,6 +493,38 @@ const Workspace: React.FC<WorkspaceProps> = ({
         return null;
     }
   };
+
+  const renderNoBotSelectedState = () => (
+    <div className="flex h-full items-center justify-center p-6">
+      <div className="w-full max-w-xl rounded-lg border border-border bg-card p-8 text-center shadow-sm">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Bot className="h-7 w-7" />
+        </div>
+        <h2 className="mb-2 text-xl font-semibold text-foreground">
+          先選擇一個 Bot
+        </h2>
+        <p className="mx-auto mb-6 max-w-md text-sm leading-relaxed text-muted-foreground">
+          從右上角選擇要編輯的 Bot，或先建立新的 LINE Bot，再開始配置邏輯、Flex 訊息、AI 知識庫與 Rich Menu。
+        </p>
+        <div className="flex flex-col justify-center gap-3 sm:flex-row">
+          <Button
+            onClick={() => navigate('/bots/create')}
+            className="web3-primary-button"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            建立 Bot
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/bots/management')}
+          >
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            回管理中心
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <CodeDisplayProvider>
@@ -531,73 +568,80 @@ const Workspace: React.FC<WorkspaceProps> = ({
             <TabsTrigger value="preview">AI 知識庫管理</TabsTrigger>
             <TabsTrigger value="richmenu">功能選單（Rich Menu）</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="logic" className="absolute inset-0 top-[60px] overflow-hidden data-[state=inactive]:hidden">
-            <LogicEditorWithCode
-              selectedBotId={selectedBotId || ''}
-              selectedLogicTemplateId={selectedLogicTemplateId || ''}
-              currentLogicTemplateName={currentLogicTemplateName || ''}
-              logicBlocks={logicBlocks}
-              flexBlocks={flexBlocks}
-              currentTestAction={currentTestAction}
-              onLogicTemplateSelect={onLogicTemplateSelect || (() => {})}
-              onLogicTemplateCreate={onLogicTemplateCreate || (async () => '')}
-              onLogicTemplateSave={onLogicTemplateSave || (async (_templateId, _data) => {})}
-              onLogicBlocksChange={onLogicBlocksChange}
-              onRemoveBlock={removeLogicBlock}
-              onUpdateBlock={updateLogicBlock}
-              onMoveBlock={moveLogicBlock}
-              onInsertBlock={insertLogicBlock}
-              onDrop={handleLogicDrop}
-            />
-          </TabsContent>
-          
-          <TabsContent value="flex" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
-            <div className="flex-shrink-0">
-              {/* FlexMessage 選擇器 */}
-              <FlexMessageSelector
-                selectedFlexMessageId={selectedFlexMessageId}
-                onFlexMessageSelect={onFlexMessageSelect}
-                onFlexMessageCreate={onFlexMessageCreate}
-                onFlexMessageSave={onFlexMessageSave}
-                flexBlocks={flexBlocks as Block[]}
-              />
+          {!selectedBotId ? (
+            <div className="min-h-0 flex-1">
+              {renderNoBotSelectedState()}
             </div>
+          ) : (
+            <>
+              <TabsContent value="logic" className="absolute inset-0 top-[60px] overflow-hidden data-[state=inactive]:hidden">
+                <LogicEditorWithCode
+                  selectedBotId={selectedBotId}
+                  selectedLogicTemplateId={selectedLogicTemplateId || ''}
+                  currentLogicTemplateName={currentLogicTemplateName || ''}
+                  logicBlocks={logicBlocks}
+                  flexBlocks={flexBlocks}
+                  currentTestAction={currentTestAction}
+                  onLogicTemplateSelect={onLogicTemplateSelect || (() => {})}
+                  onLogicTemplateCreate={onLogicTemplateCreate || (async () => '')}
+                  onLogicTemplateSave={onLogicTemplateSave || (async (_templateId, _data) => {})}
+                  onLogicBlocksChange={onLogicBlocksChange}
+                  onRemoveBlock={removeLogicBlock}
+                  onUpdateBlock={updateLogicBlock}
+                  onMoveBlock={moveLogicBlock}
+                  onInsertBlock={insertLogicBlock}
+                  onDrop={handleLogicDrop}
+                />
+              </TabsContent>
 
-            <div className="flex-1 p-4 overflow-hidden flex flex-col">
-              <div className="grid grid-cols-2 gap-4 w-full h-full">
-                <div className="flex flex-col h-full overflow-hidden">
-                  <DropZone
-                    title={currentFlexMessageName ?
-                      `Flex 設計器 - ${currentFlexMessageName}` :
-                      "Flex 設計器 - 請選擇 FlexMessage"
-                    }
-                    context={WorkspaceContext.FLEX}
-                    onDrop={handleFlexDrop}
-                    blocks={flexBlocks}
-                    onRemove={removeFlexBlock}
-                    onUpdate={updateFlexBlock}
-                    onMove={moveFlexBlock}
-                    onInsert={insertFlexBlock}
+              <TabsContent value="flex" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
+                <div className="flex-shrink-0">
+                  {/* FlexMessage 選擇器 */}
+                  <FlexMessageSelector
+                    selectedFlexMessageId={selectedFlexMessageId}
+                    onFlexMessageSelect={onFlexMessageSelect}
+                    onFlexMessageCreate={onFlexMessageCreate}
+                    onFlexMessageSave={onFlexMessageSave}
+                    flexBlocks={flexBlocks as Block[]}
                   />
                 </div>
 
-                <div className="flex flex-col h-full overflow-hidden">
-                  <FlexMessagePreview blocks={flexBlocks} />
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="preview" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
-            <div className="h-full flex flex-col">
-              <AIKnowledgeBaseManager botId={selectedBotId} />
-            </div>
-          </TabsContent>
+                <div className="flex-1 p-4 overflow-hidden flex flex-col">
+                  <div className="grid grid-cols-2 gap-4 w-full h-full">
+                    <div className="flex flex-col h-full overflow-hidden">
+                      <DropZone
+                        title={currentFlexMessageName ?
+                          `Flex 設計器 - ${currentFlexMessageName}` :
+                          "Flex 設計器 - 請選擇 FlexMessage"
+                        }
+                        context={WorkspaceContext.FLEX}
+                        onDrop={handleFlexDrop}
+                        blocks={flexBlocks}
+                        onRemove={removeFlexBlock}
+                        onUpdate={updateFlexBlock}
+                        onMove={moveFlexBlock}
+                        onInsert={insertFlexBlock}
+                      />
+                    </div>
 
-          <TabsContent value="richmenu" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
-            <RichMenuPanel selectedBotId={selectedBotId} />
-          </TabsContent>
+                    <div className="flex flex-col h-full overflow-hidden">
+                      <FlexMessagePreview blocks={flexBlocks} />
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="preview" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
+                <div className="h-full flex flex-col">
+                  <AIKnowledgeBaseManager botId={selectedBotId} />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="richmenu" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
+                <RichMenuPanel selectedBotId={selectedBotId} />
+              </TabsContent>
+            </>
+          )}
         </Tabs>
         </div>
       </div>

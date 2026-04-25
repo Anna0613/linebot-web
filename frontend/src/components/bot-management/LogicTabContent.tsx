@@ -22,6 +22,16 @@ const LogicTabContent: React.FC<LogicTabContentProps> = ({
   onToggleLogicTemplate,
 }) => {
   const navigate = useNavigate();
+  const openVisualEditor = () => {
+    navigate("/bots/visual-editor", {
+      state: {
+        activeTab: "logic",
+        selectedBotId,
+        returnTo: "/bots/management",
+        returnLabel: "返回管理中心",
+      },
+    });
+  };
 
   if (!selectedBotId) {
     return (
@@ -42,7 +52,7 @@ const LogicTabContent: React.FC<LogicTabContentProps> = ({
             <Settings className="h-5 w-5" />
             邏輯模板管理
           </div>
-          <Button onClick={() => navigate("/bots/visual-editor")} size="sm">
+          <Button onClick={openVisualEditor} size="sm">
             建立新邏輯
           </Button>
         </CardTitle>
@@ -56,7 +66,7 @@ const LogicTabContent: React.FC<LogicTabContentProps> = ({
           <div className="text-center py-8">
             <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-muted-foreground mb-4">尚無邏輯模板</p>
-            <Button onClick={() => navigate("/bots/visual-editor")}>
+            <Button onClick={openVisualEditor}>
               建立第一個邏輯
             </Button>
           </div>
