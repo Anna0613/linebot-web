@@ -1,19 +1,20 @@
 import React, { useRef, useState } from "react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
-import DashboardNavbar from "@/components/layout/DashboardNavbar";
-import DashboardFooter from "@/components/layout/DashboardFooter";
+import AppShell from "@/components/layout/AppShell";
 import Mybot, { MybotRef } from "../components/Mybot";
 import BotEditModal from "../components/BotEditModal";
 
 const BotEditorPage = () => {
   const { user, loading, error } = useUnifiedAuth({
     requireAuth: true,
-    redirectTo: "/login"
+    redirectTo: "/login",
   });
 
   const [editingBotId, setEditingBotId] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editType, setEditType] = useState<"name" | "token" | "secret" | "all">("name");
+  const [editType, setEditType] = useState<"name" | "token" | "secret" | "all">(
+    "name"
+  );
   const mybotRef = useRef<MybotRef>(null);
 
   if (loading) {
@@ -62,28 +63,29 @@ const BotEditorPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent dark:bg-background">
-      <DashboardNavbar user={user} />
-      <main className="pt-24 sm:pt-28 md:pt-32 flex flex-col items-center flex-1">
-        <div className="w-full max-w-7xl px-4 sm:px-6 mb-16 sm:mb-20 md:mb-24 flex justify-center items-start">
-          <div className="w-full max-w-4xl">
-            <Mybot onEdit={handleEdit} ref={mybotRef} />
-          </div>
-
-          {/* 編輯模態框 */}
-          {showEditModal && editingBotId && (
-            <BotEditModal
-              isOpen={showEditModal}
-              onClose={handleEditModalClose}
-              botId={editingBotId}
-              editType={editType}
-              onBotUpdated={handleBotUpdated}
-            />
-          )}
+    <AppShell
+      user={user}
+      activeNav="editor"
+      headerKicker="My Bots"
+      innerClassName="max-w-5xl"
+    >
+      <div className="flex w-full justify-center py-8">
+        <div className="w-full max-w-4xl">
+          <Mybot onEdit={handleEdit} ref={mybotRef} />
         </div>
-      </main>
-      <DashboardFooter />
-    </div>
+
+        {/* 編輯模態框 */}
+        {showEditModal && editingBotId && (
+          <BotEditModal
+            isOpen={showEditModal}
+            onClose={handleEditModalClose}
+            botId={editingBotId}
+            editType={editType}
+            onBotUpdated={handleBotUpdated}
+          />
+        )}
+      </div>
+    </AppShell>
   );
 };
 

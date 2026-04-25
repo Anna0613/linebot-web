@@ -1,9 +1,9 @@
 import React, { lazy, Suspense, memo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import DashboardNavbar from "@/components/layout/DashboardNavbar";
 import HomeBotfly from "../components/HomeBotfly";
-const DashboardFooter = lazy(() => import("@/components/layout/DashboardFooter"));
-const OptimizedTokenExpiryWarning = lazy(() => import("../components/OptimizedTokenExpiryWarning"));
+const OptimizedTokenExpiryWarning = lazy(
+  () => import("../components/OptimizedTokenExpiryWarning")
+);
 import { Loader } from "@/components/ui/loader";
 import "@/components/ui/loader.css";
 // import { API_CONFIG, getApiUrl } from "../config/apiConfig";
@@ -25,12 +25,10 @@ const DashboardPage = memo(() => {
   // 使用統一認證Hook，具備自動保護功能
   const { user, loading, error } = useUnifiedAuth({
     requireAuth: true,
-    redirectTo: "/login"
+    redirectTo: "/login",
   });
 
-
   // 新流程：LINE 登入回調已於後端設定 Cookie，前端無需處理 token 參數
-
 
   // 處理錯誤狀態顯示
   if (error) {
@@ -50,27 +48,23 @@ const DashboardPage = memo(() => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent dark:bg-background">
-      <DashboardNavbar user={user} />
+    <div className="min-h-screen bg-[#eefdf4] dark:bg-background">
       <PageContentWrapper>
-        <main id="main" role="main" className="pt-24 md:pt-28 mb-20">
+        <main id="main" role="main">
           <HomeBotfly user={user} />
         </main>
       </PageContentWrapper>
-      <Suspense fallback={null}>
-        <DashboardFooter />
-      </Suspense>
 
       {/* Token 過期警告 */}
       <Suspense fallback={null}>
         <OptimizedTokenExpiryWarning
           onExtendSession={() => {
             // 會話延長成功後的處理
-            console.log('會話已延長');
+            console.log("會話已延長");
           }}
           onLogout={() => {
             // 登出處理
-            navigate('/login', { replace: true });
+            navigate("/login", { replace: true });
           }}
         />
       </Suspense>
@@ -78,6 +72,6 @@ const DashboardPage = memo(() => {
   );
 });
 
-DashboardPage.displayName = 'DashboardPage';
+DashboardPage.displayName = "DashboardPage";
 
 export default DashboardPage;

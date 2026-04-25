@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardNavbar from "@/components/layout/DashboardNavbar";
-import DashboardFooter from "@/components/layout/DashboardFooter";
+import AppShell from "@/components/layout/AppShell";
 import UserProfileSection from "../components/UserProfileSection";
 import EmailManagementSection from "../components/EmailManagementSection";
 import SocialAccountSection from "../components/SocialAccountSection";
@@ -15,6 +14,26 @@ import { useEmailManagement } from "@/hooks/useEmailManagement";
 import { useToast } from "@/hooks/use-toast";
 import { LineLoginService } from "@/services/lineLogin";
 import { authManager } from "@/services/UnifiedAuthManager";
+
+const SettingsLoadingPanel = () => (
+  <div
+    className="space-y-5 rounded-[16px] border border-white/70 bg-white/70 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl"
+    aria-busy="true"
+  >
+    <div className="flex items-center gap-4">
+      <div className="h-16 w-16 animate-pulse rounded-full bg-emerald-100" />
+      <div className="flex-1 space-y-3">
+        <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200/80" />
+        <div className="h-3 w-64 max-w-full animate-pulse rounded-full bg-slate-100" />
+      </div>
+    </div>
+    <div className="grid gap-4 md:grid-cols-2">
+      <div className="h-28 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-emerald-50/70" />
+      <div className="h-28 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-stone-50/80" />
+    </div>
+    <div className="h-36 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-emerald-50/60" />
+  </div>
+);
 
 const Setting: React.FC = () => {
   const navigate = useNavigate();
@@ -74,7 +93,7 @@ const Setting: React.FC = () => {
           display_name: authUser.display_name || authUser.username || "",
           username: authUser.username || "",
         };
-        
+
         setUser(completeUser);
         setDisplayName(completeUser.display_name);
         setEmail(authUser.email || "");
@@ -180,95 +199,77 @@ const Setting: React.FC = () => {
     setShowConfirmModal(false);
   };
 
-  // 載入中狀態
-  if (authLoading || profileLoading) {
-    return (
-      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
-        <div className="web3-glass-card p-8">
-          <div className="text-muted-foreground text-lg">載入設定頁面...</div>
-        </div>
-      </div>
-    );
-  }
+  const shellUser = user || authUser;
+  const isSettingsLoading = authLoading || profileLoading || !user;
 
-  // 錯誤狀態
-  if (authError) {
-    return (
-      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
-        <div className="web3-glass-card p-8">
-          <Alert className="max-w-md">
+  return (
+    <AppShell
+      user={shellUser}
+      activeNav="settings"
+      headerKicker="Settings"
+      innerClassName="max-w-5xl"
+    >
+      <div className="py-8">
+        {/* 頁面標題 */}
+        <div className="mb-8 rounded-[16px] border border-white/70 bg-white/70 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+          <h1 className="text-3xl font-semibold tracking-[-0.01em] text-slate-950">
+            帳號設定
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            管理您的個人資料、安全設定和帳號偏好
+          </p>
+        </div>
+
+        {authError ? (
+          <Alert className="rounded-[16px] border-rose-100 bg-white/80 shadow-sm">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>{authError}</AlertDescription>
           </Alert>
-        </div>
-      </div>
-    );
-  }
+        ) : isSettingsLoading ? (
+          <SettingsLoadingPanel />
+        ) : (
+          <>
+            {/* 用戶資料區塊 */}
+            <UserProfileSection
+              user={user}
+              displayName={displayName}
+              userImage={userImage}
+              isEditingName={isEditingName}
+              avatarLoading={avatarLoading}
+              onDisplayNameChange={setDisplayName}
+              onEditNameToggle={setIsEditingName}
+              onSaveDisplayName={handleSaveDisplayName}
+              onAvatarUpload={uploadAvatar}
+              onAvatarDelete={deleteAvatar}
+            />
 
-  if (!user) {
-    return (
-        <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
-        <div className="web3-glass-card p-8">
-          <div className="text-muted-foreground text-lg">載入用戶資料...</div>
-        </div>
-      </div>
-    );
-  }
+            {/* 電子郵件管理區塊 */}
+            <EmailManagementSection
+              email={email}
+              emailVerified={emailVerified}
+              isEditingEmail={isEditingEmail}
+              isResendingEmailVerification={isResendingEmailVerification}
+              onEmailChange={setEmail}
+              onEditEmailToggle={setIsEditingEmail}
+              onSaveEmail={handleSaveEmail}
+              onResendVerification={resendEmailVerification}
+            />
 
-  return (
-    <div className="min-h-screen bg-transparent dark:bg-background">
-      <DashboardNavbar user={user || authUser} />
+            {/* 社群帳號區塊 */}
+            <SocialAccountSection
+              user={user}
+              onLinkLineAccount={handleLinkLineAccount}
+              onUnlinkLineAccount={handleUnlinkLineAccount}
+            />
 
-      <div className="pt-32 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          {/* 頁面標題 */}
-          <div className="mb-8">
-            <h1 className="web3-section-title mb-2">帳號設定</h1>
-            <p className="text-muted-foreground">
-              管理您的個人資料、安全設定和帳號偏好
-            </p>
-          </div>
-
-          {/* 用戶資料區塊 */}
-          <UserProfileSection
-            user={user}
-            displayName={displayName}
-            userImage={userImage}
-            isEditingName={isEditingName}
-            avatarLoading={avatarLoading}
-            onDisplayNameChange={setDisplayName}
-            onEditNameToggle={setIsEditingName}
-            onSaveDisplayName={handleSaveDisplayName}
-            onAvatarUpload={uploadAvatar}
-            onAvatarDelete={deleteAvatar}
-          />
-
-          {/* 電子郵件管理區塊 */}
-          <EmailManagementSection
-            email={email}
-            emailVerified={emailVerified}
-            isEditingEmail={isEditingEmail}
-            isResendingEmailVerification={isResendingEmailVerification}
-            onEmailChange={setEmail}
-            onEditEmailToggle={setIsEditingEmail}
-            onSaveEmail={handleSaveEmail}
-            onResendVerification={resendEmailVerification}
-          />
-
-          {/* 社群帳號區塊 */}
-          <SocialAccountSection
-            user={user}
-            onLinkLineAccount={handleLinkLineAccount}
-            onUnlinkLineAccount={handleUnlinkLineAccount}
-          />
-
-          {/* 安全設定區塊 */}
-          <SecuritySection
-            onChangePassword={changePassword}
-            onDeleteAccount={handleDeleteAccount}
-            showDeleteConfirmation={showConfirmModal}
-          />
-        </div>
+            {/* 安全設定區塊 */}
+            <SecuritySection
+              onChangePassword={changePassword}
+              onDeleteAccount={handleDeleteAccount}
+              showDeleteConfirmation={showConfirmModal}
+            />
+          </>
+        )}
       </div>
 
       {/* 帳號刪除確認對話框 */}
@@ -310,9 +311,7 @@ const Setting: React.FC = () => {
           </div>
         </div>
       )}
-
-      <DashboardFooter />
-    </div>
+    </AppShell>
   );
 };
 

@@ -1,18 +1,71 @@
-import React, { useEffect, useState, lazy, Suspense } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  Activity,
+  ArrowDownRight,
+  ArrowUpRight,
+  Ban,
+  BarChart3,
+  Bot as BotIcon,
+  CheckCircle2,
+  ChevronRight,
+  Edit3,
+  Grid3X3,
+  LayoutDashboard,
+  LineChart,
+  List,
+  MessageSquare,
+  Plus,
+  Search,
+  Send,
+  Settings,
+  Settings2,
+  SlidersHorizontal,
+  Sparkles,
+  Users,
+  Workflow,
+} from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+import AppShell, { AppRobotIllustration } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
-// Removed unused Card components
-import { Bot, Plus, Settings, FileText, Edit, Trash2, Eye } from "lucide-react";
-import { useBotManagement } from "@/features/bot-management/hooks/useBotManagement";
-import { useToast } from "@/hooks/use-toast";
-import { apiClient } from "@/services/UnifiedApiClient";
-import { Bot as BotType } from "@/types/bot";
-const DeleteConfirmDialog = lazy(() => import("@/features/bots/components/DeleteConfirmDialog"));
-const EditOptionModal = lazy(() => import("@/features/bots/components/EditOptionModal"));
-const BotEditModal = lazy(() => import("@/features/bots/components/BotEditModal"));
-const BotDetailsModal = lazy(() => import("./BotDetailsModal"));
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { apiClient } from "@/services/UnifiedApiClient";
+import { useBotManagement } from "@/features/bot-management/hooks/useBotManagement";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { Bot as BotType } from "@/types/bot";
+
+const EditOptionModal = lazy(
+  () => import("@/features/bots/components/EditOptionModal")
+);
+const BotEditModal = lazy(
+  () => import("@/features/bots/components/BotEditModal")
+);
+const BotDetailsModal = lazy(() => import("./BotDetailsModal"));
 
 interface User {
   line_id?: string;
@@ -26,26 +79,423 @@ interface HomeBotflyProps {
   user: User | null;
 }
 
+interface AnalyticsPayload {
+  totalMessages?: number;
+  activeUsers?: number;
+  totalUsers?: number;
+  todayMessages?: number;
+  weekMessages?: number;
+  monthMessages?: number;
+}
+
+interface MessageStatPayload {
+  date?: string;
+  sent?: number;
+  received?: number;
+  hour?: number;
+}
+
+interface BotUsersPayload {
+  users?: Array<{ is_followed?: boolean }>;
+  total_count?: number;
+  pagination?: {
+    total?: number;
+  };
+}
+
+interface TrendPoint {
+  date: string;
+  label: string;
+  messages: number;
+  sent: number;
+  received: number;
+}
+
+interface AnalyticsSummary {
+  messagesSent: number;
+  newUsers: number;
+  blockCount: number;
+  engagementRate: number;
+  totalSubscribers: number;
+  messagesChange: number;
+  usersChange: number;
+  blockChange: number;
+  engagementChange: number;
+  chartData: TrendPoint[];
+  isLoading: boolean;
+}
+
+type ViewMode = "grid" | "list";
+type StatusFilter = "all" | "active" | "inactive";
+type IconComponent = React.ComponentType<{ className?: string }>;
+
+const dashboardCopy = {
+  en: {
+    sidebarSubtitle: "Management",
+    botHealthTitle: "Bot health is live",
+    botHealthBody:
+      "All dashboard metrics aggregate every LINE Bot in your account.",
+    nav: {
+      home: "Home",
+      myBots: "My Bots",
+      createBot: "Create Bot",
+      botEditor: "Bot Editor",
+      analytics: "Analytics",
+      settings: "Settings",
+    },
+    headerKicker: "Dashboard",
+    welcome: "Welcome back",
+    closeNavigation: "Close navigation",
+    openNavigation: "Open navigation",
+    notifications: "Notifications",
+    heroBadge: "All LINE Bot data in one place",
+    heroTitle: "Manage every LINE Bot from one calm command center.",
+    heroBody:
+      "Build new bots, tune conversations, and watch aggregate performance across your entire LINE Bot portfolio.",
+    createLineBot: "Create LINE Bot",
+    viewMyBots: "View My Bots",
+    quickActionsTitle: "Quick actions",
+    quickActionsSubtitle: "Common workflows for building and operating bots.",
+    quickActions: {
+      create: {
+        title: "Create Bot",
+        description: "Launch a new LINE Bot with channel credentials.",
+        cta: "Create",
+      },
+      editor: {
+        title: "Bot Editor",
+        description: "Design conversations, rules, and Flex messages.",
+        cta: "Open",
+      },
+      analytics: {
+        title: "Analytics",
+        description: "Review users, messages, and engagement signals.",
+        cta: "View",
+      },
+      management: {
+        title: "Management Center",
+        description: "Monitor webhook, channel, and bot health status.",
+        cta: "Manage",
+      },
+    },
+    myBotsTitle: "My Bots",
+    myBotsSubtitle: "Search, filter, and open the right bot quickly.",
+    newBot: "New Bot",
+    searchBots: "Search bots",
+    filter: "Filter",
+    allStatus: "All status",
+    active: "Active",
+    inactive: "Inactive",
+    noBotsTitle: "No bots found",
+    noBotsBody: "Create a new LINE Bot or adjust the current filter.",
+    botFallbackDescription: "LINE Bot workspace",
+    statusActive: "active",
+    statusInactive: "inactive",
+    created: "Created",
+    updated: "Updated",
+    channel: "Channel",
+    subscribers: "Subscribers",
+    connected: "Connected",
+    pending: "Pending",
+    edit: "Edit",
+    settings: "Settings",
+    analyticsTitle: "Analytics",
+    analyticsSubtitle: "Aggregated totals across all LINE Bots.",
+    botsTracked: "bots tracked",
+    metrics: {
+      messagesSent: "Messages sent",
+      newUsers: "New users",
+      blockCount: "Block count",
+      engagementRate: "Engagement rate",
+    },
+    chartTitle: "Message trend over time",
+    chartSubtitle: "Sent and received message volume from every bot.",
+    sevenDayView: "7 day view",
+    chartMessages: "Messages",
+    chartSent: "Sent",
+  },
+  zh: {
+    sidebarSubtitle: "管理中心",
+    botHealthTitle: "Bot 狀態即時監控",
+    botHealthBody: "此看板會加總帳號底下所有 LINE Bot 的資料。",
+    nav: {
+      home: "首頁",
+      myBots: "我的 Bot",
+      createBot: "建立 Bot",
+      botEditor: "Bot 編輯器",
+      analytics: "數據分析",
+      settings: "設定",
+    },
+    headerKicker: "數據看板",
+    welcome: "歡迎回來",
+    closeNavigation: "關閉導覽",
+    openNavigation: "開啟導覽",
+    notifications: "通知",
+    heroBadge: "所有 LINE Bot 數據集中管理",
+    heroTitle: "在同一個清爽的工作台管理所有 LINE Bot。",
+    heroBody:
+      "快速建立 Bot、調整對話流程，並查看所有 LINE Bot 加總後的營運表現。",
+    createLineBot: "建立 LINE Bot",
+    viewMyBots: "查看我的 Bot",
+    quickActionsTitle: "快速操作",
+    quickActionsSubtitle: "常用的 Bot 建立、編輯與管理流程。",
+    quickActions: {
+      create: {
+        title: "建立 Bot",
+        description: "使用 Channel 憑證快速建立新的 LINE Bot。",
+        cta: "建立",
+      },
+      editor: {
+        title: "Bot 編輯器",
+        description: "設計對話流程、規則與 Flex 訊息。",
+        cta: "開啟",
+      },
+      analytics: {
+        title: "數據分析",
+        description: "檢視用戶、訊息與互動表現。",
+        cta: "查看",
+      },
+      management: {
+        title: "管理中心",
+        description: "監控 Webhook、Channel 與 Bot 健康狀態。",
+        cta: "管理",
+      },
+    },
+    myBotsTitle: "我的 Bot",
+    myBotsSubtitle: "搜尋、篩選並快速開啟要管理的 Bot。",
+    newBot: "新增 Bot",
+    searchBots: "搜尋 Bot",
+    filter: "篩選",
+    allStatus: "所有狀態",
+    active: "啟用",
+    inactive: "停用",
+    noBotsTitle: "找不到 Bot",
+    noBotsBody: "請建立新的 LINE Bot，或調整目前的篩選條件。",
+    botFallbackDescription: "LINE Bot 工作區",
+    statusActive: "啟用",
+    statusInactive: "停用",
+    created: "建立時間",
+    updated: "更新時間",
+    channel: "Channel",
+    subscribers: "訂閱者",
+    connected: "已連線",
+    pending: "待設定",
+    edit: "編輯",
+    settings: "設定",
+    analyticsTitle: "數據分析",
+    analyticsSubtitle: "加總所有 LINE Bot 的整體指標。",
+    botsTracked: "個 Bot 已追蹤",
+    metrics: {
+      messagesSent: "已發送訊息",
+      newUsers: "新增用戶",
+      blockCount: "封鎖數",
+      engagementRate: "互動率",
+    },
+    chartTitle: "訊息趨勢",
+    chartSubtitle: "所有 Bot 的發送與接收訊息量。",
+    sevenDayView: "7 天視圖",
+    chartMessages: "訊息量",
+    chartSent: "已發送",
+  },
+};
+
+type DashboardCopy = (typeof dashboardCopy)["en"];
+
+const fallbackTrendData = (): TrendPoint[] =>
+  ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => ({
+    date: label,
+    label,
+    messages: 0,
+    sent: 0,
+    received: 0,
+  }));
+
+const initialAnalyticsSummary: AnalyticsSummary = {
+  messagesSent: 0,
+  newUsers: 0,
+  blockCount: 0,
+  engagementRate: 0,
+  totalSubscribers: 0,
+  messagesChange: 0,
+  usersChange: 0,
+  blockChange: 0,
+  engagementChange: 0,
+  chartData: fallbackTrendData(),
+  isLoading: false,
+};
+
+const formatNumber = (value: number) =>
+  new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+
+const formatPercent = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  }).format(value);
+
+const toNumber = (value: unknown, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const calculateChange = (current: number, baseline: number) => {
+  if (!baseline) {
+    return current > 0 ? 100 : 0;
+  }
+  return ((current - baseline) / baseline) * 100;
+};
+
+const formatDate = (value?: string) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+};
+
+const formatTrendLabel = (value?: string) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(date);
+};
+
+const getInitial = (value?: string) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed.charAt(0).toUpperCase() : "B";
+};
+
+const getApiData = <T,>(
+  result: PromiseSettledResult<{ data?: unknown; error?: string }>
+): T | null => {
+  if (result.status !== "fulfilled" || result.value.error) {
+    return null;
+  }
+  return (result.value.data as T) || null;
+};
+
+const getQuickActions = (
+  copy: DashboardCopy
+): Array<{
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+  icon: IconComponent;
+  accent: string;
+}> => [
+  {
+    title: copy.quickActions.create.title,
+    description: copy.quickActions.create.description,
+    href: "/bots/create",
+    cta: copy.quickActions.create.cta,
+    icon: Plus,
+    accent: "bg-emerald-100 text-emerald-700",
+  },
+  {
+    title: copy.quickActions.editor.title,
+    description: copy.quickActions.editor.description,
+    href: "/bots/visual-editor",
+    cta: copy.quickActions.editor.cta,
+    icon: Workflow,
+    accent: "bg-sky-100 text-sky-700",
+  },
+  {
+    title: copy.quickActions.analytics.title,
+    description: copy.quickActions.analytics.description,
+    href: "/bots/management",
+    cta: copy.quickActions.analytics.cta,
+    icon: LineChart,
+    accent: "bg-violet-100 text-violet-700",
+  },
+  {
+    title: copy.quickActions.management.title,
+    description: copy.quickActions.management.description,
+    href: "/bots/management",
+    cta: copy.quickActions.management.cta,
+    icon: Settings2,
+    accent: "bg-amber-100 text-amber-700",
+  },
+];
+
+const TrendPill = ({ value }: { value: number }) => {
+  const isPositive = value >= 0;
+  const Icon = isPositive ? ArrowUpRight : ArrowDownRight;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
+        isPositive
+          ? "bg-emerald-50 text-emerald-700"
+          : "bg-rose-50 text-rose-700"
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {formatPercent(Math.abs(value))}%
+    </span>
+  );
+};
+
+const MetricCard = ({
+  icon: Icon,
+  label,
+  value,
+  suffix,
+  change,
+  accent,
+}: {
+  icon: IconComponent;
+  label: string;
+  value: string;
+  suffix?: string;
+  change: number;
+  accent: string;
+}) => (
+  <div className="rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+    <div className="flex items-start justify-between gap-3">
+      <span
+        className={cn(
+          "flex h-11 w-11 items-center justify-center rounded-[14px]",
+          accent
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <TrendPill value={change} />
+    </div>
+    <p className="mt-5 text-sm font-medium text-slate-500">{label}</p>
+    <div className="mt-2 flex items-end gap-1">
+      <span className="text-3xl font-semibold text-slate-950">{value}</span>
+      {suffix && (
+        <span className="pb-1 text-sm font-semibold text-slate-500">
+          {suffix}
+        </span>
+      )}
+    </div>
+  </div>
+);
+
 const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
+  const { language } = useLanguagePreference();
+  const copy = dashboardCopy[language];
   const { bots, isLoading, error, fetchBots } = useBotManagement();
-  const { toast } = useToast();
-  const _navigate = useNavigate();
-  // apiClient 已經從 UnifiedApiClient 匯入
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [subscriberCounts, setSubscriberCounts] = useState<
+    Record<string, number>
+  >({});
+  const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary>(
+    initialAnalyticsSummary
+  );
 
-  // 刪除對話框狀態
-  const [deleteDialog, setDeleteDialog] = useState<{
-    isOpen: boolean;
-    botId: string;
-    botName: string;
-    isLoading: boolean;
-  }>({
-    isOpen: false,
-    botId: "",
-    botName: "",
-    isLoading: false,
-  });
-
-  // 編輯選項模態框狀態
   const [editOptionModal, setEditOptionModal] = useState<{
     isOpen: boolean;
     botId: string;
@@ -54,7 +504,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     botId: "",
   });
 
-  // 編輯模態框狀態
   const [editModal, setEditModal] = useState<{
     isOpen: boolean;
     botId: string;
@@ -65,7 +514,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     editType: "all",
   });
 
-  // 詳情模態框狀態
   const [detailsModal, setDetailsModal] = useState<{
     isOpen: boolean;
     bot: BotType | null;
@@ -78,71 +526,189 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     fetchBots();
   }, [fetchBots]);
 
-  // 處理刪除點擊
-  const handleDeleteClick = (botId: string, botName: string) => {
-    setDeleteDialog({
-      isOpen: true,
-      botId,
-      botName,
-      isLoading: false,
-    });
-  };
+  useEffect(() => {
+    let isMounted = true;
 
-  // 確認刪除
-  const handleDeleteConfirm = async () => {
-    setDeleteDialog((prev) => ({ ...prev, isLoading: true }));
-
-    try {
-      const response = await apiClient.deleteBot(deleteDialog.botId);
-
-      if (response.error) {
-        toast({
-          variant: "destructive",
-          title: "刪除失敗",
-          description: response.error,
-        });
-      } else {
-        toast({
-          title: "刪除成功",
-          description: `機器人「${deleteDialog.botName}」已成功刪除`,
-        });
-
-        // 重新載入Bot列表
-        await fetchBots();
-
-        // 如果刪除的Bot正在查看詳情，則關閉詳情模態框
-        if (detailsModal.bot && detailsModal.bot.id === deleteDialog.botId) {
-          setDetailsModal({ isOpen: false, bot: null });
-        }
+    const loadAggregateAnalytics = async () => {
+      if (!bots.length) {
+        setAnalyticsSummary(initialAnalyticsSummary);
+        setSubscriberCounts({});
+        return;
       }
-    } catch (error) {
-      console.error("Error occurred:", error);
-      toast({
-        variant: "destructive",
-        title: "刪除失敗",
-        description: "刪除機器人時發生錯誤",
+
+      setAnalyticsSummary((current) => ({ ...current, isLoading: true }));
+
+      const results = await Promise.allSettled(
+        bots.map(async (bot: BotType) => {
+          const [analyticsResult, statsResult, usersResult] =
+            await Promise.allSettled([
+              apiClient.getBotAnalytics(bot.id, "week"),
+              apiClient.getBotMessageStats(bot.id, 7, "day"),
+              apiClient.getBotUsers(bot.id, 500, 0),
+            ]);
+
+          const analytics = getApiData<AnalyticsPayload>(analyticsResult);
+          const messageStats =
+            getApiData<MessageStatPayload[]>(statsResult) || [];
+          const usersPayload = getApiData<BotUsersPayload>(usersResult);
+
+          return {
+            botId: bot.id,
+            analytics,
+            messageStats,
+            usersPayload,
+          };
+        })
+      );
+
+      if (!isMounted) return;
+
+      const successfulResults = results.flatMap((result) =>
+        result.status === "fulfilled" ? [result.value] : []
+      );
+
+      const nextSubscriberCounts: Record<string, number> = {};
+      const trendMap = new Map<string, TrendPoint>();
+
+      let totalMessages = 0;
+      let sentMessages = 0;
+      let activeUsers = 0;
+      let totalSubscribers = 0;
+      let blockCount = 0;
+      let todayMessages = 0;
+      let weekMessages = 0;
+
+      successfulResults.forEach((result) => {
+        const analytics = result.analytics;
+        const users = result.usersPayload?.users || [];
+        const subscriberTotal =
+          toNumber(result.usersPayload?.total_count) ||
+          toNumber(result.usersPayload?.pagination?.total) ||
+          toNumber(analytics?.totalUsers) ||
+          users.length;
+
+        nextSubscriberCounts[result.botId] = subscriberTotal;
+        totalSubscribers += subscriberTotal;
+        blockCount += users.filter(
+          (lineUser) => lineUser.is_followed === false
+        ).length;
+
+        totalMessages += toNumber(analytics?.totalMessages);
+        activeUsers += toNumber(analytics?.activeUsers);
+        todayMessages += toNumber(analytics?.todayMessages);
+        weekMessages += toNumber(analytics?.weekMessages);
+
+        result.messageStats.forEach((stat, index) => {
+          const key = stat.date || `${result.botId}-${index}`;
+          const existing = trendMap.get(key) || {
+            date: key,
+            label: stat.date
+              ? formatTrendLabel(stat.date)
+              : language === "zh"
+                ? `第 ${index + 1} 天`
+                : `Day ${index + 1}`,
+            messages: 0,
+            sent: 0,
+            received: 0,
+          };
+          const sent = toNumber(stat.sent);
+          const received = toNumber(stat.received);
+
+          existing.sent += sent;
+          existing.received += received;
+          existing.messages += sent + received;
+          trendMap.set(key, existing);
+          sentMessages += sent;
+        });
       });
-    } finally {
-      setDeleteDialog({
-        isOpen: false,
-        botId: "",
-        botName: "",
+
+      const messagesSent = sentMessages || totalMessages;
+      const engagementRate = totalSubscribers
+        ? Math.min(100, (activeUsers / totalSubscribers) * 100)
+        : 0;
+      const dailyAverage = weekMessages ? weekMessages / 7 : 0;
+      const chartData = Array.from(trendMap.values()).sort((a, b) =>
+        a.date.localeCompare(b.date)
+      );
+
+      setSubscriberCounts(nextSubscriberCounts);
+      setAnalyticsSummary({
+        messagesSent,
+        newUsers: activeUsers,
+        blockCount,
+        engagementRate,
+        totalSubscribers,
+        messagesChange: calculateChange(todayMessages, dailyAverage),
+        usersChange: totalSubscribers
+          ? (activeUsers / totalSubscribers) * 100
+          : 0,
+        blockChange: blockCount ? -Math.min(blockCount * 1.8, 12) : 0,
+        engagementChange: engagementRate - 50,
+        chartData: chartData.length ? chartData : fallbackTrendData(),
         isLoading: false,
       });
-    }
-  };
+    };
 
-  // 取消刪除
-  const handleDeleteCancel = () => {
-    setDeleteDialog({
-      isOpen: false,
-      botId: "",
-      botName: "",
-      isLoading: false,
+    void loadAggregateAnalytics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bots, language]);
+
+  const displayName = user?.display_name || user?.username || "RongJiaLin";
+  const avatarUrl = user?.picture_url;
+  const quickActions = useMemo(() => getQuickActions(copy), [copy]);
+
+  const filteredBots = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return bots.filter((bot: BotType) => {
+      const matchesSearch = normalizedSearch
+        ? bot.name.toLowerCase().includes(normalizedSearch)
+        : true;
+      const isActive = bot.is_active !== false;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && isActive) ||
+        (statusFilter === "inactive" && !isActive);
+
+      return matchesSearch && matchesStatus;
     });
-  };
+  }, [bots, searchQuery, statusFilter]);
 
-  // 處理編輯點擊
+  const metricCards = [
+    {
+      label: copy.metrics.messagesSent,
+      value: formatNumber(analyticsSummary.messagesSent),
+      change: analyticsSummary.messagesChange,
+      icon: Send,
+      accent: "bg-emerald-100 text-emerald-700",
+    },
+    {
+      label: copy.metrics.newUsers,
+      value: formatNumber(analyticsSummary.newUsers),
+      change: analyticsSummary.usersChange,
+      icon: Users,
+      accent: "bg-sky-100 text-sky-700",
+    },
+    {
+      label: copy.metrics.blockCount,
+      value: formatNumber(analyticsSummary.blockCount),
+      change: analyticsSummary.blockChange,
+      icon: Ban,
+      accent: "bg-rose-100 text-rose-700",
+    },
+    {
+      label: copy.metrics.engagementRate,
+      value: formatPercent(analyticsSummary.engagementRate),
+      suffix: "%",
+      change: analyticsSummary.engagementChange,
+      icon: Activity,
+      accent: "bg-violet-100 text-violet-700",
+    },
+  ];
+
   const handleEditClick = (botId: string) => {
     setEditOptionModal({
       isOpen: true,
@@ -150,7 +716,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     });
   };
 
-  // 關閉編輯選項模態框
   const handleEditOptionClose = () => {
     setEditOptionModal({
       isOpen: false,
@@ -158,7 +723,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     });
   };
 
-  // 處理編輯基本資訊
   const handleEditBasicInfo = () => {
     setEditModal({
       isOpen: true,
@@ -168,7 +732,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     setEditOptionModal({ isOpen: false, botId: "" });
   };
 
-  // 關閉編輯模態框
   const handleEditModalClose = () => {
     setEditModal({
       isOpen: false,
@@ -177,9 +740,8 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     });
   };
 
-  // Bot更新後的回調
   const handleBotUpdated = () => {
-    fetchBots(); // 重新載入Bot列表
+    fetchBots();
     setEditModal({
       isOpen: false,
       botId: "",
@@ -187,7 +749,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     });
   };
 
-  // 顯示Bot詳情
   const showBotDetails = (bot: BotType) => {
     setDetailsModal({
       isOpen: true,
@@ -195,7 +756,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     });
   };
 
-  // 關閉詳情模態框
   const closeDetailsModal = () => {
     setDetailsModal({
       isOpen: false,
@@ -204,277 +764,536 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Welcome Section */}
-      <div className="text-center mb-8">
-        <h1 className="web3-section-title mb-4">
-          歡迎回來，{user?.display_name || user?.username || "用戶"}！
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          管理您的 LINE Bot，創建智能對話體驗
-        </p>
-      </div>
-
-      {/* Quick Actions */}
-      <h2 className="text-xl font-semibold neon-text-cyan mb-3">快速操作</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <div className="web3-dashboard-card p-6 web3-hover-glow">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
-            <h3 className="text-lg font-medium text-web3-cyan">創建新 LINE Bot</h3>
-            <Plus className="h-6 w-6 text-web3-cyan dark:animate-neon-pulse" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-4">
-              快速創建一個新的 LINE Bot 專案
-            </p>
-            <Button asChild className="web3-button w-full">
-              <Link to="/bots/create">開始創建</Link>
-            </Button>
-          </div>
-        </div>
-
-        <div className="web3-dashboard-card p-6 web3-hover-glow">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
-            <h3 className="text-lg font-medium text-web3-purple">LINE Bot 編輯器</h3>
-            <Bot className="h-6 w-6 text-web3-purple dark:animate-web3-glow" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-4">
-              設計和編輯您的 Bot 對話流程
-            </p>
-            <Button asChild className="web3-button w-full">
-              <Link to="/bots/visual-editor">進入編輯器</Link>
-            </Button>
-          </div>
-        </div>
-
-        <div className="web3-dashboard-card p-6 web3-hover-glow">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2 mb-4">
-            <h3 className="text-lg font-medium text-web3-pink">管理 LINE Bot</h3>
-            <Settings className="h-6 w-6 text-web3-pink dark:animate-cosmic-flow" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-4">
-              監控和控制您的 LINE Bot
-            </p>
-            <Button asChild className="web3-button w-full">
-              <Link to="/bots/management">管理中心</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Bot List Section */}
-      <div className="web3-glass-card p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold neon-text-gradient">我的 LINE Bot</h2>
-          <Button asChild size="sm" className="web3-button">
-            <Link to="/bots/create">
-              <Plus className="h-4 w-4 mr-2" />
-              新增 LINE Bot
-            </Link>
-          </Button>
-        </div>
-
-        {error && (
-          <div className="web3-glass-card p-4 mb-4 border border-web3-red">
-            <p className="text-web3-red">{error}</p>
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, idx) => (
-              <div key={idx} className="web3-metric-card p-6 overflow-hidden">
-                <div className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <Skeleton className="h-5 w-2/3" />
-                    <div className="flex space-x-2">
-                      <Skeleton className="h-8 w-8 rounded-md" />
-                      <Skeleton className="h-8 w-8 rounded-md" />
-                      <Skeleton className="h-8 w-8 rounded-md" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-4 w-full mt-2" />
-                </div>
-                <div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-center">
-                      <Skeleton className="h-4 w-16" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-4 w-28" />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-10" />
-                    </div>
-                  </div>
-                </div>
+    <TooltipProvider delayDuration={120}>
+      <AppShell
+        user={{ ...user, avatar_url: avatarUrl }}
+        activeNav="home"
+        headerKicker={copy.headerKicker}
+        welcomeLabel={copy.welcome}
+        sidebarCalloutTitle={copy.botHealthTitle}
+        sidebarCalloutBody={copy.botHealthBody}
+        innerClassName="max-w-[1480px]"
+      >
+        <div className="flex w-full flex-col gap-8 py-6">
+          <section className="grid overflow-hidden rounded-[16px] border border-white/70 bg-white/55 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-2xl lg:grid-cols-[1.12fr_0.88fr]">
+            <div className="flex flex-col justify-center px-6 py-8 sm:px-8 lg:py-12">
+              <Badge className="w-fit border-emerald-200 bg-emerald-50 px-3 py-1 text-[#166534] hover:bg-emerald-50">
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                {copy.heroBadge}
+              </Badge>
+              <h2 className="mt-5 max-w-2xl text-4xl font-semibold leading-tight text-slate-950 sm:text-5xl">
+                {copy.heroTitle}
+              </h2>
+              <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
+                {copy.heroBody}
+              </p>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <Button
+                  asChild
+                  className="h-12 rounded-[16px] bg-[#16a34a] px-5 font-semibold text-white shadow-lg shadow-emerald-700/20 hover:bg-[#15803d]"
+                >
+                  <Link to="/bots/create">
+                    <Plus className="mr-2 h-4 w-4" />
+                    {copy.createLineBot}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-12 rounded-[16px] border-white/80 bg-white/70 px-5 font-semibold text-slate-700 hover:bg-white"
+                >
+                  <Link to="/bots/management">
+                    {copy.viewMyBots}
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
               </div>
-            ))}
-          </div>
-        ) : bots.length === 0 ? (
-          <div className="text-center py-8">
-            <Bot className="h-12 w-12 text-web3-cyan mx-auto mb-4 animate-neon-pulse" />
-            <p className="text-muted-foreground mb-4">還沒有任何 LINE Bot</p>
-            <Button asChild className="web3-button">
-              <Link to="/bots/create">創建第一個 LINE Bot</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {bots.map((bot) => (
-              <div key={bot.id} className="web3-metric-card p-6 web3-hover-glow">
-                <div className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-web3-cyan">{bot.name}</h3>
-                    <div className="flex space-x-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEditClick(bot.id)}
-                              className="web3-button text-web3-purple hover:text-web3-purple border-web3-purple/30 hover:border-web3-purple"
-                              aria-label="編輯 Bot"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>編輯</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+            </div>
+            <div className="flex items-end justify-center bg-gradient-to-br from-emerald-100/70 via-white/40 to-stone-100/80 px-6 py-8">
+              <AppRobotIllustration />
+            </div>
+          </section>
 
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteClick(bot.id, bot.name)}
-                              className="web3-button text-web3-red hover:text-web3-red border-web3-red/30 hover:border-web3-red"
-                              aria-label="刪除 Bot"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>刪除</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+          <section>
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-950">
+                  {copy.quickActionsTitle}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {copy.quickActionsSubtitle}
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
 
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => showBotDetails(bot)}
-                              className="web3-button text-web3-pink hover:text-web3-pink border-web3-pink/30 hover:border-web3-pink"
-                              aria-label="查看詳情"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>詳情</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </div>
-                  {bot.description && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {bot.description}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">狀態:</span>
-                      <span className="font-medium text-web3-green">啟用</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">建立時間:</span>
-                      <span className="text-foreground">
-                        {new Date(bot.created_at).toLocaleDateString("zh-TW")}
+                return (
+                  <div
+                    key={action.title}
+                    className="rounded-[16px] border border-white/70 bg-white/70 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl transition-transform hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span
+                        className={cn(
+                          "flex h-11 w-11 items-center justify-center rounded-[14px]",
+                          action.accent
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
                       </span>
+                      <Button
+                        asChild
+                        size="sm"
+                        className="rounded-[12px] bg-[#16a34a] px-3 text-xs font-semibold text-white hover:bg-[#15803d]"
+                      >
+                        <Link to={action.href}>{action.cta}</Link>
+                      </Button>
                     </div>
-                    {bot.channel_token && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">頻道已設定:</span>
-                        <span className="text-web3-green font-medium">是</span>
-                      </div>
-                    )}
+                    <h3 className="mt-5 text-base font-semibold text-slate-950">
+                      {action.title}
+                    </h3>
+                    <p className="mt-2 min-h-10 text-sm leading-5 text-slate-500">
+                      {action.description}
+                    </p>
                   </div>
-                </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section>
+            <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-950">
+                  {copy.myBotsTitle}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {copy.myBotsSubtitle}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <Button
+                asChild
+                className="h-11 rounded-[16px] bg-[#16a34a] px-4 font-semibold text-white hover:bg-[#15803d]"
+              >
+                <Link to="/bots/create">
+                  <Plus className="mr-2 h-4 w-4" />
+                  {copy.newBot}
+                </Link>
+              </Button>
+            </div>
 
-      {/* 刪除確認對話框 */}
-      <Suspense fallback={null}>
-        <DeleteConfirmDialog
-          isOpen={deleteDialog.isOpen}
-          onClose={handleDeleteCancel}
-          onConfirm={handleDeleteConfirm}
-          botName={deleteDialog.botName}
-          isLoading={deleteDialog.isLoading}
-        />
-      </Suspense>
+            <div className="mb-4 flex flex-col gap-3 rounded-[16px] border border-white/70 bg-white/65 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl lg:flex-row lg:items-center">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={copy.searchBots}
+                  className="h-11 rounded-[14px] border-white/80 bg-white/80 pl-10 text-slate-700 placeholder:text-slate-400"
+                />
+              </div>
+              <Select
+                value={statusFilter}
+                onValueChange={(value) =>
+                  setStatusFilter(value as StatusFilter)
+                }
+              >
+                <SelectTrigger className="h-11 rounded-[14px] border-white/80 bg-white/80 text-slate-700 lg:w-44">
+                  <SlidersHorizontal className="mr-2 h-4 w-4 text-slate-400" />
+                  <SelectValue placeholder={copy.filter} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{copy.allStatus}</SelectItem>
+                  <SelectItem value="active">{copy.active}</SelectItem>
+                  <SelectItem value="inactive">{copy.inactive}</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex rounded-[14px] border border-white/80 bg-white/80 p-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={language === "zh" ? "網格檢視" : "Grid view"}
+                  className={cn(
+                    "h-9 w-9 rounded-[12px] text-slate-500",
+                    viewMode === "grid" && "bg-emerald-50 text-[#166534]"
+                  )}
+                  onClick={() => setViewMode("grid")}
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={language === "zh" ? "列表檢視" : "List view"}
+                  className={cn(
+                    "h-9 w-9 rounded-[12px] text-slate-500",
+                    viewMode === "list" && "bg-emerald-50 text-[#166534]"
+                  )}
+                  onClick={() => setViewMode("list")}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
 
-      {/* 編輯選項模態框 */}
-      <Suspense fallback={null}>
-        <EditOptionModal
-          isOpen={editOptionModal.isOpen}
-          onClose={handleEditOptionClose}
-          botId={editOptionModal.botId}
-          onEditBasicInfo={handleEditBasicInfo}
-        />
-      </Suspense>
+            {error && (
+              <div className="mb-4 rounded-[16px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {error}
+              </div>
+            )}
 
-      {/* 編輯模態框 */}
-      <Suspense fallback={null}>
-        <BotEditModal
-          isOpen={editModal.isOpen}
-          onClose={handleEditModalClose}
-          botId={editModal.botId}
-          editType={editModal.editType}
-          onBotUpdated={handleBotUpdated}
-        />
-      </Suspense>
+            {isLoading ? (
+              <div
+                className={cn(
+                  "grid gap-4",
+                  viewMode === "grid"
+                    ? "md:grid-cols-2 xl:grid-cols-3"
+                    : "grid-cols-1"
+                )}
+              >
+                {[...Array(3)].map((_, index) => (
+                  <div
+                    key={index}
+                    className="rounded-[16px] border border-white/70 bg-white/70 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)]"
+                  >
+                    <Skeleton className="h-12 w-12 rounded-[14px]" />
+                    <Skeleton className="mt-5 h-5 w-2/3" />
+                    <Skeleton className="mt-3 h-4 w-full" />
+                    <Skeleton className="mt-6 h-24 w-full rounded-[14px]" />
+                  </div>
+                ))}
+              </div>
+            ) : filteredBots.length === 0 ? (
+              <div className="rounded-[16px] border border-dashed border-emerald-200 bg-white/60 px-6 py-12 text-center">
+                <BotIcon className="mx-auto h-12 w-12 text-[#16a34a]" />
+                <h3 className="mt-4 text-lg font-semibold text-slate-950">
+                  {copy.noBotsTitle}
+                </h3>
+                <p className="mt-2 text-sm text-slate-500">{copy.noBotsBody}</p>
+                <Button
+                  asChild
+                  className="mt-5 rounded-[16px] bg-[#16a34a] text-white hover:bg-[#15803d]"
+                >
+                  <Link to="/bots/create">{copy.createLineBot}</Link>
+                </Button>
+              </div>
+            ) : (
+              <div
+                className={cn(
+                  "grid gap-4",
+                  viewMode === "grid"
+                    ? "md:grid-cols-2 xl:grid-cols-3"
+                    : "grid-cols-1"
+                )}
+              >
+                {filteredBots.map((bot: BotType) => {
+                  const isActive = bot.is_active !== false;
+                  const channelConfigured = Boolean(
+                    bot.channel_token && bot.channel_secret
+                  );
 
-      {/* Bot詳情模態框 */}
-      <Suspense fallback={null}>
-        <BotDetailsModal
-          isOpen={detailsModal.isOpen}
-          onClose={closeDetailsModal}
-          bot={detailsModal.bot}
-        />
-      </Suspense>
+                  return (
+                    <div
+                      key={bot.id}
+                      className={cn(
+                        "rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl transition-transform hover:-translate-y-0.5",
+                        viewMode === "list" &&
+                          "md:grid md:grid-cols-[1.1fr_1.4fr_auto] md:items-center md:gap-5"
+                      )}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-br from-[#16a34a] to-emerald-300 text-lg font-semibold text-white shadow-lg shadow-emerald-700/15">
+                          {getInitial(bot.name)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="truncate text-lg font-semibold text-slate-950">
+                              {bot.name}
+                            </h3>
+                            <Badge
+                              className={cn(
+                                "border px-2.5 py-1 text-xs",
+                                isActive
+                                  ? "border-emerald-200 bg-emerald-50 text-[#166534] hover:bg-emerald-50"
+                                  : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-50"
+                              )}
+                            >
+                              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                              {isActive
+                                ? copy.statusActive
+                                : copy.statusInactive}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                            {bot.description || copy.botFallbackDescription}
+                          </p>
+                        </div>
+                      </div>
 
-      {/* Help Section */}
-      <div className="mt-8 bg-secondary rounded-lg p-6 border border-border">
-        <div className="flex items-center mb-4">
-          <FileText className="h-6 w-6 text-foreground mr-2" />
-          <h3 className="text-lg font-semibold text-foreground">需要幫助？</h3>
+                      <dl className="mt-5 grid grid-cols-2 gap-3 text-sm md:mt-0">
+                        <div className="rounded-[14px] bg-slate-50/80 p-3">
+                          <dt className="text-xs text-slate-500">
+                            {copy.created}
+                          </dt>
+                          <dd className="mt-1 font-medium text-slate-800">
+                            {formatDate(bot.created_at)}
+                          </dd>
+                        </div>
+                        <div className="rounded-[14px] bg-slate-50/80 p-3">
+                          <dt className="text-xs text-slate-500">
+                            {copy.updated}
+                          </dt>
+                          <dd className="mt-1 font-medium text-slate-800">
+                            {formatDate(bot.updated_at)}
+                          </dd>
+                        </div>
+                        <div className="rounded-[14px] bg-slate-50/80 p-3">
+                          <dt className="text-xs text-slate-500">
+                            {copy.channel}
+                          </dt>
+                          <dd
+                            className={cn(
+                              "mt-1 font-medium",
+                              channelConfigured
+                                ? "text-[#166534]"
+                                : "text-amber-700"
+                            )}
+                          >
+                            {channelConfigured ? copy.connected : copy.pending}
+                          </dd>
+                        </div>
+                        <div className="rounded-[14px] bg-slate-50/80 p-3">
+                          <dt className="text-xs text-slate-500">
+                            {copy.subscribers}
+                          </dt>
+                          <dd className="mt-1 font-medium text-slate-800">
+                            {analyticsSummary.isLoading
+                              ? "--"
+                              : formatNumber(subscriberCounts[bot.id] || 0)}
+                          </dd>
+                        </div>
+                      </dl>
+
+                      <div className="mt-5 flex justify-end gap-2 md:mt-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="icon"
+                              className="h-10 w-10 rounded-[14px] border-white/80 bg-white/70 text-slate-600 hover:bg-emerald-50 hover:text-[#166534]"
+                            >
+                              <Link
+                                to="/bots/management"
+                                aria-label={copy.analyticsTitle}
+                              >
+                                <BarChart3 className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{copy.analyticsTitle}</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-10 w-10 rounded-[14px] border-white/80 bg-white/70 text-slate-600 hover:bg-emerald-50 hover:text-[#166534]"
+                              onClick={() => handleEditClick(bot.id)}
+                              aria-label={copy.edit}
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{copy.edit}</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-10 w-10 rounded-[14px] border-white/80 bg-white/70 text-slate-600 hover:bg-emerald-50 hover:text-[#166534]"
+                              onClick={() => showBotDetails(bot)}
+                              aria-label={copy.settings}
+                            >
+                              <Settings2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{copy.settings}</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-950">
+                  {copy.analyticsTitle}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {copy.analyticsSubtitle}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 rounded-full border border-white/70 bg-white/65 px-3 py-2 text-sm text-slate-500">
+                <LayoutDashboard className="h-4 w-4 text-[#16a34a]" />
+                {formatNumber(bots.length)} {copy.botsTracked}
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {metricCards.map((metric) => (
+                <MetricCard key={metric.label} {...metric} />
+              ))}
+            </div>
+
+            <div className="mt-4 rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+              <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-950">
+                    {copy.chartTitle}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {copy.chartSubtitle}
+                  </p>
+                </div>
+                <Badge className="w-fit border-emerald-200 bg-emerald-50 text-[#166534] hover:bg-emerald-50">
+                  <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
+                  {copy.sevenDayView}
+                </Badge>
+              </div>
+              <div className="h-[320px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={analyticsSummary.chartData}
+                    margin={{ left: -20, right: 8, top: 10, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient
+                        id="messagesGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#16a34a"
+                          stopOpacity={0.28}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#16a34a"
+                          stopOpacity={0.02}
+                        />
+                      </linearGradient>
+                      <linearGradient
+                        id="sentGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#38bdf8"
+                          stopOpacity={0.18}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#38bdf8"
+                          stopOpacity={0.02}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      stroke="#d9e5d6"
+                      strokeDasharray="4 8"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="label"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "#64748b", fontSize: 12 }}
+                      dy={10}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "#64748b", fontSize: 12 }}
+                      width={44}
+                    />
+                    <RechartsTooltip
+                      cursor={{
+                        stroke: "#16a34a",
+                        strokeWidth: 1,
+                        strokeDasharray: "4 4",
+                      }}
+                      contentStyle={{
+                        border: "1px solid rgba(255,255,255,0.9)",
+                        borderRadius: 16,
+                        background: "rgba(255,255,255,0.92)",
+                        boxShadow: "0 18px 50px rgba(15,23,42,0.12)",
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="messages"
+                      name={copy.chartMessages}
+                      stroke="#16a34a"
+                      strokeWidth={3}
+                      fill="url(#messagesGradient)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="sent"
+                      name={copy.chartSent}
+                      stroke="#38bdf8"
+                      strokeWidth={2}
+                      fill="url(#sentGradient)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </section>
         </div>
-        <p className="text-muted-foreground mb-4">
-          查看我們的建立教學，了解如何快速開始您的 LINE Bot 開發之旅。
-        </p>
-        <Button
-          asChild
-          variant="outline"
-          className="border-border text-foreground hover:bg-secondary"
-        >
-          <Link to="/how-to-establish">查看教學</Link>
-        </Button>
-      </div>
-    </div>
+
+        <Suspense fallback={null}>
+          <EditOptionModal
+            isOpen={editOptionModal.isOpen}
+            onClose={handleEditOptionClose}
+            botId={editOptionModal.botId}
+            onEditBasicInfo={handleEditBasicInfo}
+          />
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <BotEditModal
+            isOpen={editModal.isOpen}
+            onClose={handleEditModalClose}
+            botId={editModal.botId}
+            editType={editModal.editType}
+            onBotUpdated={handleBotUpdated}
+          />
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <BotDetailsModal
+            isOpen={detailsModal.isOpen}
+            onClose={closeDetailsModal}
+            bot={detailsModal.bot}
+          />
+        </Suspense>
+      </AppShell>
+    </TooltipProvider>
   );
 };
 

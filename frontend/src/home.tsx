@@ -1,7 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Loader } from "@/components/ui/loader";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
@@ -57,11 +56,6 @@ const NotFound = lazy(() => import("./features/support/pages/NotFound"));
 
 
 // 使用優化的 QueryClient 配置（從 useReactQuery 導入）
-
-// 優化的載入指示器組件 - 使用新的主題感知 loader
-const LoadingFallback = () => (
-  <Loader fullPage={true} />
-);
 
 // 路由組件
 // 不使用 AnimatePresence 包裹 Routes，避免導航欄閃爍
@@ -159,7 +153,7 @@ const App = () => {
             v7_relativeSplatPath: true,
           }}
         >
-          <Suspense fallback={<LoadingFallback />}>
+          <Suspense fallback={null}>
             <AnimatedRoutes />
           </Suspense>
         </BrowserRouter>
