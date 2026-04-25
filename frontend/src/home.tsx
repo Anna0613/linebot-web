@@ -49,6 +49,7 @@ const Setting = lazy(() => import("./pages/Setting"));
 const About = lazy(() => import("./pages/About"));
 const Language = lazy(() => import("./pages/Language"));
 const Suggest = lazy(() => import("./pages/Suggest"));
+const LegalPage = lazy(() => import("./pages/LegalPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // 測試頁面
@@ -92,6 +93,8 @@ const AnimatedRoutes = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       {/* 移除所有舊路由，僅保留新語義化路由 */}
       <Route path="/about" element={<About />} />
+      <Route path="/terms" element={<LegalPage />} />
+      <Route path="/privacy" element={<LegalPage />} />
       <Route path="/language" element={<Language />} />
       <Route path="/suggest" element={<Suggest />} />
 

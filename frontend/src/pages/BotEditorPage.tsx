@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
-import Navbar3 from "../components/Panels/Navbar3";
+import DashboardNavbar from "../components/layout/DashboardNavbar";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import Mybot, { MybotRef } from "@/components/Editbot/Mybot";
 import BotEditModal from "../components/Editbot/BotEditModal";
@@ -63,7 +63,7 @@ const BotEditorPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-transparent dark:bg-background">
-      <Navbar3 user={user} />
+      <DashboardNavbar user={user} />
       <main className="pt-24 sm:pt-28 md:pt-32 flex flex-col items-center flex-1">
         <div className="w-full max-w-7xl px-4 sm:px-6 mb-16 sm:mb-20 md:mb-24 flex justify-center items-start">
           <div className="w-full max-w-4xl">

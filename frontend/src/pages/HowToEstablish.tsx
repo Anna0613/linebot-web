@@ -3,7 +3,9 @@ import StepOne from "../components/HowToEstablish/StepOne";
 import StepTwo from "../components/HowToEstablish/StepTwo";
 import StepThree from "../components/HowToEstablish/StepThree";
 import StepFour from "../components/HowToEstablish/StepFour";
+import Navbar from "../components/layout/Navbar";
 import DashboardNavbar from "../components/layout/DashboardNavbar";
+import Footer from "../components/layout/Footer";
 import DashboardFooter from "../components/layout/DashboardFooter";
 import { useNavigate } from "react-router-dom";
 import { useUnifiedAuth } from "../hooks/useUnifiedAuth";
@@ -23,7 +25,7 @@ const HowToEstablish = () => {
   const [currentStep, setCurrentStep] = useState(1);
 
   // 使用統一身份驗證Hook - 不強制要求登入
-  const { user, loading } = useUnifiedAuth({
+  const { user, loading, isAuthenticated } = useUnifiedAuth({
     requireAuth: false, // 允許未登入用戶訪問
   });
 
@@ -110,7 +112,7 @@ const HowToEstablish = () => {
   return (
     <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
       {/* 根據登入狀態顯示不同的導航欄 */}
-      <DashboardNavbar user={user} />
+      {isAuthenticated ? <DashboardNavbar user={user} /> : <Navbar />}
 
       {/* 主要內容區域 */}
       <PageContentWrapper>
@@ -255,7 +257,7 @@ const HowToEstablish = () => {
       </main>
       </PageContentWrapper>
 
-      <DashboardFooter />
+      {isAuthenticated ? <DashboardFooter /> : <Footer />}
     </div>
   );
 };

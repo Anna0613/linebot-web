@@ -1188,128 +1188,146 @@ const BotManagementPage: React.FC = () => {
             onSelectBot={setSelectedBotId}
           />
 
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="space-y-6"
-          >
-            <TabsList className="grid w-full grid-cols-4 rounded-lg bg-muted p-1">
-              <TabsTrigger
-                value="analytics"
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                數據分析
-              </TabsTrigger>
-              <TabsTrigger
-                value="control"
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Bot 控制
-              </TabsTrigger>
-              <TabsTrigger
-                value="logic"
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                邏輯管理
-              </TabsTrigger>
-              <TabsTrigger
-                value="users"
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <Users className="h-4 w-4 mr-2" />
-                用戶管理
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="analytics" className="space-y-6">
-              <AnalyticsTabContent
-                selectedBotId={selectedBotId}
-                analyticsLoading={analyticsLoading}
-                analytics={analytics}
-                messageStats={messageStats}
-                userActivity={userActivity}
-                activities={activities}
-                usageData={usageData}
-                timeRange={timeRange}
-                onRefreshData={handleRefreshData}
-                onRefreshActivities={handleRefreshActivities}
-                onTimeRangeChange={handleTimeRangeChange}
-                isWebSocketConnected={checkWebSocketConnection}
-              />
-            </TabsContent>
-
-            <TabsContent value="control" className="space-y-6">
-              <ControlTabContent
-                selectedBotId={selectedBotId}
-                selectedBot={selectedBot}
-                botHealth={botHealth}
-                isConnected={isConnected}
-                quotaStatus={quotaStatus}
-                quotaLoading={quotaLoading}
-                quotaError={quotaError}
-                webhookStatus={webhookStatus}
-                webhookStatusLoading={webhookStatusLoading}
-                copiedWebhookUrl={copiedWebhookUrl}
-                controlLoading={controlLoading}
-                onRefreshQuota={refetchQuota}
-                onCheckBotHealth={handleCheckBotHealth}
-                onCopyWebhookUrl={handleCopyWebhookUrl}
-                onCheckWebhookStatus={handleCheckWebhookStatus}
-              />
-            </TabsContent>
-
-            <TabsContent value="logic" className="space-y-6">
-              <LogicTabContent
-                selectedBotId={selectedBotId}
-                logicLoading={logicLoading}
-                logicTemplates={logicTemplates}
-                onToggleLogicTemplate={toggleLogicTemplate}
-              />
-            </TabsContent>
-
-            <TabsContent value="users" className="space-y-6">
-              <UsersTabContent
-                selectedBotId={selectedBotId}
-                broadcastMessage={broadcastMessage}
-                totalCount={totalCount}
-                selectedUserIds={selectedUserIds}
-                filteredUsers={filteredUsers}
-                usersLoading={usersLoading}
-                selectedUser={selectedUser}
-                pagination={pagination}
-                broadcastLoading={broadcastLoading}
-                selectiveBroadcastLoading={selectiveBroadcastLoading}
-                searchTerm={searchTerm}
-                showChatPanel={showChatPanel}
-                currentChatUser={currentChatUser}
-                onBroadcastMessageChange={setBroadcastMessage}
-                onSearchTermChange={setSearchTerm}
-                onBroadcast={handleBroadcast}
-                onSelectiveBroadcast={handleSelectiveBroadcast}
-                onSelectAll={handleSelectAll}
-                onUserCheck={handleUserCheck}
-                onUserSelect={handleUserSelect}
-                onViewUserDetails={handleViewUserDetails}
-                onStartChat={handleStartChat}
-                onPageChange={handlePageChange}
-                onCloseChatPanel={() => setShowChatPanel(false)}
-              />
-            </TabsContent>
-          </Tabs>
-
           {bots.length === 0 && !loading && (
             <Card>
-              <CardContent className="text-center py-8">
+              <CardContent className="text-center py-10">
                 <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">尚無 LINE Bot</p>
-                <Button onClick={() => navigate("/bots/create")}>
-                  建立第一個 Bot
-                </Button>
+                <h2 className="text-xl font-semibold text-foreground mb-2">
+                  先建立第一個 LINE Bot
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  建立完成後即可在同一條流程中管理 Webhook、邏輯模板、Rich Menu、AI 知識庫與用戶互動。
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button
+                    onClick={() => navigate("/bots/create")}
+                    className="web3-primary-button"
+                  >
+                    建立第一個 Bot
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/how-to-establish")}
+                  >
+                    查看建立教學
+                  </Button>
+                </div>
               </CardContent>
             </Card>
+          )}
+
+          {bots.length > 0 && (
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="space-y-6"
+            >
+              <TabsList className="grid w-full grid-cols-4 rounded-lg bg-muted p-1">
+                <TabsTrigger
+                  value="analytics"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  數據分析
+                </TabsTrigger>
+                <TabsTrigger
+                  value="control"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Bot 控制
+                </TabsTrigger>
+                <TabsTrigger
+                  value="logic"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  邏輯管理
+                </TabsTrigger>
+                <TabsTrigger
+                  value="users"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  用戶管理
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="analytics" className="space-y-6">
+                <AnalyticsTabContent
+                  selectedBotId={selectedBotId}
+                  analyticsLoading={analyticsLoading}
+                  analytics={analytics}
+                  messageStats={messageStats}
+                  userActivity={userActivity}
+                  activities={activities}
+                  usageData={usageData}
+                  timeRange={timeRange}
+                  onRefreshData={handleRefreshData}
+                  onRefreshActivities={handleRefreshActivities}
+                  onTimeRangeChange={handleTimeRangeChange}
+                  isWebSocketConnected={checkWebSocketConnection}
+                />
+              </TabsContent>
+
+              <TabsContent value="control" className="space-y-6">
+                <ControlTabContent
+                  selectedBotId={selectedBotId}
+                  selectedBot={selectedBot}
+                  botHealth={botHealth}
+                  isConnected={isConnected}
+                  quotaStatus={quotaStatus}
+                  quotaLoading={quotaLoading}
+                  quotaError={quotaError}
+                  webhookStatus={webhookStatus}
+                  webhookStatusLoading={webhookStatusLoading}
+                  copiedWebhookUrl={copiedWebhookUrl}
+                  controlLoading={controlLoading}
+                  onRefreshQuota={refetchQuota}
+                  onCheckBotHealth={handleCheckBotHealth}
+                  onCopyWebhookUrl={handleCopyWebhookUrl}
+                  onCheckWebhookStatus={handleCheckWebhookStatus}
+                />
+              </TabsContent>
+
+              <TabsContent value="logic" className="space-y-6">
+                <LogicTabContent
+                  selectedBotId={selectedBotId}
+                  logicLoading={logicLoading}
+                  logicTemplates={logicTemplates}
+                  onToggleLogicTemplate={toggleLogicTemplate}
+                />
+              </TabsContent>
+
+              <TabsContent value="users" className="space-y-6">
+                <UsersTabContent
+                  selectedBotId={selectedBotId}
+                  broadcastMessage={broadcastMessage}
+                  totalCount={totalCount}
+                  selectedUserIds={selectedUserIds}
+                  filteredUsers={filteredUsers}
+                  usersLoading={usersLoading}
+                  selectedUser={selectedUser}
+                  pagination={pagination}
+                  broadcastLoading={broadcastLoading}
+                  selectiveBroadcastLoading={selectiveBroadcastLoading}
+                  searchTerm={searchTerm}
+                  showChatPanel={showChatPanel}
+                  currentChatUser={currentChatUser}
+                  onBroadcastMessageChange={setBroadcastMessage}
+                  onSearchTermChange={setSearchTerm}
+                  onBroadcast={handleBroadcast}
+                  onSelectiveBroadcast={handleSelectiveBroadcast}
+                  onSelectAll={handleSelectAll}
+                  onUserCheck={handleUserCheck}
+                  onUserSelect={handleUserSelect}
+                  onViewUserDetails={handleViewUserDetails}
+                  onStartChat={handleStartChat}
+                  onPageChange={handlePageChange}
+                  onCloseChatPanel={() => setShowChatPanel(false)}
+                />
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </div>

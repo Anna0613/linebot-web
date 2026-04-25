@@ -12,22 +12,30 @@ import VisualEditorApi, { FlexMessage } from '../../services/visualEditorApi';
 import { VisualEditorProvider } from '../../contexts/VisualEditorContext';
 
 // 專案資料介面（未使用,已移除）
+type VisualEditorRouteState = {
+  activeTab?: string;
+  selectedBotId?: string | null;
+  returnTo?: string;
+  returnLabel?: string;
+};
 
 export const VisualBotEditor: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const initialRouteState = location.state as VisualEditorRouteState | null;
+  const initialActiveTab = initialRouteState?.activeTab || 'logic';
+  const initialSelectedBotId = initialRouteState?.selectedBotId || '';
+  const returnTo = initialRouteState?.returnTo || '/bots/management';
+  const returnLabel = initialRouteState?.returnLabel || '返回管理中心';
   const [logicBlocks, setLogicBlocks] = useState<UnifiedBlock[]>([]);
   const [flexBlocks, setFlexBlocks] = useState<UnifiedBlock[]>([]);
   const [projectVersion, _setProjectVersion] = useState<string>('2.0'); // 新版本使用統一積木系統
-  const [selectedBotId, setSelectedBotId] = useState<string>('');
+  const [selectedBotId, setSelectedBotId] = useState<string>(initialSelectedBotId);
   const [selectedLogicTemplateId, setSelectedLogicTemplateId] = useState<string>('');
   const [selectedFlexMessageId, setSelectedFlexMessageId] = useState<string>('');
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [currentLogicTemplateName, setCurrentLogicTemplateName] = useState<string>('');
   const [currentFlexMessageName, setCurrentFlexMessageName] = useState<string>('');
-
-  // 從 location state 獲取初始活動標籤
-  const initialActiveTab = (location.state as { activeTab?: string })?.activeTab || 'logic';
 
   // 延遲儲存相關狀態
   const [saveStatus, setSaveStatus] = useState<SaveStatus>(SaveStatus.SAVED);
@@ -64,13 +72,15 @@ export const VisualBotEditor: React.FC = () => {
 
   // 處理返回上一頁
   const handleGoBack = () => {
+    const goBack = () => navigate(returnTo);
+
     // 如果有未儲存的變更，先嘗試儲存
     if (hasUnsavedChanges) {
       if (confirm('您有未儲存的變更，確定要離開嗎？變更將會遺失。')) {
-        navigate(-1);
+        goBack();
       }
     } else {
-      navigate(-1);
+      goBack();
     }
   };
 
@@ -287,7 +297,7 @@ export const VisualBotEditor: React.FC = () => {
       console.log('邏輯模板創建成功:', template);
     } catch (_error) {
       console.error("Error occurred:", _error);
-      throw error;
+      throw _error;
     }
   };
 
@@ -306,7 +316,7 @@ export const VisualBotEditor: React.FC = () => {
       console.log('FlexMessage 創建成功:', message);
     } catch (_error) {
       console.error("Error occurred:", _error);
-      throw error;
+      throw _error;
     }
   };
 
@@ -442,7 +452,7 @@ export const VisualBotEditor: React.FC = () => {
                 size="icon"
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-web3-cyan transition-colors"
-                title="返回上一頁"
+                title={returnLabel}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
