@@ -11,7 +11,6 @@ from app.models.user import User
 from app.schemas.user import UserProfile, UserUpdate, AvatarUpload
 from app.schemas.auth import PasswordChange
 from app.services.user_service import UserService
-from app.services.auth_service import AuthService
 
 router = APIRouter()
 
@@ -73,14 +72,6 @@ async def delete_account(
 ):
     """刪除用戶帳號"""
     return await UserService.delete_user_account(db, current_user.id)
-
-@router.post("/resend-email-verification", response_model=Dict[str, str])
-async def resend_email_verification(
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user_async)
-):
-    """重新發送email驗證"""
-    return await AuthService.resend_verification_email(db, current_user.email)
 
 @router.get("/check-email-verification", response_model=Dict[str, bool])
 async def check_email_verification(

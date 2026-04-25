@@ -4,7 +4,7 @@ Token 自動刷新 Middleware
 """
 import logging
 from datetime import datetime, timedelta
-from typing import Callable
+from typing import Callable, Optional, Tuple
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
@@ -91,7 +91,7 @@ class TokenRefreshMiddleware(BaseHTTPMiddleware):
         
         return False
     
-    def _check_and_refresh_token(self, payload: dict) -> tuple[bool, str | None]:
+    def _check_and_refresh_token(self, payload: dict) -> Tuple[bool, Optional[str]]:
         """
         檢查 token 是否需要刷新
         
@@ -168,4 +168,3 @@ class TokenRefreshMiddleware(BaseHTTPMiddleware):
             )
         except Exception as e:
             logger.error(f"更新 token cookie 時發生錯誤: {str(e)}")
-

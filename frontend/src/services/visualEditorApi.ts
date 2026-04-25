@@ -17,22 +17,6 @@ export interface BotSummary {
   created_at: string;
 }
 
-export interface VisualEditorData {
-  bot_id: string;
-  logic_blocks: UnifiedBlock[];
-  flex_blocks: UnifiedBlock[];
-  generated_code?: string;
-}
-
-export interface VisualEditorResponse {
-  bot_id: string;
-  logic_blocks: UnifiedBlock[];
-  flex_blocks: UnifiedBlock[];
-  generated_code?: string;
-  created_at: string;
-  updated_at: string;
-}
-
 // 邏輯模板相關介面
 export interface LogicTemplate {
   id: string;
@@ -153,86 +137,6 @@ export class VisualEditorApi {
   }
 
   /**
-   * 儲存視覺化編輯器數據到指定的 Bot
-   */
-  static async saveVisualEditorData(
-    botId: string, 
-    data: Omit<VisualEditorData, 'bot_id'>
-  ): Promise<VisualEditorResponse> {
-    try {
-      const payload: VisualEditorData = {
-        bot_id: botId,
-        ...data
-      };
-
-      const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/visual-editor/save`;
-      const response = await this.apiClient.post<VisualEditorResponse>(
-        endpoint,
-        payload
-      );
-
-      if (!response.success) {
-        throw new Error(response.error || '儲存失敗');
-      }
-
-      if (!response.data) {
-        throw new Error('儲存回應格式錯誤');
-      }
-
-      return response.data;
-    } catch (_error) {
-      console.error("Error occurred:", _error);
-      if (_error instanceof Error) {
-        throw _error;
-      }
-      throw new Error('儲存失敗，請稍後再試');
-    }
-  }
-
-  /**
-   * 載入指定 Bot 的視覺化編輯器數據
-   */
-  static async loadVisualEditorData(botId: string): Promise<VisualEditorResponse> {
-    try {
-      const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/visual-editor`;
-      const response = await this.apiClient.get<VisualEditorResponse>(
-        endpoint
-      );
-
-      if (!response.success) {
-        throw new Error(response.error || '載入失敗');
-      }
-
-      if (!response.data) {
-        throw new Error('載入回應格式錯誤');
-      }
-
-      // 後端已修復雙重序列化問題，直接使用積木數據
-
-      return response.data;
-    } catch (_error) {
-      console.error("Error occurred:", _error);
-      if (_error instanceof Error) {
-        throw _error;
-      }
-      throw new Error('載入失敗，請稍後再試');
-    }
-  }
-
-  /**
-   * 檢查 Bot 是否存在視覺化編輯器數據
-   */
-  static async hasVisualEditorData(botId: string): Promise<boolean> {
-    try {
-      const data = await this.loadVisualEditorData(botId);
-      return !!(data.logic_blocks?.length || data.flex_blocks?.length);
-    } catch (_error) {
-      // 如果載入失敗，假設沒有數據
-      return false;
-    }
-  }
-
-  /**
    * 驗證 Bot ID 格式
    */
   static isValidBotId(botId: string): boolean {
@@ -242,25 +146,6 @@ export class VisualEditorApi {
   }
 
   // ===== 邏輯模板相關方法 =====
-
-  /**
-   * 取得Bot的所有邏輯模板
-   */
-  static async getBotLogicTemplates(botId: string): Promise<LogicTemplate[]> {
-    try {
-      const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/logic-templates`;
-      const response = await this.apiClient.get<LogicTemplate[]>(endpoint);
-
-      if (!response.success || response.status >= 400) {
-        throw new Error(response.error || `API 錯誤 (${response.status})`);
-      }
-
-      return response.data || [];
-    } catch (_error) {
-      console.error("Error occurred:", _error);
-      throw new Error('取得邏輯模板列表失敗，請稍後再試');
-    }
-  }
 
   /**
    * 取得Bot邏輯模板摘要列表（用於下拉選單）
@@ -411,46 +296,6 @@ export class VisualEditorApi {
         throw _error;
       }
       throw new Error('更新邏輯模板失敗，請稍後再試');
-    }
-  }
-
-  /**
-   * 刪除邏輯模板
-   */
-  static async deleteLogicTemplate(templateId: string): Promise<void> {
-    try {
-      const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/logic-templates/${templateId}`;
-      const response = await this.apiClient.delete(endpoint);
-
-      if (!response.success) {
-        throw new Error(response.error || '刪除邏輯模板失敗');
-      }
-    } catch (_error) {
-      console.error("Error occurred:", _error);
-      if (_error instanceof Error) {
-        throw _error;
-      }
-      throw new Error('刪除邏輯模板失敗，請稍後再試');
-    }
-  }
-
-  /**
-   * 激活邏輯模板
-   */
-  static async activateLogicTemplate(templateId: string): Promise<void> {
-    try {
-      const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/logic-templates/${templateId}/activate`;
-      const response = await this.apiClient.post(endpoint, {});
-
-      if (!response.success) {
-        throw new Error(response.error || '激活邏輯模板失敗');
-      }
-    } catch (_error) {
-      console.error("Error occurred:", _error);
-      if (_error instanceof Error) {
-        throw _error;
-      }
-      throw new Error('激活邏輯模板失敗，請稍後再試');
     }
   }
 
@@ -605,74 +450,6 @@ export class VisualEditorApi {
     }
   }
 
-  /**
-   * 刪除FLEX訊息
-   */
-  static async deleteFlexMessage(messageId: string): Promise<void> {
-    try {
-      const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/messages/${messageId}`;
-      const response = await this.apiClient.delete(endpoint);
-
-      if (!response.success) {
-        throw new Error(response.error || '刪除FLEX訊息失敗');
-      }
-    } catch (_error) {
-      console.error("Error occurred:", _error);
-      if (_error instanceof Error) {
-        throw _error;
-      }
-      throw new Error('刪除FLEX訊息失敗，請稍後再試');
-    }
-  }
-
-  // ===== 快取管理工具方法 =====
-
-  /**
-   * 清除所有快取
-   */
-  static clearAllCache(): boolean {
-    return this.cacheService.clear();
-  }
-
-  /**
-   * 清除特定 Bot 相關的快取
-   */
-  static clearBotCache(botId: string): void {
-    this.cacheService.remove(`${CACHE_KEYS.LOGIC_TEMPLATES_SUMMARY}_${botId}`);
-    // 清除該 Bot 的所有邏輯模板快取
-    this.cacheService.getStats();
-    Object.keys(localStorage).forEach(key => {
-      if (key.includes(`${CACHE_KEYS.LOGIC_TEMPLATE}_`) || key.includes(botId)) {
-        this.cacheService.remove(key.replace('visual_editor_cache_', ''));
-      }
-    });
-  }
-
-  /**
-   * 獲取快取統計資訊
-   */
-  static getCacheStats() {
-    return this.cacheService.getStats();
-  }
-
-  /**
-   * 手動刷新所有列表數據（不使用快取）
-   */
-  static async refreshAllData() {
-    const promises = [
-      this.getUserBotsSummary(false),
-      this.getUserFlexMessagesSummary(false),
-      this.getUserFlexMessages(false)
-    ];
-    
-    try {
-      await Promise.all(promises);
-      console.log('所有數據已刷新');
-    } catch (error) {
-      console.error('數據刷新失敗:', error);
-      throw error;
-    }
-  }
 }
 
 export default VisualEditorApi;

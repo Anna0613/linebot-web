@@ -5,7 +5,7 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Dict, Any, Callable
 from dataclasses import dataclass
 from enum import Enum
@@ -104,11 +104,6 @@ class KnowledgeProcessingService:
         return cls._processing_semaphore
 
     @classmethod
-    def get_active_jobs_count(cls) -> int:
-        """獲取活躍任務數量"""
-        return len(cls._active_jobs)
-    
-    @classmethod
     async def submit_file_processing(
         cls,
         bot_id: str,
@@ -163,60 +158,6 @@ class KnowledgeProcessingService:
         )
         
         logger.info(f"檔案處理任務已提交: {job_id} - {file.filename}")
-        return job_id
-    
-    @classmethod
-    async def submit_text_processing(
-        cls,
-        bot_id: str,
-        user_id: str,
-        content: str,
-        scope: str = "project",
-        auto_chunk: bool = True,
-        chunk_size: int = 800,
-        overlap: int = 80,
-        progress_callback: Optional[Callable[[ProcessingJob], None]] = None
-    ) -> str:
-        """
-        提交文字處理任務
-        
-        Returns:
-            job_id: 任務 ID
-        """
-        job_id = cls.generate_job_id()
-        
-        # 創建處理任務
-        job = ProcessingJob(
-            job_id=job_id,
-            bot_id=bot_id,
-            user_id=user_id,
-            status=ProcessingStatus.PENDING,
-            metadata={
-                "content_length": len(content),
-                "scope": scope,
-                "auto_chunk": auto_chunk,
-                "chunk_size": chunk_size,
-                "overlap": overlap
-            }
-        )
-        
-        cls._active_jobs[job_id] = job
-        
-        # 提交到背景任務管理器
-        task_manager = get_task_manager()
-        await task_manager.add_task(
-            job_id,
-            "知識庫文字處理",
-            cls._process_text_async,
-            kwargs={
-                "job_id": job_id,
-                "content": content,
-                "progress_callback": progress_callback
-            },
-            priority=TaskPriority.NORMAL
-        )
-        
-        logger.info(f"文字處理任務已提交: {job_id}")
         return job_id
     
     @classmethod
@@ -275,41 +216,11 @@ class KnowledgeProcessingService:
                     progress_callback(job)
     
     @classmethod
-    async def _process_text_async(
-        cls,
-        job_id: str,
-        content: str,
-        progress_callback: Optional[Callable[[ProcessingJob], None]] = None
-    ):
-        """非同步處理文字"""
-        semaphore = await cls._get_processing_semaphore()
-        async with semaphore:
-            job = cls._active_jobs.get(job_id)
-            if not job:
-                logger.error(f"找不到任務: {job_id}")
-                return
-            
-            try:
-                job.status = ProcessingStatus.PROCESSING
-                if progress_callback:
-                    progress_callback(job)
-                
-                # 處理文字內容
-                await cls._process_extracted_text(job, content, None, progress_callback)
-                
-            except Exception as e:
-                logger.error(f"文字處理失敗 {job_id}: {e}")
-                job.status = ProcessingStatus.FAILED
-                job.error_message = str(e)
-                if progress_callback:
-                    progress_callback(job)
-    
-    @classmethod
     async def _process_extracted_text(
         cls,
         job: ProcessingJob,
         text: str,
-        file_data: Optional[bytes] = None,
+        file_data: bytes,
         progress_callback: Optional[Callable[[ProcessingJob], None]] = None
     ):
         """處理提取的文字"""
@@ -419,16 +330,13 @@ class KnowledgeProcessingService:
         text: str,
         chunks: List[str],
         embeddings: List[List[float]],
-        file_data: Optional[bytes] = None
+        file_data: bytes
     ):
         """批次插入知識庫資料"""
         scope = job.metadata.get("scope", "project")
         scope_bot = job.bot_id if scope == "project" else None
 
-        # 上傳檔案到 MinIO（如果有檔案資料）
-        object_path = None
-        if file_data:
-            object_path = await cls._upload_to_minio(job, file_data)
+        object_path = await cls._upload_to_minio(job, file_data)
 
         # 生成 AI 摘要（背景任務，不阻塞主流程）
         ai_summary = None
@@ -447,15 +355,15 @@ class KnowledgeProcessingService:
         # 創建文檔記錄
         doc = KnowledgeDocument(
             bot_id=scope_bot,
-            source_type="file" if file_data else "text",
-            title=job.metadata.get("filename", text[:40] + ("…" if len(text) > 40 else "")),
+            source_type="file",
+            title=job.metadata.get("filename") or "上傳檔案",
             original_file_name=job.metadata.get("filename"),
             object_path=object_path,
             chunked=len(chunks) > 1,
             ai_summary=ai_summary,  # 儲存 AI 生成的摘要
             original_content=text,  # 儲存檔案原文內容
             meta={
-                "source_type": "file" if file_data else "text",
+                "source_type": "file",
                 "filename": job.metadata.get("filename"),
                 "content_type": job.metadata.get("content_type"),
                 "job_id": job.job_id,
@@ -479,7 +387,7 @@ class KnowledgeProcessingService:
                 "embedding": cleaned_embedding,
                 "embedding_model": "all-mpnet-base-v2",
                 "embedding_dimensions": "768",
-                "meta": {"chunk_index": i, "source_type": "file" if file_data else "text"}
+                "meta": {"chunk_index": i, "source_type": "file"}
             })
 
         # 使用批次插入提升效能
@@ -524,40 +432,7 @@ class KnowledgeProcessingService:
             return None
 
     @classmethod
-    async def cleanup_completed_jobs(cls, max_age_hours: int = 24):
-        """清理已完成的任務"""
-        cutoff_time = datetime.utcnow() - timedelta(hours=max_age_hours)
-
-        jobs_to_remove = []
-        for job_id, job in cls._active_jobs.items():
-            if (job.status in [ProcessingStatus.COMPLETED, ProcessingStatus.FAILED] and
-                job.completed_at and job.completed_at < cutoff_time):
-                jobs_to_remove.append(job_id)
-
-        for job_id in jobs_to_remove:
-            del cls._active_jobs[job_id]
-
-        if jobs_to_remove:
-            logger.info(f"清理了 {len(jobs_to_remove)} 個過期任務")
-
-    @classmethod
     def get_active_jobs_count(cls) -> int:
         """獲取活躍任務數量"""
         return len([job for job in cls._active_jobs.values()
                    if job.status == ProcessingStatus.PROCESSING])
-
-    @classmethod
-    def get_job_statistics(cls) -> Dict[str, int]:
-        """獲取任務統計"""
-        stats = {
-            "total": len(cls._active_jobs),
-            "pending": 0,
-            "processing": 0,
-            "completed": 0,
-            "failed": 0
-        }
-
-        for job in cls._active_jobs.values():
-            stats[job.status.value] += 1
-
-        return stats

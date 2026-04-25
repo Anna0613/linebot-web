@@ -411,12 +411,6 @@ async def _get_image_bytes_for_menu(m: RichMenu) -> Optional[bytes]:
         return None
 
 
-@router.post("/{bot_id}/richmenus/{menu_id}/test")
-async def test_publish_route(bot_id: str, menu_id: str):
-    """Test route to verify routing works."""
-    logger.info(f"TEST 路由被呼叫: bot_id={bot_id}, menu_id={menu_id}")
-    return {"status": "success", "bot_id": bot_id, "menu_id": menu_id}
-
 @router.post("/{bot_id}/richmenus/{menu_id}/publish", response_model=RichMenuResponse)
 async def publish_rich_menu(
     bot_id: str,
@@ -621,21 +615,6 @@ async def create_rich_menu(
     return _to_response(db_item)
 
 
-@router.get("/{bot_id}/richmenus/{menu_id}", response_model=RichMenuResponse)
-async def get_rich_menu(
-    bot_id: str,
-    menu_id: str,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user_async),
-):
-    bot = await _assert_bot_ownership(db, bot_id, current_user.id)
-    res = await db.execute(select(RichMenu).where(RichMenu.id == menu_id, RichMenu.bot_id == bot.id))
-    m = res.scalars().first()
-    if not m:
-        raise HTTPException(status_code=404, detail="Rich Menu 不存在")
-    return _to_response(m)
-
-
 @router.put("/{bot_id}/richmenus/{menu_id}", response_model=RichMenuResponse)
 async def update_rich_menu(
     bot_id: str,
@@ -687,62 +666,6 @@ async def delete_rich_menu(
     await db.delete(m)
     await db.commit()
     return {"message": "刪除成功"}
-
-
-@router.post("/{bot_id}/richmenus/{menu_id}/default")
-async def set_default_rich_menu(
-    bot_id: str,
-    menu_id: str,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user_async),
-):
-    bot = await _assert_bot_ownership(db, bot_id, current_user.id)
-    res = await db.execute(select(RichMenu).where(RichMenu.id == menu_id, RichMenu.bot_id == bot_id))
-    m = res.scalars().first()
-    if not m:
-        raise HTTPException(status_code=404, detail="Rich Menu 不存在")
-
-    await db.execute(update(RichMenu).where(RichMenu.bot_id == bot.id).values(selected=False))
-    m.selected = True
-    await db.commit()
-    await db.refresh(m)
-    # 同步 LINE 預設 Rich Menu
-    try:
-        if m.line_rich_menu_id:
-            logger.info(f"Setting Rich Menu {menu_id} ({m.line_rich_menu_id}) as default")
-            success = await _line_set_default(bot.channel_token, m.line_rich_menu_id)
-            if not success:
-                logger.error(f"Failed to set Rich Menu {m.line_rich_menu_id} as default on LINE platform")
-                raise HTTPException(status_code=502, detail="設定預設 Rich Menu 失敗")
-        else:
-            logger.warning(f"Rich Menu {menu_id} has no LINE Rich Menu ID, cannot set as default")
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "message": "Rich Menu 尚未發佈到 LINE 平台，請先點擊「重新發佈到 LINE」按鈕",
-                    "action_required": "publish",
-                    "menu_id": menu_id
-                }
-            )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"同步 LINE 預設 Rich Menu 失敗: {e}")
-        raise HTTPException(status_code=502, detail="同步 LINE 預設 Rich Menu 失敗")
-
-    return _to_response(m)
-
-
-@router.delete("/{bot_id}/richmenus/default")
-async def unset_default_rich_menu(
-    bot_id: str,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user_async),
-):
-    await _assert_bot_ownership(db, bot_id, current_user.id)
-    await db.execute(update(RichMenu).where(RichMenu.bot_id == bot_id).values(selected=False))
-    await db.commit()
-    return {"message": "已取消預設 Rich Menu"}
 
 
 @router.post("/{bot_id}/richmenus/{menu_id}/image", response_model=RichMenuResponse)

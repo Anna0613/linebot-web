@@ -14,13 +14,6 @@ export class RichMenuApi {
     return (res.data || []) as RichMenu[];
   }
 
-  static async get(botId: string, menuId: string): Promise<RichMenu> {
-    const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/richmenus/${menuId}`);
-    const res = await this.api.get<RichMenu>(url);
-    if (!res.success || !res.data) throw new Error(res.error || '取得 Rich Menu 失敗');
-    return res.data as RichMenu;
-  }
-
   static async create(botId: string, payload: CreateRichMenuPayload): Promise<RichMenu> {
     const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/richmenus`);
     const res = await this.api.post<RichMenu>(url, payload);
@@ -37,18 +30,6 @@ export class RichMenuApi {
 
   static async remove(botId: string, menuId: string) {
     const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/richmenus/${menuId}`);
-    return this.api.delete(url);
-  }
-
-  static async setDefault(botId: string, menuId: string): Promise<RichMenu> {
-    const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/richmenus/${menuId}/default`);
-    const res = await this.api.post<RichMenu>(url, {});
-    if (!res.success || !res.data) throw new Error(res.error || '設定預設失敗');
-    return res.data as RichMenu;
-  }
-
-  static async unsetDefault(botId: string) {
-    const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/richmenus/default`);
     return this.api.delete(url);
   }
 

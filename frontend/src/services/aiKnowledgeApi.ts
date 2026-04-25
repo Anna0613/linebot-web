@@ -24,13 +24,6 @@ export interface KnowledgeChunkItem {
   updated_at: string;
 }
 
-export interface KnowledgeList {
-  items: KnowledgeChunkItem[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
 export interface KnowledgeDocumentItem {
   id: string;
   bot_id?: string | null;
@@ -82,55 +75,12 @@ export class AIKnowledgeApi {
     return res.data as AIToggle;
   }
 
-  static async list(botId: string, scope: Scope = 'project', q = '', page = 1, pageSize = 20) {
-    const params = new URLSearchParams({ scope, page: String(page), page_size: String(pageSize) });
-    if (q) params.append('q', q);
-    const res = await this.api.get<KnowledgeList>(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge?${params.toString()}`);
-    if (!res.success) throw new Error(res.error || '取得知識庫失敗');
-    return res.data as KnowledgeList;
-  }
-
   static async addText(botId: string, scope: Scope, content: string, autoChunk = false, chunkSize = 800, overlap = 80) {
     const res = await this.api.post<KnowledgeChunkItem>(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/text`, {
       scope, content, auto_chunk: autoChunk, chunk_size: chunkSize, overlap,
     });
     if (!res.success) throw new Error(res.error || '新增文字知識失敗');
     return res.data as KnowledgeChunkItem;
-  }
-
-  static async addBulk(botId: string, scope: Scope, content: string, chunkSize = 800, overlap = 80) {
-    const res = await this.api.post<KnowledgeList>(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/bulk`, {
-      scope, content, auto_chunk: true, chunk_size: chunkSize, overlap,
-    });
-    if (!res.success) throw new Error(res.error || '新增大量文字失敗');
-    return res.data as KnowledgeList;
-  }
-
-  static async uploadFile(botId: string, scope: Scope, file: File, chunkSize = 800, overlap = 80) {
-    const form = new FormData();
-    form.append('scope', scope);
-    form.append('file', file);
-    form.append('chunk_size', String(chunkSize));
-    form.append('overlap', String(overlap));
-    const res = await this.api.postFormData<KnowledgeList>(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/file`, form);
-    if (!res.success) throw new Error(res.error || '上傳檔案失敗');
-    return res.data as KnowledgeList;
-  }
-
-  static async updateChunk(botId: string, chunkId: string, content: string) {
-    const res = await this.api.put<KnowledgeChunkItem>(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/chunks/${chunkId}`, { content });
-    if (!res.success) throw new Error(res.error || '更新片段失敗');
-    return res.data as KnowledgeChunkItem;
-  }
-
-  static async deleteChunk(botId: string, chunkId: string) {
-    const res = await this.api.delete(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/chunks/${chunkId}`);
-    if (!res.success) throw new Error(res.error || '刪除片段失敗');
-  }
-
-  static async batchDelete(botId: string, chunkIds: string[]) {
-    const res = await this.api.post(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/chunks/batch-delete`, { chunk_ids: chunkIds });
-    if (!res.success) throw new Error(res.error || '批次刪除失敗');
   }
 
   static async search(botId: string, q: string) {
@@ -148,11 +98,6 @@ export class AIKnowledgeApi {
     const res = await this.api.get<KnowledgeDocumentList>(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/documents?${params.toString()}`);
     if (!res.success) throw new Error(res.error || '取得文件列表失敗');
     return res.data as KnowledgeDocumentList;
-  }
-
-  static async deleteDocument(botId: string, documentId: string) {
-    const res = await this.api.delete(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/knowledge/documents/${documentId}`);
-    if (!res.success) throw new Error(res.error || '刪除文件失敗');
   }
 
   static async batchDeleteDocuments(botId: string, documentIds: string[]) {

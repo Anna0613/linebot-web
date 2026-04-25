@@ -4,9 +4,8 @@ AI 分析 API 路由
 """
 from __future__ import annotations
 
-import asyncio
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,7 +82,7 @@ async def ai_query_user(
 
 @router.get("/ai/models", response_model=AIModelsResponse)
 async def get_ai_models(
-    provider: str | None = Query(default=None, description="指定提供商，如 groq 或 gemini"),
+    provider: Optional[str] = Query(default=None, description="指定提供商，如 groq 或 gemini"),
     current_user: User = Depends(get_current_user_async),
 ) -> Any:
     """取得可用的 AI 模型列表。"""
@@ -134,4 +133,3 @@ async def clear_ai_conversation_history(
     except Exception as e:
         logger.error(f"清除 AI 對話歷史失敗: {e}")
         raise HTTPException(status_code=500, detail=f"清除 AI 對話歷史失敗: {str(e)}")
-

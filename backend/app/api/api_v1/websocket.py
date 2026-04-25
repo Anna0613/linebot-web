@@ -2,18 +2,16 @@
 WebSocket API 路由
 提供即時數據更新功能
 """
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Optional
+from typing import Optional
 import json
-import asyncio
 import logging
 
 from app.database_async import get_async_db
 from app.models.bot import Bot
 from app.models.user import User
 from app.services.websocket_manager import websocket_manager
-from app.api.dependencies import get_current_user_websocket
 from sqlalchemy import select
 from app.core.security import verify_token
 
@@ -180,45 +178,3 @@ async def send_initial_data(bot_id: str, websocket: WebSocket, db: AsyncSession)
         
     except Exception as e:
         logger.error(f"發送初始數據失敗: {e}")
-
-@router.get("/ws/stats")
-async def get_websocket_stats():
-    """獲取 WebSocket 連接統計"""
-    try:
-        stats = websocket_manager.get_connection_stats()
-        return {
-            "success": True,
-            "data": stats
-        }
-    except Exception as e:
-        logger.error(f"獲取 WebSocket 統計失敗: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get WebSocket stats")
-
-@router.post("/ws/broadcast/{bot_id}")
-async def broadcast_to_bot(
-    bot_id: str,
-    message: dict,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = Depends(get_current_user_websocket)
-):
-    """向特定 Bot 的所有 WebSocket 連接廣播消息"""
-    try:
-        # 驗證 Bot 所有權（避免阻塞事件圈）
-        result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
-        bot = result.scalars().first()
-        
-        if not bot:
-            raise HTTPException(status_code=404, detail="Bot not found")
-        
-        # 廣播消息
-        await websocket_manager.broadcast_to_bot(bot_id, message)
-        
-        return {
-            "success": True,
-            "message": "Message broadcasted successfully"
-        }
-        
-    except Exception as e:
-        logger.error(f"廣播消息失敗: {e}")
-        raise HTTPException(status_code=500, detail="Failed to broadcast message")
-
