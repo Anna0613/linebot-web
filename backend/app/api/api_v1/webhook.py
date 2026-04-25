@@ -242,17 +242,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.get("/webhooks/{bot_id}/test")
-async def test_webhook_connection(bot_id: str):
-    """測試 Webhook 連接"""
-    logger.info(f"🧪 測試 Webhook 連接: Bot ID = {bot_id}")
-    return {
-        "status": "ok",
-        "bot_id": bot_id,
-        "message": "Webhook 端點正常運作",
-        "timestamp": "2025-08-26T02:50:00.000Z"
-    }
-
 @router.post("/webhooks/{bot_id}")
 async def handle_webhook_event(
     bot_id: str,
@@ -380,44 +369,6 @@ async def handle_webhook_event(
         # 避免 LINE 平台重複發送事件
         return Response(status_code=200)
 
-@router.get("/webhooks/{bot_id}/info")
-async def get_webhook_info(
-    bot_id: str,
-    db: AsyncSession = Depends(get_async_db)
-):
-    """
-    獲取 Webhook 配置信息
-
-    Args:
-        bot_id: Bot ID
-        db: 數據庫會話
-
-    Returns:
-        Webhook 配置信息
-    """
-    try:
-        # 查找對應的 Bot
-        result = await db.execute(select(Bot).where(Bot.id == bot_id))
-        bot = result.scalars().first()
-        if not bot:
-            raise HTTPException(status_code=404, detail="Bot 不存在")
-
-        # 構建完整的 Webhook URL
-        import os
-        webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
-        webhook_url = f"{webhook_domain}/api/v1/webhooks/{bot_id}"
-
-        return {
-            "bot_id": bot_id,
-            "webhook_url": webhook_url,
-            "configured": bool(bot.channel_token and bot.channel_secret),
-            "status": "ready" if bot.channel_token and bot.channel_secret else "not_configured"
-        }
-
-    except Exception as e:
-        logger.error(f"獲取 Webhook 信息失敗: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"獲取 Webhook 信息失敗: {str(e)}")
-
 @router.get("/webhooks/{bot_id}/status")
 async def get_webhook_status(
     bot_id: str,
@@ -525,90 +476,6 @@ async def get_webhook_status(
     except Exception as e:
         logger.error(f"獲取 Webhook 狀態失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取狀態失敗: {str(e)}")
-
-@router.get("/webhooks/{bot_id}/debug")
-async def debug_webhook_config(
-    bot_id: str,
-    db: AsyncSession = Depends(get_async_db)
-):
-    """
-    除錯 Webhook 配置
-
-    Args:
-        bot_id: Bot ID
-        db: 數據庫會話
-
-    Returns:
-        除錯資訊
-    """
-    try:
-        # 查找對應的 Bot
-        result = await db.execute(select(Bot).where(Bot.id == bot_id))
-        bot = result.scalars().first()
-        if not bot:
-            raise HTTPException(status_code=404, detail="Bot 不存在")
-
-        # 獲取 webhook 域名
-        import os
-        webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
-
-        return {
-            "bot_id": bot_id,
-            "bot_name": bot.name,
-            "has_channel_token": bool(bot.channel_token),
-            "has_channel_secret": bool(bot.channel_secret),
-            "channel_token_length": len(bot.channel_token) if bot.channel_token else 0,
-            "channel_secret_length": len(bot.channel_secret) if bot.channel_secret else 0,
-            "webhook_url": f"{webhook_domain}/api/v1/webhooks/{bot_id}",
-            "status": "configured" if (bot.channel_token and bot.channel_secret) else "not_configured"
-        }
-
-    except Exception as e:
-        logger.error(f"除錯 Webhook 配置失敗: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"除錯失敗: {str(e)}")
-
-@router.post("/webhooks/{bot_id}/test")
-async def test_webhook_connection(
-    bot_id: str,
-    db: AsyncSession = Depends(get_async_db)
-):
-    """
-    測試 Webhook 連接
-
-    Args:
-        bot_id: Bot ID
-        db: 數據庫會話
-
-    Returns:
-        測試結果
-    """
-    try:
-        # 查找對應的 Bot
-        from sqlalchemy import select
-        result = await db.execute(select(Bot).where(Bot.id == bot_id))
-        bot = result.scalars().first()
-        if not bot:
-            raise HTTPException(status_code=404, detail="Bot 不存在")
-
-        if not bot.channel_token or not bot.channel_secret:
-            raise HTTPException(status_code=400, detail="Bot 配置不完整")
-
-        # 初始化 LINE Bot Service
-        line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
-
-        # 檢查連接狀態
-        is_healthy = await line_bot_service.async_check_connection()
-
-        return {
-            "bot_id": bot_id,
-            "connection_status": "ok" if is_healthy else "failed",
-            "timestamp": "2024-08-23T12:00:00Z"
-        }
-
-    except Exception as e:
-        logger.error(f"測試 Webhook 連接失敗: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"測試連接失敗: {str(e)}")
-
 
 async def process_single_event(
     event: Dict[str, Any],

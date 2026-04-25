@@ -1,7 +1,7 @@
 """
 Pydantic schemas for LINE Rich Menu management
 """
-from typing import List, Optional, Literal, Dict, Any
+from typing import List, Optional, Literal, Dict, Any, Union
 from pydantic import BaseModel, Field, conint
 from datetime import datetime
 
@@ -33,7 +33,7 @@ class RichMenuAction(BaseModel):
 
 class RichMenuArea(BaseModel):
     bounds: RichMenuBounds
-    action: RichMenuAction | Dict[str, Any]
+    action: Union[RichMenuAction, Dict[str, Any]]
 
 
 class RichMenuCreate(BaseModel):
@@ -67,4 +67,3 @@ class RichMenuResponse(BaseModel):
 
     class Config:
         orm_mode = True
-

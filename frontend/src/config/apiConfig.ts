@@ -83,7 +83,6 @@ export const API_CONFIG = {
       DELETE_AVATAR: "/avatar",
       CHANGE_PASSWORD: "/change-password",
       DELETE_ACCOUNT: "/delete-account",
-      RESEND_EMAIL_VERIFICATION: "/resend-email-verification",
       CHECK_EMAIL_VERIFICATION: "/check-email-verification",
     },
   },
@@ -96,16 +95,6 @@ export const API_CONFIG = {
       CREATE_BOT: "/",
       UPDATE_BOT: (botId: string) => `/${botId}`,
       DELETE_BOT: (botId: string) => `/${botId}`,
-      CREATE_FLEX_MESSAGE: "/messages",
-      UPDATE_FLEX_MESSAGE: (flexMessageId: string) =>
-        `/messages/${flexMessageId}`,
-      DELETE_FLEX_MESSAGE: (flexMessageId: string) =>
-        `/messages/${flexMessageId}`,
-      GET_FLEX_MESSAGES: "/messages",
-      CREATE_BOT_CODE: "/codes",
-      UPDATE_BOT_CODE: (codeId: string) => `/codes/${codeId}`,
-      DELETE_BOT_CODE: (codeId: string) => `/codes/${codeId}`,
-      GET_BOT_CODES: "/codes",
     },
   },
 } as const;

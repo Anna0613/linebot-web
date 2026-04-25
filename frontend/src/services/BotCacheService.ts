@@ -3,7 +3,7 @@
  */
 
 import { cacheService, CACHE_KEYS, CACHE_TTL } from './CacheService';
-import { Bot } from '../services/puzzleApi';
+import type { Bot } from '../types/bot';
 
 export interface BotCacheConfig {
   enableCache: boolean;

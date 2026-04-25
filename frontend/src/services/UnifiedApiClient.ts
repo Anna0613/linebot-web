@@ -414,40 +414,6 @@ export class UnifiedApiClient {
     }
   }
 
-  // 認證相關API
-  public async login(username: string, password: string): Promise<ApiResponse> {
-    return this.post(
-      getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.LOGIN),
-      { username, password },
-      { skipAuth: true }
-    );
-  }
-
-  public async register(userData: { username: string; email: string; password: string }): Promise<ApiResponse> {
-    return this.post(
-      getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.REGISTER),
-      userData,
-      { skipAuth: true }
-    );
-  }
-
-  public async logout(): Promise<ApiResponse> {
-    const result = await this.post(
-      getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.LOGOUT)
-    );
-    
-    // 無論後端響應如何，都清除本地認證信息
-    authManager.clearAuth();
-    
-    return result;
-  }
-
-  public async checkLoginStatus(): Promise<ApiResponse> {
-    return this.get(
-      getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.CHECK_LOGIN)
-    );
-  }
-
   // 用戶資料相關API
   public async getProfile(): Promise<ApiResponse> {
     return this.get(
@@ -635,17 +601,6 @@ export class UnifiedApiClient {
     );
   }
 
-  // LINE登入相關API
-  public async getLineLoginUrl(): Promise<ApiResponse> {
-    return this.post(
-      getApiUrl(API_CONFIG.LINE_LOGIN.BASE_URL, API_CONFIG.LINE_LOGIN.ENDPOINTS.LINE_LOGIN),
-      {},
-      { skipAuth: true }
-    );
-  }
-
-  // 已移除舊的 LINE token 驗證端點調用，改由後端回調直接設置 Cookie
-
   // 邏輯模板相關API
   public async getBotLogicTemplates(botId: string): Promise<ApiResponse> {
     return this.get(
@@ -663,13 +618,6 @@ export class UnifiedApiClient {
     // 暫時使用 POST 方法，實際可能需要根據後端 API 設計調整
     return this.post(
       getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/logic-templates/${templateId}/deactivate`)
-    );
-  }
-
-  public async updateLogicTemplate(templateId: string, data: Record<string, unknown>): Promise<ApiResponse> {
-    return this.put(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/logic-templates/${templateId}`),
-      data
     );
   }
 
@@ -695,25 +643,6 @@ export class UnifiedApiClient {
   public async getBotUsageStats(botId: string): Promise<ApiResponse> {
     return this.get(
       getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/usage/stats`)
-    );
-  }
-
-  public async sendTestMessage(botId: string, messageData: { user_id: string; message: string }): Promise<ApiResponse> {
-    return this.post(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/send-message`),
-      messageData
-    );
-  }
-
-  public async getBotProfile(botId: string): Promise<ApiResponse> {
-    return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/profile`)
-    );
-  }
-
-  public async checkBotHealth(botId: string): Promise<ApiResponse> {
-    return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/health`)
     );
   }
 
@@ -809,12 +738,6 @@ export class UnifiedApiClient {
     );
   }
 
-  public async getWebhookInfo(botId: string): Promise<ApiResponse> {
-    return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/webhooks/${botId}/info`)
-    );
-  }
-
   // 儀表板複合端點 - 高效能資料獲取
   public async getBotDashboard(
     botId: string, 
@@ -854,56 +777,6 @@ export class UnifiedApiClient {
     );
   }
 
-  // 增量更新相關方法
-  public async getBotAnalyticsIncremental(botId: string, since?: string): Promise<ApiResponse> {
-    const params = new URLSearchParams();
-    if (since) {
-      params.append('since', since);
-    }
-
-    return this.get(
-      getApiUrl(
-        API_CONFIG.UNIFIED.BASE_URL,
-        `/bot_dashboard/${botId}/analytics/incremental${params.toString() ? '?' + params.toString() : ''}`
-      )
-    );
-  }
-
-  public async getWebhookStatusQuick(botId: string): Promise<ApiResponse> {
-    return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bot_dashboard/${botId}/status/quick`)
-    );
-  }
-
-  public async getBotActivitiesSince(botId: string, since: string): Promise<ApiResponse> {
-    return this.get(
-      getApiUrl(
-        API_CONFIG.UNIFIED.BASE_URL,
-        `/bots/${botId}/activities/since?since=${encodeURIComponent(since)}`
-      )
-    );
-  }
-
-  // WebSocket 相關方法
-  public async getWebSocketStats(): Promise<ApiResponse> {
-    return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, '/ws/stats')
-    );
-  }
-
-  public async broadcastToBot(botId: string, message: Record<string, unknown>): Promise<ApiResponse> {
-    return this.post(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/ws/broadcast/${botId}`),
-      message
-    );
-  }
-
-  // 媒體檔案相關方法
-  public async getMessageContent(botId: string, messageId: string): Promise<ApiResponse> {
-    return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/messages/${messageId}/content`)
-    );
-  }
 }
 
 // 導出單例實例

@@ -52,7 +52,6 @@ const Suggest = lazy(() => import("./pages/Suggest"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // 測試頁面
-const SidebarTestPage = lazy(() => import("./pages/SidebarTestPage"));
 
 
 
@@ -97,7 +96,6 @@ const AnimatedRoutes = () => {
       <Route path="/suggest" element={<Suggest />} />
 
       {/* 測試頁面 */}
-      <Route path="/sidebar-test" element={<SidebarTestPage />} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
