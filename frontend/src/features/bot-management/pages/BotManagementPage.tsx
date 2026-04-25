@@ -1,15 +1,32 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bot, BarChart3, Users, Settings, Zap } from "lucide-react";
-import { Loader } from "@/components/ui/loader";
+import {
+  BarChart3,
+  Bot as BotIcon,
+  CalendarDays,
+  CheckCircle2,
+  LineChart,
+  Radio,
+  Settings,
+  Users,
+  Wifi,
+  Zap,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import AppShell, { AppRobotIllustration } from "@/components/layout/AppShell";
 import { useToast } from "@/hooks/use-toast";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import DashboardNavbar from "@/components/layout/DashboardNavbar";
-import DashboardFooter from "@/components/layout/DashboardFooter";
 import { apiClient } from "@/services/UnifiedApiClient";
 import { Bot as BotType, LogicTemplate } from "@/types/bot";
 import { getWebhookUrl } from "@/config/apiConfig";
@@ -18,10 +35,10 @@ import UserDetailsModal from "../components/users/UserDetailsModal";
 // 導入配額管理相關元件
 import { useQuotaStatus } from "@/hooks/useQuotaStatus";
 import AnalyticsTabContent from "@/features/bot-management/components/AnalyticsTabContent";
-import BotSelectorCard from "@/features/bot-management/components/BotSelectorCard";
 import ControlTabContent from "@/features/bot-management/components/ControlTabContent";
 import LogicTabContent from "@/features/bot-management/components/LogicTabContent";
 import UsersTabContent from "@/features/bot-management/components/UsersTabContent";
+import { cn } from "@/lib/utils";
 import {
   ActivityItem,
   BotAnalytics,
@@ -43,6 +60,241 @@ import {
   getGranularityFromTimeRange,
 } from "@/features/bot-management/utils/botManagementTransforms";
 
+const managementCopy = {
+  en: {
+    sidebarSubtitle: "Management",
+    botHealthTitle: "Bot health is live",
+    botHealthBody:
+      "Track webhook, delivery, and usage quality from the same workspace.",
+    topbarKicker: "Analytics",
+    welcome: "Welcome back",
+    openNavigation: "Open navigation",
+    closeNavigation: "Close navigation",
+    notifications: "Notifications",
+    heroBadge: "Retention dashboard",
+    dateRange: "2025/09/05 - 2025/09/11",
+    title: "Analytics",
+    subtitle:
+      "Monitor LINE Bot messages, active users, retention, and real-time events to improve timing and operating quality.",
+    channelStatus: "Channel status",
+    webSocket: "WebSocket",
+    botHealth: "Bot health",
+    active: "Active",
+    inactive: "Inactive",
+    connected: "Connected",
+    reconnecting: "Reconnecting",
+    botSelector: "Bot Selector",
+    selectBot: "Select bot",
+    updated: "Updated",
+    status: {
+      active: "active",
+      inactive: "inactive",
+      connected: "connected",
+      reconnecting: "reconnecting",
+      running: "running",
+      error: "error",
+      idle: "idle",
+    },
+    noBotsTitle: "Create your first LINE Bot",
+    noBotsBody:
+      "After creation, you can manage webhook, logic templates, Rich Menu, AI knowledge base, and user interactions in one flow.",
+    createFirstBot: "Create first Bot",
+    viewSetupGuide: "View setup guide",
+    tabs: {
+      analytics: "Overview",
+      control: "Bot Control",
+      logic: "Advanced Reports",
+      users: "User Behavior",
+    },
+    documentTitle: "Bot Management",
+  },
+  zh: {
+    sidebarSubtitle: "管理中心",
+    botHealthTitle: "Bot 狀態即時監控",
+    botHealthBody: "在同一個工作區追蹤 Webhook、傳遞與使用品質。",
+    topbarKicker: "數據分析",
+    welcome: "歡迎回來",
+    openNavigation: "開啟導覽",
+    closeNavigation: "關閉導覽",
+    notifications: "通知",
+    heroBadge: "留存數據看板",
+    dateRange: "2025/09/05 - 2025/09/11",
+    title: "數據分析",
+    subtitle:
+      "監控 LINE Bot 的訊息量、活躍用戶、留存表現與即時事件，協助你掌握推播時機與營運品質。",
+    channelStatus: "Channel 狀態",
+    webSocket: "WebSocket",
+    botHealth: "Bot 健康度",
+    active: "啟用",
+    inactive: "停用",
+    connected: "已連線",
+    reconnecting: "重新連線中",
+    botSelector: "Bot 選擇器",
+    selectBot: "選擇 Bot",
+    updated: "更新於",
+    status: {
+      active: "啟用",
+      inactive: "停用",
+      connected: "已連線",
+      reconnecting: "重新連線中",
+      running: "運行中",
+      error: "異常",
+      idle: "閒置",
+    },
+    noBotsTitle: "先建立第一個 LINE Bot",
+    noBotsBody:
+      "建立完成後即可在同一條流程中管理 Webhook、邏輯模板、Rich Menu、AI 知識庫與用戶互動。",
+    createFirstBot: "建立第一個 Bot",
+    viewSetupGuide: "查看建立教學",
+    tabs: {
+      analytics: "數據總覽",
+      control: "Bot 控制",
+      logic: "進階報表",
+      users: "用戶行為",
+    },
+    documentTitle: "Bot 管理中心",
+  },
+};
+
+type ManagementCopy = (typeof managementCopy)["en"];
+
+const getManagementLocale = (language: keyof typeof managementCopy) =>
+  language === "zh" ? "zh-TW" : "en-US";
+
+const formatBotDate = (
+  value: string | undefined,
+  language: keyof typeof managementCopy
+) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat(getManagementLocale(language), {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+};
+
+const StatusDot = ({
+  className,
+  label,
+}: {
+  className: string;
+  label: string;
+}) => (
+  <span className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+    <span className={cn("h-2 w-2 rounded-full", className)} />
+    {label}
+  </span>
+);
+
+const BotSelectorBar = ({
+  copy,
+  language,
+  bots,
+  selectedBot,
+  selectedBotId,
+  isConnected,
+  connectionError,
+  botHealth,
+  onSelectBot,
+}: {
+  copy: ManagementCopy;
+  language: keyof typeof managementCopy;
+  bots: BotType[];
+  selectedBot?: BotType;
+  selectedBotId: string;
+  isConnected: boolean;
+  connectionError: string | null;
+  botHealth: "online" | "offline" | "error";
+  onSelectBot: (botId: string) => void;
+}) => {
+  const isActive = selectedBot?.is_active !== false;
+  const healthLabel =
+    botHealth === "online"
+      ? copy.status.running
+      : botHealth === "error"
+        ? copy.status.error
+        : copy.status.idle;
+
+  return (
+    <section className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-emerald-100 text-[#16a34a]">
+            <BotIcon className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {copy.botSelector}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Select value={selectedBotId} onValueChange={onSelectBot}>
+                <SelectTrigger className="h-11 w-64 rounded-[14px] border-emerald-100 bg-white text-sm font-semibold text-slate-900 shadow-sm">
+                  <SelectValue placeholder={copy.selectBot} />
+                </SelectTrigger>
+                <SelectContent>
+                  {bots.map((bot) => (
+                    <SelectItem key={bot.id} value={bot.id}>
+                      {bot.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Badge className="border-emerald-100 bg-emerald-50 px-3 py-1 text-emerald-700 hover:bg-emerald-50">
+                {isActive ? copy.status.active : copy.status.inactive}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusDot
+            className={isConnected ? "bg-emerald-500" : "bg-amber-400"}
+            label={
+              connectionError ? copy.status.reconnecting : copy.status.connected
+            }
+          />
+          <StatusDot
+            className={
+              botHealth === "online"
+                ? "bg-emerald-500"
+                : botHealth === "error"
+                  ? "bg-rose-500"
+                  : "bg-amber-400"
+            }
+            label={healthLabel}
+          />
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm">
+            <CalendarDays className="h-3.5 w-3.5 text-emerald-600" />
+            {copy.updated} {formatBotDate(selectedBot?.updated_at, language)}
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const ManagementLoadingPanel = () => (
+  <section
+    className="rounded-[16px] border border-white/70 bg-white/75 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl"
+    aria-busy="true"
+  >
+    <div className="grid gap-4 md:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={index}
+          className="h-28 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-emerald-50/70"
+        />
+      ))}
+    </div>
+    <div className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_0.9fr]">
+      <div className="h-72 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-stone-50/80" />
+      <div className="h-72 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-emerald-50/70" />
+    </div>
+  </section>
+);
+
 const BotManagementPage: React.FC = () => {
   const { user, loading: authLoading } = useUnifiedAuth({
     requireAuth: true,
@@ -50,6 +302,8 @@ const BotManagementPage: React.FC = () => {
   });
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { language } = useLanguagePreference();
+  const copy = managementCopy[language];
 
   // 狀態管理
   const [selectedBotId, setSelectedBotId] = useState<string>("");
@@ -1149,190 +1403,245 @@ const BotManagementPage: React.FC = () => {
 
     // 更新文檔標題
     if (analytics) {
-      document.title = `Bot Management - ${analytics.totalMessages || 0} messages`;
+      document.title = `${copy.documentTitle} - ${analytics.totalMessages || 0} messages`;
     }
-  }, [analytics]);
-
-  // 處理加載狀態 - 改善載入體驗
-  if (authLoading) {
-    return <Loader fullPage={true} />;
-  }
-
-  // 如果用戶已認證但仍在載入 Bot 列表，顯示載入器
-  if (loading && bots.length === 0) {
-    return <Loader fullPage={true} />;
-  }
+  }, [analytics, copy.documentTitle]);
 
   const selectedBot = bots.find((bot) => bot.id === selectedBotId);
+  const isInitialPageLoading = authLoading || (loading && bots.length === 0);
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent dark:bg-background">
-      <DashboardNavbar user={user} />
-
-      <div className="flex-1 mt-20 mb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* 頁面標題 */}
-          <div className="mb-6">
-            <h1 className="web3-section-title mb-1">LINE Bot 管理中心</h1>
-            <p className="text-muted-foreground">
-              監控與控制您的 LINE Bot，管理邏輯與分析數據
-            </p>
+    <AppShell
+      user={user}
+      activeNav="analytics"
+      headerKicker={copy.topbarKicker}
+      welcomeLabel={copy.welcome}
+      sidebarCalloutTitle={copy.botHealthTitle}
+      sidebarCalloutBody={copy.botHealthBody}
+    >
+      <section className="mt-8 grid gap-6 rounded-[16px] border border-white/70 bg-white/70 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-2xl lg:grid-cols-[1fr_320px] lg:items-center lg:p-8">
+        <div>
+          <div className="mb-5 flex flex-wrap items-center gap-3">
+            <Badge className="border-emerald-100 bg-emerald-50 px-3 py-1 text-emerald-700 hover:bg-emerald-50">
+              <LineChart className="mr-1.5 h-3.5 w-3.5" />
+              {copy.heroBadge}
+            </Badge>
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-sm lg:hidden">
+              <CalendarDays className="h-3.5 w-3.5 text-emerald-600" />
+              {copy.dateRange}
+            </span>
           </div>
+          <h1 className="text-3xl font-semibold tracking-[-0.01em] text-slate-950 sm:text-4xl">
+            {copy.title}
+          </h1>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
+            {copy.subtitle}
+          </p>
 
-          <BotSelectorCard
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-sm">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                {copy.channelStatus}
+              </div>
+              <p className="mt-2 text-sm font-semibold text-slate-950">
+                {selectedBot?.is_active === false ? copy.inactive : copy.active}
+              </p>
+            </div>
+            <div className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-sm">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <Wifi className="h-4 w-4 text-emerald-600" />
+                {copy.webSocket}
+              </div>
+              <p className="mt-2 text-sm font-semibold text-slate-950">
+                {isConnected ? copy.connected : copy.reconnecting}
+              </p>
+            </div>
+            <div className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-sm">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <Radio className="h-4 w-4 text-emerald-600" />
+                {copy.botHealth}
+              </div>
+              <p className="mt-2 text-sm font-semibold text-slate-950">
+                {botHealth}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="hidden flex-col items-end justify-between gap-5 lg:flex">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 rounded-[14px] border-white/70 bg-white/80 px-4 text-sm font-semibold text-slate-600 shadow-sm hover:bg-white"
+          >
+            <CalendarDays className="mr-2 h-4 w-4 text-emerald-600" />
+            {copy.dateRange}
+          </Button>
+          <AppRobotIllustration />
+        </div>
+      </section>
+
+      <div className="mt-6 space-y-6">
+        {isInitialPageLoading && <ManagementLoadingPanel />}
+
+        {!isInitialPageLoading && bots.length > 0 && (
+          <BotSelectorBar
+            copy={copy}
+            language={language}
             bots={bots}
             selectedBot={selectedBot}
             selectedBotId={selectedBotId}
             isConnected={isConnected}
             connectionError={connectionError}
+            botHealth={botHealth}
             onSelectBot={setSelectedBotId}
           />
+        )}
 
-          {bots.length === 0 && !loading && (
-            <Card>
-              <CardContent className="text-center py-10">
-                <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-foreground mb-2">
-                  先建立第一個 LINE Bot
-                </h2>
-                <p className="text-muted-foreground mb-6">
-                  建立完成後即可在同一條流程中管理 Webhook、邏輯模板、Rich Menu、AI 知識庫與用戶互動。
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button
-                    onClick={() => navigate("/bots/create")}
-                    className="web3-primary-button"
-                  >
-                    建立第一個 Bot
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate("/how-to-establish")}
-                  >
-                    查看建立教學
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        {!isInitialPageLoading && bots.length === 0 && !loading && (
+          <section className="rounded-[16px] border border-white/70 bg-white/75 p-8 text-center shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[16px] bg-emerald-100 text-[#16a34a]">
+              <BotIcon className="h-6 w-6" />
+            </div>
+            <h2 className="mt-5 text-xl font-semibold text-slate-950">
+              {copy.noBotsTitle}
+            </h2>
+            <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              {copy.noBotsBody}
+            </p>
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+              <Button
+                onClick={() => navigate("/bots/create")}
+                className="rounded-[14px] bg-[#16a34a] px-5 font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-[#15803d]"
+              >
+                {copy.createFirstBot}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate("/how-to-establish")}
+                className="rounded-[14px] border-emerald-100 bg-white/70 font-semibold text-slate-700 hover:bg-white"
+              >
+                {copy.viewSetupGuide}
+              </Button>
+            </div>
+          </section>
+        )}
 
-          {bots.length > 0 && (
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="space-y-6"
-            >
-              <TabsList className="grid w-full grid-cols-4 rounded-lg bg-muted p-1">
-                <TabsTrigger
-                  value="analytics"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  數據分析
-                </TabsTrigger>
-                <TabsTrigger
-                  value="control"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Bot 控制
-                </TabsTrigger>
-                <TabsTrigger
-                  value="logic"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  邏輯管理
-                </TabsTrigger>
-                <TabsTrigger
-                  value="users"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  用戶管理
-                </TabsTrigger>
-              </TabsList>
+        {!isInitialPageLoading && bots.length > 0 && (
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-6"
+          >
+            <TabsList className="flex h-auto w-full justify-start gap-8 overflow-x-auto rounded-none border-b border-white/70 bg-transparent p-0">
+              <TabsTrigger
+                value="analytics"
+                className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-sm font-semibold text-slate-500 shadow-none transition-colors data-[state=active]:border-[#16a34a] data-[state=active]:bg-transparent data-[state=active]:text-[#166534] data-[state=active]:shadow-none"
+              >
+                <BarChart3 className="mr-2 h-4 w-4" />
+                {copy.tabs.analytics}
+              </TabsTrigger>
+              <TabsTrigger
+                value="control"
+                className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-sm font-semibold text-slate-500 shadow-none transition-colors data-[state=active]:border-[#16a34a] data-[state=active]:bg-transparent data-[state=active]:text-[#166534] data-[state=active]:shadow-none"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                {copy.tabs.control}
+              </TabsTrigger>
+              <TabsTrigger
+                value="logic"
+                className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-sm font-semibold text-slate-500 shadow-none transition-colors data-[state=active]:border-[#16a34a] data-[state=active]:bg-transparent data-[state=active]:text-[#166534] data-[state=active]:shadow-none"
+              >
+                <Zap className="mr-2 h-4 w-4" />
+                {copy.tabs.logic}
+              </TabsTrigger>
+              <TabsTrigger
+                value="users"
+                className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-sm font-semibold text-slate-500 shadow-none transition-colors data-[state=active]:border-[#16a34a] data-[state=active]:bg-transparent data-[state=active]:text-[#166534] data-[state=active]:shadow-none"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                {copy.tabs.users}
+              </TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="analytics" className="space-y-6">
-                <AnalyticsTabContent
-                  selectedBotId={selectedBotId}
-                  analyticsLoading={analyticsLoading}
-                  analytics={analytics}
-                  messageStats={messageStats}
-                  userActivity={userActivity}
-                  activities={activities}
-                  usageData={usageData}
-                  timeRange={timeRange}
-                  onRefreshData={handleRefreshData}
-                  onRefreshActivities={handleRefreshActivities}
-                  onTimeRangeChange={handleTimeRangeChange}
-                  isWebSocketConnected={checkWebSocketConnection}
-                />
-              </TabsContent>
+            <TabsContent value="analytics" className="space-y-6">
+              <AnalyticsTabContent
+                selectedBotId={selectedBotId}
+                analyticsLoading={analyticsLoading}
+                analytics={analytics}
+                messageStats={messageStats}
+                userActivity={userActivity}
+                activities={activities}
+                usageData={usageData}
+                timeRange={timeRange}
+                onRefreshData={handleRefreshData}
+                onRefreshActivities={handleRefreshActivities}
+                onTimeRangeChange={handleTimeRangeChange}
+                isWebSocketConnected={checkWebSocketConnection}
+              />
+            </TabsContent>
 
-              <TabsContent value="control" className="space-y-6">
-                <ControlTabContent
-                  selectedBotId={selectedBotId}
-                  selectedBot={selectedBot}
-                  botHealth={botHealth}
-                  isConnected={isConnected}
-                  quotaStatus={quotaStatus}
-                  quotaLoading={quotaLoading}
-                  quotaError={quotaError}
-                  webhookStatus={webhookStatus}
-                  webhookStatusLoading={webhookStatusLoading}
-                  copiedWebhookUrl={copiedWebhookUrl}
-                  controlLoading={controlLoading}
-                  onRefreshQuota={refetchQuota}
-                  onCheckBotHealth={handleCheckBotHealth}
-                  onCopyWebhookUrl={handleCopyWebhookUrl}
-                  onCheckWebhookStatus={handleCheckWebhookStatus}
-                />
-              </TabsContent>
+            <TabsContent value="control" className="space-y-6">
+              <ControlTabContent
+                selectedBotId={selectedBotId}
+                selectedBot={selectedBot}
+                botHealth={botHealth}
+                isConnected={isConnected}
+                quotaStatus={quotaStatus}
+                quotaLoading={quotaLoading}
+                quotaError={quotaError}
+                webhookStatus={webhookStatus}
+                webhookStatusLoading={webhookStatusLoading}
+                copiedWebhookUrl={copiedWebhookUrl}
+                controlLoading={controlLoading}
+                onRefreshQuota={refetchQuota}
+                onCheckBotHealth={handleCheckBotHealth}
+                onCopyWebhookUrl={handleCopyWebhookUrl}
+                onCheckWebhookStatus={handleCheckWebhookStatus}
+              />
+            </TabsContent>
 
-              <TabsContent value="logic" className="space-y-6">
-                <LogicTabContent
-                  selectedBotId={selectedBotId}
-                  logicLoading={logicLoading}
-                  logicTemplates={logicTemplates}
-                  onToggleLogicTemplate={toggleLogicTemplate}
-                />
-              </TabsContent>
+            <TabsContent value="logic" className="space-y-6">
+              <LogicTabContent
+                selectedBotId={selectedBotId}
+                logicLoading={logicLoading}
+                logicTemplates={logicTemplates}
+                onToggleLogicTemplate={toggleLogicTemplate}
+              />
+            </TabsContent>
 
-              <TabsContent value="users" className="space-y-6">
-                <UsersTabContent
-                  selectedBotId={selectedBotId}
-                  broadcastMessage={broadcastMessage}
-                  totalCount={totalCount}
-                  selectedUserIds={selectedUserIds}
-                  filteredUsers={filteredUsers}
-                  usersLoading={usersLoading}
-                  selectedUser={selectedUser}
-                  pagination={pagination}
-                  broadcastLoading={broadcastLoading}
-                  selectiveBroadcastLoading={selectiveBroadcastLoading}
-                  searchTerm={searchTerm}
-                  showChatPanel={showChatPanel}
-                  currentChatUser={currentChatUser}
-                  onBroadcastMessageChange={setBroadcastMessage}
-                  onSearchTermChange={setSearchTerm}
-                  onBroadcast={handleBroadcast}
-                  onSelectiveBroadcast={handleSelectiveBroadcast}
-                  onSelectAll={handleSelectAll}
-                  onUserCheck={handleUserCheck}
-                  onUserSelect={handleUserSelect}
-                  onViewUserDetails={handleViewUserDetails}
-                  onStartChat={handleStartChat}
-                  onPageChange={handlePageChange}
-                  onCloseChatPanel={() => setShowChatPanel(false)}
-                />
-              </TabsContent>
-            </Tabs>
-          )}
-        </div>
+            <TabsContent value="users" className="space-y-6">
+              <UsersTabContent
+                selectedBotId={selectedBotId}
+                broadcastMessage={broadcastMessage}
+                totalCount={totalCount}
+                selectedUserIds={selectedUserIds}
+                filteredUsers={filteredUsers}
+                usersLoading={usersLoading}
+                selectedUser={selectedUser}
+                pagination={pagination}
+                broadcastLoading={broadcastLoading}
+                selectiveBroadcastLoading={selectiveBroadcastLoading}
+                searchTerm={searchTerm}
+                showChatPanel={showChatPanel}
+                currentChatUser={currentChatUser}
+                onBroadcastMessageChange={setBroadcastMessage}
+                onSearchTermChange={setSearchTerm}
+                onBroadcast={handleBroadcast}
+                onSelectiveBroadcast={handleSelectiveBroadcast}
+                onSelectAll={handleSelectAll}
+                onUserCheck={handleUserCheck}
+                onUserSelect={handleUserSelect}
+                onViewUserDetails={handleViewUserDetails}
+                onStartChat={handleStartChat}
+                onPageChange={handlePageChange}
+                onCloseChatPanel={() => setShowChatPanel(false)}
+              />
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
-
-      <DashboardFooter />
 
       {/* 用戶詳細資訊彈窗 */}
       <UserDetailsModal
@@ -1340,7 +1649,7 @@ const BotManagementPage: React.FC = () => {
         isOpen={showUserDetails}
         onClose={() => setShowUserDetails(false)}
       />
-    </div>
+    </AppShell>
   );
 };
 

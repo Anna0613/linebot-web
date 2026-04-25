@@ -9,8 +9,6 @@ import { WorkspaceContext } from '@/features/visual-editor/types/block';
 
 interface BlockPaletteProps {
   currentContext?: WorkspaceContext;
-  showAllBlocks?: boolean;
-  onShowAllBlocksChange?: (showAll: boolean) => void;
 }
 
 /**

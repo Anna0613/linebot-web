@@ -17,14 +17,24 @@ interface UseUnifiedAuthOptions {
   onAuthChange?: (authenticated: boolean, user: UnifiedUser | null) => void;
 }
 
+const getCachedUnifiedUser = (): UnifiedUser | null =>
+  authManager.getUserInfo() || cacheService.get<UnifiedUser>(CACHE_KEYS.USER_PROFILE) || null;
+
 export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
   const { requireAuth = false, redirectTo = '/login', onAuthChange } = options;
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const [user, setUser] = useState<UnifiedUser | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const [initialAuthState] = useState(() => {
+    const cachedUser = getCachedUnifiedUser();
+    return {
+      user: cachedUser,
+      loading: !cachedUser,
+    };
+  });
+  const [user, setUser] = useState<UnifiedUser | null>(initialAuthState.user);
+  const [loading, setLoading] = useState(initialAuthState.loading);
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -88,25 +98,27 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
    */
   const checkAuthStatus = useCallback(async () => {
     try {
-      setLoading(true);
       setError(null);
 
       // 首先從快取獲取用戶資料，提供即時顯示
-      const cachedUser = authManager.getUserInfo();
+      const cachedUser = getCachedUnifiedUser();
       if (cachedUser) {
         setUser(cachedUser);
         onAuthChange?.(true, cachedUser);
+        setLoading(false);
+      } else {
+        setLoading(true);
       }
 
       // 使用認證優化器進行檢查
       const authResult = await authOptimizer.checkAuthenticationOptimized('useUnifiedAuth');
-      
+
       if (authResult.isAuthenticated) {
         // 如果已認證，確保用戶資料是最新的
         const userData = authManager.getUserInfo();
         setUser(userData);
         onAuthChange?.(true, userData);
-        
+
         // 如果是從快取獲取的結果，背景刷新用戶資料
         if (authResult.fromCache) {
           setTimeout(() => {
@@ -116,7 +128,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
       } else {
         setUser(null);
         onAuthChange?.(false, null);
-        
+
         if (requireAuth) {
           // 添加防抖機制，避免快速重複導航
           setTimeout(() => {
@@ -129,7 +141,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
       setError(errorMessage);
       setUser(null);
       onAuthChange?.(false, null);
-      
+
       if (requireAuth) {
         // 添加防抖機制，避免快速重複導航
         setTimeout(() => {
@@ -329,7 +341,7 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
     loading,
     error,
     isAuthenticated: !!user,
-    
+
     // 方法
     login,
     register,
@@ -338,11 +350,11 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
     checkAuthStatus,
     refreshUserInfo,
     getAuthHeaders,
-    
+
     // 工具方法
     clearError: () => setError(null),
     setLoading,
-    
+
     // 快取管理
     clearCache: () => {
       cacheService.clearPattern('^auth:');

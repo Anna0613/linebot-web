@@ -153,7 +153,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialActiveTab);
-  const [showAllBlocks, setShowAllBlocks] = useState(true);
   // 已移除舊的預覽模擬器控制狀態（useEnhancedSimulator / showDebugInfo）
 
   // 測試動作處理
@@ -479,8 +478,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
         return (
           <BlockPalette
             currentContext={getCurrentContext()}
-            showAllBlocks={showAllBlocks}
-            onShowAllBlocksChange={setShowAllBlocks}
           />
         );
       case 'preview':

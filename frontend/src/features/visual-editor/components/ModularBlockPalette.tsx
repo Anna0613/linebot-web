@@ -4,10 +4,8 @@
  */
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DraggableBlock from './DraggableBlock';
-import { Filter, Zap, MessageSquare, ArrowRight, Settings, Square, Type, MousePointer } from 'lucide-react';
+import { Zap, MessageSquare, ArrowRight, Settings, Square, Type, MousePointer } from 'lucide-react';
 import { WorkspaceContext } from '@/features/visual-editor/types/block';
 
 // 簡化的積木定義 - 直接在組件中定義以避免複雜的模組依賴
@@ -78,8 +76,6 @@ const getCategoryIcon = (category: string) => {
 
 interface ModularBlockPaletteProps {
   currentContext?: WorkspaceContext;
-  showAllBlocks?: boolean;
-  onShowAllBlocksChange?: (showAll: boolean) => void;
 }
 
 const BlockGroup: React.FC<{
@@ -98,23 +94,22 @@ const BlockGroup: React.FC<{
   </div>
 );
 
-export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
-  currentContext = WorkspaceContext.LOGIC,
-  showAllBlocks = true,
-  onShowAllBlocksChange
-}) => {
-  // 根據當前上下文自動決定活動標籤
-  const getActiveTab = () => {
-    switch (currentContext) {
-      case WorkspaceContext.LOGIC:
-        return 'logic';
-      case WorkspaceContext.FLEX:
-        return 'flex';
-      default:
-        return 'all';
-    }
-  };
+const PaletteScroll: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div
+    className="h-full p-4 space-y-4 overflow-y-scroll custom-scrollbar"
+    style={{
+      maxHeight: 'calc(100vh - 120px)',
+      scrollbarWidth: 'thin',
+      scrollbarColor: '#cbd5e0 #f7fafc'
+    }}
+  >
+    {children}
+  </div>
+);
 
+export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
+  currentContext = WorkspaceContext.LOGIC
+}) => {
   const renderBlocks = (blocks: Array<{blockType: string; name: string; data: Record<string, unknown>}>, color: string) =>
     blocks.map((block, index) => (
       <DraggableBlock
@@ -147,131 +142,39 @@ export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
       `}</style>
       
       <div className="w-80 bg-secondary dark:bg-background border-r border-border dark:border-web3-cyan/20 flex flex-col h-full">
-        {/* 當前模式指示器 */}
-        <div className="p-4 web3-glass-card border-b border-border dark:border-web3-cyan/20 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-web3-cyan" />
-              <span className="text-sm font-medium neon-text-cyan">
-                {currentContext === WorkspaceContext.LOGIC ? '邏輯積木' : 'Flex 組件'}
-              </span>
-              <span className="text-xs text-muted-foreground bg-secondary dark:bg-web3-cyan/20 px-2 py-1 rounded">
-                自動切換
-              </span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onShowAllBlocksChange?.(!showAllBlocks)}
-              className="text-xs web3-button"
-            >
-              {showAllBlocks ? '僅顯示相容' : '顯示全部'}
-            </Button>
-          </div>
-        </div>
+        {currentContext === WorkspaceContext.FLEX ? (
+          <PaletteScroll>
+            <BlockGroup title="容器" icon={getCategoryIcon('flexContainer')}>
+              {renderBlocks(blockDefinitions.flexContainer, blockColors['flex-container'])}
+            </BlockGroup>
 
-        <Tabs value={getActiveTab()} className="flex-1 flex flex-col">
-          {/* 隱藏標籤列表，因為現在由工作區上下文自動控制 */}
-          <div className="hidden">
-            <TabsList className="grid w-full grid-cols-3 m-2 flex-shrink-0">
-              <TabsTrigger value="all">全部積木</TabsTrigger>
-              <TabsTrigger value="logic">邏輯積木</TabsTrigger>
-              <TabsTrigger value="flex">Flex 組件</TabsTrigger>
-            </TabsList>
-          </div>
-          
-          {/* 全部積木標籤 */}
-          <TabsContent value="all" className="flex-1 overflow-hidden">
-            <div 
-              className="h-full p-4 space-y-4 overflow-y-scroll custom-scrollbar" 
-              style={{ 
-                maxHeight: 'calc(100vh - 200px)',
-                scrollbarWidth: 'thin',
-                scrollbarColor: '#cbd5e0 #f7fafc'
-              }}
-            >
-              <BlockGroup title="事件" icon={getCategoryIcon('event')}>
-                {renderBlocks(blockDefinitions.event, blockColors.event)}
-              </BlockGroup>
-              
-              <BlockGroup title="回覆" icon={getCategoryIcon('reply')}>
-                {renderBlocks(blockDefinitions.reply, blockColors.reply)}
-              </BlockGroup>
-              
-              <BlockGroup title="控制" icon={getCategoryIcon('control')}>
-                {renderBlocks(blockDefinitions.control, blockColors.control)}
-              </BlockGroup>
-              
-              <BlockGroup title="設定" icon={getCategoryIcon('setting')}>
-                {renderBlocks(blockDefinitions.setting, blockColors.setting)}
-              </BlockGroup>
+            <BlockGroup title="內容" icon={getCategoryIcon('flexContent')}>
+              {renderBlocks(blockDefinitions.flexContent, blockColors['flex-content'])}
+            </BlockGroup>
 
-              <BlockGroup title="容器" icon={getCategoryIcon('flexContainer')}>
-                {renderBlocks(blockDefinitions.flexContainer, blockColors['flex-container'])}
-              </BlockGroup>
-              
-              <BlockGroup title="內容" icon={getCategoryIcon('flexContent')}>
-                {renderBlocks(blockDefinitions.flexContent, blockColors['flex-content'])}
-              </BlockGroup>
-              
-              <BlockGroup title="佈局" icon={getCategoryIcon('flexLayout')}>
-                {renderBlocks(blockDefinitions.flexLayout, blockColors['flex-layout'])}
-              </BlockGroup>
-            </div>
-          </TabsContent>
+            <BlockGroup title="佈局" icon={getCategoryIcon('flexLayout')}>
+              {renderBlocks(blockDefinitions.flexLayout, blockColors['flex-layout'])}
+            </BlockGroup>
+          </PaletteScroll>
+        ) : (
+          <PaletteScroll>
+            <BlockGroup title="事件" icon={getCategoryIcon('event')}>
+              {renderBlocks(blockDefinitions.event, blockColors.event)}
+            </BlockGroup>
 
-          {/* 邏輯積木標籤 */}
-          <TabsContent value="logic" className="flex-1 overflow-hidden">
-            <div 
-              className="h-full p-4 space-y-4 overflow-y-scroll custom-scrollbar" 
-              style={{ 
-                maxHeight: 'calc(100vh - 200px)',
-                scrollbarWidth: 'thin',
-                scrollbarColor: '#cbd5e0 #f7fafc'
-              }}
-            >
-              <BlockGroup title="事件" icon={getCategoryIcon('event')}>
-                {renderBlocks(blockDefinitions.event, blockColors.event)}
-              </BlockGroup>
-              
-              <BlockGroup title="回覆" icon={getCategoryIcon('reply')}>
-                {renderBlocks(blockDefinitions.reply, blockColors.reply)}
-              </BlockGroup>
-              
-              <BlockGroup title="控制" icon={getCategoryIcon('control')}>
-                {renderBlocks(blockDefinitions.control, blockColors.control)}
-              </BlockGroup>
-              
-              <BlockGroup title="設定" icon={getCategoryIcon('setting')}>
-                {renderBlocks(blockDefinitions.setting, blockColors.setting)}
-              </BlockGroup>
-            </div>
-          </TabsContent>
+            <BlockGroup title="回覆" icon={getCategoryIcon('reply')}>
+              {renderBlocks(blockDefinitions.reply, blockColors.reply)}
+            </BlockGroup>
 
-          {/* Flex 組件標籤 */}
-          <TabsContent value="flex" className="flex-1 overflow-hidden">
-            <div 
-              className="h-full p-4 space-y-4 overflow-y-scroll custom-scrollbar" 
-              style={{ 
-                maxHeight: 'calc(100vh - 200px)',
-                scrollbarWidth: 'thin',
-                scrollbarColor: '#cbd5e0 #f7fafc'
-              }}
-            >
-              <BlockGroup title="容器" icon={getCategoryIcon('flexContainer')}>
-                {renderBlocks(blockDefinitions.flexContainer, blockColors['flex-container'])}
-              </BlockGroup>
-              
-              <BlockGroup title="內容" icon={getCategoryIcon('flexContent')}>
-                {renderBlocks(blockDefinitions.flexContent, blockColors['flex-content'])}
-              </BlockGroup>
-              
-              <BlockGroup title="佈局" icon={getCategoryIcon('flexLayout')}>
-                {renderBlocks(blockDefinitions.flexLayout, blockColors['flex-layout'])}
-              </BlockGroup>
-            </div>
-          </TabsContent>
-        </Tabs>
+            <BlockGroup title="控制" icon={getCategoryIcon('control')}>
+              {renderBlocks(blockDefinitions.control, blockColors.control)}
+            </BlockGroup>
+
+            <BlockGroup title="設定" icon={getCategoryIcon('setting')}>
+              {renderBlocks(blockDefinitions.setting, blockColors.setting)}
+            </BlockGroup>
+          </PaletteScroll>
+        )}
       </div>
     </>
   );

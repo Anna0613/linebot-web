@@ -1,9 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/layout/Navbar";
-import DashboardNavbar from "@/components/layout/DashboardNavbar";
 import Footer from "@/components/layout/Footer";
-import DashboardFooter from "@/components/layout/DashboardFooter";
+import AppShell from "@/components/layout/AppShell";
 import { PageContentWrapper } from "@/components/common/PageContentWrapper";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 
@@ -73,10 +72,21 @@ const LegalPage = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
-      {isAuthenticated ? <DashboardNavbar user={user} /> : <Navbar />}
+  const PageShell = ({ children }: { children: React.ReactNode }) =>
+    isAuthenticated ? (
+      <AppShell user={user} activeNav="settings" headerKicker={title}>
+        {children}
+      </AppShell>
+    ) : (
+      <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
+        <Navbar />
+        {children}
+        <Footer />
+      </div>
+    );
 
+  return (
+    <PageShell>
       <PageContentWrapper>
         <main className="flex-1">
           <div className="pt-32 pb-16 px-4 sm:px-6">
@@ -126,9 +136,7 @@ const LegalPage = () => {
           </div>
         </main>
       </PageContentWrapper>
-
-      {isAuthenticated ? <DashboardFooter /> : <Footer />}
-    </div>
+    </PageShell>
   );
 };
 

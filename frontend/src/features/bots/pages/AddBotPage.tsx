@@ -1,6 +1,5 @@
 import BotCreationForm from "../components/BotCreationForm";
-import DashboardNavbar from "@/components/layout/DashboardNavbar";
-import DashboardFooter from "@/components/layout/DashboardFooter";
+import AppShell from "@/components/layout/AppShell";
 import { Loader } from "@/components/ui/loader";
 import React from "react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
@@ -8,7 +7,7 @@ import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 const AddBotPage = () => {
   const { user, loading, error } = useUnifiedAuth({
     requireAuth: true,
-    redirectTo: "/login"
+    redirectTo: "/login",
   });
 
   if (loading) {
@@ -27,17 +26,16 @@ const AddBotPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-transparent dark:bg-background">
-      <DashboardNavbar user={user} />
-      <main className="flex-1">
-        <div className="pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6">
-          <div className="max-w-4xl mx-auto">
-            <BotCreationForm />
-          </div>
-        </div>
-      </main>
-      <DashboardFooter />
-    </div>
+    <AppShell
+      user={user}
+      activeNav="create"
+      headerKicker="Create Bot"
+      innerClassName="max-w-5xl"
+    >
+      <div className="py-8">
+        <BotCreationForm />
+      </div>
+    </AppShell>
   );
 };
 

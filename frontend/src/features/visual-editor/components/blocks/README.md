@@ -49,8 +49,6 @@ import { WorkspaceContext } from '@/features/visual-editor/types/block';
 // 在組件中使用
 <BlockPalette 
   currentContext={WorkspaceContext.LOGIC}
-  showAllBlocks={true}
-  onShowAllBlocksChange={(showAll) => setShowAll(showAll)}
 />
 ```
 

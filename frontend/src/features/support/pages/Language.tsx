@@ -1,17 +1,17 @@
-import DashboardFooter from "@/components/layout/DashboardFooter";
-import DashboardNavbar from "@/components/layout/DashboardNavbar";
+import AppShell from "@/components/layout/AppShell";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useEmailManagement } from "@/hooks/useEmailManagement";
 import { useToast } from "@/hooks/use-toast";
-import { PageContentWrapper } from "@/components/common/PageContentWrapper";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const Language = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { language, setLanguage } = useLanguagePreference();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
@@ -67,7 +67,7 @@ const Language = () => {
           display_name: authUser.display_name || authUser.username || "",
           username: authUser.username || "",
         };
-        
+
         setUser(completeUser);
         setDisplayName(completeUser.display_name);
         setEmail(authUser.email || "");
@@ -97,15 +97,29 @@ const Language = () => {
     setProfileLoading,
   ]);
 
+  const handleLanguageSelect = (nextLanguage: "en" | "zh") => {
+    setLanguage(nextLanguage);
+    toast({
+      title: nextLanguage === "zh" ? "語言已更新" : "Language updated",
+      description:
+        nextLanguage === "zh"
+          ? "介面語言已切換為繁體中文。"
+          : "The interface language has been switched to English.",
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell
+      user={user || authUser}
+      activeNav="settings"
+      headerKicker="Language"
+      innerClassName="max-w-5xl"
+    >
       {/* 主要內容區域 */}
-      <DashboardNavbar user={user || authUser} />
-      <PageContentWrapper>
-        <div className="pt-32 pb-16 px-6">
+      <div className="py-8">
         {/* 標題區域 */}
         <div className="text-center mb-16">
-        <h1 className="web3-section-title leading-tight tracking-wide px-2">
+          <h1 className="web3-section-title leading-tight tracking-wide px-2">
             語言設定
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto px-4">
@@ -120,7 +134,21 @@ const Language = () => {
               選擇語言
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
-              <div className="p-6 border-2 border-[#8ECAE6] dark:border-[hsl(var(--border))] rounded-lg cursor-pointer hover:bg-[#8ECAE6]/10 dark:hover:bg-secondary transition-colors">
+              <div
+                className={`p-6 border-2 rounded-lg cursor-pointer hover:bg-[#8ECAE6]/10 dark:hover:bg-secondary transition-colors ${
+                  language === "zh"
+                    ? "border-[#8ECAE6] bg-[#8ECAE6]/10"
+                    : "border-border"
+                }`}
+                onClick={() => handleLanguageSelect("zh")}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    handleLanguageSelect("zh");
+                  }
+                }}
+              >
                 <div className="text-center">
                   <div className="text-4xl mb-4">🇹🇼</div>
                   <h3 className="text-foreground font-bold text-xl mb-2">
@@ -130,7 +158,21 @@ const Language = () => {
                 </div>
               </div>
 
-              <div className="p-6 border-2 border-border rounded-lg cursor-pointer hover:bg-secondary transition-colors">
+              <div
+                className={`p-6 border-2 rounded-lg cursor-pointer hover:bg-secondary transition-colors ${
+                  language === "en"
+                    ? "border-[#8ECAE6] bg-[#8ECAE6]/10"
+                    : "border-border"
+                }`}
+                onClick={() => handleLanguageSelect("en")}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    handleLanguageSelect("en");
+                  }
+                }}
+              >
                 <div className="text-center">
                   <div className="text-4xl mb-4">🇺🇸</div>
                   <h3 className="text-foreground font-bold text-xl mb-2">
@@ -142,15 +184,14 @@ const Language = () => {
             </div>
 
             <div className="text-center mt-8">
-              <p className="text-muted-foreground text-sm">更多語言選項即將推出</p>
+              <p className="text-muted-foreground text-sm">
+                更多語言選項即將推出
+              </p>
             </div>
           </div>
         </div>
       </div>
-      </PageContentWrapper>
-
-      <DashboardFooter />
-    </div>
+    </AppShell>
   );
 };
 
