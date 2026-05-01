@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import RichMenuApi from '@/features/rich-menu/api/RichMenuApi';
 import type { RichMenu, RichMenuArea, RichMenuBounds, RichMenuAction, CreateRichMenuPayload, UpdateRichMenuPayload } from '@/features/rich-menu/types/richMenu';
+import { Plus, X } from 'lucide-react';
 
 type Props = {
   botId: string;
@@ -393,7 +394,10 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">互動區塊（把圖片切成可互動的範圍）</h3>
-            <Button variant="secondary" onClick={onAddArea}>新增互動區塊</Button>
+            <Button variant="secondary" size="icon" onClick={onAddArea} aria-label="新增互動區塊">
+              <Plus aria-hidden="true" />
+              <span className="sr-only">新增互動區塊</span>
+            </Button>
           </div>
           <p className="text-xs text-muted-foreground">
             {usesPreviewPositionControls
@@ -407,7 +411,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
                 key={idx}
                 ref={el => (areaItemRefs.current[idx] = el)}
                 className={
-                  `grid grid-cols-12 gap-2 rounded-md p-3 transition-all border ` +
+                  `relative grid grid-cols-12 gap-2 rounded-md p-3 pr-12 transition-all border ` +
                   (selectedAreaIndex === idx
                     ? 'ring-2 ring-blue-500 border-blue-300 shadow-sm bg-blue-50/40'
                     : 'border-border')
@@ -417,6 +421,21 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
                   onSelectedIndexChange?.(idx);
                 }}
               >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-2 h-7 w-7 text-muted-foreground hover:text-destructive"
+                  aria-label={`刪除互動區塊 ${idx + 1}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRemoveArea(idx);
+                  }}
+                >
+                  <X aria-hidden="true" />
+                  <span className="sr-only">刪除互動區塊 {idx + 1}</span>
+                </Button>
+
                 {!usesPreviewPositionControls && (
                   <div className="col-span-12 md:col-span-6 grid grid-cols-4 gap-2">
                     <div>
@@ -596,10 +615,6 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
                     </div>
                   </div>
                 )}
-
-                <div className="col-span-12 md:col-span-2 flex items-center justify-end gap-2">
-                  <Button variant="destructive" onClick={() => onRemoveArea(idx)}>移除</Button>
-                </div>
               </div>
             ))}
           </div>

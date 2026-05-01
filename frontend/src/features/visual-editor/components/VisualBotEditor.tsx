@@ -6,7 +6,6 @@ import Workspace from './Workspace';
 import SaveStatusIndicator from './SaveStatusIndicator';
 import { SaveStatus } from '@/features/visual-editor/types/saveStatus';
 import { Button } from '@/components/ui/button';
-import GlobalBotSwitcher from '@/features/bots/components/GlobalBotSwitcher';
 import { useSelectedBot } from '@/features/bots/context/SelectedBotContext';
 import { UnifiedBlock } from '@/features/visual-editor/types/block';
 import VisualEditorApi, { FlexMessage } from '@/features/visual-editor/api/visualEditorApi';
@@ -501,11 +500,6 @@ export const VisualBotEditor: React.FC = () => {
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-
-              <GlobalBotSwitcher
-                className="min-w-[190px] max-w-[280px] flex-1 sm:flex-none"
-                showLabel={false}
-              />
 
               <div className="hidden min-w-0 sm:block">
                 <p className="app-kicker">Visual editor</p>
