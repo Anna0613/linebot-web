@@ -4,16 +4,22 @@ import { useToast } from "@/hooks/use-toast";
 import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
 interface LINELoginButtonProps {
-  onLogin?: () => void;
+  onLogin?: () => void | Promise<void>;
+  disabled?: boolean;
 }
 
-const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin: _onLogin }) => {
+const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin, disabled }) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleLogin = async () => {
     setLoading(true);
     try {
+      if (onLogin) {
+        await onLogin();
+        return;
+      }
+
       const response = await fetch(
         getApiUrl(
           API_CONFIG.LINE_LOGIN.BASE_URL,
@@ -63,10 +69,10 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin: _onLogin }) 
   return (
     <Button
       onClick={handleLogin}
-      disabled={loading}
-      className="bg-green-500 hover:bg-green-600 text-white"
+      disabled={disabled || loading}
+      className="app-secondary-button w-full border-emerald-100 text-[#166534]"
     >
-      {loading ? "Loading..." : "Login with LINE"}
+      {loading ? "登入中..." : "使用 LINE 登入"}
     </Button>
   );
 };

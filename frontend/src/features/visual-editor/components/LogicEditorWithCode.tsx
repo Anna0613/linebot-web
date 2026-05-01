@@ -56,8 +56,8 @@ const LogicEditorWithCode: React.FC<LogicEditorWithCodeProps> = ({
       </div>
 
       {/* 邏輯編輯器主體 */}
-      <div className="flex-1 p-4 overflow-hidden flex">
-        <div className="grid grid-cols-2 gap-4 w-full h-full">
+      <div className="flex flex-1 overflow-hidden p-4">
+        <div className="grid h-full w-full gap-4 lg:grid-cols-2">
           <div className="flex flex-col h-full overflow-hidden">
             <DropZone
               title={currentLogicTemplateName ?

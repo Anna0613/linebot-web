@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import "@/components/ui/loader.css";
 import $ from "jquery";
 import "jquery-validation";
-import { Eye, EyeOff } from "lucide-react"; 
+import { Eye, EyeOff } from "lucide-react";
 
 const LoginPage = () => {
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -193,7 +193,7 @@ const LoginPage = () => {
   };
 
   return (
-    <AuthFormLayout title="登入" description="歡迎回到 LINE Bot 建立平台">
+    <AuthFormLayout title="登入" description="進入 LINE Bot 工作台">
       {showEmailVerificationPrompt && (
         <EmailVerificationPrompt
           onResendEmail={handleResendEmail}
@@ -203,7 +203,7 @@ const LoginPage = () => {
 
       <form ref={formRef} onSubmit={noopSubmit} className="space-y-4" noValidate>
         <div className="space-y-2">
-          <Label htmlFor="username">帳號</Label>
+          <Label htmlFor="username" className="text-slate-700">帳號</Label>
           <Input
             id="username"
             name="username"
@@ -213,11 +213,12 @@ const LoginPage = () => {
             onChange={(e) => setUsername(e.target.value)}
             placeholder="請輸入您的帳號"
             disabled={loading}
+            className="app-input"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">密碼</Label>
+          <Label htmlFor="password" className="text-slate-700">密碼</Label>
 
           <div className="relative">
             <Input
@@ -229,25 +230,22 @@ const LoginPage = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="請輸入您的密碼"
               disabled={loading}
-              className="pr-10" // 預留右側眼睛區域
+              className="app-input pr-10"
             />
 
-            {/* 長按顯示、鬆開隱藏 */}
-            <span
-              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer select-none text-muted-foreground"
-              // 滑鼠
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 select-none text-slate-400 transition-colors hover:text-slate-700"
               onMouseDown={() => setShowPassword(true)}
               onMouseUp={() => setShowPassword(false)}
               onMouseLeave={() => setShowPassword(false)}
-              // 觸控
               onTouchStart={() => setShowPassword(true)}
               onTouchEnd={() => setShowPassword(false)}
               onTouchCancel={() => setShowPassword(false)}
               aria-label="長按以暫時顯示密碼"
-              role="img"
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </span>
+            </button>
           </div>
         </div>
 
@@ -260,13 +258,13 @@ const LoginPage = () => {
               onCheckedChange={(checked) => setRememberMe(checked as boolean)}
               disabled={loading}
             />
-            <Label htmlFor="remember" className="text-sm">
+            <Label htmlFor="remember" className="text-sm text-slate-600">
               記住我
             </Label>
           </div>
           <Link
             to="/forgetthepassword"
-            className="text-sm text-[hsl(var(--danger))] hover:underline"
+            className="text-sm font-medium text-[#166534] hover:underline"
           >
             忘記密碼？
           </Link>
@@ -274,7 +272,7 @@ const LoginPage = () => {
 
         <Button
           type="submit"
-          className="web3-primary-button w-full"
+          className="app-primary-button w-full"
           disabled={loading}
         >
           {loading ? <Loader size="sm" /> : "登入"}
@@ -283,17 +281,17 @@ const LoginPage = () => {
 
       <div className="flex items-center my-4">
         <Separator className="flex-1" />
-        <span className="px-3 text-sm text-muted-foreground">或</span>
+        <span className="px-3 text-sm text-slate-500">或</span>
         <Separator className="flex-1" />
       </div>
 
       <div className="flex justify-center">
-        <LINELoginButton onClick={handleLINELoginWithRememberMe} disabled={loading} />
+        <LINELoginButton onLogin={handleLINELoginWithRememberMe} disabled={loading} />
       </div>
 
-      <p className="text-center text-sm text-muted-foreground mt-4">
+      <p className="mt-4 text-center text-sm text-slate-500">
         還沒有帳號？{" "}
-        <Link to="/register" className="text-[hsl(var(--danger))] hover:underline">
+        <Link to="/register" className="font-medium text-[#166534] hover:underline">
           立即註冊
         </Link>
       </p>

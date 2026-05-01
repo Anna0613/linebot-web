@@ -91,10 +91,10 @@ const DashboardFooter = () => {
               </li>
               <li>
                 <a
-                  href="mailto:info@mail.mcu.edu.tw"
+                  href="mailto:jkl921102@gmail.com"
                   className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1 break-all"
                 >
-                  info@mail.mcu.edu.tw
+                  jkl921102@gmail.com
                 </a>
               </li>
               <li>

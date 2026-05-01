@@ -18,7 +18,6 @@ import {
   Plus,
   Search,
   Send,
-  Settings,
   Settings2,
   SlidersHorizontal,
   Sparkles,
@@ -656,7 +655,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     };
   }, [bots, language]);
 
-  const displayName = user?.display_name || user?.username || "RongJiaLin";
   const avatarUrl = user?.picture_url;
   const quickActions = useMemo(() => getQuickActions(copy), [copy]);
 

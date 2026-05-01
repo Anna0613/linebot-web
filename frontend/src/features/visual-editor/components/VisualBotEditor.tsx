@@ -441,28 +441,31 @@ export const VisualBotEditor: React.FC = () => {
   return (
     <VisualEditorProvider selectedBotId={selectedBotId}>
       <DragDropProvider>
-        <div className="h-screen flex flex-col bg-background">
+        <div className="app-page-surface flex h-screen flex-col overflow-hidden">
         {/* Header */}
-        <header className="web3-glass-card border-b border-border dark:border-web3-cyan/20 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <header className="border-b border-white/60 bg-white/65 px-4 py-3 backdrop-blur-2xl sm:px-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
               {/* 返回按鈕 */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleGoBack}
-                className="text-muted-foreground hover:text-web3-cyan transition-colors"
+                className="app-icon-button shrink-0 border-white/70"
                 title={returnLabel}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
 
-              <h1 className="web3-section-title text-xl">
-                LINE Bot 視覺化編輯器
-              </h1>
-              <div className="flex items-center space-x-2">
-                <div className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                  v{projectVersion} - 統一積木系統
+              <div className="min-w-0">
+                <p className="app-kicker">Visual editor</p>
+                <h1 className="truncate text-lg font-semibold text-slate-950">
+                  LINE Bot 視覺化編輯器
+                </h1>
+              </div>
+              <div className="hidden items-center gap-2 sm:flex">
+                <div className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-[#166534]">
+                  v{projectVersion}
                 </div>
                 <SaveStatusIndicator 
                   status={saveStatus}
@@ -472,10 +475,12 @@ export const VisualBotEditor: React.FC = () => {
               </div>
             </div>
             
-            <ProjectManager
-              selectedBotId={selectedBotId}
-              onBotSelect={handleBotSelect}
-            />
+            <div className="lg:shrink-0">
+              <ProjectManager
+                selectedBotId={selectedBotId}
+                onBotSelect={handleBotSelect}
+              />
+            </div>
             {/* 已將 Rich Menu 作為工作區的獨立標籤 */}
           </div>
         </header>
@@ -483,10 +488,10 @@ export const VisualBotEditor: React.FC = () => {
         {/* Main Content */}
         <div className="flex-1 overflow-hidden relative">
           {isLoadingData && (
-            <div className="absolute inset-0 bg-white/50 dark:bg-black/40 flex items-center justify-center z-10">
-              <div className="flex items-center space-x-2 bg-card p-4 rounded-lg shadow-lg border border-border">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <span className="text-muted-foreground">載入 Bot 數據中...</span>
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/55 backdrop-blur-sm">
+              <div className="app-panel flex items-center gap-3 p-4">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-100 border-b-[#16a34a]" />
+                <span className="text-sm font-medium text-slate-600">載入 Bot 數據中...</span>
               </div>
             </div>
           )}

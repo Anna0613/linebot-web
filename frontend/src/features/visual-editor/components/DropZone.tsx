@@ -210,13 +210,13 @@ const DropZone: React.FC<DropZoneProps> = ({
 
   // 根據驗證結果決定樣式
   const getDropZoneStyle = () => {
-    if (!isOver) return 'border-gray-300 bg-white';
+    if (!isOver) return 'border-white/70 bg-white/65';
     
     if (dragValidation?.isValid === false) {
-      return 'border-red-400 bg-red-50';
+      return 'border-rose-300 bg-rose-50/90';
     }
     
-    return 'border-blue-400 bg-blue-50';
+    return 'border-emerald-300 bg-emerald-50/90';
   };
 
   // 渲染相容性提示
@@ -286,24 +286,24 @@ const DropZone: React.FC<DropZoneProps> = ({
   return (
     <div 
       ref={drop}
-      className={`border-2 border-dashed rounded-lg p-4 h-full flex flex-col transition-all duration-200 ${getDropZoneStyle()}`}
+      className={`flex h-full flex-col rounded-[16px] border-2 border-dashed p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl transition-all duration-200 ${getDropZoneStyle()}`}
     >
-      <h3 className="text-lg font-medium text-gray-600 mb-4 flex-shrink-0">{title}</h3>
+      <h3 className="mb-3 flex-shrink-0 text-base font-semibold text-slate-950">{title}</h3>
       
       {/* 上下文提示 */}
-      <div className="mb-4 text-sm text-gray-500 flex-shrink-0">
-        當前模式：<span className="font-medium">
+      <div className="mb-4 flex-shrink-0 text-sm text-slate-500">
+        當前模式 <span className="font-medium text-slate-700">
           {context === WorkspaceContext.LOGIC ? '邏輯編輯器' : 'Flex 設計器'}
         </span>
-        <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded">
+        <span className="ml-2 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
           {context || 'undefined'}
         </span>
       </div>
       
       <div className="space-y-4 flex-1 overflow-auto min-h-0">
         {blocks.length === 0 ? (
-          <div className="text-gray-500 text-center py-8">
-            <div className="mb-2">
+          <div className="flex h-full min-h-48 flex-col items-center justify-center rounded-[14px] bg-slate-50/80 px-4 py-8 text-center text-slate-500">
+            <div className="mb-2 text-sm font-medium text-slate-600">
               從左側選擇積木並拖拽到這裡開始建立您的 LINE Bot
             </div>
             <div className="text-xs">
