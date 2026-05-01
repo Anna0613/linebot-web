@@ -61,8 +61,9 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [selectedAreaIndex, setSelectedAreaIndex] = useState<number | null>(null);
   const [imageMeta, setImageMeta] = useState<{ iw: number; ih: number; offset: { x: number; y: number } } | null>(null);
-  const areaInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const areaItemRefs = useRef<Array<HTMLDivElement | null>>([]);
   const previewObjectUrlRef = useRef<string | null>(null);
+  const usesPreviewPositionControls = Boolean(onBindPreviewControls && onChangePreview);
 
   const revokePreviewObjectUrl = useCallback(() => {
     if (!previewObjectUrlRef.current) return;
@@ -186,7 +187,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
   // 預覽點「編輯」時，僅滾動到該區塊（不聚焦單一欄位，避免欄位高亮）
   useEffect(() => {
     if (selectedAreaIndex == null) return;
-    const el = areaInputRefs.current[selectedAreaIndex];
+    const el = areaItemRefs.current[selectedAreaIndex];
     if (el) {
       try {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -203,6 +204,8 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
       action: { ...defaultAction, data: `action=area${idx + 1}` },
     };
     setAreas(prev => [...prev, newArea]);
+    setSelectedAreaIndex(idx);
+    onSelectedIndexChange?.(idx);
   };
 
   const onRemoveArea = (index: number) => {
@@ -389,42 +392,52 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium">可點區塊（把圖片切成可點的範圍）</h3>
-            <Button variant="secondary" onClick={onAddArea}>新增可點區塊</Button>
+            <h3 className="text-sm font-medium">互動區塊（把圖片切成可互動的範圍）</h3>
+            <Button variant="secondary" onClick={onAddArea}>新增互動區塊</Button>
           </div>
-          <p className="text-xs text-muted-foreground">設定每個可點區塊的位置與動作：位置用「X（左）、Y（上）、寬度、高度」表示，單位為像素。</p>
+          <p className="text-xs text-muted-foreground">
+            {usesPreviewPositionControls
+              ? '設定每個互動區塊的動作，位置與大小會同步右側預覽區。'
+              : '設定每個互動區塊的位置與動作：位置用「X（左）、Y（上）、寬度、高度」表示，單位為像素。'}
+          </p>
 
           <div className="space-y-3">
             {areas.map((area, idx) => (
               <div
                 key={idx}
+                ref={el => (areaItemRefs.current[idx] = el)}
                 className={
                   `grid grid-cols-12 gap-2 rounded-md p-3 transition-all border ` +
                   (selectedAreaIndex === idx
                     ? 'ring-2 ring-blue-500 border-blue-300 shadow-sm bg-blue-50/40'
                     : 'border-border')
                 }
-                onClick={() => setSelectedAreaIndex(idx)}
+                onClick={() => {
+                  setSelectedAreaIndex(idx);
+                  onSelectedIndexChange?.(idx);
+                }}
               >
-                <div className="col-span-12 md:col-span-6 grid grid-cols-4 gap-2">
-                  <div>
-                    <Label className="text-xs">X（左）</Label>
-                    <Input ref={el => (areaInputRefs.current[idx] = el)} type="number" value={area.bounds.x} onChange={e => onChangeArea(idx, { bounds: { x: Number(e.target.value) } as Partial<RichMenuBounds> })} />
+                {!usesPreviewPositionControls && (
+                  <div className="col-span-12 md:col-span-6 grid grid-cols-4 gap-2">
+                    <div>
+                      <Label className="text-xs">X（左）</Label>
+                      <Input type="number" value={area.bounds.x} onChange={e => onChangeArea(idx, { bounds: { x: Number(e.target.value) } as Partial<RichMenuBounds> })} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Y（上）</Label>
+                      <Input type="number" value={area.bounds.y} onChange={e => onChangeArea(idx, { bounds: { y: Number(e.target.value) } as Partial<RichMenuBounds> })} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">寬度</Label>
+                      <Input type="number" value={area.bounds.width} onChange={e => onChangeArea(idx, { bounds: { width: Number(e.target.value) } as Partial<RichMenuBounds> })} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">高度</Label>
+                      <Input type="number" value={area.bounds.height} onChange={e => onChangeArea(idx, { bounds: { height: Number(e.target.value) } as Partial<RichMenuBounds> })} />
+                    </div>
                   </div>
-                  <div>
-                    <Label className="text-xs">Y（上）</Label>
-                    <Input type="number" value={area.bounds.y} onChange={e => onChangeArea(idx, { bounds: { y: Number(e.target.value) } as Partial<RichMenuBounds> })} />
-                  </div>
-                  <div>
-                    <Label className="text-xs">寬度</Label>
-                    <Input type="number" value={area.bounds.width} onChange={e => onChangeArea(idx, { bounds: { width: Number(e.target.value) } as Partial<RichMenuBounds> })} />
-                  </div>
-                  <div>
-                    <Label className="text-xs">高度</Label>
-                    <Input type="number" value={area.bounds.height} onChange={e => onChangeArea(idx, { bounds: { height: Number(e.target.value) } as Partial<RichMenuBounds> })} />
-                  </div>
-                </div>
-                <div className="col-span-12 md:col-span-4 grid grid-cols-2 gap-2">
+                )}
+                <div className={`col-span-12 ${usesPreviewPositionControls ? 'md:col-span-10' : 'md:col-span-4'} grid grid-cols-1 sm:grid-cols-2 gap-2`}>
                   <div>
                     <Label className="text-xs">點擊後的動作</Label>
                     <Select value={area.action.type} onValueChange={v => {
@@ -524,7 +537,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
 
                 {/* 額外的 datetimepicker 設定 */}
                 {area.action.type === 'datetimepicker' && (
-                  <div className="col-span-12 md:col-span-8">
+                  <div className={`col-span-12 ${usesPreviewPositionControls ? 'md:col-span-10' : 'md:col-span-8'}`}>
                     <div className="grid grid-cols-3 gap-2">
                       <div>
                         <Label className="text-xs">模式</Label>
@@ -562,7 +575,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
 
                 {/* 額外的 postback 設定 */}
                 {area.action.type === 'postback' && (
-                  <div className="col-span-12 md:col-span-8">
+                  <div className={`col-span-12 ${usesPreviewPositionControls ? 'md:col-span-10' : 'md:col-span-8'}`}>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs">顯示文字（可選）</Label>
