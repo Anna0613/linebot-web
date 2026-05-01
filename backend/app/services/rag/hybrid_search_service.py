@@ -161,7 +161,7 @@ class HybridSearchService:
                        1 - (kc.embedding <=> CAST(:embedding AS vector)) AS similarity
                 FROM knowledge_chunks kc
                 JOIN knowledge_documents kd ON kc.document_id = kd.id
-                WHERE (kc.bot_id = CAST(:bot_id AS UUID) OR kc.bot_id IS NULL)
+                WHERE kc.bot_id = CAST(:bot_id AS UUID)
                     AND kc.deleted_at IS NULL
                     AND kd.deleted_at IS NULL
                     AND kc.embedding IS NOT NULL
@@ -214,7 +214,7 @@ class HybridSearchService:
                    ts_rank(to_tsvector('english', kc.content), plainto_tsquery('english', :query)) as score
             FROM knowledge_chunks kc
             JOIN knowledge_documents kd ON kc.document_id = kd.id
-            WHERE (kc.bot_id = CAST(:bot_id AS UUID) OR kc.bot_id IS NULL)
+            WHERE kc.bot_id = CAST(:bot_id AS UUID)
               AND kc.deleted_at IS NULL
               AND kd.deleted_at IS NULL
               AND to_tsvector('english', kc.content) @@ plainto_tsquery('english', :query)
@@ -266,7 +266,7 @@ class HybridSearchService:
                    ) as score
             FROM knowledge_chunks kc
             JOIN knowledge_documents kd ON kc.document_id = kd.id
-            WHERE (kc.bot_id = CAST(:bot_id AS UUID) OR kc.bot_id IS NULL)
+            WHERE kc.bot_id = CAST(:bot_id AS UUID)
               AND kc.deleted_at IS NULL
               AND kd.deleted_at IS NULL
               AND to_tsvector('english', kc.content) @@ plainto_tsquery('english', :query)

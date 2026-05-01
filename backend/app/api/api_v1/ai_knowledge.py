@@ -139,7 +139,9 @@ async def set_ai_settings(
 
 
 def _scope_to_bot_id(scope: str, bot_id: str) -> Optional[str]:
-    return bot_id if scope == "project" else None
+    # Knowledge is scoped to the current LINE Bot. The scope parameter is kept
+    # for backward-compatible clients, but global knowledge is no longer used.
+    return bot_id
 
 
 def _to_chunk_response(row) -> KnowledgeChunkResponse:
