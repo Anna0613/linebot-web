@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "line": {
+      "source": "vm0-ai/vm0-skills",
+      "sourceType": "github",
+      "skillPath": "line/SKILL.md",
+      "computedHash": "e5a2edeaea9c6e95def74b4c3d49ce2237186018cc3bb4829ca535ee1c6bf7af"
+    }
+  }
+}

@@ -68,6 +68,7 @@ class MinIOService:
                 access_key=settings.MINIO_ACCESS_KEY,
                 secret_key=settings.MINIO_SECRET_KEY,
                 secure=settings.MINIO_SECURE,
+                region=settings.MINIO_REGION,
                 cert_check=settings.MINIO_CERT_CHECK,
                 http_client=http_client
             )
@@ -79,6 +80,7 @@ class MinIOService:
                 access_key=settings.MINIO_ACCESS_KEY,
                 secret_key=settings.MINIO_SECRET_KEY,
                 secure=settings.MINIO_SECURE,
+                region=settings.MINIO_REGION,
                 http_client=http_client
             )
         self.bucket_name = settings.MINIO_BUCKET_NAME
@@ -246,7 +248,9 @@ class MinIOService:
                 # 嘗試從 MINIO_PUBLIC_URL 推導 API 域名
                 # 例如：https://minio.jkl921102.org -> https://api.jkl921102.org
                 hostname = parsed.hostname or parsed.netloc
-                if hostname.startswith('minio.'):
+                if hostname.startswith('minio-api.'):
+                    api_hostname = hostname.replace('minio-api.', 'api.', 1)
+                elif hostname.startswith('minio.'):
                     api_hostname = hostname.replace('minio.', 'api.', 1)
                 else:
                     # 如果不是 minio 開頭，直接使用 hostname
@@ -449,7 +453,14 @@ def init_minio_service(force: bool = False) -> Tuple[Optional[MinIOService], Opt
         svc = MinIOService()
         minio_service = svc
         _minio_init_error = None
-        logger.info("MinIO 服務初始化成功")
+        logger.info(
+            "MinIO 服務初始化成功 | endpoint=%s secure=%s region=%s bucket=%s public_url=%s",
+            settings.MINIO_ENDPOINT,
+            settings.MINIO_SECURE,
+            settings.MINIO_REGION,
+            settings.MINIO_BUCKET_NAME,
+            settings.MINIO_PUBLIC_URL,
+        )
         return minio_service, None
     except (ImportError, Exception) as e:
         _minio_init_error = f"{type(e).__name__}: {e}"

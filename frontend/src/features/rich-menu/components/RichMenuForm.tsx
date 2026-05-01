@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,8 +36,10 @@ const emptyBounds: RichMenuBounds = { x: 0, y: 0, width: 1250, height: 843 };
 const defaultAction: RichMenuAction = { type: 'postback', data: 'action=demo' };
 
 const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChangePreview, onBindPreviewControls, onSelectedIndexChange }) => {
-  const isEdit = !!menu?.id;
   const { toast } = useToast();
+  const [persistedDraft, setPersistedDraft] = useState<RichMenu | null>(null);
+  const persistedMenu = menu || persistedDraft;
+  const isEdit = !!persistedMenu?.id;
   const [name, setName] = useState<string>(menu?.name || 'MainMenu');
   const [chatBarText, setChatBarText] = useState<string>(menu?.chat_bar_text || '開啟選單');
   const isRichMenuSize = (v: unknown): v is { height: number } =>
@@ -60,8 +62,24 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
   const [selectedAreaIndex, setSelectedAreaIndex] = useState<number | null>(null);
   const [imageMeta, setImageMeta] = useState<{ iw: number; ih: number; offset: { x: number; y: number } } | null>(null);
   const areaInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const previewObjectUrlRef = useRef<string | null>(null);
+
+  const revokePreviewObjectUrl = useCallback(() => {
+    if (!previewObjectUrlRef.current) return;
+    URL.revokeObjectURL(previewObjectUrlRef.current);
+    previewObjectUrlRef.current = null;
+  }, []);
 
   useEffect(() => {
+    return () => {
+      revokePreviewObjectUrl();
+    };
+  }, [revokePreviewObjectUrl]);
+
+  useEffect(() => {
+    setPersistedDraft(null);
+    setPendingFile(null);
+    revokePreviewObjectUrl();
     if (menu) {
       setName(menu.name);
       setChatBarText(menu.chat_bar_text);
@@ -91,7 +109,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
         setImageMeta(null);
       }
     }
-  }, [menu]);
+  }, [menu, revokePreviewObjectUrl]);
 
   // 載入其他選單列表供 richmenuswitch 使用
   useEffect(() => {
@@ -100,27 +118,30 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
       try {
         const menus = await RichMenuApi.list(botId);
         // 過濾掉當前編輯的選單
-        const otherMenus = menus.filter(m => m.id !== menu?.id);
+        const otherMenus = menus.filter(m => m.id !== persistedMenu?.id);
         setAvailableMenus(otherMenus);
       } catch (error) {
         console.error('載入選單列表失敗:', error);
       }
     };
     loadAvailableMenus();
-  }, [botId, menu?.id]);
+  }, [botId, persistedMenu?.id]);
 
   // 當高度改變時，重新計算 imageMeta（如果有圖片的話）
   useEffect(() => {
-    if (imageUrl && imageMeta) {
+    if (!imageUrl) return;
+    setImageMeta(prev => {
+      if (!prev) return prev;
       const expectedW = 2500;
       const expectedH = Number(height);
-      const scale = Math.max(expectedW / imageMeta.iw, expectedH / imageMeta.ih);
-      const dsW = imageMeta.iw * scale;
-      const dsH = imageMeta.ih * scale;
+      const scale = Math.max(expectedW / prev.iw, expectedH / prev.ih);
+      const dsW = prev.iw * scale;
+      const dsH = prev.ih * scale;
       const offset = { x: Math.round((expectedW - dsW) / 2), y: Math.round((expectedH - dsH) / 2) };
-      setImageMeta(prev => prev ? { ...prev, offset } : null);
-    }
-  }, [height, imageUrl, imageMeta?.iw, imageMeta?.ih]);
+      if (prev.offset.x === offset.x && prev.offset.y === offset.y) return prev;
+      return { ...prev, offset };
+    });
+  }, [height, imageUrl]);
 
   // 同步預覽資料
   useEffect(() => {
@@ -206,25 +227,28 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
     try {
       setSaving(true);
       let saved: RichMenu;
-      if (isEdit && menu) {
+      if (isEdit && persistedMenu) {
         const update: UpdateRichMenuPayload = payload;
-        saved = await RichMenuApi.update(botId, menu.id, update);
+        saved = await RichMenuApi.update(botId, persistedMenu.id, update);
       } else {
         const create: CreateRichMenuPayload = payload;
         saved = await RichMenuApi.create(botId, create);
+        setPersistedDraft(saved);
       }
       // 若有待上傳圖片，保存後一併上傳（依照目前高度裁切/縮放）
       if (pendingFile) {
         try {
           const blob = await renderProcessedImage(pendingFile);
-          const updated = await RichMenuApi.uploadImage(botId, saved.id, blob);
-          setImageUrl(updated.image_url);
+          saved = await RichMenuApi.uploadImage(botId, saved.id, blob);
+          setPersistedDraft(saved);
+          setImageUrl(saved.image_url);
+          revokePreviewObjectUrl();
+          setPendingFile(null);
           toast({ title: '圖片已上傳', description: '已更新選單圖片' });
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : String(err);
           toast({ variant: 'destructive', title: '圖片上傳失敗', description: message || '請稍後再試' });
-        } finally {
-          setPendingFile(null);
+          return undefined;
         }
       }
       toast({ title: '已保存', description: '功能選單已更新' });
@@ -243,7 +267,9 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
     return new Promise((resolve, reject) => {
       try {
         const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
         img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
           const iw = img.width;
           const ih = img.height;
           const expectedW = 2500;
@@ -265,8 +291,11 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
             resolve(blob);
           }, file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.9);
         };
-        img.onerror = () => reject(new Error('載入圖片失敗'));
-        img.src = URL.createObjectURL(file);
+        img.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('載入圖片失敗'));
+        };
+        img.src = objectUrl;
       } catch (e) {
         reject(e as Error);
       }
@@ -286,9 +315,16 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
         return;
       }
       const img = new Image();
-      img.onload = () => resolve({ iw: img.width, ih: img.height });
-      img.onerror = () => reject(new Error('讀取圖片失敗，請更換檔案'));
-      img.src = URL.createObjectURL(file);
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve({ iw: img.width, ih: img.height });
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('讀取圖片失敗，請更換檔案'));
+      };
+      img.src = objectUrl;
     });
   };
 
@@ -304,7 +340,9 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
       const dsW = iw * scale;
       const dsH = ih * scale;
       const offset = { x: Math.round((expectedW - dsW) / 2), y: Math.round((expectedH - dsH) / 2) };
+      revokePreviewObjectUrl();
       const url = URL.createObjectURL(file);
+      previewObjectUrlRef.current = url;
       setImageUrl(url);
       setImageMeta({ iw, ih, offset });
       setPendingFile(file);
@@ -569,9 +607,13 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
               disabled={uploading}
               onClick={() => fileRef.current?.click()}
             >
-              {uploading ? '上傳中...' : '選擇圖片上傳'}
+              {uploading ? '處理中...' : '選擇圖片'}
             </Button>
-            <p className="text-xs text-muted-foreground">建議尺寸：2500×1686（大）或 2500×843（小）；格式：JPG/PNG</p>
+            <p className="text-xs text-muted-foreground">
+              {pendingFile
+                ? '圖片尚未寫入 MinIO，請按「儲存選單」完成上傳。'
+                : '建議尺寸：2500×1686（大）或 2500×843（小）；格式：JPG/PNG'}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {onCancel && (
