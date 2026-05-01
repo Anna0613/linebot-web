@@ -16,19 +16,18 @@ const AuthFormLayout = ({
   children,
 }: AuthFormLayoutProps) => {
   return (
-    <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
+    <div className="app-page-surface flex flex-col">
       <Navbar />
 
       <PageContentWrapper>
-        <div className="flex-1 flex items-center justify-center px-4 py-8 pt-28 sm:pt-24 md:pt-28 pb-8">
+        <main className="flex min-h-[calc(100vh-5rem)] items-center justify-center px-4 pb-10 pt-28 sm:px-6">
           <div className="w-full max-w-md">
-            <div className="web3-glass-card p-8 web3-hover-glow">
+            <div className="app-panel-strong p-6 sm:p-8">
               <div className="text-center pb-6">
-                <h1 className="text-2xl font-bold neon-text-gradient mb-2">
-                  {title}
-                </h1>
+                <p className="app-kicker mb-2">Account</p>
+                <h1 className="text-2xl font-semibold text-slate-950">{title}</h1>
                 {description && (
-                  <p className="text-muted-foreground mt-2">
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
                     {description}
                   </p>
                 )}
@@ -36,7 +35,7 @@ const AuthFormLayout = ({
               <div className="space-y-4">{children}</div>
             </div>
           </div>
-        </div>
+        </main>
       </PageContentWrapper>
 
       <Footer />

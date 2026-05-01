@@ -129,7 +129,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
   return (
     <div 
       ref={drag}
-      className={`${color} text-white px-3 py-2 rounded-lg cursor-move text-sm shadow-sm hover:shadow-md transition-all duration-200 ${
+      className={`relative ${color} cursor-move rounded-[14px] px-3 py-2 text-sm text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
         isDragging ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
       }`}
     >

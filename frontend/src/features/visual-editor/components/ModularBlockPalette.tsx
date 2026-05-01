@@ -52,13 +52,13 @@ const blockDefinitions = {
 };
 
 const blockColors = {
-  'event': 'bg-orange-500',
-  'reply': 'bg-green-500',
-  'control': 'bg-purple-500',
-  'setting': 'bg-gray-500',
-  'flex-container': 'bg-indigo-500',
-  'flex-content': 'bg-blue-500',
-  'flex-layout': 'bg-teal-500'
+  'event': 'bg-amber-600',
+  'reply': 'bg-emerald-600',
+  'control': 'bg-slate-700',
+  'setting': 'bg-slate-500',
+  'flex-container': 'bg-sky-600',
+  'flex-content': 'bg-[#16a34a]',
+  'flex-layout': 'bg-teal-600'
 };
 
 const getCategoryIcon = (category: string) => {
@@ -84,7 +84,7 @@ const BlockGroup: React.FC<{
   children: React.ReactNode;
 }> = ({ title, icon: Icon, children }) => (
   <div className="mb-4">
-    <div className="flex items-center text-sm font-medium text-gray-700 mb-2">
+    <div className="mb-2 flex items-center text-sm font-semibold text-slate-700">
       <Icon className="w-4 h-4 mr-2" />
       {title}
     </div>
@@ -96,7 +96,7 @@ const BlockGroup: React.FC<{
 
 const PaletteScroll: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div
-    className="h-full p-4 space-y-4 overflow-y-scroll custom-scrollbar"
+    className="custom-scrollbar h-full space-y-4 overflow-y-scroll p-4"
     style={{
       maxHeight: 'calc(100vh - 120px)',
       scrollbarWidth: 'thin',
@@ -141,7 +141,7 @@ export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
         }
       `}</style>
       
-      <div className="w-80 bg-secondary dark:bg-background border-r border-border dark:border-web3-cyan/20 flex flex-col h-full">
+      <div className="flex h-full w-80 flex-col border-r border-white/70 bg-white/55 backdrop-blur-xl">
         {currentContext === WorkspaceContext.FLEX ? (
           <PaletteScroll>
             <BlockGroup title="容器" icon={getCategoryIcon('flexContainer')}>

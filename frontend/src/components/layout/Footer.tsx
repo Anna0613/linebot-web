@@ -3,41 +3,33 @@ import LanguageToggle from "../LanguageToggle/LanguageToggle";
 
 const Footer = () => {
   return (
-    <>
-    {/* 滾動後才會看到 Footer：預留一段視窗高的空間，確保初載不顯示 */}
-    <div aria-hidden className="h-[20vh] md:h-[24vh] lg:h-[28vh]"></div>
     <footer
       id="contact"
-      className="bg-background text-foreground pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-border"
+      className="border-t border-white/60 bg-white/55 py-8 text-slate-900 backdrop-blur-2xl"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-8 sm:gap-12 lg:gap-[120px] mb-8 sm:mb-12">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-[2fr_1fr_1fr]">
           {/* 品牌與說明 */}
-          <div className="space-y-4 text-center md:text-left">
-            <span className="text-xl sm:text-2xl font-bold text-foreground block">
+          <div className="space-y-3 text-center md:text-left">
+            <span className="block text-lg font-semibold text-slate-950 sm:text-xl">
               LINE Bot 製作輔助系統
             </span>
-            <div className="space-y-2">
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                非常適合需要使用LINE Bot做為行銷工具的商家，
-              </p>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                或者想修改原有LINE Bot的功能卻因為不會打程式碼而無法修改的人。
-              </p>
-            </div>
-            <div className="flex items-center justify-center md:justify-start space-x-4 pt-4 sm:pt-8">
+            <p className="max-w-md text-sm leading-6 text-slate-500 md:max-w-lg">
+              建立、編輯與管理 LINE Bot 的簡潔工作台。
+            </p>
+            <div className="flex items-center justify-center md:justify-start">
               <LanguageToggle />
             </div>
           </div>
 
           {/* 快速連結 */}
           <div className="hidden md:flex w-full flex-col">
-            <h3 className="font-medium text-lg mb-4 text-foreground">快速連結</h3>
+            <h3 className="mb-3 text-sm font-semibold text-slate-950">快速連結</h3>
             <ul className="space-y-2">
               <li>
                 <Link
                   to="/"
-                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
+                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
                 >
                   首頁
                 </Link>
@@ -45,7 +37,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/about"
-                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
+                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
                 >
                   關於我們
                 </Link>
@@ -53,7 +45,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/login"
-                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
+                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
                 >
                   登入
                 </Link>
@@ -61,7 +53,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/register"
-                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
+                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
                 >
                   註冊
                 </Link>
@@ -71,21 +63,21 @@ const Footer = () => {
 
           {/* 聯絡我們 */}
           <div className="w-full flex flex-col text-center md:text-left">
-            <h3 className="font-medium text-lg mb-4 text-foreground">聯絡我們</h3>
+            <h3 className="mb-3 text-sm font-semibold text-slate-950">聯絡我們</h3>
             <ul className="space-y-2">
-              <li className="text-muted-foreground text-sm py-1">Taoyuan, Taiwan</li>
+              <li className="py-1 text-sm text-slate-500">Taoyuan, Taiwan</li>
               <li>
                 <a
-                  href="mailto:info@mail.mcu.edu.tw"
-                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1 break-all"
+                  href="mailto:jkl921102@gmail.com"
+                  className="block break-all py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
                 >
-                  info@mail.mcu.edu.tw
+                  jkl921102@gmail.com
                 </a>
               </li>
               <li>
                 <a
                   href="tel:03-350-7001"
-                  className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
+                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
                 >
                   03-350-7001
                 </a>
@@ -95,9 +87,9 @@ const Footer = () => {
         </div>
 
         {/* 底線＋版權／社群 */}
-        <div className="border-t border-border pt-6 sm:pt-8">
+        <div className="mt-8 border-t border-white/60 pt-6">
           <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
-            <p className="text-xs sm:text-sm text-muted-foreground text-center md:text-left">
+            <p className="text-center text-xs text-slate-500 sm:text-sm md:text-left">
               © {new Date().getFullYear()} 銘傳大學 Ming Chuan University
             </p>
 
@@ -106,7 +98,7 @@ const Footer = () => {
                 href="https://www.facebook.com/MCU1957"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-foreground/10"
+                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
                 aria-label="Facebook"
               >
                 <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 448 512" fill="currentColor">
@@ -118,7 +110,7 @@ const Footer = () => {
                 href="https://www.instagram.com/mcu1957/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-foreground/10"
+                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
                 aria-label="Instagram"
               >
                 <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 448 512" fill="currentColor">
@@ -130,7 +122,7 @@ const Footer = () => {
                 href="https://www.youtube.com/mcu1957"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-foreground/10"
+                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
                 aria-label="YouTube"
               >
                 <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 576 512" fill="currentColor">
@@ -142,7 +134,7 @@ const Footer = () => {
                 href="https://www.weibo.com/welcomemcu"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-foreground/10"
+                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
                 aria-label="weibo"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor">
@@ -154,7 +146,6 @@ const Footer = () => {
         </div>
       </div>
     </footer>
-    </>
   );
 };
 

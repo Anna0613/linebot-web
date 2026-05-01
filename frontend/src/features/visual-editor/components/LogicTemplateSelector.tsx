@@ -132,17 +132,17 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
 
   if (!selectedBotId) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="p-4 text-center text-sm text-slate-500">
         請先選擇一個 Bot
       </div>
     );
   }
 
   return (
-    <div className="p-4 bg-white border-b space-y-3">
+    <div className="space-y-3 border-b border-white/60 bg-white/55 p-3 backdrop-blur-xl">
       {/* 邏輯模板管理 */}
-      <div className="flex items-center space-x-2">
-        <span className="text-sm font-medium text-gray-700 whitespace-nowrap">邏輯模板:</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="whitespace-nowrap text-sm font-medium text-slate-600">邏輯模板</span>
         <Select 
           value={selectedLogicTemplateId} 
           onValueChange={(value) => {
@@ -152,7 +152,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
           }}
           disabled={isLoadingLogicTemplates || disabled}
         >
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="app-input w-52">
             <SelectValue placeholder={isLoadingLogicTemplates ? "載入中..." : "選擇邏輯模板"} />
           </SelectTrigger>
           <SelectContent>
@@ -181,16 +181,17 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
             size="sm" 
             onClick={() => setShowCreateLogicTemplate(true)}
             disabled={disabled}
+            className="app-secondary-button h-10"
           >
             <Plus className="w-4 h-4 mr-1" />
             新增
           </Button>
         ) : (
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Input
               value={newLogicTemplateName}
               onChange={(e) => setNewLogicTemplateName(e.target.value)}
-              className="w-32"
+              className="app-input w-40"
               placeholder="模板名稱"
               onKeyPress={(e) => e.key === 'Enter' && handleCreateLogicTemplate()}
               disabled={disabled}
@@ -200,6 +201,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
               size="sm" 
               onClick={handleCreateLogicTemplate}
               disabled={!newLogicTemplateName.trim() || disabled}
+              className="app-primary-button h-10"
             >
               確認
             </Button>
@@ -211,6 +213,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
                 setNewLogicTemplateName('');
               }}
               disabled={disabled}
+              className="app-secondary-button h-10"
             >
               取消
             </Button>
@@ -223,6 +226,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
           size="sm" 
           onClick={saveLogicTemplate}
           disabled={!selectedLogicTemplateId || isSaving || disabled}
+          className="app-primary-button h-10"
         >
           {isSaving ? (
             <div className="scale-50 mr-1">

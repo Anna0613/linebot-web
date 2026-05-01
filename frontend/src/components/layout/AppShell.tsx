@@ -376,7 +376,7 @@ const AppTopbar = ({
             <Menu className="h-5 w-5" />
           </Button>
           <div className="min-w-0">
-            <p className="truncate text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+            <p className="truncate text-xs font-semibold uppercase tracking-normal text-emerald-700">
               {kicker || copy.defaultKicker}
             </p>
             <p className="truncate text-sm text-slate-500">

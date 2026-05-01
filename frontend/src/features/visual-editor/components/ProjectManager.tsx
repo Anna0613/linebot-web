@@ -55,11 +55,11 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   }, [loadBots]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center space-x-4">
+    <div>
+      <div className="flex flex-wrap items-center gap-3">
         {/* Bot 選擇器 */}
-        <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">選擇 Bot:</span>
+        <div className="flex items-center gap-2">
+          <span className="whitespace-nowrap text-sm font-medium text-slate-600">選擇 Bot</span>
           <Select 
             value={selectedBotId} 
             onValueChange={(value) => {
@@ -69,7 +69,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
             }}
             disabled={isLoadingBots}
           >
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="h-10 w-52 rounded-[14px] border-white/70 bg-white/70 text-slate-700 shadow-sm">
               <SelectValue placeholder={isLoadingBots ? "載入中..." : "選擇一個 Bot"} />
             </SelectTrigger>
             <SelectContent>
@@ -94,7 +94,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
             <Button
               size="sm"
               onClick={() => navigate('/bots/create')}
-              className="web3-primary-button"
+              className="app-primary-button h-10"
             >
               <Plus className="mr-1 h-4 w-4" />
               建立 Bot

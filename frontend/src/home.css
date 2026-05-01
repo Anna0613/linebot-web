@@ -248,7 +248,7 @@
   }
 
   .section-title {
-    @apply text-3xl md:text-4xl lg:text-5xl font-bold mb-4 tracking-tight;
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold mb-4 tracking-normal;
   }
 
   /* Light mode: Standard section title */
@@ -267,6 +267,70 @@
 
   .section-subtitle {
     @apply text-lg text-muted-foreground mb-12 max-w-3xl;
+  }
+
+  .app-page-surface {
+    @apply min-h-screen bg-[linear-gradient(135deg,#ecfdf5_0%,#f8fafc_48%,#f6efe5_100%)] text-slate-900;
+  }
+
+  .app-section {
+    @apply mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8;
+  }
+
+  .app-panel {
+    @apply rounded-[16px] border border-white/70 bg-white/70 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl;
+  }
+
+  .app-panel-strong {
+    @apply rounded-[16px] border border-white/70 bg-white/75 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-2xl;
+  }
+
+  .app-muted-panel {
+    @apply rounded-[14px] bg-slate-50/80 p-4 text-slate-600;
+  }
+
+  .app-kicker {
+    @apply text-xs font-semibold uppercase tracking-normal text-emerald-700;
+  }
+
+  .app-title {
+    @apply text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl lg:text-5xl;
+  }
+
+  .app-page-title {
+    @apply text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl;
+  }
+
+  .app-subtitle {
+    @apply max-w-2xl text-sm leading-6 text-slate-600 sm:text-base;
+  }
+
+  .app-card-title {
+    @apply text-base font-semibold text-slate-950;
+  }
+
+  .app-card-copy {
+    @apply text-sm leading-6 text-slate-500;
+  }
+
+  .app-primary-button {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#16a34a] px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-700/20 transition-colors hover:bg-[#15803d] disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .app-secondary-button {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-white/80 bg-white/70 px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-white disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .app-icon-button {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-[14px] border border-white/80 bg-white/70 text-slate-600 shadow-sm transition-colors hover:bg-emerald-50 hover:text-[#166534];
+  }
+
+  .app-input {
+    @apply h-11 rounded-[14px] border-white/80 bg-white/80 text-slate-800 placeholder:text-slate-400 focus-visible:ring-[#16a34a];
+  }
+
+  .app-soft-icon {
+    @apply flex h-11 w-11 items-center justify-center rounded-[14px] bg-emerald-100 text-emerald-700;
   }
 
   /* Web3 Gradient Backgrounds */
@@ -482,38 +546,8 @@ html {
   transform-origin: bottom left;
 }
 
-h6 {
-  float: left;
-  color: #32376F;
-  position: relative;
-  margin-top: 20px;
-  z-index: 1004;
-  font-weight: bold;
-  font-family:Times, serif;
-}
-
-.logo {
-  float: left;
-  margin-top: 15px;
-  margin-right: 25px;
-  position: relative; 
-  z-index: 1004; 
-}
-
 body {
   background-color: hsl(var(--background));
-}
-
-.custom-signin {
-  border: none;
-  border-radius: 5px;
-  color: hsl(var(--foreground));
-  background-color: transparent;
-  text-transform: uppercase;
-  font-size: 1rem;
-  font-family:Times, serif;
-  float: right;
-  min-width: 80px;             /* 控制寬度，改小一點也不會太窄 */
 }
 
 /* Enhanced Web3 dark background with multiple layers */

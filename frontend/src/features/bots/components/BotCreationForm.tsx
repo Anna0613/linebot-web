@@ -1,8 +1,21 @@
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useBotManagement } from "@/features/bot-management/hooks/useBotManagement";
+import type { FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ExternalLink,
+  KeyRound,
+  Plus,
+  ShieldCheck,
+  Workflow,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
-// import ToastNotification from "../ui/ToastNotification";
+import { useBotManagement } from "@/features/bot-management/hooks/useBotManagement";
 
 interface BotData {
   name: string;
@@ -10,7 +23,13 @@ interface BotData {
   channelSecret: string;
 }
 
-const AddServerPage = () => {
+const credentialHints = [
+  "LINE Developers Console",
+  "Messaging API 分頁",
+  "Basic settings 分頁",
+];
+
+const BotCreationForm = () => {
   const navigate = useNavigate();
   const { createBot, isLoading, error, setError, clearError } =
     useBotManagement();
@@ -21,85 +40,50 @@ const AddServerPage = () => {
   });
   const [success, setSuccess] = useState(false);
   const [createdBotId, setCreatedBotId] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-  const [_showToast, _setShowToast] = useState(false);
-  const [_toastMessage, _setToastMessage] = useState("");
-  const [_toastType, _setToastType] = useState<
-    "success" | "error" | "warning" | "info"
-  >("info");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleInputChange = (field: keyof BotData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (error) {
-      clearError();
-    }
+    if (error) clearError();
     if (fieldErrors[field]) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        [field]: "",
-      }));
+      setFieldErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
       case "name":
-        if (!value.trim()) {
-          return "請輸入 LINE Bot 名稱";
-        }
-        if (value.trim().length < 2) {
-          return "Bot 名稱至少需要 2 個字符";
-        }
-        if (value.trim().length > 50) {
-          return "Bot 名稱不能超過 50 個字符";
-        }
+        if (!value.trim()) return "請輸入 LINE Bot 名稱";
+        if (value.trim().length < 2) return "Bot 名稱至少需要 2 個字符";
+        if (value.trim().length > 50) return "Bot 名稱不能超過 50 個字符";
         if (!/^[a-zA-Z0-9\u4e00-\u9fff\-_\s]+$/.test(value.trim())) {
           return "Bot 名稱只能包含中英文、數字、空格、連字號和底線";
         }
         return "";
-
       case "accessToken":
-        if (!value.trim()) {
-          return "請輸入 Channel Access Token";
-        }
-        if (value.trim().length < 10) {
-          return "Channel Access Token 長度不正確";
-        }
+        if (!value.trim()) return "請輸入 Channel Access Token";
+        if (value.trim().length < 10) return "Channel Access Token 長度不正確";
         return "";
-
       case "channelSecret":
-        if (!value.trim()) {
-          return "請輸入 Channel Secret";
-        }
-        if (value.trim().length < 10) {
-          return "Channel Secret 長度不正確";
-        }
+        if (!value.trim()) return "請輸入 Channel Secret";
+        if (value.trim().length < 10) return "Channel Secret 長度不正確";
         return "";
-
       default:
         return "";
     }
   };
 
-  const _handleFieldBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const error = validateField(name, value);
-    if (error) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        [name]: error,
-      }));
-    }
+  const handleFieldBlur = (name: keyof BotData, value: string) => {
+    const nextError = validateField(name, value);
+    setFieldErrors((prev) => ({ ...prev, [name]: nextError }));
   };
 
   const validateForm = () => {
-    const errors: { [key: string]: string } = {};
+    const errors: Record<string, string> = {};
 
     Object.keys(formData).forEach((key) => {
-      const error = validateField(key, formData[key as keyof typeof formData]);
-      if (error) {
-        errors[key] = error;
-      }
+      const nextError = validateField(key, formData[key as keyof BotData]);
+      if (nextError) errors[key] = nextError;
     });
 
     if (Object.keys(errors).length > 0) {
@@ -110,8 +94,8 @@ const AddServerPage = () => {
     return null;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
     const validationError = validateForm();
     if (validationError) {
@@ -119,184 +103,58 @@ const AddServerPage = () => {
       return;
     }
 
-    // 準備提交給 puzzleAPI 的數據
-    const botData = {
-      name: formData.name,
-      channel_token: formData.accessToken,
-      channel_secret: formData.channelSecret,
-    };
-
     try {
-      // 調用 hook 中的 createBot 方法
-      const createdBot = await createBot(botData);
+      const createdBot = await createBot({
+        name: formData.name.trim(),
+        channel_token: formData.accessToken.trim(),
+        channel_secret: formData.channelSecret.trim(),
+      });
 
       if (createdBot) {
-        console.log("Bot 創建成功:", createdBot);
-
-        // 顯示成功訊息
         setCreatedBotId((createdBot as { id?: string })?.id || null);
         setSuccess(true);
-
-        // 移除自動跳轉，讓用戶停留在當前頁面
       }
-    } catch (error) {
-      // 錯誤已經在 useBotManagement 中處理，這裡不需要額外處理
-      console.error("創建 Bot 失敗:", error);
+    } catch (creationError) {
+      console.error("創建 Bot 失敗:", creationError);
     }
   };
 
-  const _handleCancel = () => {
-    window.history.back(); // 返回上一頁
+  const resetForm = () => {
+    setSuccess(false);
+    setCreatedBotId(null);
+    setFormData({ name: "", accessToken: "", channelSecret: "" });
+    setFieldErrors({});
+    clearError();
   };
 
   if (success) {
     return (
-      <div className="space-y-12">
-        {/* 成功標題區域 */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-[hsl(var(--primary))] rounded-full mb-6 shadow-lg">
-            <svg
-              className="w-10 h-10 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h1 className="text-foreground text-[36px] sm:text-[42px] font-bold mb-4 leading-tight tracking-wide">
-            建立成功！
-          </h1>
-          <p className="text-muted-foreground text-xl leading-relaxed">
-            您的 LINE Bot 已成功建立
-          </p>
-        </div>
-
-        {/* 成功訊息區域 */}
-        <div className="max-w-3xl mx-auto">
-          <div className="web3-glass-card p-8 border-l-4 border-primary">
-            <h2 className="text-foreground text-[24px] font-bold mb-6">
-              建立完成
-            </h2>
-            <div className="space-y-4">
-              <div className="bg-secondary/50 rounded-lg p-6">
-                <h3 className="text-foreground font-bold text-lg mb-4">
-                  機器人資訊
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <span className="text-muted-foreground font-medium">名稱：</span>
-                    <span className="text-foreground/80">{formData.name}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <span className="text-muted-foreground font-medium">狀態：</span>
-                    <span className="text-primary font-bold">已建立</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-muted-foreground font-medium">
-                      建立時間：
-                    </span>
-                    <span className="text-foreground/80">
-                      {new Date().toLocaleString("zh-TW")}
-                    </span>
-                  </div>
-                </div>
-              </div>
+      <div className="mx-auto max-w-4xl py-6">
+        <div className="app-panel-strong p-6 sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <span className="app-soft-icon">
+                <CheckCircle2 className="h-5 w-5" />
+              </span>
+              <p className="app-kicker mt-5">Created</p>
+              <h1 className="app-page-title mt-2">Bot 已建立</h1>
+              <p className="app-subtitle mt-3">
+                {formData.name} 已加入工作台。接下來可以開始設計對話流程，或回到管理中心查看狀態。
+              </p>
+            </div>
+            <div className="app-muted-panel min-w-48">
+              <p className="text-xs text-slate-500">狀態</p>
+              <p className="mt-1 font-semibold text-[#166534]">已建立</p>
+              <p className="mt-3 text-xs text-slate-500">建立時間</p>
+              <p className="mt-1 text-sm font-medium text-slate-800">
+                {new Date().toLocaleString("zh-TW")}
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* 下一步區域 */}
-        <div className="max-w-4xl mx-auto">
-          <div className="web3-glass-card p-8">
-            <h2 className="text-foreground text-[24px] font-bold text-center mb-8">
-              下一步操作
-            </h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center p-6 web3-glass-card">
-                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8 text-primary-foreground"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1h2a1 1 0 011-1V4m0 0h8m-8 0a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V5a1 1 0 00-1-1z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-foreground font-bold mb-2">設計對話</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  開始設計您的機器人對話流程
-                </p>
-              </div>
-
-              <div className="text-center p-6 web3-glass-card">
-                <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8 text-accent-foreground"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-foreground font-bold mb-2">測試功能</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  測試機器人回應是否正常
-                </p>
-              </div>
-
-              <div className="text-center p-6 web3-glass-card">
-                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8 text-primary-foreground"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-foreground font-bold mb-2">正式發布</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  讓您的機器人上線服務
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 按鈕區域 */}
-        <div className="text-center space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button
+              type="button"
               onClick={() =>
                 navigate("/bots/visual-editor", {
                   state: {
@@ -307,213 +165,184 @@ const AddServerPage = () => {
                   },
                 })
               }
-              className="web3-primary-button px-8 py-4 font-bold rounded-lg shadow-lg transition-all duration-200 text-lg"
+              className="app-primary-button"
             >
+              <Workflow className="h-4 w-4" />
               開始設計流程
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
               onClick={() => navigate("/bots/management")}
-              className="web3-button px-8 py-4 font-bold rounded-lg shadow-lg transition-all duration-200 text-lg"
+              variant="outline"
+              className="app-secondary-button"
             >
               前往管理中心
-            </button>
-            <button
-              onClick={() => {
-                setSuccess(false);
-                setCreatedBotId(null);
-                setFormData({ name: "", accessToken: "", channelSecret: "" });
-              }}
-              className="px-8 py-4 font-bold rounded-lg border border-border bg-background text-foreground shadow-lg transition-all duration-200 text-lg hover:bg-secondary"
+            </Button>
+            <Button
+              type="button"
+              onClick={resetForm}
+              variant="outline"
+              className="app-secondary-button"
             >
-              建立其他機器人
-            </button>
+              <Plus className="h-4 w-4" />
+              建立其他 Bot
+            </Button>
           </div>
         </div>
       </div>
     );
   }
 
+  const isSubmitDisabled =
+    isLoading ||
+    !formData.name ||
+    !formData.accessToken ||
+    !formData.channelSecret;
+
   return (
-    <div className="space-y-12">
-      {/* 標題區域 */}
-      <div className="text-center mb-8 sm:mb-12 fade-in-element">
-      <h1 className="text-foreground text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] font-bold mb-3 sm:mb-4 leading-tight tracking-wide px-2">
-          建立新的 LINE Bot
-        </h1>
-        <p className="text-muted-foreground text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto px-4">
-          請輸入您的 LINE Bot 資訊
+    <div className="mx-auto max-w-5xl py-6">
+      <div className="mb-6">
+        <p className="app-kicker">Create Bot</p>
+        <h1 className="app-page-title mt-2">建立新的 LINE Bot</h1>
+        <p className="app-subtitle mt-3">
+          輸入 Bot 名稱與 LINE Channel 憑證。建立後即可進入視覺化編輯器。
         </p>
       </div>
 
-      {/* 錯誤訊息 */}
       {error && (
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-destructive/10 border border-destructive rounded-lg p-4">
-            <div className="flex items-center">
-              <svg
-                className="w-5 h-5 text-destructive mr-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
-              <span className="text-foreground font-medium">{error}</span>
-            </div>
-          </div>
+        <div className="mb-4 rounded-[16px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <AlertCircle className="mr-2 inline h-4 w-4" />
+          {error}
         </div>
       )}
 
-      {/* 主要表單區域 */}
-      <div className="max-w-4xl mx-auto">
-        <div className="web3-glass-card p-8 sm:p-12">
-          <div className="space-y-8">
-            {/* Bot 名稱 */}
-            <div>
-              <label className="block text-foreground text-lg font-bold mb-3">
+      <div className="grid gap-4 lg:grid-cols-[1fr_0.72fr]">
+        <form onSubmit={handleSubmit} className="app-panel-strong p-5 sm:p-7">
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="bot-name" className="text-slate-700">
                 Bot 名稱
-              </label>
-              <input
-                type="text"
+              </Label>
+              <Input
+                id="bot-name"
                 value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="請輸入您的 Bot 名稱"
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors text-foreground text-lg"
+                onChange={(event) => handleInputChange("name", event.target.value)}
+                onBlur={(event) => handleFieldBlur("name", event.target.value)}
+                placeholder="例如：客服助手"
+                className="app-input"
               />
-              <p className="text-muted-foreground text-sm mt-2">
-                這個名稱將會顯示在您的機器人設定中
-              </p>
+              {fieldErrors.name && (
+                <p className="text-sm text-rose-600">{fieldErrors.name}</p>
+              )}
             </div>
 
-            {/* Channel Access Token */}
-            <div>
-              <label className="block text-foreground text-lg font-bold mb-3">
+            <div className="space-y-2">
+              <Label htmlFor="access-token" className="text-slate-700">
                 Channel Access Token
-              </label>
-              <input
-                type="text"
+              </Label>
+              <Input
+                id="access-token"
                 value={formData.accessToken}
-                onChange={(e) =>
-                  handleInputChange("accessToken", e.target.value)
+                onChange={(event) =>
+                  handleInputChange("accessToken", event.target.value)
                 }
-                placeholder="請輸入您的 Channel Access Token"
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors text-foreground text-lg"
+                onBlur={(event) =>
+                  handleFieldBlur("accessToken", event.target.value)
+                }
+                placeholder="貼上長期 Channel Access Token"
+                className="app-input"
               />
-              <p className="text-muted-foreground text-sm mt-2">
-                從 LINE Developers Console 取得的長期 Channel Access Token
-              </p>
+              {fieldErrors.accessToken && (
+                <p className="text-sm text-rose-600">
+                  {fieldErrors.accessToken}
+                </p>
+              )}
             </div>
 
-            {/* Channel Secret */}
-            <div>
-              <label className="block text-foreground text-lg font-bold mb-3">
+            <div className="space-y-2">
+              <Label htmlFor="channel-secret" className="text-slate-700">
                 Channel Secret
-              </label>
-              <input
-                type="text"
+              </Label>
+              <Input
+                id="channel-secret"
                 value={formData.channelSecret}
-                onChange={(e) =>
-                  handleInputChange("channelSecret", e.target.value)
+                onChange={(event) =>
+                  handleInputChange("channelSecret", event.target.value)
                 }
-                placeholder="請輸入您的 Channel Secret"
-                className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors text-foreground text-lg"
+                onBlur={(event) =>
+                  handleFieldBlur("channelSecret", event.target.value)
+                }
+                placeholder="貼上 Channel Secret"
+                className="app-input"
               />
-              <p className="text-muted-foreground text-sm mt-2">
-                用於驗證來自 LINE 平台的請求
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 幫助資訊區域 */}
-      <div className="max-w-5xl mx-auto mt-12 sm:mt-16">
-        <div className="web3-glass-card p-8">
-          <h2 className="text-foreground text-[24px] font-bold text-center mb-8">
-            如何取得這些資訊？
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* 卡片 1 */}
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-primary-foreground text-2xl font-bold shadow-md bg-primary">
-                1
-              </div>
-              <h3 className="text-foreground font-bold text-lg mb-3">
-                前往 LINE Developers
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                登入 LINE Developers Console 並選擇您的頻道
-              </p>
-            </div>
-
-            {/* 卡片 2 */}
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-accent-foreground text-2xl font-bold shadow-md bg-accent">
-                2
-              </div>
-              <h3 className="text-foreground font-bold text-lg mb-3">
-                取得 Access Token
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                在 "Messaging API" 分頁中發行長期的 Channel Access Token
-              </p>
-            </div>
-
-            {/* 卡片 3 */}
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-primary-foreground text-2xl font-bold shadow-md bg-primary">
-                3
-              </div>
-              <h3 className="text-foreground font-bold text-lg mb-3">
-                複製 Channel Secret
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                在 "Basic settings" 分頁中找到並複製 Channel Secret
-              </p>
+              {fieldErrors.channelSecret && (
+                <p className="text-sm text-rose-600">
+                  {fieldErrors.channelSecret}
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="mt-8 text-center">
-            <a
-              href="/how-to-establish"
-              className="web3-primary-button inline-flex items-center px-6 py-3 font-bold rounded-lg shadow-lg transition-all duration-200"
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button
+              type="submit"
+              disabled={isSubmitDisabled}
+              className="app-primary-button"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              查看詳細教學
-            </a>
+              {isLoading ? (
+                <>
+                  <Loader size="sm" />
+                  建立中
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  建立 Bot
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="app-secondary-button"
+              onClick={() => navigate("/how-to-establish")}
+            >
+              <ExternalLink className="h-4 w-4" />
+              查看憑證教學
+            </Button>
           </div>
-        </div>
-      </div>
+        </form>
 
-      {/* 提交按鈕區域 */}
-      <div className="text-center mt-8">
-        <button
-          onClick={handleSubmit}
-          disabled={isLoading || !formData.name || !formData.accessToken || !formData.channelSecret}
-          className="web3-primary-button px-12 py-4 font-bold rounded-lg shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-3">
-              <div className="scale-50">
-                <Loader fullPage={false} web3Style={true} />
+        <aside className="app-panel p-5">
+          <span className="app-soft-icon">
+            <KeyRound className="h-5 w-5" />
+          </span>
+          <h2 className="app-card-title mt-5">需要準備的資訊</h2>
+          <p className="app-card-copy mt-2">
+            三個欄位都來自 LINE Developers。確認 Channel 已啟用 Messaging API 後再建立。
+          </p>
+          <div className="mt-5 space-y-3">
+            {credentialHints.map((hint, index) => (
+              <div key={hint} className="flex items-center gap-3 rounded-[14px] bg-slate-50/80 px-3 py-3 text-sm text-slate-600">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-[#166534]">
+                  {index + 1}
+                </span>
+                {hint}
               </div>
-              建立中...
-            </span>
-          ) : (
-            "立即建立 Bot"
-          )}
-        </button>
+            ))}
+          </div>
+          <div className="mt-5 rounded-[14px] border border-emerald-100 bg-emerald-50/80 p-4">
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="mt-0.5 h-4 w-4 text-[#166534]" />
+              <p className="text-sm leading-6 text-emerald-800">
+                憑證只用於連接您的 LINE Bot，請避免貼到不信任的頁面。
+              </p>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );
 };
 
-export default AddServerPage;
+export default BotCreationForm;

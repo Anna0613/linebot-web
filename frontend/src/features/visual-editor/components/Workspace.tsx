@@ -493,20 +493,20 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   const renderNoBotSelectedState = () => (
     <div className="flex h-full items-center justify-center p-6">
-      <div className="w-full max-w-xl rounded-lg border border-border bg-card p-8 text-center shadow-sm">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <div className="app-panel-strong w-full max-w-xl p-8 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[16px] bg-emerald-100 text-[#166534]">
           <Bot className="h-7 w-7" />
         </div>
-        <h2 className="mb-2 text-xl font-semibold text-foreground">
+        <h2 className="mb-2 text-xl font-semibold text-slate-950">
           先選擇一個 Bot
         </h2>
-        <p className="mx-auto mb-6 max-w-md text-sm leading-relaxed text-muted-foreground">
+        <p className="mx-auto mb-6 max-w-md text-sm leading-6 text-slate-500">
           從右上角選擇要編輯的 Bot，或先建立新的 LINE Bot，再開始配置邏輯、Flex 訊息、AI 知識庫與 Rich Menu。
         </p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Button
             onClick={() => navigate('/bots/create')}
-            className="web3-primary-button"
+            className="app-primary-button"
           >
             <Plus className="mr-2 h-4 w-4" />
             建立 Bot
@@ -514,6 +514,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           <Button
             variant="outline"
             onClick={() => navigate('/bots/management')}
+            className="app-secondary-button"
           >
             <LayoutDashboard className="mr-2 h-4 w-4" />
             回管理中心
@@ -530,7 +531,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
         {renderLeftPanel()}
 
         {/* 主工作區 */}
-        <div className="flex-1 bg-background flex flex-col">
+        <div className="flex flex-1 flex-col bg-transparent">
         <Tabs
           value={activeTab}
           onValueChange={(value) => {
@@ -539,11 +540,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
           }}
           className="h-full flex flex-col relative"
         >
-          <TabsList className="m-4 flex-shrink-0 web3-glass-card">
-            <TabsTrigger value="logic" className="data-[state=active]:bg-web3-cyan/20 data-[state=active]:text-web3-cyan">
+          <TabsList className="app-panel m-4 h-auto flex-shrink-0 justify-start gap-1 overflow-x-auto p-1">
+            <TabsTrigger value="logic" className="rounded-[12px] px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
               邏輯編輯器
               {currentLogicTemplateName && (
-                <span className="ml-2 text-xs bg-web3-cyan/20 text-web3-cyan px-2 py-1 rounded">
+                <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 text-xs text-[#166534]">
                   {currentLogicTemplateName}
                 </span>
               )}
@@ -551,10 +552,10 @@ const Workspace: React.FC<WorkspaceProps> = ({
                 <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
               )}
             </TabsTrigger>
-            <TabsTrigger value="flex">
+            <TabsTrigger value="flex" className="rounded-[12px] px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
               Flex 設計器
               {currentFlexMessageName && (
-                <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 text-xs text-[#166534]">
                   {currentFlexMessageName}
                 </span>
               )}
@@ -562,8 +563,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
                 <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
               )}
             </TabsTrigger>
-            <TabsTrigger value="preview">AI 知識庫管理</TabsTrigger>
-            <TabsTrigger value="richmenu">功能選單（Rich Menu）</TabsTrigger>
+            <TabsTrigger value="preview" className="rounded-[12px] px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">AI 知識庫管理</TabsTrigger>
+            <TabsTrigger value="richmenu" className="rounded-[12px] px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">功能選單</TabsTrigger>
           </TabsList>
           {!selectedBotId ? (
             <div className="min-h-0 flex-1">
@@ -603,8 +604,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
                   />
                 </div>
 
-                <div className="flex-1 p-4 overflow-hidden flex flex-col">
-                  <div className="grid grid-cols-2 gap-4 w-full h-full">
+                <div className="flex flex-1 flex-col overflow-hidden p-4">
+                  <div className="grid h-full w-full gap-4 lg:grid-cols-2">
                     <div className="flex flex-col h-full overflow-hidden">
                       <DropZone
                         title={currentFlexMessageName ?

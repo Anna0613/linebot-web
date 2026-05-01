@@ -62,7 +62,7 @@ const Navbar = () => {
                   className="block h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain"
                 />
               </picture>
-              <h6 className="m-0 truncate text-lg font-semibold leading-none tracking-[-0.01em] text-slate-950 sm:text-xl md:text-[28px]">
+              <h6 className="m-0 truncate text-lg font-semibold leading-none tracking-normal text-slate-950 sm:text-xl md:text-[28px]">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
               </h6>

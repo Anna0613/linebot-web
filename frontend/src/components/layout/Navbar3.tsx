@@ -173,7 +173,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
                 <source srcSet="/assets/images/webp/LOGO.webp" type="image/webp" />
                 <img src="/assets/images/origin/LOGO.png" alt="Logo" loading="eager" decoding="async" fetchpriority="high" width="48" height="48" className="h-12 w-auto" />
               </picture>
-              <h6 className="text-[28px] font-bold pl-4 text-foreground tracking-wide mt-1">
+              <h6 className="text-[28px] font-bold pl-4 text-foreground tracking-normal mt-1">
                 LINE Bot 製作輔助系統
               </h6>
             </Link>

@@ -195,7 +195,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                   className="block h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain align-middle"
                 />
               </picture>
-              <h6 className="m-0 leading-none flex items-center text-lg sm:text-xl md:text-[28px] font-bold neon-text-gradient tracking-wide truncate translate-y-[1px]">
+              <h6 className="m-0 leading-none flex items-center text-lg sm:text-xl md:text-[28px] font-bold neon-text-gradient tracking-normal truncate translate-y-[1px]">
                 <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
                 <span className="lg:hidden">LINE Bot 系統</span>
               </h6>
