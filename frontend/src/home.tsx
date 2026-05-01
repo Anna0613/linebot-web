@@ -7,6 +7,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { initializeCacheEventHandler } from "@/utils/cacheEventHandler";
 import { authOptimizer } from "@/utils/authOptimizer";
 import { queryClient } from "@/hooks/useReactQuery";
+import { SelectedBotProvider } from "@/features/bots/context/SelectedBotContext";
 
 // 使用 React.lazy 進行代碼分割和懶載入，按優先級分組
 // 高優先級 - 首頁和登入相關（用戶最可能訪問）
@@ -144,16 +145,18 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          <Suspense fallback={null}>
-            <AnimatedRoutes />
-          </Suspense>
-        </BrowserRouter>
+        <SelectedBotProvider>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            <Suspense fallback={null}>
+              <AnimatedRoutes />
+            </Suspense>
+          </BrowserRouter>
+        </SelectedBotProvider>
 
       </TooltipProvider>
     </QueryClientProvider>

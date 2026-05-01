@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
 import { useBotManagement } from "@/features/bot-management/hooks/useBotManagement";
+import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
 
 interface BotData {
   name: string;
@@ -33,6 +34,7 @@ const BotCreationForm = () => {
   const navigate = useNavigate();
   const { createBot, isLoading, error, setError, clearError } =
     useBotManagement();
+  const { selectBot, refreshBots } = useSelectedBot();
   const [formData, setFormData] = useState<BotData>({
     name: "",
     accessToken: "",
@@ -111,7 +113,12 @@ const BotCreationForm = () => {
       });
 
       if (createdBot) {
-        setCreatedBotId((createdBot as { id?: string })?.id || null);
+        const nextCreatedBotId = (createdBot as { id?: string })?.id || null;
+        setCreatedBotId(nextCreatedBotId);
+        if (nextCreatedBotId) {
+          selectBot(nextCreatedBotId);
+          void refreshBots();
+        }
         setSuccess(true);
       }
     } catch (creationError) {

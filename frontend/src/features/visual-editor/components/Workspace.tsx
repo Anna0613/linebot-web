@@ -501,7 +501,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           先選擇一個 Bot
         </h2>
         <p className="mx-auto mb-6 max-w-md text-sm leading-6 text-slate-500">
-          從右上角選擇要編輯的 Bot，或先建立新的 LINE Bot，再開始配置邏輯、Flex 訊息、AI 知識庫與 Rich Menu。
+          從左上角選擇要編輯的 Bot，或先建立新的 LINE Bot，再開始配置邏輯、Flex 訊息、AI 知識庫與 Rich Menu。
         </p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Button
