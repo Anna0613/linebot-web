@@ -45,13 +45,6 @@ LOGGING_CONFIG = {
 }
 
 if __name__ == "__main__":
-    # 先設定環境變數，避免 transformers 在匯入時嘗試載入 TensorFlow/Flax
-    os.environ.setdefault("USE_TF", "0")
-    os.environ.setdefault("USE_FLAX", "0")
-    os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
-    os.environ.setdefault("TRANSFORMERS_NO_FLAX", "1")
-    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-
     # 檢查環境變數
     env_file = os.path.join(backend_dir, '.env')
     if not os.path.exists(env_file):

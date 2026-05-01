@@ -172,14 +172,13 @@ backend/
 - **知識管理**
   - 文字/檔案上傳（PDF、DOCX、TXT）
   - 自動分塊（Recursive Chunking）
-  - 向量嵌入（all-mpnet-base-v2, 768 維）
+  - 向量嵌入（OpenAI text-embedding-3-small, 1536 維）
 - **RAG 檢索**
   - 向量相似度搜尋（pgvector）
   - Top-K 檢索
   - 相似度閾值控制
 - **AI 對話接管**
   - Groq API 整合（llama-3.1-70b-versatile）
-  - Gemini API 整合（gemini-1.5-flash）
   - 系統提示詞自訂
   - 對話歷史管理
 
