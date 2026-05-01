@@ -119,7 +119,7 @@ class RAGService:
                        (1 - (kc.embedding <=> CAST(:q AS vector))) AS score
                 FROM knowledge_chunks kc
                 JOIN knowledge_documents kd ON kc.document_id = kd.id
-                WHERE (kc.bot_id = CAST(:bot_id AS UUID) OR kc.bot_id IS NULL)
+                WHERE kc.bot_id = CAST(:bot_id AS UUID)
                   AND kc.deleted_at IS NULL
                   AND kd.deleted_at IS NULL
                   AND kc.embedding IS NOT NULL
@@ -284,9 +284,9 @@ class RAGService:
         try:
             from app.models.knowledge import KnowledgeDocument
 
-            # 查詢該 bot 的所有文件（包含 project 和 global），只查詢未刪除的文件
+            # 查詢該 bot 的所有文件，只查詢未刪除的文件
             stmt = select(KnowledgeDocument).where(
-                ((KnowledgeDocument.bot_id == bot_id) | (KnowledgeDocument.bot_id.is_(None))),
+                KnowledgeDocument.bot_id == bot_id,
                 KnowledgeDocument.deleted_at.is_(None)
             ).order_by(KnowledgeDocument.created_at.desc())
 
