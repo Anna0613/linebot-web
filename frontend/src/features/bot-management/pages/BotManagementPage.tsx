@@ -15,20 +15,14 @@ import {
   Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import AppShell, { AppRobotIllustration } from "@/components/layout/AppShell";
 import { useToast } from "@/hooks/use-toast";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
 import { apiClient } from "@/services/UnifiedApiClient";
-import { Bot as BotType, LogicTemplate } from "@/types/bot";
+import { LogicTemplate } from "@/types/bot";
 import { getWebhookUrl } from "@/config/apiConfig";
 import UserDetailsModal from "../components/users/UserDetailsModal";
 
@@ -38,7 +32,6 @@ import AnalyticsTabContent from "@/features/bot-management/components/AnalyticsT
 import ControlTabContent from "@/features/bot-management/components/ControlTabContent";
 import LogicTabContent from "@/features/bot-management/components/LogicTabContent";
 import UsersTabContent from "@/features/bot-management/components/UsersTabContent";
-import { cn } from "@/lib/utils";
 import {
   ActivityItem,
   BotAnalytics,
@@ -158,123 +151,6 @@ const managementCopy = {
 
 type ManagementCopy = (typeof managementCopy)["en"];
 
-const getManagementLocale = (language: keyof typeof managementCopy) =>
-  language === "zh" ? "zh-TW" : "en-US";
-
-const formatBotDate = (
-  value: string | undefined,
-  language: keyof typeof managementCopy
-) => {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat(getManagementLocale(language), {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-};
-
-const StatusDot = ({
-  className,
-  label,
-}: {
-  className: string;
-  label: string;
-}) => (
-  <span className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
-    <span className={cn("h-2 w-2 rounded-full", className)} />
-    {label}
-  </span>
-);
-
-const BotSelectorBar = ({
-  copy,
-  language,
-  bots,
-  selectedBot,
-  selectedBotId,
-  isConnected,
-  connectionError,
-  botHealth,
-  onSelectBot,
-}: {
-  copy: ManagementCopy;
-  language: keyof typeof managementCopy;
-  bots: BotType[];
-  selectedBot?: BotType;
-  selectedBotId: string;
-  isConnected: boolean;
-  connectionError: string | null;
-  botHealth: "online" | "offline" | "error";
-  onSelectBot: (botId: string) => void;
-}) => {
-  const isActive = selectedBot?.is_active !== false;
-  const healthLabel =
-    botHealth === "online"
-      ? copy.status.running
-      : botHealth === "error"
-        ? copy.status.error
-        : copy.status.idle;
-
-  return (
-    <section className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-emerald-100 text-[#16a34a]">
-            <BotIcon className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-              {copy.botSelector}
-            </p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Select value={selectedBotId} onValueChange={onSelectBot}>
-                <SelectTrigger className="h-11 w-64 rounded-[14px] border-emerald-100 bg-white text-sm font-semibold text-slate-900 shadow-sm">
-                  <SelectValue placeholder={copy.selectBot} />
-                </SelectTrigger>
-                <SelectContent>
-                  {bots.map((bot) => (
-                    <SelectItem key={bot.id} value={bot.id}>
-                      {bot.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Badge className="border-emerald-100 bg-emerald-50 px-3 py-1 text-emerald-700 hover:bg-emerald-50">
-                {isActive ? copy.status.active : copy.status.inactive}
-              </Badge>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusDot
-            className={isConnected ? "bg-emerald-500" : "bg-amber-400"}
-            label={
-              connectionError ? copy.status.reconnecting : copy.status.connected
-            }
-          />
-          <StatusDot
-            className={
-              botHealth === "online"
-                ? "bg-emerald-500"
-                : botHealth === "error"
-                  ? "bg-rose-500"
-                  : "bg-amber-400"
-            }
-            label={healthLabel}
-          />
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm">
-            <CalendarDays className="h-3.5 w-3.5 text-emerald-600" />
-            {copy.updated} {formatBotDate(selectedBot?.updated_at, language)}
-          </span>
-        </div>
-      </div>
-    </section>
-  );
-};
-
 const ManagementLoadingPanel = () => (
   <section
     className="rounded-[16px] border border-white/70 bg-white/75 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl"
@@ -304,10 +180,15 @@ const BotManagementPage: React.FC = () => {
   const { toast } = useToast();
   const { language } = useLanguagePreference();
   const copy = managementCopy[language];
+  const {
+    bots,
+    selectedBotId,
+    selectedBot,
+    isLoading: botsLoading,
+    refreshBots,
+  } = useSelectedBot();
 
   // 狀態管理
-  const [selectedBotId, setSelectedBotId] = useState<string>("");
-  const [bots, setBots] = useState<BotType[]>([]);
   const [logicTemplates, setLogicTemplates] = useState<LogicTemplate[]>([]);
   const [analytics, setAnalytics] = useState<BotAnalytics | null>(null);
   const [messageStats, setMessageStats] = useState<MessageStats[]>([]);
@@ -362,7 +243,7 @@ const BotManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("analytics");
 
   // WebSocket 即時連接 - 在選擇 Bot 後立即連接，由 useWebSocket 內部處理延遲
-  const { isConnected, connectionError, lastMessage } = useWebSocket({
+  const { isConnected, lastMessage } = useWebSocket({
     botId: selectedBotId || undefined,
     autoReconnect: true,
     // 只要選中了 Bot 就啟用 WebSocket，連接時序由 hook 內部處理
@@ -386,26 +267,6 @@ const BotManagementPage: React.FC = () => {
     enabled: !!selectedBotId && activeTab === "control", // 只在控制頁籤時啟用
     refreshInterval: 5 * 60 * 1000, // 5 分鐘
   });
-
-  // 獲取用戶的 Bot 列表 - 修復循環依賴
-  const fetchBots = useCallback(async () => {
-    try {
-      const response = await apiClient.getBots();
-      if (response.data && Array.isArray(response.data)) {
-        setBots(response.data);
-        return response.data;
-      }
-      return [];
-    } catch (error) {
-      console.error("獲取 Bot 列表失敗:", error);
-      toast({
-        variant: "destructive",
-        title: "載入失敗",
-        description: "無法載入 Bot 列表",
-      });
-      return [];
-    }
-  }, [toast]); // 移除 selectedBotId 依賴
 
   // 獲取邏輯模板
   const fetchLogicTemplates = useCallback(async (botId: string) => {
@@ -1068,19 +929,14 @@ const BotManagementPage: React.FC = () => {
     }
   };
 
-  // 初始化數據 - 修復循環依賴
+  // 初始化全域 Bot 列表
   useEffect(() => {
     const initializeData = async () => {
       if (!user) return;
 
       setLoading(true);
       try {
-        const botList = await fetchBots();
-
-        // 只在初始化時設置第一個 Bot，避免循環依賴
-        if (botList.length > 0 && !selectedBotId) {
-          setSelectedBotId(botList[0].id);
-        }
+        await refreshBots();
       } catch (error) {
         console.error("初始化數據失敗:", error);
         toast({
@@ -1094,7 +950,7 @@ const BotManagementPage: React.FC = () => {
     };
 
     initializeData();
-  }, [user, fetchBots, selectedBotId, toast]); // 加入缺少的依賴項
+  }, [user, refreshBots, toast]);
 
   // 當選擇的 Bot 變化時清空舊資料並獲取新資料
   useEffect(() => {
@@ -1407,8 +1263,8 @@ const BotManagementPage: React.FC = () => {
     }
   }, [analytics, copy.documentTitle]);
 
-  const selectedBot = bots.find((bot) => bot.id === selectedBotId);
-  const isInitialPageLoading = authLoading || (loading && bots.length === 0);
+  const isInitialPageLoading =
+    authLoading || ((loading || botsLoading) && bots.length === 0);
 
   return (
     <AppShell
@@ -1484,20 +1340,6 @@ const BotManagementPage: React.FC = () => {
 
       <div className="mt-6 space-y-6">
         {isInitialPageLoading && <ManagementLoadingPanel />}
-
-        {!isInitialPageLoading && bots.length > 0 && (
-          <BotSelectorBar
-            copy={copy}
-            language={language}
-            bots={bots}
-            selectedBot={selectedBot}
-            selectedBotId={selectedBotId}
-            isConnected={isConnected}
-            connectionError={connectionError}
-            botHealth={botHealth}
-            onSelectBot={setSelectedBotId}
-          />
-        )}
 
         {!isInitialPageLoading && bots.length === 0 && !loading && (
           <section className="rounded-[16px] border border-white/70 bg-white/75 p-8 text-center shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">

@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   BarChart3,
   Bell,
-  Bot as BotIcon,
   Home,
   LogOut,
   Menu,
@@ -17,6 +16,7 @@ import {
 import LanguageToggle from "@/components/LanguageToggle/LanguageToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import GlobalBotSwitcher from "@/features/bots/components/GlobalBotSwitcher";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -182,25 +182,12 @@ const AppSidebar = ({
         mobile ? "w-72" : "w-72"
       )}
     >
-      <Link
-        to="/dashboard"
-        onClick={onNavigate}
-        className="flex items-center gap-3 rounded-[16px] px-3 py-2"
-      >
-        <span className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-[#16a34a] text-white shadow-lg shadow-emerald-600/20">
-          <BotIcon className="h-5 w-5" />
-        </span>
-        <span>
-          <span className="block text-sm font-semibold text-slate-950">
-            LINE Bot
-          </span>
-          <span className="block text-xs text-slate-500">
-            {copy.sidebarSubtitle}
-          </span>
-        </span>
-      </Link>
+      <GlobalBotSwitcher
+        className="w-full"
+        triggerClassName="border-emerald-100 bg-white text-slate-900"
+      />
 
-      <nav className="mt-8 space-y-1">
+      <nav className="mt-7 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = item.id === activeNav;
@@ -375,7 +362,11 @@ const AppTopbar = ({
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="min-w-0">
+          <GlobalBotSwitcher
+            className="min-w-0 max-w-[260px] flex-1 lg:hidden"
+            showLabel={false}
+          />
+          <div className="hidden min-w-0 sm:block">
             <p className="truncate text-xs font-semibold uppercase tracking-normal text-emerald-700">
               {kicker || copy.defaultKicker}
             </p>

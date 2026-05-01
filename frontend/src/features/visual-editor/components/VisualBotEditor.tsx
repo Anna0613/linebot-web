@@ -3,10 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import DragDropProvider from './DragDropProvider';
 import Workspace from './Workspace';
-import ProjectManager from './ProjectManager';
 import SaveStatusIndicator from './SaveStatusIndicator';
 import { SaveStatus } from '@/features/visual-editor/types/saveStatus';
 import { Button } from '@/components/ui/button';
+import GlobalBotSwitcher from '@/features/bots/components/GlobalBotSwitcher';
+import { useSelectedBot } from '@/features/bots/context/SelectedBotContext';
 import { UnifiedBlock } from '@/features/visual-editor/types/block';
 import VisualEditorApi, { FlexMessage } from '@/features/visual-editor/api/visualEditorApi';
 import { VisualEditorProvider } from '@/features/visual-editor/context/VisualEditorContext';
@@ -24,7 +25,10 @@ export const VisualBotEditor: React.FC = () => {
   const location = useLocation();
   const initialRouteState = location.state as VisualEditorRouteState | null;
   const initialActiveTab = initialRouteState?.activeTab || 'logic';
-  const initialSelectedBotId = initialRouteState?.selectedBotId || '';
+  const { selectedBotId: globalSelectedBotId, selectBot } = useSelectedBot();
+  const initialSelectedBotId = initialRouteState?.selectedBotId || globalSelectedBotId || '';
+  const routeSelectedBotIdRef = useRef(initialRouteState?.selectedBotId || '');
+  const routeSelectionAppliedRef = useRef(false);
   const returnTo = initialRouteState?.returnTo || '/bots/management';
   const returnLabel = initialRouteState?.returnLabel || '返回管理中心';
   const [logicBlocks, setLogicBlocks] = useState<UnifiedBlock[]>([]);
@@ -108,14 +112,17 @@ export const VisualBotEditor: React.FC = () => {
 
 
 
-  // 處理 Bot 選擇變更
-  const handleBotSelect = async (botId: string) => {
+  const applyBotSelection = useCallback((botId: string) => {
     setSelectedBotId(botId);
     // 清空邏輯模板和 FlexMessage 選擇
     setSelectedLogicTemplateId('');
     setSelectedFlexMessageId('');
     setCurrentLogicTemplateName('');
     setCurrentFlexMessageName('');
+    setSaveStatus(SaveStatus.SAVED);
+    setLastSavedTime(undefined);
+    setSaveError('');
+    setHasUnsavedChanges(false);
     
     if (botId && VisualEditorApi.isValidBotId(botId)) {
       // 清空當前積木，等待用戶選擇邏輯模板和 FlexMessage
@@ -126,7 +133,45 @@ export const VisualBotEditor: React.FC = () => {
       setLogicBlocks([]);
       setFlexBlocks([]);
     }
-  };
+  }, []);
+
+  // 處理 Bot 選擇變更
+  const handleBotSelect = useCallback(async (botId: string) => {
+    selectBot(botId);
+    applyBotSelection(botId);
+  }, [applyBotSelection, selectBot]);
+
+  useEffect(() => {
+    if (routeSelectionAppliedRef.current) return;
+
+    routeSelectionAppliedRef.current = true;
+    const routeSelectedBotId = routeSelectedBotIdRef.current;
+    if (routeSelectedBotId && routeSelectedBotId !== globalSelectedBotId) {
+      selectBot(routeSelectedBotId);
+    }
+  }, [globalSelectedBotId, selectBot]);
+
+  useEffect(() => {
+    if (!globalSelectedBotId || globalSelectedBotId === selectedBotId) return;
+
+    if (hasUnsavedChanges) {
+      const shouldSwitch = confirm('您有未儲存的變更，切換 Bot 後目前變更將會遺失。確定要切換嗎？');
+      if (!shouldSwitch) {
+        if (selectedBotId) {
+          selectBot(selectedBotId);
+        }
+        return;
+      }
+    }
+
+    void handleBotSelect(globalSelectedBotId);
+  }, [
+    globalSelectedBotId,
+    selectedBotId,
+    hasUnsavedChanges,
+    handleBotSelect,
+    selectBot,
+  ]);
 
   // 處理邏輯模板選擇變更
   const handleLogicTemplateSelect = async (templateId: string) => {
@@ -457,7 +502,12 @@ export const VisualBotEditor: React.FC = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
 
-              <div className="min-w-0">
+              <GlobalBotSwitcher
+                className="min-w-[190px] max-w-[280px] flex-1 sm:flex-none"
+                showLabel={false}
+              />
+
+              <div className="hidden min-w-0 sm:block">
                 <p className="app-kicker">Visual editor</p>
                 <h1 className="truncate text-lg font-semibold text-slate-950">
                   LINE Bot 視覺化編輯器
@@ -475,12 +525,6 @@ export const VisualBotEditor: React.FC = () => {
               </div>
             </div>
             
-            <div className="lg:shrink-0">
-              <ProjectManager
-                selectedBotId={selectedBotId}
-                onBotSelect={handleBotSelect}
-              />
-            </div>
             {/* 已將 Rich Menu 作為工作區的獨立標籤 */}
           </div>
         </header>

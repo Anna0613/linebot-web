@@ -385,7 +385,6 @@ const getQuickActions = (
   title: string;
   description: string;
   href: string;
-  cta: string;
   icon: IconComponent;
   accent: string;
 }> => [
@@ -393,7 +392,6 @@ const getQuickActions = (
     title: copy.quickActions.create.title,
     description: copy.quickActions.create.description,
     href: "/bots/create",
-    cta: copy.quickActions.create.cta,
     icon: Plus,
     accent: "bg-emerald-100 text-emerald-700",
   },
@@ -401,7 +399,6 @@ const getQuickActions = (
     title: copy.quickActions.editor.title,
     description: copy.quickActions.editor.description,
     href: "/bots/visual-editor",
-    cta: copy.quickActions.editor.cta,
     icon: Workflow,
     accent: "bg-sky-100 text-sky-700",
   },
@@ -409,7 +406,6 @@ const getQuickActions = (
     title: copy.quickActions.analytics.title,
     description: copy.quickActions.analytics.description,
     href: "/bots/management",
-    cta: copy.quickActions.analytics.cta,
     icon: LineChart,
     accent: "bg-violet-100 text-violet-700",
   },
@@ -417,7 +413,6 @@ const getQuickActions = (
     title: copy.quickActions.management.title,
     description: copy.quickActions.management.description,
     href: "/bots/management",
-    cta: copy.quickActions.management.cta,
     icon: Settings2,
     accent: "bg-amber-100 text-amber-700",
   },
@@ -828,26 +823,22 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                 const Icon = action.icon;
 
                 return (
-                  <div
+                  <Link
+                    to={action.href}
                     key={action.title}
-                    className="rounded-[16px] border border-white/70 bg-white/70 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl transition-transform hover:-translate-y-0.5"
+                    className="group block rounded-[16px] border border-white/70 bg-white/70 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-emerald-100 hover:bg-white/85 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                    aria-label={action.title}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <span
                         className={cn(
-                          "flex h-11 w-11 items-center justify-center rounded-[14px]",
+                          "flex h-11 w-11 items-center justify-center rounded-[14px] transition-transform group-hover:scale-105",
                           action.accent
                         )}
                       >
                         <Icon className="h-5 w-5" />
                       </span>
-                      <Button
-                        asChild
-                        size="sm"
-                        className="rounded-[12px] bg-[#16a34a] px-3 text-xs font-semibold text-white hover:bg-[#15803d]"
-                      >
-                        <Link to={action.href}>{action.cta}</Link>
-                      </Button>
+                      <ChevronRight className="h-5 w-5 text-slate-300 transition-colors group-hover:text-emerald-600" />
                     </div>
                     <h3 className="mt-5 text-base font-semibold text-slate-950">
                       {action.title}
@@ -855,7 +846,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                     <p className="mt-2 min-h-10 text-sm leading-5 text-slate-500">
                       {action.description}
                     </p>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
 
 interface EditOptionModalProps {
   isOpen: boolean;
@@ -11,19 +12,29 @@ interface EditOptionModalProps {
 const EditOptionModal: React.FC<EditOptionModalProps> = ({
   isOpen,
   onClose,
-  botId: _botId,
+  botId,
   onEditBasicInfo,
 }) => {
   const navigate = useNavigate();
+  const { selectBot } = useSelectedBot();
 
   if (!isOpen) return null;
 
   const handleEditFunction = () => {
+    selectBot(botId);
     onClose();
-    navigate("/bots/editor");
+    navigate("/bots/visual-editor", {
+      state: {
+        selectedBotId: botId,
+        activeTab: "logic",
+        returnTo: "/bots/management",
+        returnLabel: "返回管理中心",
+      },
+    });
   };
 
   const handleEditBasicInfo = () => {
+    selectBot(botId);
     onClose();
     onEditBasicInfo();
   };

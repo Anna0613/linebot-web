@@ -5,7 +5,7 @@ import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
-import ProjectManager from "@/features/visual-editor/components/ProjectManager";
+import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
 import RichMenuApi from "@/features/rich-menu/api/RichMenuApi";
 import type { RichMenu } from "@/features/rich-menu/types/richMenu";
 import RichMenuList from "@/features/rich-menu/components/RichMenuList";
@@ -18,9 +18,8 @@ const RichMenuManagementPage: React.FC = () => {
   });
   const { toast } = useToast();
   const [sp] = useSearchParams();
-  const [selectedBotId, setSelectedBotId] = useState<string>(
-    sp.get("botId") || ""
-  );
+  const { selectedBotId, selectBot } = useSelectedBot();
+  const queryBotId = sp.get("botId") || "";
   const [menus, setMenus] = useState<RichMenu[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<RichMenu | null>(null);
@@ -46,6 +45,12 @@ const RichMenuManagementPage: React.FC = () => {
     },
     [toast]
   );
+
+  useEffect(() => {
+    if (queryBotId && queryBotId !== selectedBotId) {
+      selectBot(queryBotId);
+    }
+  }, [queryBotId, selectedBotId, selectBot]);
 
   useEffect(() => {
     if (selectedBotId) loadMenus(selectedBotId);
@@ -104,10 +109,6 @@ const RichMenuManagementPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Rich Menu 管理</h1>
           <div className="flex items-center gap-2">
-            <ProjectManager
-              selectedBotId={selectedBotId}
-              onBotSelect={setSelectedBotId}
-            />
             <Button
               onClick={() => {
                 setCreating(true);
@@ -128,7 +129,7 @@ const RichMenuManagementPage: React.FC = () => {
 
         {!authLoading && !selectedBotId && (
           <div className="text-sm text-muted-foreground">
-            請先從右上角選擇一個 Bot
+            請先從左上角選擇一個 Bot
           </div>
         )}
 
