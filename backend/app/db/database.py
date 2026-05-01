@@ -106,6 +106,14 @@ def clean_unused_schemas():
     except Exception as e:
         logger.warning(f"❌ 清理 schemas 時發生錯誤: {e}")
 
+def _python_pgvector_available() -> bool:
+    """確認目前 Python 環境是否會使用 pgvector SQLAlchemy 型別。"""
+    try:
+        import pgvector.sqlalchemy  # noqa: F401
+        return True
+    except Exception:
+        return False
+
 def init_database():
     """初始化資料庫"""
     try:
@@ -116,18 +124,31 @@ def init_database():
         # 清理未使用的 schemas
         clean_unused_schemas()
         
-        # 啟用 uuid-ossp 擴展
-        with engine.connect() as connection:
+        # uuid-ossp 是 UUID 主鍵預設值必要依賴，必須獨立提交。
+        with engine.begin() as connection:
             connection.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
-            try:
+
+        # pgvector 必須獨立處理，失敗時不應 rollback 掉 uuid-ossp。
+        pgvector_enabled = False
+        try:
+            with engine.begin() as connection:
                 connection.execute(text('CREATE EXTENSION IF NOT EXISTS vector;'))
-                logger.info("pgvector 擴展已啟用")
-            except Exception as _e:
-                logger.warning(f"啟用 pgvector 擴展失敗（可能未安裝）: {_e}")
-            connection.commit()
-            logger.info("uuid-ossp 擴展已啟用")
+                connection.execute(text("SELECT '[0]'::vector"))
+            pgvector_enabled = True
+            logger.info("pgvector 擴展已啟用")
+        except Exception as _e:
+            logger.warning(f"啟用 pgvector 擴展失敗（可能未安裝）: {_e}")
+
+        if _python_pgvector_available() and not pgvector_enabled:
+            raise RuntimeError(
+                "PostgreSQL 未安裝 pgvector extension，無法建立完整資料庫 schema。"
+                "請安裝 postgresql-15-pgvector，或使用專案的 Dockerfile.postgresql-pgvector。"
+            )
+
+        logger.info("uuid-ossp 擴展已啟用")
             
         # 創建所有表格
+        import app.models  # noqa: F401
         Base.metadata.create_all(bind=engine)
         logger.info("資料庫表格創建成功")
         

@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # 導入設定和模型
 from app.config import settings
-from app.database import Base
+from app.db.database import Base
 # 確保所有模型都被導入以支持自動生成 migration
 import app.models
 
@@ -20,8 +20,9 @@ import app.models
 # access to the values within the .ini file in use.
 config = context.config
 
-# 設定資料庫 URL
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# 設定資料庫 URL；若程式化呼叫已指定目標 URL，優先使用呼叫端指定值。
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

@@ -17,11 +17,27 @@ logger = logging.getLogger(__name__)
 
 class DatabaseInitializer:
     """資料庫初始化器"""
+
+    APPLICATION_TABLES = (
+        'users',
+        'line_users',
+        'bots',
+        'flex_messages',
+        'logic_templates',
+        'bot_codes',
+        'line_bot_users',
+        'line_bot_user_interactions',
+        'rich_menus',
+        'admin_messages',
+        'knowledge_documents',
+        'knowledge_chunks',
+    )
     
     def __init__(self, database_url: str, alembic_ini_path: str):
         self.database_url = database_url
         self.alembic_ini_path = alembic_ini_path
         self.engine = create_engine(database_url)
+        self.pgvector_enabled = False
         
     def init_database_complete(self) -> bool:
         """完整的資料庫初始化流程"""
@@ -35,18 +51,32 @@ class DatabaseInitializer:
             if not self._enable_extensions():
                 logger.error("啟用資料庫擴展失敗")
                 return False
+
+            # 3. 空白資料庫不能直接套用既有 migration 歷史：
+            #    目前第一個 revision 依賴已存在的舊表，因此空 DB 需用目前 models 建 schema。
+            bootstrap_result = self._bootstrap_empty_database_if_needed()
+            if bootstrap_result is None:
+                return False
+
+            if bootstrap_result:
+                if not self._validate_schema():
+                    logger.error("資料庫結構驗證失敗")
+                    return False
+
+                logger.info("✅ 空白資料庫初始化完成")
+                return True
             
-            # 3. 檢查和修復遷移狀態
+            # 4. 檢查和修復遷移狀態
             if not self._check_and_fix_migrations():
                 logger.error("遷移狀態檢查失敗")
                 return False
             
-            # 4. 執行缺失的遷移
+            # 5. 執行缺失的遷移
             if not self._run_migrations():
                 logger.error("執行遷移失敗")
                 return False
             
-            # 5. 驗證表結構
+            # 6. 驗證表結構
             if not self._validate_schema():
                 logger.error("資料庫結構驗證失敗")
                 return False
@@ -72,21 +102,97 @@ class DatabaseInitializer:
     def _enable_extensions(self) -> bool:
         """啟用必要的資料庫擴展"""
         try:
-            with self.engine.connect() as conn:
-                # 啟用 UUID 擴展
+            # uuid-ossp 是 UUID 主鍵預設值必要依賴，必須獨立提交。
+            with self.engine.begin() as conn:
                 conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
-                # 啟用 pgvector 擴展（若存在）
-                try:
+
+            # pgvector 必須獨立處理，失敗時不應 rollback 掉 uuid-ossp。
+            try:
+                with self.engine.begin() as conn:
                     conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
-                    logger.info("✅ pgvector 擴展啟用成功")
-                except Exception as _e:
-                    logger.warning(f"pgvector 擴展未啟用或未安裝: {_e}")
-                conn.commit()
+                    conn.execute(text("SELECT '[0]'::vector"))
+                self.pgvector_enabled = True
+                logger.info("✅ pgvector 擴展啟用成功")
+            except Exception as _e:
+                self.pgvector_enabled = False
+                logger.warning(
+                    "pgvector 擴展未啟用或未安裝；空白資料庫無法建立 knowledge_chunks.embedding 向量欄位: "
+                    f"{_e}"
+                )
+
             logger.info("✅ 資料庫擴展啟用成功")
             return True
         except Exception as e:
             logger.error(f"❌ 啟用資料庫擴展失敗: {e}")
             return False
+
+    def _get_alembic_config(self) -> Config:
+        """建立 Alembic 配置並套用目前初始化目標資料庫。"""
+        alembic_cfg = Config(self.alembic_ini_path)
+        alembic_cfg.set_main_option("sqlalchemy.url", self.database_url)
+        return alembic_cfg
+
+    def _get_existing_application_tables(self):
+        """取得目前 public schema 內已存在的應用程式資料表。"""
+        table_list = ", ".join(f"'{table}'" for table in self.APPLICATION_TABLES)
+        with self.engine.connect() as conn:
+            result = conn.execute(text(f"""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                AND table_name IN ({table_list})
+                ORDER BY table_name
+            """))
+            return [row[0] for row in result]
+
+    def _python_pgvector_available(self) -> bool:
+        """確認目前 Python 環境是否會使用 pgvector SQLAlchemy 型別。"""
+        try:
+            import pgvector.sqlalchemy  # noqa: F401
+            return True
+        except Exception:
+            return False
+
+    def _get_model_table_names(self):
+        """取得目前 SQLAlchemy models 宣告的資料表名稱。"""
+        import app.models  # noqa: F401
+        from app.db.database import Base
+
+        return list(Base.metadata.tables.keys())
+
+    def _has_current_model_tables(self) -> bool:
+        """檢查資料庫是否已具備目前 models 宣告的所有資料表。"""
+        required_tables = set(self._get_model_table_names())
+        existing_tables = set(inspect(self.engine).get_table_names())
+        return required_tables.issubset(existing_tables)
+
+    def _bootstrap_empty_database_if_needed(self) -> Optional[bool]:
+        """如果是空白應用資料庫，使用目前 models 建立完整 schema 並標記 Alembic head。"""
+        existing_tables = self._get_existing_application_tables()
+        if existing_tables:
+            logger.info(f"偵測到既有應用資料表，跳過空白資料庫 bootstrap: {existing_tables}")
+            return False
+
+        logger.info("偵測到空白應用資料庫，使用目前 SQLAlchemy models 建立 schema")
+
+        if self._python_pgvector_available() and not self.pgvector_enabled:
+            logger.error(
+                "PostgreSQL 未安裝 pgvector extension，無法建立完整空白資料庫環境。"
+                "請在 PostgreSQL 主機安裝 postgresql-15-pgvector，或使用專案的 Dockerfile.postgresql-pgvector。"
+            )
+            return None
+
+        try:
+            import app.models  # noqa: F401
+            from app.db.database import Base
+
+            Base.metadata.create_all(bind=self.engine)
+            command.stamp(self._get_alembic_config(), "head", purge=True)
+            logger.info("✅ 空白資料庫 schema 建立完成，Alembic 已標記為 head")
+            return True
+        except Exception as e:
+            logger.error(f"❌ 空白資料庫 bootstrap 失敗: {e}", exc_info=True)
+            return None
     
     def _check_and_fix_migrations(self) -> bool:
         """檢查和修復遷移狀態"""
@@ -120,6 +226,11 @@ class DatabaseInitializer:
                 
                 # 如果沒有版本記錄，檢查實際表結構來推斷版本
                 if not current_version:
+                    if self._has_current_model_tables():
+                        command.stamp(self._get_alembic_config(), "head", purge=True)
+                        logger.info("偵測到完整現行 schema，已將 Alembic 版本標記為 head")
+                        return True
+
                     version = self._detect_database_version(conn)
                     if version:
                         conn.execute(text("INSERT INTO alembic_version (version_num) VALUES (:version)"), 
@@ -176,12 +287,8 @@ class DatabaseInitializer:
     def _run_migrations(self) -> bool:
         """執行資料庫遷移"""
         try:
-            # 創建 Alembic 配置
-            alembic_cfg = Config(self.alembic_ini_path)
-            alembic_cfg.set_main_option("sqlalchemy.url", self.database_url)
-            
             # 執行遷移到最新版本
-            command.upgrade(alembic_cfg, "head")
+            command.upgrade(self._get_alembic_config(), "head")
             logger.info("✅ 資料庫遷移執行完成")
             return True
             
@@ -194,12 +301,8 @@ class DatabaseInitializer:
         try:
             inspector = inspect(self.engine)
             
-            # 檢查關鍵表
-            required_tables = [
-                'users', 'bots', 'line_bot_users', 'line_bot_user_interactions'
-            ]
-            
-            existing_tables = inspector.get_table_names()
+            required_tables = self._get_model_table_names()
+            existing_tables = set(inspector.get_table_names())
             
             for table in required_tables:
                 if table not in existing_tables:

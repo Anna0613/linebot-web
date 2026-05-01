@@ -27,6 +27,12 @@ class LineBotUser(Base):
     
     # 關聯關係
     bot = relationship("Bot", back_populates="line_bot_users")
+    interactions = relationship(
+        "LineBotUserInteraction",
+        back_populates="line_user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     
     # 表級約束和索引 - 優化查詢效能
     __table_args__ = (
@@ -39,6 +45,37 @@ class LineBotUser(Base):
     
     def __repr__(self):
         return f"<LineBotUser(line_user_id={self.line_user_id}, display_name={self.display_name})>"
+
+
+class LineBotUserInteraction(Base):
+    """LINE Bot 用戶互動記錄模型"""
+    __tablename__ = "line_bot_user_interactions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4())
+    line_user_id = Column(UUID(as_uuid=True), ForeignKey("line_bot_users.id", ondelete="CASCADE"), nullable=False)
+    event_type = Column(String(50), nullable=False)
+    message_type = Column(String(50), nullable=True)
+    message_content = Column(JSONB, nullable=True)
+    media_path = Column(String(500), nullable=True)
+    media_url = Column(String(500), nullable=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    sender_type = Column(String(20), nullable=False, server_default="user")
+    admin_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    line_user = relationship("LineBotUser", back_populates="interactions")
+
+    __table_args__ = (
+        Index('idx_interaction_user_timestamp', 'line_user_id', 'timestamp'),
+        Index('idx_interaction_event_type', 'event_type'),
+        Index('idx_interaction_timestamp', 'timestamp'),
+        Index('idx_interaction_admin_user', 'admin_user_id'),
+        Index('idx_interaction_sender_type', 'sender_type'),
+        Index('idx_interaction_user_sender', 'line_user_id', 'sender_type', 'timestamp'),
+        Index('idx_interaction_media_path', 'media_path', postgresql_where=(media_path.isnot(None))),
+    )
+
+    def __repr__(self):
+        return f"<LineBotUserInteraction(line_user_id={self.line_user_id}, event_type={self.event_type})>"
 
 
 class RichMenu(Base):
