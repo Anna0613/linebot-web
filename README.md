@@ -194,6 +194,7 @@ MINIO_ENDPOINT=localhost:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 MINIO_SECURE=False
+MINIO_REGION=us-east-1
 MINIO_BUCKET_NAME=message-store
 MINIO_PUBLIC_URL=http://localhost:9000
 ```

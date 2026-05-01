@@ -122,6 +122,7 @@ class Settings(BaseSettings):
     MINIO_ACCESS_KEY: str = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
     MINIO_SECRET_KEY: str = os.getenv("MINIO_SECRET_KEY", "minioadmin")
     MINIO_SECURE: bool = os.getenv("MINIO_SECURE", "False").lower() == "true"
+    MINIO_REGION: str = os.getenv("MINIO_REGION", "us-east-1")
     # HTTPS 憑證檢查（自簽證書測試可設為 False，僅限開發測試）
     MINIO_CERT_CHECK: bool = os.getenv("MINIO_CERT_CHECK", "True").lower() == "true"
     # 自訂 CA 憑證（PEM）路徑，若提供會用來驗證 MinIO 憑證

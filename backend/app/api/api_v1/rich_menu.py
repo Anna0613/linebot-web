@@ -9,6 +9,7 @@ from uuid import UUID as PyUUID
 import logging
 import uuid
 
+from app.config import settings
 from app.dependencies import get_current_user_async  # use standard HTTP auth dependency
 from app.db.database_async import get_async_db
 from app.models.user import User
@@ -22,6 +23,20 @@ from app.schemas.rich_menu import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _format_minio_operation_error(operation: str, error: Exception) -> str:
+    message = str(error) or type(error).__name__
+    if "no element found" in message.lower():
+        return (
+            f"MinIO {operation}失敗：S3 API 回傳空的 XML/body。"
+            f"目前 MINIO_ENDPOINT={settings.MINIO_ENDPOINT}, "
+            f"MINIO_SECURE={settings.MINIO_SECURE}, "
+            f"MINIO_REGION={settings.MINIO_REGION}, "
+            f"bucket={settings.MINIO_BUCKET_NAME}。"
+            "請確認 endpoint 指向 MinIO S3 API port，不是 Console，也不是會回空 200 的 Cloudflare/proxy。"
+        )
+    return f"MinIO {operation}失敗：{message}"
 
 
 def _process_action_for_line_api(action: dict) -> dict:
@@ -370,6 +385,9 @@ async def _get_image_bytes_for_menu(m: RichMenu) -> Optional[bytes]:
             if "object_path" in qs:
                 object_path = qs["object_path"][0]
                 logger.info(f"Extracted object_path from proxy URL: {object_path}")
+            elif not parsed.scheme and not m.image_url.startswith(("blob:", "data:")):
+                object_path = m.image_url.lstrip("/")
+                logger.info(f"Treating image_url as MinIO object_path: {object_path}")
 
             if object_path:
                 logger.debug(f"從 MinIO 載入 | bucket={svc.bucket_name}, path={object_path}")
@@ -686,6 +704,15 @@ async def upload_rich_menu_image(
     if not content:
         raise HTTPException(status_code=400, detail="空的圖片內容")
 
+    logger.info(
+        "Rich Menu 圖片上傳開始 | bot_id=%s menu_id=%s filename=%s content_type=%s bytes=%s",
+        bot_id,
+        menu_id,
+        image.filename,
+        image.content_type,
+        len(content),
+    )
+
     try:
         # 基本格式驗證
         allowed_types = {"image/jpeg": "jpg", "image/png": "png"}
@@ -721,10 +748,11 @@ async def upload_rich_menu_image(
         except Exception as _pil_err:
             logger.warning(f"PIL 驗證/校正失敗，將直接儲存原圖: {_pil_err}")
 
-        from app.services.storage.minio_service import get_minio_service
+        from app.services.storage.minio_service import get_minio_last_error, get_minio_service
         svc = get_minio_service()
         if not svc:
-            raise RuntimeError("MinIO 服務不可用")
+            last_err = get_minio_last_error() or "MinIO 服務不可用"
+            raise HTTPException(status_code=503, detail=f"MinIO 服務不可用：{last_err}")
 
         # object path: richmenus/{bot_id}/{uuid}.{ext}
         content_type = image.content_type or "application/octet-stream"
@@ -734,14 +762,68 @@ async def upload_rich_menu_image(
         import asyncio
         from io import BytesIO
 
-        await asyncio.to_thread(
-            svc.client.put_object,
+        logger.info(
+            "Rich Menu 圖片寫入 MinIO | endpoint=%s secure=%s region=%s bucket=%s object_path=%s bytes=%s",
+            settings.MINIO_ENDPOINT,
+            settings.MINIO_SECURE,
+            settings.MINIO_REGION,
             svc.bucket_name,
             object_path,
-            BytesIO(processed_bytes),
             len(processed_bytes),
-            content_type=content_type,
         )
+
+        try:
+            await asyncio.to_thread(
+                svc.client.put_object,
+                svc.bucket_name,
+                object_path,
+                BytesIO(processed_bytes),
+                len(processed_bytes),
+                content_type=content_type,
+            )
+        except Exception as upload_err:
+            logger.error("Rich Menu 圖片寫入 MinIO 失敗: %s", upload_err, exc_info=True)
+            raise HTTPException(
+                status_code=502,
+                detail=_format_minio_operation_error("寫入", upload_err),
+            )
+
+        def read_uploaded_object() -> bytes:
+            response = svc.client.get_object(svc.bucket_name, object_path)
+            try:
+                return response.read()
+            finally:
+                response.close()
+                response.release_conn()
+
+        try:
+            stored_bytes = await asyncio.to_thread(read_uploaded_object)
+        except Exception as verify_err:
+            try:
+                await asyncio.to_thread(svc.client.remove_object, svc.bucket_name, object_path)
+            except Exception:
+                logger.warning(f"清理 Rich Menu 圖片失敗: {object_path}", exc_info=True)
+            logger.error("Rich Menu 圖片讀回驗證失敗: %s", verify_err, exc_info=True)
+            raise HTTPException(
+                status_code=502,
+                detail=_format_minio_operation_error("寫入後讀取驗證", verify_err),
+            )
+
+        if stored_bytes != processed_bytes:
+            try:
+                await asyncio.to_thread(svc.client.remove_object, svc.bucket_name, object_path)
+            except Exception:
+                logger.warning(f"清理 Rich Menu 圖片失敗: {object_path}", exc_info=True)
+            logger.error(
+                "Rich Menu 圖片寫入驗證失敗 | object_path=%s expected_bytes=%s actual_bytes=%s",
+                object_path,
+                len(processed_bytes),
+                len(stored_bytes),
+            )
+            raise HTTPException(
+                status_code=502,
+                detail="MinIO 寫入驗證失敗：端點未回傳剛上傳的圖片內容，請確認 MINIO_ENDPOINT 指向 MinIO S3 API（不是 Console 或回空 200 的 proxy）。",
+            )
 
         # get a presigned url via proxy helper
         image_url = svc.get_presigned_url(object_path)
@@ -803,8 +885,10 @@ async def upload_rich_menu_image(
         except Exception as sync_err:
             logger.error(f"同步 LINE Rich Menu 失敗: {sync_err}")
             # Don't raise exception here - image upload was successful, LINE sync is optional
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"上傳 Rich Menu 圖片失敗: {e}")
-        raise HTTPException(status_code=500, detail="圖片上傳失敗")
+        logger.error(f"上傳 Rich Menu 圖片失敗: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"圖片上傳失敗：{str(e)}")
 
     return _to_response(m)
