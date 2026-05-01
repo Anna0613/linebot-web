@@ -16,6 +16,7 @@ from sqlalchemy import select, insert
 from fastapi import UploadFile
 
 from app.models.knowledge import KnowledgeDocument, KnowledgeChunk
+from app.config import settings
 from app.services.storage.text_chunker import recursive_split
 from app.services.embedding.embedding_service import embed_texts
 from app.services.storage.file_text_extractor import extract_text_by_mime
@@ -31,6 +32,8 @@ class ProcessingStatus(Enum):
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
+    COMPLETED_WITHOUT_EMBEDDING = "completed_without_embedding"
+    FAILED_EMBEDDING = "failed_embedding"
     FAILED = "failed"
 
 @dataclass
@@ -243,21 +246,35 @@ class KnowledgeProcessingService:
                 else:
                     chunks = [text]
 
-                # 清理每個切塊
+                # 清理每個切塊並移除空內容，避免送出空字串 embedding request。
                 chunks = [clean_text_for_database(chunk) for chunk in chunks]
+                chunks = [chunk for chunk in chunks if chunk and chunk.strip()]
+                if not chunks:
+                    raise ValueError("提取後沒有可用的文字內容")
                 
                 job.total_chunks = len(chunks)
                 job.progress = 0.4
                 if progress_callback:
                     progress_callback(job)
                 
-                # 批次生成嵌入向量
-                embeddings = await cls._generate_embeddings_batch(chunks, job, progress_callback)
+                # 批次生成嵌入向量。OpenAI 不可用時仍保留文件與 chunks，
+                # RAG fallback 會等 backfill 補齊 embedding 後才查得到。
+                embeddings: Optional[List[List[float]]]
+                try:
+                    embeddings = await cls._generate_embeddings_batch(chunks, job, progress_callback)
+                except Exception as embedding_err:
+                    logger.error(f"OpenAI embedding 生成失敗，文件將不含 embedding: {embedding_err}")
+                    embeddings = None
+                    job.metadata["embedding_error"] = str(embedding_err)
                 
                 # 批次插入資料庫
                 await cls._batch_insert_knowledge(db, job, text, chunks, embeddings, file_data)
                 
-                job.status = ProcessingStatus.COMPLETED
+                job.status = (
+                    ProcessingStatus.COMPLETED
+                    if embeddings is not None
+                    else ProcessingStatus.COMPLETED_WITHOUT_EMBEDDING
+                )
                 job.progress = 1.0
                 job.completed_at = datetime.utcnow()
                 if progress_callback:
@@ -286,7 +303,11 @@ class KnowledgeProcessingService:
             batch_chunks = chunks[i:i + cls.MAX_CHUNKS_PER_BATCH]
             
             # 生成嵌入向量
-            batch_embeddings = await embed_texts(batch_chunks, model_name="all-mpnet-base-v2")
+            batch_embeddings = await embed_texts(
+                batch_chunks,
+                model_name=settings.EMBEDDING_MODEL,
+                batch_size=settings.EMBEDDING_BATCH_SIZE,
+            )
             embeddings.extend(batch_embeddings)
             
             # 更新進度
@@ -329,7 +350,7 @@ class KnowledgeProcessingService:
         job: ProcessingJob,
         text: str,
         chunks: List[str],
-        embeddings: List[List[float]],
+        embeddings: Optional[List[List[float]]],
         file_data: bytes
     ):
         """批次插入知識庫資料"""
@@ -375,18 +396,19 @@ class KnowledgeProcessingService:
 
         # 批次插入知識塊
         chunk_data = []
-        for i, (chunk_text, embedding) in enumerate(zip(chunks, embeddings)):
-            # 清理嵌入向量
-            cleaned_embedding = cls._clean_embedding(embedding)
+        embedding_available = embeddings is not None
 
+        for i, chunk_text in enumerate(chunks):
+            embedding = embeddings[i] if embedding_available and i < len(embeddings) else None
+            cleaned_embedding = cls._clean_embedding(embedding) if embedding is not None else None
             chunk_data.append({
                 "id": uuid.uuid4(),
                 "document_id": doc.id,
                 "bot_id": scope_bot,
                 "content": chunk_text,
                 "embedding": cleaned_embedding,
-                "embedding_model": "all-mpnet-base-v2",
-                "embedding_dimensions": "768",
+                "embedding_model": settings.EMBEDDING_MODEL,
+                "embedding_dimensions": str(settings.EMBEDDING_DIMENSIONS),
                 "meta": {"chunk_index": i, "source_type": "file"}
             })
 

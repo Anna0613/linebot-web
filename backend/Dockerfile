@@ -12,8 +12,7 @@ RUN apt-get update && apt-get install -y \
 # 複製依賴文件
 COPY requirements.txt .
 
-# 安裝 Python 依賴 (使用 CPU 版本的 PyTorch)
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# 安裝 Python 依賴
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 複製應用程式碼

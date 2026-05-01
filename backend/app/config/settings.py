@@ -150,7 +150,7 @@ class Settings(BaseSettings):
         return f"mongodb://{auth_part}{self.MONGODB_HOST}:{self.MONGODB_PORT}/{self.MONGODB_DATABASE}{ssl_param}"
 
     # AI 設定
-    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "groq")  # groq 或 gemini
+    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "groq")
 
     # Groq 設定
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
@@ -160,6 +160,21 @@ class Settings(BaseSettings):
     # Gemini 設定（向後相容）
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+
+    # OpenAI / Embedding 設定
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "openai")
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "1536"))
+    EMBEDDING_TIMEOUT_SECONDS: float = float(os.getenv("EMBEDDING_TIMEOUT_SECONDS", "15"))
+    EMBEDDING_BATCH_SIZE: int = int(os.getenv("EMBEDDING_BATCH_SIZE", "64"))
+    EMBEDDING_MAX_RETRIES: int = int(os.getenv("EMBEDDING_MAX_RETRIES", "3"))
+
+    # RAG fallback 設定
+    RAG_FALLBACK_ENABLED: bool = os.getenv("RAG_FALLBACK_ENABLED", "true").lower() == "true"
+    RAG_DEFAULT_TOP_K: int = int(os.getenv("RAG_DEFAULT_TOP_K", "3"))
+    RAG_DEFAULT_THRESHOLD: float = float(os.getenv("RAG_DEFAULT_THRESHOLD", "0.7"))
+    RAG_RERANK_ENABLED: bool = os.getenv("RAG_RERANK_ENABLED", "false").lower() == "true"
 
     # 通用 AI 設定
     AI_MAX_HISTORY_MESSAGES: int = int(os.getenv("AI_MAX_HISTORY_MESSAGES", "200"))

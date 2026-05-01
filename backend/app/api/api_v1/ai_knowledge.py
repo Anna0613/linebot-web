@@ -24,6 +24,7 @@ from app.schemas.ai_knowledge import (
 )
 from app.services.storage.text_chunker import recursive_split
 from app.services.embedding.embedding_service import embed_texts
+from app.config import settings
 
 # 導入 pgvector 支援
 try:
@@ -185,8 +186,15 @@ async def add_text_knowledge(
     else:
         chunks = recursive_split(payload.content, chunk_size=payload.chunk_size, overlap=payload.overlap)
 
-    # 使用 768 維度模型 all-mpnet-base-v2
-    embs = await embed_texts(chunks, model_name="all-mpnet-base-v2")
+    chunks = [chunk for chunk in chunks if chunk and chunk.strip()]
+    if not chunks:
+        raise HTTPException(status_code=400, detail="內容不可為空")
+
+    embs = await embed_texts(
+        chunks,
+        model_name=settings.EMBEDDING_MODEL,
+        batch_size=settings.EMBEDDING_BATCH_SIZE,
+    )
     created_chunk = None
     for i, (txt, emb) in enumerate(zip(chunks, embs)):
         kc = KnowledgeChunk(
@@ -194,8 +202,8 @@ async def add_text_knowledge(
             bot_id=scope_bot,
             content=txt,
             embedding=_format_embedding_for_db(emb),
-            embedding_model="all-mpnet-base-v2",
-            embedding_dimensions="768",
+            embedding_model=settings.EMBEDDING_MODEL,
+            embedding_dimensions=str(settings.EMBEDDING_DIMENSIONS),
             meta={"chunk_index": i, "source_type": "text"},
         )
         db.add(kc)

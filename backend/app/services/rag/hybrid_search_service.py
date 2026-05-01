@@ -9,8 +9,9 @@ import math
 from collections import defaultdict
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text as sql_text, select
+from sqlalchemy import text as sql_text
 
+from app.config import settings
 from app.models.knowledge import KnowledgeChunk
 from app.services.embedding.embedding_service import embed_text
 
@@ -146,7 +147,7 @@ class HybridSearchService:
         """向量搜尋"""
         try:
             # 生成查詢向量
-            query_embedding = await embed_text(query, model_name=model_name)
+            query_embedding = await embed_text(query, model_name=settings.EMBEDDING_MODEL)
             if not query_embedding:
                 logger.warning(f"無法為查詢生成向量: {query}")
                 return []
@@ -156,12 +157,17 @@ class HybridSearchService:
 
             # 執行向量相似度搜尋
             sql = sql_text("""
-                SELECT
-                    id, bot_id, title, content, metadata, created_at, updated_at,
-                    1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
-                FROM knowledge_chunks
-                WHERE bot_id = CAST(:bot_id AS UUID)
-                    AND (1 - (embedding <=> CAST(:embedding AS vector))) >= :threshold
+                SELECT kc.*,
+                       1 - (kc.embedding <=> CAST(:embedding AS vector)) AS similarity
+                FROM knowledge_chunks kc
+                JOIN knowledge_documents kd ON kc.document_id = kd.id
+                WHERE (kc.bot_id = CAST(:bot_id AS UUID) OR kc.bot_id IS NULL)
+                    AND kc.deleted_at IS NULL
+                    AND kd.deleted_at IS NULL
+                    AND kc.embedding IS NOT NULL
+                    AND kc.embedding_model = :embedding_model
+                    AND kc.embedding_dimensions = :embedding_dimensions
+                    AND (1 - (kc.embedding <=> CAST(:embedding AS vector))) >= :threshold
                 ORDER BY similarity DESC
                 LIMIT :top_k
             """)
@@ -170,20 +176,20 @@ class HybridSearchService:
                 "embedding": embedding_str,
                 "bot_id": bot_id,
                 "threshold": threshold,
-                "top_k": top_k
+                "top_k": top_k,
+                "embedding_model": settings.EMBEDDING_MODEL,
+                "embedding_dimensions": str(settings.EMBEDDING_DIMENSIONS),
             })
 
             chunks_with_scores = []
             for row in result.fetchall():
-                chunk = KnowledgeChunk(
-                    id=row.id,
-                    bot_id=row.bot_id,
-                    title=row.title,
-                    content=row.content,
-                    metadata=row.metadata,
-                    created_at=row.created_at,
-                    updated_at=row.updated_at
-                )
+                chunk = KnowledgeChunk()
+                chunk.id = row.id
+                chunk.document_id = row.document_id
+                chunk.bot_id = row.bot_id
+                chunk.content = row.content
+                chunk.created_at = row.created_at
+                chunk.updated_at = row.updated_at
                 chunks_with_scores.append((chunk, float(row.similarity)))
 
             logger.info(f"向量搜尋找到 {len(chunks_with_scores)} 個相關片段")
@@ -207,7 +213,10 @@ class HybridSearchService:
             SELECT kc.*, 
                    ts_rank(to_tsvector('english', kc.content), plainto_tsquery('english', :query)) as score
             FROM knowledge_chunks kc
-            WHERE (kc.bot_id = :bot_id OR kc.bot_id IS NULL)
+            JOIN knowledge_documents kd ON kc.document_id = kd.id
+            WHERE (kc.bot_id = CAST(:bot_id AS UUID) OR kc.bot_id IS NULL)
+              AND kc.deleted_at IS NULL
+              AND kd.deleted_at IS NULL
               AND to_tsvector('english', kc.content) @@ plainto_tsquery('english', :query)
             ORDER BY score DESC
             LIMIT :k

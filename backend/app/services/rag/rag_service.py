@@ -13,10 +13,10 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text as sql_text
 
+from app.config import settings
 from app.models.knowledge import KnowledgeChunk
 from app.services.embedding.embedding_service import embed_text
 from app.services.ai.ai_analysis_service import AIAnalysisService
-from app.services.rag.rerank_service import RerankService, HybridRanker
 from app.services.rag.hybrid_search_service import HybridSearchService
 from app.services.conversation.context_manager import global_context_manager, MessageRole
 from app.services.rag.rag_cache import get_rag_cache
@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 class RAGService:
-    MIN_SIMILARITY = 0.7  # default cosine similarity threshold
-    TOP_K = 5  # default top K
+    MIN_SIMILARITY = settings.RAG_DEFAULT_THRESHOLD
+    TOP_K = settings.RAG_DEFAULT_TOP_K
 
     @staticmethod
     async def retrieve(
@@ -50,6 +50,7 @@ class RAGService:
         # 創建效能分析器（如果未提供）
         if profiler is None:
             profiler = PerformanceProfiler("retrieve")
+        effective_model = settings.EMBEDDING_MODEL
 
         # 嘗試從快取獲取結果
         if use_cache:
@@ -61,7 +62,7 @@ class RAGService:
                     search_type='vector',
                     threshold=threshold,
                     top_k=top_k,
-                    model_name=model_name
+                    model_name=effective_model
                 )
 
                 if cached_results is not None:
@@ -78,7 +79,7 @@ class RAGService:
                     return items
 
         logger.info(f"🔍 快取未命中，執行完整檢索: {query[:50]}...")
-        logger.info(f"📊 [RAG] 查詢參數 - bot_id: {bot_id}, model: {model_name}, use_cache: {use_cache}")
+        logger.info(f"📊 [RAG] 查詢參數 - bot_id: {bot_id}, model: {effective_model}, use_cache: {use_cache}")
 
         # 快取未命中，執行實際查詢
         # 使用指定的模型生成查詢嵌入（embed_text 內部已有快取）
@@ -86,7 +87,7 @@ class RAGService:
         import time
         embedding_start = time.time()
         async with profiler.measure("embedding_generation", query_length=len(query)):
-            emb = await embed_text(query, model_name, use_cache=use_cache)
+            emb = await embed_text(query, effective_model, use_cache=use_cache)
 
         embedding_time = (time.time() - embedding_start) * 1000
         logger.info(f"⏱️ [RAG] Embedding 生成完成，耗時: {embedding_time:.2f}ms")
@@ -121,13 +122,23 @@ class RAGService:
                 WHERE (kc.bot_id = CAST(:bot_id AS UUID) OR kc.bot_id IS NULL)
                   AND kc.deleted_at IS NULL
                   AND kd.deleted_at IS NULL
+                  AND kc.embedding IS NOT NULL
+                  AND kc.embedding_model = :embedding_model
+                  AND kc.embedding_dimensions = :embedding_dimensions
                   AND (kc.embedding <=> CAST(:q AS vector)) <= :maxd
                 ORDER BY (kc.embedding <=> CAST(:q AS vector))
                 LIMIT :k
                 """
             )
 
-            rows = (await db.execute(sql, {"q": embedding_str, "bot_id": bot_id, "maxd": max_distance, "k": k})).mappings().all()
+            rows = (await db.execute(sql, {
+                "q": embedding_str,
+                "bot_id": bot_id,
+                "maxd": max_distance,
+                "k": k,
+                "embedding_model": settings.EMBEDDING_MODEL,
+                "embedding_dimensions": str(settings.EMBEDDING_DIMENSIONS),
+            })).mappings().all()
 
         async with profiler.measure("result_processing", result_count=len(rows)):
             items: List[Tuple[KnowledgeChunk, float]] = []
@@ -153,7 +164,7 @@ class RAGService:
                     results=items,
                     threshold=threshold,
                     top_k=top_k,
-                    model_name=model_name
+                    model_name=effective_model
                 )
 
         # 打印效能摘要
@@ -194,67 +205,13 @@ class RAGService:
         Returns:
             重排序後的知識塊列表
         """
-        # 1. 初始檢索更多結果
-        initial_results = await RAGService.retrieve(
+        logger.info("Local rerank is disabled; returning vector retrieval results")
+        return await RAGService.retrieve(
             db, bot_id, query,
             threshold=threshold,
-            top_k=initial_k,
+            top_k=final_k,
             model_name=model_name
         )
-
-        if len(initial_results) <= final_k:
-            # 如果初始結果不多，直接返回
-            return initial_results[:final_k]
-
-        # 2. 準備重排序數據
-        documents = [(kc.content, score) for kc, score in initial_results]
-
-        try:
-            if use_hybrid:
-                # 使用混合重排序
-                hybrid_results = await HybridRanker.hybrid_rerank(
-                    query=query,
-                    documents=documents,
-                    rerank_model=rerank_model,
-                    top_k=final_k
-                )
-
-                # 重新組織結果
-                final_results = []
-                for content, combined_score, score_details in hybrid_results:
-                    for kc, _ in initial_results:
-                        if kc.content == content:
-                            # 添加分數詳情到知識塊
-                            kc.score_details = score_details
-                            final_results.append((kc, combined_score))
-                            break
-
-                return final_results
-
-            else:
-                # 使用純重排序
-                reranked = await RerankService.rerank(
-                    query=query,
-                    documents=documents,
-                    model_name=rerank_model,
-                    top_k=final_k
-                )
-
-                # 重新組織結果
-                final_results = []
-                for content, rerank_score in reranked:
-                    for kc, original_score in initial_results:
-                        if kc.content == content:
-                            # 添加原始分數資訊
-                            kc.original_score = original_score
-                            final_results.append((kc, rerank_score))
-                            break
-
-                return final_results
-
-        except Exception as e:
-            logger.warning(f"重排序失敗，返回原始結果: {e}")
-            return initial_results[:final_k]
 
     @staticmethod
     async def hybrid_search(
@@ -584,7 +541,7 @@ class RAGService:
         line_user_id: Optional[str] = None,
         history_messages: Optional[int] = None,
         system_prompt: Optional[str] = None,
-        use_rerank: bool = True,
+        use_rerank: bool = False,
         rerank_model: Optional[str] = None,
         embedding_model: Optional[str] = None,
         use_hybrid: bool = False,
@@ -658,6 +615,10 @@ class RAGService:
                 # 查詢模式：執行完整的 RAG 檢索流程
                 logger.info("📚 查詢模式：執行知識庫檢索")
 
+                if not settings.RAG_FALLBACK_ENABLED:
+                    logger.info("RAG fallback is disabled by configuration")
+                    return "目前找不到足夠的知識庫資料可以回答這個問題。"
+
                 # 選擇檢索方法
                 if use_hybrid:
                     # 使用混合搜尋
@@ -669,7 +630,7 @@ class RAGService:
                         vector_threshold=threshold or RAGService.MIN_SIMILARITY,
                         model_name=embedding_model
                     )
-                elif use_rerank:
+                elif use_rerank and settings.RAG_RERANK_ENABLED:
                     # 使用重排序
                     items = await RAGService.retrieve_with_rerank(
                         db, bot_id, query,
@@ -730,7 +691,7 @@ class RAGService:
         threshold: Optional[float] = None,
         top_k: Optional[int] = None,
         system_prompt: Optional[str] = None,
-        use_rerank: bool = True,
+        use_rerank: bool = False,
         use_hybrid: bool = False,
         use_conversation_history: bool = True,
         rerank_model: Optional[str] = None,
@@ -763,6 +724,10 @@ class RAGService:
             AI 回應
         """
         try:
+            if not settings.RAG_FALLBACK_ENABLED:
+                logger.info("RAG fallback is disabled by configuration")
+                return "目前找不到足夠的知識庫資料可以回答這個問題。"
+
             # 選擇檢索方法
             if use_hybrid:
                 items = await RAGService.hybrid_search(
@@ -773,7 +738,7 @@ class RAGService:
                     vector_threshold=threshold or RAGService.MIN_SIMILARITY,
                     model_name=embedding_model
                 )
-            elif use_rerank:
+            elif use_rerank and settings.RAG_RERANK_ENABLED:
                 items = await RAGService.retrieve_with_rerank(
                     db, bot_id, query,
                     threshold=threshold,
