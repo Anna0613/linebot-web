@@ -81,10 +81,10 @@ class FlexMessageGenerator {
           html += `<div class="mb-2" style="color: ${content.color}; font-size: ${this.getSizeInPx(content.size)}; font-weight: ${content.weight}">${content.text}</div>`;
           break;
         case 'image':
-          html += `<img src="${content.url}" class="w-full rounded mb-2" style="max-height: 200px; object-fit: cover;" />`;
+          html += `<img src="${content.url}" class="w-full rounded-sm mb-2" style="max-height: 200px; object-fit: cover;" />`;
           break;
         case 'button':
-          html += `<button class="w-full bg-emerald-600 text-white py-2 px-4 rounded mb-2">${content.action.label}</button>`;
+          html += `<button class="w-full bg-emerald-600 text-white py-2 px-4 rounded-sm mb-2">${content.action.label}</button>`;
           break;
         case 'separator':
           html += '<hr class="my-2 border-gray-300" />';
@@ -164,7 +164,7 @@ const FlexMessagePreview: React.FC<FlexMessagePreviewProps> = ({ blocks }) => {
       </div>
       
       {/* 預覽區域 */}
-      <div className="flex-1 overflow-auto rounded-[14px] bg-slate-50/80 p-4">
+      <div className="flex-1 overflow-auto rounded-lg bg-slate-50/80 p-4">
         <div className="max-w-sm mx-auto">
           <div 
             className="flex-message-preview"
@@ -177,7 +177,7 @@ const FlexMessagePreview: React.FC<FlexMessagePreviewProps> = ({ blocks }) => {
       {flexMessage && (
         <div className="mt-4 border-t border-white/70 pt-4">
           <h4 className="text-sm font-medium text-slate-600 mb-2">Flex Message JSON</h4>
-          <div className="max-h-32 overflow-auto rounded-[14px] bg-slate-950 p-3">
+          <div className="max-h-32 overflow-auto rounded-lg bg-slate-950 p-3">
             <pre className="font-mono text-xs text-emerald-300">
               {JSON.stringify(flexMessage, null, 2)}
             </pre>

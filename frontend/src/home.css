@@ -64,7 +64,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: var(--line-green);
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -130,7 +130,7 @@
 @layer components {
   /* Enhanced Glass Morphism with Web3 styling */
   .glass-card {
-    @apply bg-white bg-opacity-70 dark:bg-white/5 backdrop-blur-lg border border-white border-opacity-30 dark:border-white/10 rounded-2xl shadow-glass;
+    @apply rounded-lg border border-white border-opacity-30 bg-white bg-opacity-70 shadow-glass backdrop-blur-lg dark:border-white/10 dark:bg-white/5;
   }
 
   /* Light mode: Standard card styling */
@@ -278,15 +278,15 @@
   }
 
   .app-panel {
-    @apply rounded-[16px] border border-white/70 bg-white/70 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl;
+    @apply rounded-lg border border-white/70 bg-white/70 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl;
   }
 
   .app-panel-strong {
-    @apply rounded-[16px] border border-white/70 bg-white/75 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-2xl;
+    @apply rounded-lg border border-white/70 bg-white/75 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-2xl;
   }
 
   .app-muted-panel {
-    @apply rounded-[14px] bg-slate-50/80 p-4 text-slate-600;
+    @apply rounded-lg bg-slate-50/80 p-4 text-slate-600;
   }
 
   .app-kicker {
@@ -314,23 +314,23 @@
   }
 
   .app-primary-button {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#16a34a] px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-700/20 transition-colors hover:bg-[#15803d] disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#16a34a] px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-700/20 transition-colors hover:bg-[#15803d] disabled:pointer-events-none disabled:opacity-50;
   }
 
   .app-secondary-button {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-white/80 bg-white/70 px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-white disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/80 bg-white/70 px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-white disabled:pointer-events-none disabled:opacity-50;
   }
 
   .app-icon-button {
-    @apply inline-flex h-10 w-10 items-center justify-center rounded-[14px] border border-white/80 bg-white/70 text-slate-600 shadow-sm transition-colors hover:bg-emerald-50 hover:text-[#166534];
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/80 bg-white/70 text-slate-600 shadow-sm transition-colors hover:bg-emerald-50 hover:text-[#166534];
   }
 
   .app-input {
-    @apply h-11 rounded-[14px] border-white/80 bg-white/80 text-slate-800 placeholder:text-slate-400 focus-visible:ring-[#16a34a];
+    @apply h-11 rounded-lg border-white/80 bg-white/80 text-slate-800 placeholder:text-slate-400 focus-visible:ring-[#16a34a];
   }
 
   .app-soft-icon {
-    @apply flex h-11 w-11 items-center justify-center rounded-[14px] bg-emerald-100 text-emerald-700;
+    @apply flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700;
   }
 
   /* Web3 Gradient Backgrounds */
@@ -379,7 +379,7 @@
     background: rgba(26, 27, 58, 0.7);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 16px;
+    border-radius: var(--radius);
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.3),
       0 0 0 1px rgba(0, 212, 255, 0.1),
@@ -413,7 +413,7 @@
       rgba(42, 45, 90, 0.6) 100%);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(0, 212, 255, 0.15);
-    border-radius: 20px;
+    border-radius: var(--radius);
     box-shadow:
       0 10px 35px rgba(0, 0, 0, 0.25),
       0 0 0 1px rgba(0, 212, 255, 0.08),
@@ -441,7 +441,7 @@
     background: rgba(26, 27, 58, 0.6);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 16px;
+    border-radius: var(--radius);
     position: relative;
     overflow: hidden;
   }
@@ -510,7 +510,7 @@ html {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 16px;
+  border-radius: var(--radius);
 }
 
 .dot-pattern {
@@ -732,7 +732,7 @@ body {
   background-color: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius);
   text-align: center;
   text-decoration: none;
   display: inline-flex;        /* 改為 flex 才能垂直置中 */
@@ -923,7 +923,7 @@ body {
 /* 暗黑模式下側邊欄選單項目的增強效果 */
 .dark .mobile-menu-sidebar ul li a {
   transition: all 0.3s ease;
-  border-radius: 8px;
+  border-radius: var(--radius);
   position: relative;
 }
 

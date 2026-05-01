@@ -532,8 +532,8 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
 
   return (
     <>
-      <div className="h-full flex flex-col bg-white rounded border border-gray-200">
-        <div className="flex items-center justify-between px-4 py-2 bg-green-500 text-white rounded-t">
+      <div className="app-panel flex h-full flex-col overflow-hidden">
+        <div className="flex items-center justify-between border-b border-white/70 bg-[#16a34a] px-4 py-3 text-white">
           <div className="flex items-center">
             <Bot className="w-5 h-5 mr-2" />
             <div className="font-medium">LINE Bot 模擬器</div>
@@ -542,7 +542,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
             onClick={() => setIsCodeDialogOpen(true)}
             variant="ghost"
             size="sm"
-            className="text-white hover:bg-green-600"
+            className="rounded-md text-white hover:bg-white/15 hover:text-white"
             title="查看生成的程式碼"
           >
             <Code className="w-4 h-4" />
@@ -550,7 +550,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
         </div>
 
       {/* 訊息區域 */}
-      <div className="flex-1 overflow-auto p-4 space-y-3 bg-gray-50">
+      <div className="flex-1 space-y-3 overflow-auto bg-slate-50/80 p-4">
         {chatMessages.map((m, i) => (
           <div
             key={i}
@@ -565,16 +565,16 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
                 <div>
                   {m.messageType === 'flex' && m.flexMessage ? (
                     // FLEX 訊息渲染
-                    <div className="bg-white border rounded p-2 max-w-xl">
+                    <div className="max-w-xl rounded-lg border border-white/80 bg-white p-2 shadow-sm">
                       <FlexMessagePreview json={m.flexMessage} />
                     </div>
                   ) : m.messageType === 'image' ? (
                     // 圖片訊息渲染
-                    <div className="bg-white border rounded p-2 max-w-xs">
+                    <div className="max-w-xs rounded-lg border border-white/80 bg-white p-2 shadow-sm">
                       <img
                         src={m.content}
                         alt="Bot 回覆的圖片"
-                        className="w-full rounded"
+                        className="w-full rounded-sm"
                         onError={(e) => {
                           // 圖片載入失敗時顯示錯誤訊息
                           e.currentTarget.style.display = 'none';
@@ -587,12 +587,12 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
                     </div>
                   ) : m.messageType === 'sticker' ? (
                     // 貼圖訊息渲染
-                    <div className="bg-white border rounded px-3 py-2 max-w-xs text-sm">
+                    <div className="max-w-xs rounded-lg border border-white/80 bg-white px-3 py-2 text-sm shadow-sm">
                       😊 {m.content}
                     </div>
                   ) : (
                     // 文字訊息渲染
-                    <div className="bg-white border rounded px-3 py-2 max-w-xs text-sm">{m.content}</div>
+                    <div className="max-w-xs rounded-lg border border-white/80 bg-white px-3 py-2 text-sm shadow-sm">{m.content}</div>
                   )}
                 </div>
               </div>
@@ -602,7 +602,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
             {m.type === 'user' && (
               <div className="flex items-start space-x-2">
                 <div>
-                  <div className="bg-blue-500 text-white px-3 py-2 rounded-lg max-w-xs text-sm">
+                  <div className="max-w-xs rounded-lg bg-blue-500 px-3 py-2 text-sm text-white shadow-sm">
                     {m.content}
                   </div>
                 </div>
@@ -615,7 +615,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
         ))}
       </div>
 
-      <div className="p-3 bg-white border-t flex items-center space-x-2 rounded-b">
+      <div className="flex items-center space-x-2 border-t border-white/70 bg-white/75 p-3">
         <Input
           placeholder="輸入訊息..."
           value={inputMessage}

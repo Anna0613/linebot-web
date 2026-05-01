@@ -93,7 +93,7 @@ const RichMenuList: React.FC<Props> = ({
                     {/* 左側：選單信息 */}
                     <div className="flex items-center space-x-4 flex-1">
                       {/* 選單縮圖 */}
-                      <div className="w-16 h-10 rounded border overflow-hidden bg-muted flex-shrink-0">
+                      <div className="h-10 w-16 flex-shrink-0 overflow-hidden rounded-sm border bg-muted">
                         {menu.image_url ? (
                           <img
                             src={menu.image_url}

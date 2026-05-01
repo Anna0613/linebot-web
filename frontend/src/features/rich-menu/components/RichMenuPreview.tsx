@@ -218,7 +218,7 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
       <div className="flex-1 w-full">
         <div
           ref={containerRef}
-          className="relative w-full border rounded-md overflow-hidden bg-muted select-none"
+          className="relative w-full select-none overflow-hidden rounded-lg border bg-muted"
           style={{ aspectRatio: `${widthBase} / ${heightBase}`, backgroundImage: `
             linear-gradient(0deg, rgba(0,0,0,0.06) 1px, transparent 1px),
             linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)` , backgroundSize: `${gridSize}px ${gridSize}px`}}
@@ -291,12 +291,12 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
                     onContextMenu={(e) => { e.preventDefault(); onDeleteArea?.(idx); }}
                   >
                     {/* label */}
-                    <div className="absolute -top-5 left-0 text-[10px] bg-blue-600 text-white px-1 rounded">
+                    <div className="absolute -top-5 left-0 rounded-sm bg-blue-600 px-1 text-[10px] text-white">
                       #{idx + 1}
                     </div>
                     {/* hover toolbar */}
                     {canShowAreaToolbar && (
-                      <div className="absolute right-1 top-1 flex gap-1 rounded bg-black/60 p-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+                      <div className="absolute right-1 top-1 flex gap-1 rounded-sm bg-black/60 p-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
                         {onSelectArea && (
                           <Button
                             type="button"

@@ -130,18 +130,18 @@ export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: #f1f5f9;
-          border-radius: 4px;
+          border-radius: 9999px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: #cbd5e0;
-          border-radius: 4px;
+          border-radius: 9999px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #94a3b8;
         }
       `}</style>
       
-      <div className="flex h-full w-80 flex-col border-r border-white/70 bg-white/55 backdrop-blur-xl">
+      <div className="flex h-full w-80 flex-col bg-transparent">
         {currentContext === WorkspaceContext.FLEX ? (
           <PaletteScroll>
             <BlockGroup title="容器" icon={getCategoryIcon('flexContainer')}>

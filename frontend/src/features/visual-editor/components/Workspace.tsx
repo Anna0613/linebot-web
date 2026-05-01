@@ -133,6 +133,14 @@ interface WorkspaceProps {
   initialActiveTab?: string;
 }
 
+const getPaletteContextForTab = (tab: string): WorkspaceContext => (
+  tab === 'flex' ? WorkspaceContext.FLEX : WorkspaceContext.LOGIC
+);
+
+const tabUsesBlockPalette = (tab: string): boolean => (
+  tab === 'logic' || tab === 'flex'
+);
+
 const Workspace: React.FC<WorkspaceProps> = ({
   logicBlocks,
   flexBlocks,
@@ -153,6 +161,11 @@ const Workspace: React.FC<WorkspaceProps> = ({
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialActiveTab);
+  const shouldShowLeftPanel = Boolean(selectedBotId && tabUsesBlockPalette(activeTab));
+  const [lastPaletteContext, setLastPaletteContext] = useState<WorkspaceContext>(
+    getPaletteContextForTab(initialActiveTab)
+  );
+  const [isLeftPanelMounted, setIsLeftPanelMounted] = useState(shouldShowLeftPanel);
   // 已移除舊的預覽模擬器控制狀態（useEnhancedSimulator / showDebugInfo）
 
   // 測試動作處理
@@ -199,6 +212,20 @@ const Workspace: React.FC<WorkspaceProps> = ({
   useEffect(() => {
     loadSavedFlexMessages();
   }, [loadSavedFlexMessages]);
+
+  useEffect(() => {
+    if (shouldShowLeftPanel) {
+      setLastPaletteContext(getPaletteContextForTab(activeTab));
+      setIsLeftPanelMounted(true);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsLeftPanelMounted(false);
+    }, 320);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeTab, shouldShowLeftPanel]);
 
   // 調試：監視 logicBlocks 的變化
   React.useEffect(() => {
@@ -424,77 +451,10 @@ const Workspace: React.FC<WorkspaceProps> = ({
     }
   }, [onFlexBlocksChange, activeTab]);
 
-  // 獲取當前工作區上下文（增強版）
-  const getCurrentContext = (): WorkspaceContext => {
-    let context: WorkspaceContext;
-
-    // 根據活動標籤決定上下文
-    switch (activeTab) {
-      case 'logic':
-        context = WorkspaceContext.LOGIC;
-        break;
-      case 'flex':
-        context = WorkspaceContext.FLEX;
-        break;
-      case 'preview':
-        // 預覽標籤基於邏輯編輯器內容，使用邏輯上下文
-        context = WorkspaceContext.LOGIC;
-        break;
-      default:
-        // 對於未知標籤，使用邏輯上下文作為預設值
-        console.debug('🔧 未知標籤:', activeTab, '使用邏輯上下文作為預設值');
-        context = WorkspaceContext.LOGIC;
-        break;
-    }
-
-    console.debug('📍 當前工作區上下文:', {
-      context: context,
-      activeTab: activeTab,
-      contextType: typeof context,
-      isValidContext: Object.values(WorkspaceContext).includes(context),
-      timestamp: new Date().toISOString()
-    });
-
-    // 驗證上下文的有效性（保留驗證機制以防萬一）
-    if (!Object.values(WorkspaceContext).includes(context)) {
-      console.error('❌ 生成的上下文無效:', context);
-      context = WorkspaceContext.LOGIC; // 回退到安全的預設值
-      console.log('🔧 使用回退上下文:', context);
-    }
-
-    return context;
-  };
-
-
-  // 渲染左側面板
-  const renderLeftPanel = () => {
-    if (!selectedBotId) {
-      return null;
-    }
-
-    switch (activeTab) {
-      case 'logic':
-      case 'flex':
-        return (
-          <BlockPalette
-            currentContext={getCurrentContext()}
-          />
-        );
-      case 'preview':
-        // AI 知識庫管理頁面不再顯示舊的預覽控制台
-        return null;
-      case 'richmenu':
-        // Rich Menu 面板不需要左側積木面板
-        return null;
-      default:
-        return null;
-    }
-  };
-
   const renderNoBotSelectedState = () => (
     <div className="flex h-full items-center justify-center p-6">
       <div className="app-panel-strong w-full max-w-xl p-8 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[16px] bg-emerald-100 text-[#166534]">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-emerald-100 text-[#166534]">
           <Bot className="h-7 w-7" />
         </div>
         <h2 className="mb-2 text-xl font-semibold text-slate-950">
@@ -524,11 +484,31 @@ const Workspace: React.FC<WorkspaceProps> = ({
     </div>
   );
 
+  const shouldRenderLeftPanel = isLeftPanelMounted || shouldShowLeftPanel;
+  const displayedPaletteContext = shouldShowLeftPanel
+    ? getPaletteContextForTab(activeTab)
+    : lastPaletteContext;
+
   return (
     <CodeDisplayProvider>
-      <div className="flex h-full">
-        {/* 左側面板 - 根據當前標籤顯示不同內容 */}
-        {renderLeftPanel()}
+      <div className="flex h-full overflow-hidden">
+        <aside
+          aria-hidden={!shouldShowLeftPanel}
+          className={[
+            'h-full shrink-0 overflow-hidden bg-white/55 backdrop-blur-xl',
+            'transition-[width,opacity,transform] duration-300 ease-in-out',
+            shouldRenderLeftPanel ? 'border-r border-white/70' : 'border-r-0',
+            shouldShowLeftPanel
+              ? 'w-80 translate-x-0 opacity-100'
+              : 'pointer-events-none w-0 -translate-x-2 opacity-0'
+          ].join(' ')}
+        >
+          <div className="h-full w-80">
+            {shouldRenderLeftPanel && selectedBotId && (
+              <BlockPalette currentContext={displayedPaletteContext} />
+            )}
+          </div>
+        </aside>
 
         {/* 主工作區 */}
         <div className="flex flex-1 flex-col bg-transparent">
@@ -541,7 +521,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
           className="h-full flex flex-col relative"
         >
           <TabsList className="app-panel m-4 h-auto flex-shrink-0 justify-start gap-1 overflow-x-auto p-1">
-            <TabsTrigger value="logic" className="rounded-[12px] px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
+            <TabsTrigger value="logic" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
               邏輯編輯器
               {currentLogicTemplateName && (
                 <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 text-xs text-[#166534]">
@@ -552,7 +532,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
                 <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
               )}
             </TabsTrigger>
-            <TabsTrigger value="flex" className="rounded-[12px] px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
+            <TabsTrigger value="flex" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
               Flex 設計器
               {currentFlexMessageName && (
                 <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 text-xs text-[#166534]">
@@ -563,8 +543,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
                 <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
               )}
             </TabsTrigger>
-            <TabsTrigger value="preview" className="rounded-[12px] px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">AI 知識庫管理</TabsTrigger>
-            <TabsTrigger value="richmenu" className="rounded-[12px] px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">功能選單</TabsTrigger>
+            <TabsTrigger value="preview" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">AI 知識庫管理</TabsTrigger>
+            <TabsTrigger value="richmenu" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">功能選單</TabsTrigger>
           </TabsList>
           {!selectedBotId ? (
             <div className="min-h-0 flex-1">

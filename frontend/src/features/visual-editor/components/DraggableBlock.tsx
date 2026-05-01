@@ -129,7 +129,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
   return (
     <div 
       ref={drag}
-      className={`relative ${color} cursor-move rounded-[14px] px-3 py-2 text-sm text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+      className={`relative ${color} cursor-move rounded-lg px-3 py-2 text-sm text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
         isDragging ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
       }`}
     >
@@ -151,7 +151,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
       
       {/* 拖拽時的額外視覺提示 */}
       {isDragging && (
-        <div className="absolute inset-0 rounded-lg border-2 border-dashed border-white/50 bg-white/10 pointer-events-none" />
+        <div className="pointer-events-none absolute inset-0 rounded-lg border-2 border-dashed border-white/50 bg-white/10" />
       )}
     </div>
   );

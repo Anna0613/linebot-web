@@ -81,7 +81,7 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
   };
 
   return (
-    <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-lg border ${bgClass} ${className}`}>
+    <div className={`inline-flex items-center space-x-2 rounded-lg border px-3 py-1 ${bgClass} ${className}`}>
       {icon}
       <span className={`text-sm font-medium ${textClass}`}>
         {text}
