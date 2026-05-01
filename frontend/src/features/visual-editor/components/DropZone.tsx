@@ -238,7 +238,7 @@ const DropZone: React.FC<DropZoneProps> = ({
     const reasonColor = isReorderOperation ? 'text-blue-700' : (dragValidation.isValid ? 'text-green-700' : 'text-red-700');
 
     return (
-      <div className={`mt-4 p-3 rounded-lg ${feedbackClass}`}>
+      <div className={`mt-4 rounded-lg p-3 ${feedbackClass}`}>
         <div className="flex items-center space-x-2">
           {isReorderOperation ? (
             <Info className={`w-4 h-4 ${iconColor}`} />
@@ -286,7 +286,7 @@ const DropZone: React.FC<DropZoneProps> = ({
   return (
     <div 
       ref={drop}
-      className={`flex h-full flex-col rounded-[16px] border-2 border-dashed p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl transition-all duration-200 ${getDropZoneStyle()}`}
+      className={`flex h-full flex-col rounded-lg border-2 border-dashed p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl transition-all duration-200 ${getDropZoneStyle()}`}
     >
       <h3 className="mb-3 flex-shrink-0 text-base font-semibold text-slate-950">{title}</h3>
       
@@ -302,7 +302,7 @@ const DropZone: React.FC<DropZoneProps> = ({
       
       <div className="space-y-4 flex-1 overflow-auto min-h-0">
         {blocks.length === 0 ? (
-          <div className="flex h-full min-h-48 flex-col items-center justify-center rounded-[14px] bg-slate-50/80 px-4 py-8 text-center text-slate-500">
+          <div className="flex h-full min-h-48 flex-col items-center justify-center rounded-lg bg-slate-50/80 px-4 py-8 text-center text-slate-500">
             <div className="mb-2 text-sm font-medium text-slate-600">
               從左側選擇積木並拖拽到這裡開始建立您的 LINE Bot
             </div>

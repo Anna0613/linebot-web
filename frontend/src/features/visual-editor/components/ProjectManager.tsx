@@ -69,7 +69,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
             }}
             disabled={isLoadingBots}
           >
-            <SelectTrigger className="h-10 w-52 rounded-[14px] border-white/70 bg-white/70 text-slate-700 shadow-sm">
+            <SelectTrigger className="h-10 w-52 rounded-lg border-white/70 bg-white/70 text-slate-700 shadow-sm">
               <SelectValue placeholder={isLoadingBots ? "載入中..." : "選擇一個 Bot"} />
             </SelectTrigger>
             <SelectContent>

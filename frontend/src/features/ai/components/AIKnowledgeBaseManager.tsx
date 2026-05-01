@@ -417,7 +417,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="rounded-md border bg-background">
+      <div className="rounded-lg border bg-background">
         <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-base font-semibold">檔案列表</h3>
@@ -553,7 +553,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
                   )}
                 </div>
                 <div className="col-span-2 text-xs">
-                  <span className="inline-flex rounded bg-blue-100 px-2 py-1 text-blue-700">
+                  <span className="inline-flex rounded-sm bg-blue-100 px-2 py-1 text-blue-700">
                     {sourceTypeLabel(item.source_type)}
                   </span>
                 </div>

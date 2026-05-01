@@ -214,13 +214,13 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
         <div
           ref={ref}
           onMouseLeave={handleMouseLeave}
-          className={`${getBlockColor(block.blockType)} text-white p-3 rounded-lg shadow-sm transition-all duration-200 ${
+          className={`${getBlockColor(block.blockType)} rounded-lg p-3 text-white shadow-sm transition-all duration-200 ${
             isDragging ? 'opacity-50 scale-95 rotate-2' : 'opacity-100 scale-100'
           } ${isOver ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}`}
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-2 flex-1">
-              <div className="pt-1 cursor-move hover:bg-white/20 p-1 rounded">
+              <div className="cursor-move rounded-sm p-1 pt-1 hover:bg-white/20">
                 <GripVertical className="h-4 w-4 text-white/70" />
               </div>
               <div className="flex-1">{renderBlockContent()}</div>

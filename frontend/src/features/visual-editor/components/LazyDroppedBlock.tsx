@@ -5,18 +5,18 @@ const DroppedBlock = lazy(() => import('./DroppedBlock'));
 
 // 骨架屏組件
 const BlockSkeleton: React.FC = () => (
-  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 animate-pulse">
+  <div className="animate-pulse rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
     <div className="flex items-center justify-between mb-2">
-      <div className="h-4 bg-gray-200 rounded w-24"></div>
+      <div className="h-4 w-24 rounded-sm bg-gray-200"></div>
       <div className="flex space-x-2">
-        <div className="h-6 w-6 bg-gray-200 rounded"></div>
-        <div className="h-6 w-6 bg-gray-200 rounded"></div>
-        <div className="h-6 w-6 bg-gray-200 rounded"></div>
+        <div className="h-6 w-6 rounded-sm bg-gray-200"></div>
+        <div className="h-6 w-6 rounded-sm bg-gray-200"></div>
+        <div className="h-6 w-6 rounded-sm bg-gray-200"></div>
       </div>
     </div>
     <div className="space-y-2">
-      <div className="h-3 bg-gray-200 rounded w-full"></div>
-      <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+      <div className="h-3 w-full rounded-sm bg-gray-200"></div>
+      <div className="h-3 w-3/4 rounded-sm bg-gray-200"></div>
     </div>
   </div>
 );
@@ -47,7 +47,7 @@ class LazyBlockErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
           <div className="flex items-center text-red-600 mb-2">
             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -59,7 +59,7 @@ class LazyBlockErrorBoundary extends React.Component<
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-2 px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200"
+            className="mt-2 rounded-sm bg-red-100 px-3 py-1 text-sm text-red-700 hover:bg-red-200"
           >
             重新載入頁面
           </button>
