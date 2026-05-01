@@ -3,6 +3,7 @@ import type { RichMenuArea, RichMenuBounds } from '@/features/rich-menu/types/ri
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Pencil, X } from 'lucide-react';
 
 export interface RichMenuPreviewData {
   name: string;
@@ -31,6 +32,8 @@ type Props = {
 const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, onCreateArea, onUpdateArea, onDeleteArea, imageNaturalWidth, imageNaturalHeight, imageOffset, onImageOffsetChange }) => {
   const widthBase = 2500;
   const heightBase = data?.size?.height || 1686;
+  const canPanImage = Boolean(onImageOffsetChange && imageNaturalWidth && imageNaturalHeight);
+  const canShowAreaToolbar = Boolean(onSelectArea || onDeleteArea);
 
   // 互動拖曳狀態
   const containerRef = React.useRef<HTMLDivElement | null>(null);
@@ -42,6 +45,12 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
   const [draft, setDraft] = React.useState<RichMenuBounds | null>(null);
   const [gridSize, setGridSize] = React.useState<number>(25);
   const [panMode, setPanMode] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (!canPanImage && panMode) {
+      setPanMode(false);
+    }
+  }, [canPanImage, panMode]);
 
   const getPointBase = (e: React.MouseEvent) => {
     const el = containerRef.current;
@@ -68,7 +77,7 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
     const el = containerRef.current;
     if (!el) return;
     // panning image
-    if (panMode) {
+    if (panMode && canPanImage) {
       setDragMode('panning');
       startRef.current = getPointBase(e);
       return;
@@ -91,12 +100,14 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
       const idx = parseInt(idxAttr, 10);
       setActiveIndex(idx);
       onSelectArea?.(idx);
+      if (!onUpdateArea) return;
       setDragMode('moving');
       startRef.current = getPointBase(e);
       startBoundsRef.current = { ...data.areas[idx].bounds };
       e.preventDefault();
       return;
     }
+    if (!onCreateArea) return;
     // empty space: start creating
     setActiveIndex(null);
     onSelectArea?.(-1);
@@ -197,9 +208,11 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
               <SelectItem value="50">粗</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" variant={panMode ? 'default' : 'outline'} onClick={() => setPanMode(v => !v)}>
-            {panMode ? '調整圖片中' : '調整圖片'}
-          </Button>
+          {canPanImage && (
+            <Button size="sm" variant={panMode ? 'default' : 'outline'} onClick={() => setPanMode(v => !v)}>
+              {panMode ? '調整圖片中' : '調整圖片'}
+            </Button>
+          )}
         </div>
       </div>
       <div className="flex-1 w-full">
@@ -218,6 +231,16 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
             (() => {
               const iw = imageNaturalWidth || 0;
               const ih = imageNaturalHeight || 0;
+              if (!iw || !ih) {
+                return (
+                  <img
+                    src={data.image_url}
+                    alt="richmenu"
+                    className="absolute inset-0 h-full w-full object-cover"
+                    draggable={false}
+                  />
+                );
+              }
               const scale = iw && ih ? Math.max(widthBase / iw, heightBase / ih) : 1;
               const dsW = iw * scale;
               const dsH = ih * scale;
@@ -262,7 +285,7 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
                 <TooltipTrigger asChild>
                   <div
                     data-area-index={idx}
-                    className={`absolute ${isActive ? 'border-2 border-blue-600 bg-blue-500/10' : 'border-2 border-blue-500/70 bg-blue-500/10'}`}
+                    className={`group absolute ${isActive ? 'border-2 border-blue-600 bg-blue-500/10' : 'border-2 border-blue-500/70 bg-blue-500/10'}`}
                     style={{ left: `${left}%`, top: `${top}%`, width: `${w}%`, height: `${h}%` }}
                     onClick={(e) => { e.stopPropagation(); setActiveIndex(idx); onSelectArea?.(idx); }}
                     onContextMenu={(e) => { e.preventDefault(); onDeleteArea?.(idx); }}
@@ -272,11 +295,38 @@ const RichMenuPreview: React.FC<Props> = ({ data, selectedIndex, onSelectArea, o
                       #{idx + 1}
                     </div>
                     {/* hover toolbar */}
-                    <div className="absolute right-1 top-1 hidden group-[.area]:block"></div>
-                    <div className="absolute right-1 top-1 text-[10px] bg-black/60 text-white rounded px-1 py-0.5 opacity-0 hover:opacity-100 transition">
-                      <button className="underline mr-1" onClick={(ev) => { ev.stopPropagation(); onSelectArea?.(idx); }}>編輯</button>
-                      <button className="underline" onClick={(ev) => { ev.stopPropagation(); onDeleteArea?.(idx); }}>刪除</button>
-                    </div>
+                    {canShowAreaToolbar && (
+                      <div className="absolute right-1 top-1 flex gap-1 rounded bg-black/60 p-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+                        {onSelectArea && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-white hover:bg-white/20 hover:text-white"
+                            aria-label={`編輯互動區塊 ${idx + 1}`}
+                            onMouseDown={(ev) => ev.stopPropagation()}
+                            onClick={(ev) => { ev.stopPropagation(); onSelectArea(idx); }}
+                          >
+                            <Pencil aria-hidden="true" />
+                            <span className="sr-only">編輯互動區塊 {idx + 1}</span>
+                          </Button>
+                        )}
+                        {onDeleteArea && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-white hover:bg-white/20 hover:text-white"
+                            aria-label={`刪除互動區塊 ${idx + 1}`}
+                            onMouseDown={(ev) => ev.stopPropagation()}
+                            onClick={(ev) => { ev.stopPropagation(); onDeleteArea(idx); }}
+                          >
+                            <X aria-hidden="true" />
+                            <span className="sr-only">刪除互動區塊 {idx + 1}</span>
+                          </Button>
+                        )}
+                      </div>
+                    )}
                     {/* resize handles */}
                     {isActive && (
                       <>

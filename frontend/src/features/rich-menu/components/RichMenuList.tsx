@@ -12,10 +12,42 @@ type Props = {
   onDelete: (menu: RichMenu) => void;
   onPublish: (menu: RichMenu) => void;
   onCreateNew: () => void;
+  onPreview?: (menu: RichMenu) => void;
+  previewingMenuId?: string | null;
   publishingMenuId?: string | null;
 };
 
-const RichMenuList: React.FC<Props> = ({ menus, onEdit, onDelete, onPublish, onCreateNew, publishingMenuId = null }) => {
+const RichMenuList: React.FC<Props> = ({
+  menus,
+  onEdit,
+  onDelete,
+  onPublish,
+  onCreateNew,
+  onPreview,
+  previewingMenuId = null,
+  publishingMenuId = null,
+}) => {
+  const getPublishState = (menu: RichMenu) => {
+    const isPublishing = publishingMenuId === menu.id;
+    const needsContentPublish = !menu.line_rich_menu_id;
+    const needsDefaultSwitch = !menu.selected;
+    const canPublish = Boolean(menu.image_url) && (needsContentPublish || needsDefaultSwitch);
+
+    if (!menu.image_url) {
+      return { disabled: true, title: '請先上傳選單圖片' };
+    }
+    if (isPublishing) {
+      return { disabled: true, title: '正在發佈到 LINE' };
+    }
+    if (!canPublish) {
+      return { disabled: true, title: '此選單已是目前發佈版本，沒有需要發佈的更新' };
+    }
+    if (needsContentPublish) {
+      return { disabled: false, title: '發佈更新到 LINE 並設為預設功能選單' };
+    }
+    return { disabled: false, title: '發佈到 LINE 並設為預設功能選單' };
+  };
+
   return (
     <div className="space-y-4">
       {/* 頂部操作區域 */}
@@ -37,84 +69,106 @@ const RichMenuList: React.FC<Props> = ({ menus, onEdit, onDelete, onPublish, onC
         </Card>
       ) : (
         <div className="space-y-3">
-          {menus.map((menu, index) => (
-            <Card key={menu.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  {/* 左側：選單信息 */}
-                  <div className="flex items-center space-x-4 flex-1">
-                    {/* 選單縮圖 */}
-                    <div className="w-16 h-10 rounded border overflow-hidden bg-muted flex-shrink-0">
-                      {menu.image_url ? (
-                        <img
-                          src={menu.image_url}
-                          alt={menu.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
-                          無圖片
-                        </div>
-                      )}
-                    </div>
+          {menus.map((menu, index) => {
+            const publishState = getPublishState(menu);
+            const isPreviewing = previewingMenuId === menu.id;
 
-                    {/* 選單詳情 */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h4 className="font-medium text-sm truncate">{menu.name}</h4>
-                        {menu.selected && (
-                          <Badge variant="default" className="text-xs">當前功能選單</Badge>
+            return (
+              <Card
+                key={menu.id}
+                role={onPreview ? 'button' : undefined}
+                tabIndex={onPreview ? 0 : undefined}
+                className={`overflow-hidden transition-colors ${onPreview ? 'cursor-pointer hover:border-primary/50 hover:bg-muted/30' : ''} ${isPreviewing ? 'border-primary bg-primary/5' : ''}`}
+                onClick={() => onPreview?.(menu)}
+                onKeyDown={(event) => {
+                  if (!onPreview) return;
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onPreview(menu);
+                  }
+                }}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    {/* 左側：選單信息 */}
+                    <div className="flex items-center space-x-4 flex-1">
+                      {/* 選單縮圖 */}
+                      <div className="w-16 h-10 rounded border overflow-hidden bg-muted flex-shrink-0">
+                        {menu.image_url ? (
+                          <img
+                            src={menu.image_url}
+                            alt={menu.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                            無圖片
+                          </div>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        聊天室按鈕：{menu.chat_bar_text}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        區域數量：{Array.isArray(menu.areas) ? menu.areas.length : 0} 個
-                      </p>
+
+                      {/* 選單詳情 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className="font-medium text-sm truncate">{menu.name}</h4>
+                          {menu.selected && (
+                            <Badge variant="default" className="text-xs">當前功能選單</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">
+                          聊天室按鈕：{menu.chat_bar_text}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          區域數量：{Array.isArray(menu.areas) ? menu.areas.length : 0} 個
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 右側：操作按鈕 */}
+                    <div
+                      className="flex items-center space-x-2 flex-shrink-0"
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
+                    >
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onEdit(menu)}
+                        disabled={publishingMenuId === menu.id}
+                      >
+                        編輯
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onPublish(menu)}
+                        disabled={publishState.disabled}
+                        title={publishState.title}
+                      >
+                        {publishingMenuId === menu.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            發佈中...
+                          </>
+                        ) : (
+                          '發佈到 LINE'
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => onDelete(menu)}
+                        disabled={publishingMenuId === menu.id}
+                      >
+                        刪除
+                      </Button>
                     </div>
                   </div>
-
-                  {/* 右側：操作按鈕 */}
-                  <div className="flex items-center space-x-2 flex-shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onEdit(menu)}
-                      disabled={publishingMenuId === menu.id}
-                    >
-                      編輯
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onPublish(menu)}
-                      disabled={!menu.image_url || publishingMenuId === menu.id}
-                      title={!menu.image_url ? "請先上傳選單圖片" : "發佈到 LINE 並設為預設功能選單"}
-                    >
-                      {publishingMenuId === menu.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          發佈中...
-                        </>
-                      ) : (
-                        '發佈到 LINE'
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => onDelete(menu)}
-                      disabled={publishingMenuId === menu.id}
-                    >
-                      刪除
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-              {index < menus.length - 1 && <Separator />}
-            </Card>
-          ))}
+                </CardContent>
+                {index < menus.length - 1 && <Separator />}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

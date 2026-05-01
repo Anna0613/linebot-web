@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Loader } from '@/components/ui/loader';
 import { useToast } from '@/hooks/use-toast';
 import RichMenuApi from '@/features/rich-menu/api/RichMenuApi';
-import type { RichMenu } from '@/features/rich-menu/types/richMenu';
+import type { RichMenu, RichMenuArea } from '@/features/rich-menu/types/richMenu';
 import RichMenuList from '@/features/rich-menu/components/RichMenuList';
 import RichMenuForm from '@/features/rich-menu/components/RichMenuForm';
 import RichMenuPreview, { RichMenuPreviewData } from '@/features/rich-menu/components/RichMenuPreview';
@@ -11,6 +11,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Props = {
   selectedBotId?: string;
+};
+
+const toPreviewData = (menu: RichMenu): RichMenuPreviewData => {
+  const rawHeight = typeof menu.size === 'object' && menu.size && 'height' in menu.size
+    ? Number(menu.size.height)
+    : 1686;
+
+  return {
+    name: menu.name,
+    chat_bar_text: menu.chat_bar_text,
+    size: { width: 2500, height: rawHeight === 843 ? 843 : 1686 },
+    areas: Array.isArray(menu.areas) ? (menu.areas as RichMenuArea[]) : [],
+    image_url: menu.image_url,
+  };
 };
 
 const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
@@ -22,6 +36,7 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
   const [creating, setCreating] = useState<boolean>(false);
   const emptyToastForBotRef = useRef<string | null>(null);
   const [previewData, setPreviewData] = useState<RichMenuPreviewData | null>(null);
+  const [previewingMenuId, setPreviewingMenuId] = useState<string | null>(null);
   const previewControlsRef = useRef<{
     createArea: (b: RichMenu['areas'][number]['bounds']) => void;
     updateArea: (i: number, b: RichMenu['areas'][number]['bounds']) => void;
@@ -53,6 +68,10 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
     setEditing(null);
     setCreating(false);
     setMenus([]);
+    setPreviewingMenuId(null);
+    setPreviewData(null);
+    setSelectedIndex(null);
+    previewControlsRef.current = null;
     if (selectedBotId) {
       void loadMenus();
     }
@@ -60,13 +79,27 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
 
   useEffect(() => {
     if (!editing && !creating) {
-      setPreviewData(null);
+      previewControlsRef.current = null;
+      setSelectedIndex(null);
     }
   }, [editing, creating]);
 
-  const onSaved = async (_: RichMenu) => {
+  useEffect(() => {
+    if (editing || creating || !previewingMenuId) return;
+    const previewMenu = menus.find(menu => menu.id === previewingMenuId);
+    if (!previewMenu) {
+      setPreviewingMenuId(null);
+      setPreviewData(null);
+      return;
+    }
+    setPreviewData(toPreviewData(previewMenu));
+  }, [creating, editing, menus, previewingMenuId]);
+
+  const onSaved = async (saved: RichMenu) => {
     setEditing(null);
     setCreating(false);
+    setPreviewingMenuId(saved.id);
+    setPreviewData(toPreviewData(saved));
     await loadMenus();
   };
 
@@ -76,6 +109,10 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
     try {
       await RichMenuApi.remove(selectedBotId, m.id);
       toast({ title: '已刪除', description: 'Rich Menu 已刪除' });
+      if (previewingMenuId === m.id) {
+        setPreviewingMenuId(null);
+        setPreviewData(null);
+      }
       await loadMenus();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '請稍後再試';
@@ -104,13 +141,32 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
   const onCreateNew = () => {
     setCreating(true);
     setEditing(null);
+    setPreviewingMenuId(null);
+    setPreviewData(null);
+    setSelectedIndex(null);
+  };
+
+  const onEditMenu = (menu: RichMenu) => {
+    setEditing(menu);
+    setCreating(false);
+    setPreviewingMenuId(null);
+    setSelectedIndex(null);
+  };
+
+  const onPreviewMenu = (menu: RichMenu) => {
+    setPreviewingMenuId(menu.id);
+    setPreviewData(toPreviewData(menu));
+    setSelectedIndex(null);
+    previewControlsRef.current = null;
   };
 
   const onBackToList = () => {
     setCreating(false);
     setEditing(null);
     setPreviewData(null);
+    setPreviewingMenuId(null);
     setSelectedIndex(null);
+    previewControlsRef.current = null;
   };
 
   if (!selectedBotId) {
@@ -182,10 +238,12 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
                     ) : (
                       <RichMenuList
                         menus={menus}
-                        onEdit={setEditing}
+                        onEdit={onEditMenu}
                         onDelete={onDelete}
                         onPublish={onPublish}
                         onCreateNew={onCreateNew}
+                        onPreview={onPreviewMenu}
+                        previewingMenuId={previewingMenuId}
                         publishingMenuId={publishingMenuId}
                       />
                     )}
@@ -202,17 +260,17 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
                 <RichMenuPreview
                   data={previewData}
                   selectedIndex={selectedIndex ?? undefined}
-                  onSelectArea={(i) => previewControlsRef.current?.selectArea(i >= 0 ? i : null)}
-                  onCreateArea={(b) => previewControlsRef.current?.createArea(b)}
-                  onUpdateArea={(i, b) => previewControlsRef.current?.updateArea(i, b)}
-                  onDeleteArea={(i) => previewControlsRef.current?.removeArea?.(i)}
+                  onSelectArea={(editing || creating) ? (i) => previewControlsRef.current?.selectArea(i >= 0 ? i : null) : undefined}
+                  onCreateArea={(editing || creating) ? (b) => previewControlsRef.current?.createArea(b) : undefined}
+                  onUpdateArea={(editing || creating) ? (i, b) => previewControlsRef.current?.updateArea(i, b) : undefined}
+                  onDeleteArea={(editing || creating) ? (i) => previewControlsRef.current?.removeArea?.(i) : undefined}
                   imageNaturalWidth={previewData?.image_meta?.iw}
                   imageNaturalHeight={previewData?.image_meta?.ih}
                   imageOffset={previewData?.image_meta?.offset}
-                  onImageOffsetChange={(offset) => {
+                  onImageOffsetChange={(editing || creating) ? (offset) => {
                     // reflect to form state via binding if provided
                     previewControlsRef.current?.setImageOffset?.(offset);
-                  }}
+                  } : undefined}
                 />
               </CardContent>
             </Card>

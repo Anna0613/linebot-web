@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID as PyUUID
 import logging
 import uuid
+import json
 
 from app.config import settings
 from app.dependencies import get_current_user_async  # use standard HTTP auth dependency
@@ -137,6 +138,23 @@ def _to_response(model: RichMenu) -> RichMenuResponse:
         image_url=model.image_url,
         created_at=model.created_at,
         updated_at=model.updated_at,
+    )
+
+
+def _publishable_content_key(model: RichMenu) -> str:
+    """Stable representation of fields that affect the LINE rich menu payload."""
+    return json.dumps(
+        {
+            "name": model.name,
+            "chat_bar_text": model.chat_bar_text,
+            "size": model.size or {},
+            "areas": model.areas or [],
+            "image_url": model.image_url,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        default=str,
+        separators=(",", ":"),
     )
 
 
@@ -647,6 +665,7 @@ async def update_rich_menu(
     if not m:
         raise HTTPException(status_code=404, detail="Rich Menu 不存在")
 
+    before_publishable_content = _publishable_content_key(m)
     data = payload.model_dump(exclude_unset=True)
     if "size" in data and data["size"] is not None:
         data["size"] = payload.size.model_dump() if payload.size else None
@@ -655,6 +674,9 @@ async def update_rich_menu(
 
     for k, v in data.items():
         setattr(m, k, v)
+
+    if _publishable_content_key(m) != before_publishable_content:
+        m.line_rich_menu_id = None
 
     # 若改為預設，取消其他選取
     if payload.selected:
@@ -825,9 +847,12 @@ async def upload_rich_menu_image(
                 detail="MinIO 寫入驗證失敗：端點未回傳剛上傳的圖片內容，請確認 MINIO_ENDPOINT 指向 MinIO S3 API（不是 Console 或回空 200 的 proxy）。",
             )
 
+        existing_line_rich_menu_id = m.line_rich_menu_id
+
         # get a presigned url via proxy helper
         image_url = svc.get_presigned_url(object_path)
         m.image_url = image_url or object_path
+        m.line_rich_menu_id = None
         await db.commit()
         await db.refresh(m)
 
@@ -855,7 +880,7 @@ async def upload_rich_menu_image(
                 "chatBarText": m.chat_bar_text,
                 "areas": processed_areas,
             }
-            rid: Optional[str] = m.line_rich_menu_id
+            rid: Optional[str] = existing_line_rich_menu_id
             if not rid:
                 logger.info(f"Creating new Rich Menu on LINE platform for {menu_id}")
                 rid = await _line_create_and_upload(bot.channel_token, rm_payload, processed_bytes, content_type)
@@ -871,6 +896,9 @@ async def upload_rich_menu_image(
                 logger.info(f"Updating existing Rich Menu {rid} content on LINE platform")
                 success = await _line_upload_content(bot.channel_token, rid, processed_bytes, content_type)
                 if success:
+                    m.line_rich_menu_id = rid
+                    await db.commit()
+                    await db.refresh(m)
                     logger.info(f"Rich Menu {rid} content updated successfully")
                 else:
                     logger.error(f"Failed to update Rich Menu {rid} content")
