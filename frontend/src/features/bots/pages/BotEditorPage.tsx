@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import AppShell from "@/components/layout/AppShell";
+import { Loader } from "@/components/ui/loader";
 import Mybot, { MybotRef } from "../components/Mybot";
 import BotEditModal from "../components/BotEditModal";
 
@@ -21,7 +22,7 @@ const BotEditorPage = () => {
     return (
       <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-glass-card p-8">
-          <div className="text-foreground text-lg loading-pulse">載入中...</div>
+          <Loader text="載入中..." />
         </div>
       </div>
     );

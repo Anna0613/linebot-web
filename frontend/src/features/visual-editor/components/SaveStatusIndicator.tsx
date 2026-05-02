@@ -1,5 +1,6 @@
 import React from 'react';
 import { Save, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader } from '@/components/ui/loader';
 import { SaveStatus } from '@/features/visual-editor/types/saveStatus';
 
 interface SaveStatusIndicatorProps {
@@ -33,10 +34,10 @@ const SaveStatusIndicator: React.FC<SaveStatusIndicatorProps> = ({
         };
       case SaveStatus.SAVING:
         return {
-          icon: <Save className="w-4 h-4 text-blue-600 animate-pulse" />,
+          icon: <Loader size="sm" />,
           text: '儲存中...',
-          textClass: 'text-blue-700',
-          bgClass: 'bg-blue-50 border-blue-200 dark:bg-secondary dark:border-border'
+          textClass: 'text-green-700',
+          bgClass: 'bg-green-50 border-green-200 dark:bg-secondary dark:border-border'
         };
       case SaveStatus.ERROR:
         return {

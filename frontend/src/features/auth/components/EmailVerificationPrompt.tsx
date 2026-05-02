@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader } from "@/components/ui/loader";
 import { Mail, Clock } from "lucide-react";
 
 interface EmailVerificationPromptProps {
@@ -52,7 +53,10 @@ const EmailVerificationPrompt = ({
               className="text-orange-700 border-orange-300 hover:bg-orange-100"
             >
               {isResending ? (
-                "發送中..."
+                <>
+                  <Loader size="sm" />
+                  發送中...
+                </>
               ) : resendCooldown > 0 ? (
                 <>
                   <Clock className="h-3 w-3 mr-1" />

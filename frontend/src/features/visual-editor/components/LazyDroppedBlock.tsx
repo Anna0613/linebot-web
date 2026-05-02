@@ -1,23 +1,13 @@
 import React, { Suspense, lazy } from 'react';
 
+import { Loader } from '@/components/ui/loader';
+
 // 延遲載入 DroppedBlock 組件
 const DroppedBlock = lazy(() => import('./DroppedBlock'));
 
-// 骨架屏組件
-const BlockSkeleton: React.FC = () => (
-  <div className="animate-pulse rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-    <div className="flex items-center justify-between mb-2">
-      <div className="h-4 w-24 rounded-sm bg-gray-200"></div>
-      <div className="flex space-x-2">
-        <div className="h-6 w-6 rounded-sm bg-gray-200"></div>
-        <div className="h-6 w-6 rounded-sm bg-gray-200"></div>
-        <div className="h-6 w-6 rounded-sm bg-gray-200"></div>
-      </div>
-    </div>
-    <div className="space-y-2">
-      <div className="h-3 w-full rounded-sm bg-gray-200"></div>
-      <div className="h-3 w-3/4 rounded-sm bg-gray-200"></div>
-    </div>
+const BlockLoading: React.FC = () => (
+  <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <Loader text="載入積木..." />
   </div>
 );
 
@@ -94,7 +84,7 @@ interface LazyDroppedBlockProps {
 const LazyDroppedBlock: React.FC<LazyDroppedBlockProps> = (props) => {
   return (
     <LazyBlockErrorBoundary>
-      <Suspense fallback={<BlockSkeleton />}>
+      <Suspense fallback={<BlockLoading />}>
         <DroppedBlock {...props} />
       </Suspense>
     </LazyBlockErrorBoundary>

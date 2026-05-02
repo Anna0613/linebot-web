@@ -5,7 +5,6 @@ const OptimizedTokenExpiryWarning = lazy(
   () => import("../components/OptimizedTokenExpiryWarning")
 );
 import { Loader } from "@/components/ui/loader";
-import "@/components/ui/loader.css";
 // import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { PageContentWrapper } from "@/components/common/PageContentWrapper";

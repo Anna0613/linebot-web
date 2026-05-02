@@ -7,7 +7,6 @@ import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
 const ResetPassword = () => {
@@ -173,7 +172,14 @@ const ResetPassword = () => {
                 disabled={loading}
                 className="web3-primary-button w-full rounded-full font-bold h-11"
               >
-                {loading ? "處理中..." : "重設密碼"}
+                {loading ? (
+                  <>
+                    <Loader size="sm" />
+                    處理中...
+                  </>
+                ) : (
+                  "重設密碼"
+                )}
               </Button>
             </form>
           </div>

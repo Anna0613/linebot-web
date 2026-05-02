@@ -7,6 +7,7 @@ import SocialAccountSection from "../components/SocialAccountSection";
 import SecuritySection from "../components/SecuritySection";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 import { AlertTriangle } from "lucide-react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -17,21 +18,10 @@ import { authManager } from "@/services/UnifiedAuthManager";
 
 const SettingsLoadingPanel = () => (
   <div
-    className="space-y-5 rounded-[16px] border border-white/70 bg-white/70 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl"
+    className="rounded-[16px] border border-white/70 bg-white/70 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl"
     aria-busy="true"
   >
-    <div className="flex items-center gap-4">
-      <div className="h-16 w-16 animate-pulse rounded-full bg-emerald-100" />
-      <div className="flex-1 space-y-3">
-        <div className="h-4 w-40 animate-pulse rounded-full bg-slate-200/80" />
-        <div className="h-3 w-64 max-w-full animate-pulse rounded-full bg-slate-100" />
-      </div>
-    </div>
-    <div className="grid gap-4 md:grid-cols-2">
-      <div className="h-28 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-emerald-50/70" />
-      <div className="h-28 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-stone-50/80" />
-    </div>
-    <div className="h-36 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-emerald-50/60" />
+    <Loader text="載入帳號設定..." />
   </div>
 );
 

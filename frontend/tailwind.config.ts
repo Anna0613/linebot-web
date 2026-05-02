@@ -122,10 +122,6 @@ const config: Config = {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-10px)" },
         },
-        "pulse-light": {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.8" },
-        },
         "gradient-flow": {
           "0%": { backgroundPosition: "0% 50%" },
           "50%": { backgroundPosition: "100% 50%" },
@@ -164,7 +160,6 @@ const config: Config = {
         "slide-down": "slide-down 0.3s ease-out forwards",
         "slide-up": "slide-up 0.3s ease-out forwards",
         float: "float 6s ease-in-out infinite",
-        "pulse-light": "pulse-light 3s ease-in-out infinite",
         "gradient-flow": "gradient-flow 10s ease infinite",
         "neon-pulse": "neon-pulse 2s ease-in-out infinite",
         "web3-glow": "web3-glow 3s ease-in-out infinite",

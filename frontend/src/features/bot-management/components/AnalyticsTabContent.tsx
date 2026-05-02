@@ -28,7 +28,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Loader } from "@/components/ui/loader";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { cn } from "@/lib/utils";
 import {
@@ -282,25 +282,9 @@ const KpiCard = ({
   );
 };
 
-const AnalyticsSkeleton = () => (
-  <div className="space-y-6">
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {[1, 2, 3, 4].map((item) => (
-        <div
-          key={item}
-          className="rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)]"
-        >
-          <Skeleton className="h-11 w-11 rounded-[14px]" />
-          <Skeleton className="mt-5 h-4 w-24" />
-          <Skeleton className="mt-3 h-8 w-32" />
-          <Skeleton className="mt-3 h-3 w-36" />
-        </div>
-      ))}
-    </div>
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
-      <Skeleton className="h-[396px] rounded-[16px] bg-white/65" />
-      <Skeleton className="h-[396px] rounded-[16px] bg-white/65" />
-    </div>
+const AnalyticsLoading = () => (
+  <div className="rounded-[16px] border border-white/70 bg-white/75 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+    <Loader text="載入分析資料..." />
   </div>
 );
 
@@ -366,7 +350,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
   }
 
   if (analyticsLoading && !analytics) {
-    return <AnalyticsSkeleton />;
+    return <AnalyticsLoading />;
   }
 
   return (

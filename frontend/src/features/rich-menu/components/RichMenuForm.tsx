@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader } from '@/components/ui/loader';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import RichMenuApi from '@/features/rich-menu/api/RichMenuApi';
@@ -635,7 +636,14 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
               disabled={uploading}
               onClick={() => fileRef.current?.click()}
             >
-              {uploading ? '處理中...' : '選擇圖片'}
+              {uploading ? (
+                <>
+                  <Loader size="sm" />
+                  處理中...
+                </>
+              ) : (
+                '選擇圖片'
+              )}
             </Button>
             <p className="text-xs text-muted-foreground">
               {pendingFile
@@ -650,7 +658,14 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
               </Button>
             )}
             <Button onClick={onSubmit} disabled={saving}>
-              {saving ? '儲存中...' : '儲存選單'}
+              {saving ? (
+                <>
+                  <Loader size="sm" />
+                  儲存中...
+                </>
+              ) : (
+                '儲存選單'
+              )}
             </Button>
           </div>
         </div>

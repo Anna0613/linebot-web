@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader } from "@/components/ui/loader";
 import {
   Card,
   CardContent,
@@ -309,7 +310,14 @@ const SecuritySection = ({
                     disabled={passwordLoading}
                     className="flex items-center gap-2"
                   >
-                    {passwordLoading ? "更新中..." : "更新密碼"}
+                    {passwordLoading ? (
+                      <>
+                        <Loader size="sm" />
+                        更新中...
+                      </>
+                    ) : (
+                      "更新密碼"
+                    )}
                   </Button>
                   <Button
                     variant="outline"

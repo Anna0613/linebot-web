@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart3,
@@ -144,21 +145,10 @@ const managementCopy = {
 
 const ManagementLoadingPanel = () => (
   <section
-    className="rounded-[16px] border border-white/70 bg-white/75 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl"
+    className="rounded-[16px] border border-white/70 bg-white/75 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl"
     aria-busy="true"
   >
-    <div className="grid gap-4 md:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div
-          key={index}
-          className="h-28 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-emerald-50/70"
-        />
-      ))}
-    </div>
-    <div className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_0.9fr]">
-      <div className="h-72 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-stone-50/80" />
-      <div className="h-72 animate-pulse rounded-[16px] border border-white/70 bg-gradient-to-br from-white/90 to-emerald-50/70" />
-    </div>
+    <Loader text="載入管理中心..." />
   </section>
 );
 

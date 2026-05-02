@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader } from "@/components/ui/loader";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
@@ -852,7 +853,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         >
           {(!aiMode && loading) ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <Loader text="載入對話..." />
             </div>
           ) : (!aiMode && chatHistory.length === 0) ? (
             <div className="text-center py-8">
@@ -983,7 +984,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
             disabled={(sending || awaitingAI) || !message.trim()}
             size="sm"
           >
-            <Send className="h-4 w-4" />
+            {sending || awaitingAI ? (
+              <Loader size="sm" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
             {aiMode ? (awaitingAI ? "分析中" : "詢問 AI") : (sending ? "發送中" : "發送")}
           </Button>
         </div>

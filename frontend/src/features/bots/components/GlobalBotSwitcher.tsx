@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bot as BotIcon, Loader2, Plus } from "lucide-react";
+import { Bot as BotIcon, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 import {
   Select,
   SelectContent,
@@ -72,7 +73,7 @@ const GlobalBotSwitcher = ({
     <div className={cn("flex min-w-0 items-center gap-2", className)}>
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] border border-emerald-100 bg-emerald-50 text-[#16a34a]">
         {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader size="sm" />
         ) : (
           <BotIcon className="h-4 w-4" />
         )}

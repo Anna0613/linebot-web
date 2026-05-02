@@ -6,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Loader } from "@/components/ui/loader";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   MessageSquare, 
@@ -47,14 +47,9 @@ interface OptimizedActivityFeedProps {
   isWebSocketConnected?: () => boolean;
 }
 
-const ActivitySkeleton = () => (
-  <div className="flex items-start space-x-3 p-3 border-b border-gray-100 last:border-b-0">
-    <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
-    <div className="flex-1 space-y-2">
-      <Skeleton className="h-4 w-3/4" />
-      <Skeleton className="h-3 w-1/2" />
-    </div>
-    <Skeleton className="h-3 w-16" />
+const ActivityLoading = () => (
+  <div className="flex justify-center p-6">
+    <Loader text="載入活動..." />
   </div>
 );
 
@@ -229,7 +224,7 @@ const OptimizedActivityFeed: React.FC<OptimizedActivityFeedProps> = ({
               disabled={isLoading}
               className="h-8 px-3"
             >
-              <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+              {isLoading ? <Loader size="sm" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
           )}
         </div>
@@ -242,10 +237,7 @@ const OptimizedActivityFeed: React.FC<OptimizedActivityFeedProps> = ({
         >
           <div className="space-y-0">
             {isLoading ? (
-              // 載入骨架
-              Array.from({ length: 5 }, (_, i) => (
-                <ActivitySkeleton key={i} />
-              ))
+              <ActivityLoading />
             ) : displayedActivities.length > 0 ? (
               displayedActivities.map((activity) => (
                 <ActivityItem

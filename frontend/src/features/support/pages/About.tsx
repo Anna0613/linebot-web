@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { BarChart3, Bot, ShieldCheck, Workflow } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import AppShell, { AppRobotIllustration } from "@/components/layout/AppShell";
@@ -37,7 +38,7 @@ const About = () => {
     return (
       <div className="app-page-surface flex min-h-screen items-center justify-center">
         <div className="app-panel p-6 text-sm font-medium text-slate-600">
-          載入中...
+          <Loader text="載入中..." />
         </div>
       </div>
     );

@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { authManager } from "@/services/UnifiedAuthManager";
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 
 const NotFound = () => {
   const location = useLocation();
@@ -47,7 +48,7 @@ const NotFound = () => {
           </Button>
         )}
         {isAuthenticated === null && (
-          <div className="text-muted-foreground">Loading...</div>
+          <Loader text="Loading..." />
         )}
       </div>
     </div>

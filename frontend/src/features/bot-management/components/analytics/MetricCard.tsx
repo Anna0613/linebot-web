@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Loader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 
@@ -171,13 +171,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
   if (isLoading) {
     return (
       <Card className={cn(variantStyles.default, "relative overflow-hidden", className)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-4 rounded" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-8 w-16 mb-2" />
-          <Skeleton className="h-3 w-20" />
+        <CardContent className="flex min-h-[140px] items-center justify-center">
+          <Loader text="載入指標..." />
         </CardContent>
       </Card>
     );

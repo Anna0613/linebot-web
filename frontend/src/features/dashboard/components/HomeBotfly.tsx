@@ -43,7 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Loader } from "@/components/ui/loader";
 import {
   Tooltip,
   TooltipContent,
@@ -745,25 +745,8 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
             )}
 
             {isLoading ? (
-              <div
-                className={cn(
-                  "grid gap-4",
-                  viewMode === "grid"
-                    ? "md:grid-cols-2 xl:grid-cols-3"
-                    : "grid-cols-1"
-                )}
-              >
-                {[...Array(3)].map((_, index) => (
-                  <div
-                    key={index}
-                    className="rounded-[16px] border border-white/70 bg-white/70 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)]"
-                  >
-                    <Skeleton className="h-12 w-12 rounded-[14px]" />
-                    <Skeleton className="mt-5 h-5 w-2/3" />
-                    <Skeleton className="mt-3 h-4 w-full" />
-                    <Skeleton className="mt-6 h-24 w-full rounded-[14px]" />
-                  </div>
-                ))}
+              <div className="rounded-[16px] border border-white/70 bg-white/70 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)]">
+                <Loader text={language === "zh" ? "載入 Bot..." : "Loading bots..."} />
               </div>
             ) : filteredBots.length === 0 ? (
               <div className="rounded-[16px] border border-dashed border-emerald-200 bg-white/60 px-6 py-12 text-center">

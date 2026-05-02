@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import AppShell from "@/components/layout/AppShell";
@@ -66,7 +67,7 @@ const LegalPage = () => {
     return (
       <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
         <div className="web3-glass-card p-8">
-          <div className="text-foreground text-lg">載入中...</div>
+          <Loader text="載入中..." />
         </div>
       </div>
     );

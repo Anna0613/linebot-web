@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2 } from 'lucide-react';
+import { Loader } from '@/components/ui/loader';
 import type { RichMenu } from '@/features/rich-menu/types/richMenu';
 
 type Props = {
@@ -147,7 +147,7 @@ const RichMenuList: React.FC<Props> = ({
                       >
                         {publishingMenuId === menu.id ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader size="sm" className="mr-2" />
                             發佈中...
                           </>
                         ) : (

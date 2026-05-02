@@ -112,8 +112,17 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
                 variant="outline"
                 className="flex-1"
               >
-                <Send className="h-4 w-4 mr-2" />
-                {broadcastLoading ? "發送中..." : `全部用戶 (${totalCount})`}
+                {broadcastLoading ? (
+                  <>
+                    <Loader size="sm" />
+                    發送中...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    {`全部用戶 (${totalCount})`}
+                  </>
+                )}
               </Button>
               <Button
                 onClick={onSelectiveBroadcast}
@@ -124,10 +133,17 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
                 }
                 className="flex-1"
               >
-                <UserCheck className="h-4 w-4 mr-2" />
-                {selectiveBroadcastLoading
-                  ? "發送中..."
-                  : `選中用戶 (${selectedUserIds.size})`}
+                {selectiveBroadcastLoading ? (
+                  <>
+                    <Loader size="sm" />
+                    發送中...
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    {`選中用戶 (${selectedUserIds.size})`}
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
