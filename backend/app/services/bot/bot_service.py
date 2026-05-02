@@ -3,16 +3,18 @@ Bot 管理服務模組
 處理 Bot 的 CRUD 操作、Flex 訊息管理、程式碼管理等（已全面改為 AsyncSession）
 """
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 import json
 
 logger = logging.getLogger(__name__)
+DUPLICATE_LINE_BOT_DETAIL = "此 LINE Bot 已於本系統註冊過，無法重複建立"
 
 from app.models.bot import Bot, FlexMessage, BotCode, LogicTemplate
 from app.services.line.line_bot_service import LineBotService
@@ -42,6 +44,161 @@ class BotService:
             logger.warning("LINE Webhook 自動綁定失敗: bot_id=%s endpoint=%s error=%s", bot.id, endpoint, result.get("error"))
 
         return result
+
+    @staticmethod
+    def _extract_line_bot_user_id(info: Optional[Dict[str, Any]]) -> Optional[str]:
+        """Return LINE Messaging API bot userId from a bot info payload."""
+        if not info:
+            return None
+
+        line_bot_user_id = info.get("user_id") or info.get("channel_id")
+        if not line_bot_user_id:
+            return None
+
+        return str(line_bot_user_id).strip() or None
+
+    @staticmethod
+    async def _get_verified_line_bot_info(channel_token: str, channel_secret: str) -> Dict[str, Any]:
+        """Fetch LINE bot info and require a stable LINE bot identity."""
+        line_bot_service = LineBotService(channel_token, channel_secret)
+        info = await line_bot_service.async_get_bot_info()
+
+        if not info:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無法取得 LINE Bot 資訊，請確認 Channel Access Token 是否正確"
+            )
+
+        error = info.get("error")
+        line_bot_user_id = BotService._extract_line_bot_user_id(info)
+        display_name = str(info.get("display_name") or "").strip()
+
+        if error or not line_bot_user_id or not display_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error or "LINE API 未回傳有效 Bot 資訊，請確認 Channel Access Token 是否正確"
+            )
+
+        return info
+
+    @staticmethod
+    async def _find_legacy_registered_line_bot(
+        db: AsyncSession,
+        line_bot_user_id: str,
+        *,
+        exclude_bot_id: Optional[UUID] = None,
+    ) -> Optional[Bot]:
+        """
+        Check older rows that were created before line_bot_user_id existed.
+        These rows cannot be found by the unique index until they are updated.
+        """
+        stmt = select(Bot).where(Bot.line_bot_user_id.is_(None))
+        if exclude_bot_id is not None:
+            stmt = stmt.where(Bot.id != exclude_bot_id)
+
+        result = await db.execute(stmt)
+        legacy_bots = result.scalars().all()
+
+        for existing_bot in legacy_bots:
+            if not existing_bot.channel_token:
+                continue
+
+            try:
+                info = await LineBotService(
+                    existing_bot.channel_token,
+                    existing_bot.channel_secret,
+                ).async_get_bot_info()
+            except Exception as exc:
+                logger.warning(
+                    "檢查既有 Bot 的 LINE 身分失敗: bot_id=%s error=%s",
+                    existing_bot.id,
+                    exc,
+                )
+                continue
+
+            existing_line_bot_user_id = BotService._extract_line_bot_user_id(info)
+            if existing_line_bot_user_id == line_bot_user_id:
+                return existing_bot
+
+        return None
+
+    @staticmethod
+    async def _ensure_line_bot_not_registered(
+        db: AsyncSession,
+        line_bot_user_id: str,
+        *,
+        channel_token: Optional[str] = None,
+        exclude_bot_id: Optional[UUID] = None,
+        include_legacy_scan: bool = True,
+    ) -> None:
+        """Raise 409 if the LINE official account is already registered."""
+        conditions = [Bot.line_bot_user_id == line_bot_user_id]
+        if channel_token:
+            conditions.append(Bot.channel_token == channel_token)
+
+        stmt = select(Bot).where(or_(*conditions))
+        if exclude_bot_id is not None:
+            stmt = stmt.where(Bot.id != exclude_bot_id)
+
+        result = await db.execute(stmt)
+        existing_bot = result.scalars().first()
+        if existing_bot:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=DUPLICATE_LINE_BOT_DETAIL
+            )
+
+        if include_legacy_scan:
+            legacy_bot = await BotService._find_legacy_registered_line_bot(
+                db,
+                line_bot_user_id,
+                exclude_bot_id=exclude_bot_id,
+            )
+            if legacy_bot:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=DUPLICATE_LINE_BOT_DETAIL
+                )
+
+    @staticmethod
+    def _apply_line_bot_info(bot: Bot, info: Dict[str, Any]) -> None:
+        bot.line_bot_user_id = BotService._extract_line_bot_user_id(info)
+        bot.line_bot_basic_id = info.get("basic_id")
+        bot.line_bot_display_name = info.get("display_name")
+
+    @staticmethod
+    def _bot_response(bot: Bot) -> BotResponse:
+        return BotResponse(
+            id=str(bot.id),
+            name=bot.name,
+            channel_token=bot.channel_token,
+            channel_secret=bot.channel_secret,
+            line_bot_user_id=bot.line_bot_user_id,
+            line_bot_basic_id=bot.line_bot_basic_id,
+            line_bot_display_name=bot.line_bot_display_name,
+            user_id=str(bot.user_id),
+            created_at=bot.created_at,
+            updated_at=bot.updated_at
+        )
+
+    @staticmethod
+    async def _commit_bot_changes(db: AsyncSession, duplicate_name_detail: str = "Bot 名稱已存在") -> None:
+        try:
+            await db.commit()
+        except IntegrityError as exc:
+            await db.rollback()
+            error_text = str(exc.orig or exc)
+            if "idx_bot_line_bot_user_id" in error_text or "line_bot_user_id" in error_text:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=DUPLICATE_LINE_BOT_DETAIL
+                ) from exc
+            if "unique_bot_name_per_user" in error_text:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=duplicate_name_detail
+                ) from exc
+            raise
     
     @staticmethod
     async def create_bot(db: AsyncSession, user_id: UUID, bot_data: BotCreate) -> BotResponse:
@@ -66,6 +223,24 @@ class BotService:
                 detail="Bot 名稱已存在"
             )
 
+        line_bot_info = await BotService._get_verified_line_bot_info(
+            bot_data.channel_token,
+            bot_data.channel_secret,
+        )
+        line_bot_user_id = BotService._extract_line_bot_user_id(line_bot_info)
+
+        if not line_bot_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="LINE API 未回傳有效 Bot 身分，請確認 Channel Access Token 是否正確"
+            )
+
+        await BotService._ensure_line_bot_not_registered(
+            db,
+            line_bot_user_id,
+            channel_token=bot_data.channel_token,
+        )
+
         # 建立新的 Bot
         db_bot = Bot(
             user_id=user_id,
@@ -73,9 +248,10 @@ class BotService:
             channel_token=bot_data.channel_token,
             channel_secret=bot_data.channel_secret
         )
+        BotService._apply_line_bot_info(db_bot, line_bot_info)
 
         db.add(db_bot)
-        await db.commit()
+        await BotService._commit_bot_changes(db)
         await db.refresh(db_bot)
 
         try:
@@ -83,15 +259,7 @@ class BotService:
         except Exception as e:
             logger.warning("建立 Bot 後自動綁定 LINE Webhook 失敗: bot_id=%s error=%s", db_bot.id, e)
         
-        return BotResponse(
-            id=str(db_bot.id),
-            name=db_bot.name,
-            channel_token=db_bot.channel_token,
-            channel_secret=db_bot.channel_secret,
-            user_id=str(db_bot.user_id),
-            created_at=db_bot.created_at,
-            updated_at=db_bot.updated_at
-        )
+        return BotService._bot_response(db_bot)
     
     @staticmethod
     async def get_user_bots(db: AsyncSession, user_id: UUID) -> List[BotResponse]:
@@ -109,18 +277,7 @@ class BotService:
         result = await db.execute(stmt)
         bots = result.scalars().all()
             
-        return [
-            BotResponse(
-                id=str(bot.id),
-                name=bot.name,
-                channel_token=bot.channel_token,
-                channel_secret=bot.channel_secret,
-                user_id=str(bot.user_id),
-                created_at=bot.created_at,
-                updated_at=bot.updated_at
-            )
-            for bot in bots
-        ]
+        return [BotService._bot_response(bot) for bot in bots]
     
     @staticmethod
     async def get_bot(db: AsyncSession, bot_id: str, user_id: UUID) -> BotResponse:
@@ -153,15 +310,7 @@ class BotService:
                 detail="Bot 不存在"
             )
         
-        return BotResponse(
-            id=str(bot.id),
-            name=bot.name,
-            channel_token=bot.channel_token,
-            channel_secret=bot.channel_secret,
-            user_id=str(bot.user_id),
-            created_at=bot.created_at,
-            updated_at=bot.updated_at
-        )
+        return BotService._bot_response(bot)
     
     @staticmethod
     async def update_bot(db: AsyncSession, bot_id: str, user_id: UUID, bot_data: BotUpdate) -> BotResponse:
@@ -185,10 +334,12 @@ class BotService:
                 detail="Bot 不存在"
             )
         
+        update_data = bot_data.dict(exclude_unset=True)
+
         # 檢查名稱重複（如果要更新名稱）
-        if bot_data.name and bot_data.name != bot.name:
+        if update_data.get("name") and update_data["name"] != bot.name:
             res_exist = await db.execute(
-                select(Bot).where(Bot.user_id == user_id, Bot.name == bot_data.name, Bot.id != bot_uuid)
+                select(Bot).where(Bot.user_id == user_id, Bot.name == update_data["name"], Bot.id != bot_uuid)
             )
             existing_bot = res_exist.scalars().first()
             if existing_bot:
@@ -196,13 +347,38 @@ class BotService:
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Bot 名稱已存在"
                 )
+
+        if "channel_token" in update_data or "channel_secret" in update_data:
+            next_channel_token = update_data.get("channel_token", bot.channel_token)
+            next_channel_secret = update_data.get("channel_secret", bot.channel_secret)
+            line_bot_info = await BotService._get_verified_line_bot_info(
+                next_channel_token,
+                next_channel_secret,
+            )
+            line_bot_user_id = BotService._extract_line_bot_user_id(line_bot_info)
+
+            if not line_bot_user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="LINE API 未回傳有效 Bot 身分，請確認 Channel Access Token 是否正確"
+                )
+
+            await BotService._ensure_line_bot_not_registered(
+                db,
+                line_bot_user_id,
+                channel_token=next_channel_token,
+                exclude_bot_id=bot_uuid,
+            )
+
+            update_data["line_bot_user_id"] = line_bot_user_id
+            update_data["line_bot_basic_id"] = line_bot_info.get("basic_id")
+            update_data["line_bot_display_name"] = line_bot_info.get("display_name")
         
         # 更新 Bot 資料
-        update_data = bot_data.dict(exclude_unset=True)
         for field, value in update_data.items():
             setattr(bot, field, value)
         
-        await db.commit()
+        await BotService._commit_bot_changes(db)
         await db.refresh(bot)
 
         if "channel_token" in update_data or "channel_secret" in update_data:
@@ -211,15 +387,7 @@ class BotService:
             except Exception as e:
                 logger.warning("更新 Bot 後自動綁定 LINE Webhook 失敗: bot_id=%s error=%s", bot.id, e)
         
-        return BotResponse(
-            id=str(bot.id),
-            name=bot.name,
-            channel_token=bot.channel_token,
-            channel_secret=bot.channel_secret,
-            user_id=str(bot.user_id),
-            created_at=bot.created_at,
-            updated_at=bot.updated_at
-        )
+        return BotService._bot_response(bot)
 
     @staticmethod
     async def get_line_bot_profile(db: AsyncSession, bot_id: str, user_id: UUID) -> LineBotProfileResponse:
@@ -285,7 +453,10 @@ class BotService:
         )
 
     @staticmethod
-    async def preview_line_bot_profile(profile_data: LineBotProfilePreviewRequest) -> LineBotProfileResponse:
+    async def preview_line_bot_profile(
+        db: AsyncSession,
+        profile_data: LineBotProfilePreviewRequest,
+    ) -> LineBotProfileResponse:
         """用尚未儲存的 LINE Channel 憑證取得官方帳號資訊"""
         line_bot_service = LineBotService(profile_data.channel_token, profile_data.channel_secret)
         info = await line_bot_service.async_get_bot_info()
@@ -306,6 +477,15 @@ class BotService:
                 is_live=False,
                 error=error or "LINE API 未回傳有效 Bot 資訊",
                 fetched_at=datetime.utcnow(),
+            )
+
+        line_bot_user_id = BotService._extract_line_bot_user_id(info)
+        if line_bot_user_id:
+            await BotService._ensure_line_bot_not_registered(
+                db,
+                line_bot_user_id,
+                channel_token=profile_data.channel_token,
+                include_legacy_scan=False,
             )
 
         return LineBotProfileResponse(

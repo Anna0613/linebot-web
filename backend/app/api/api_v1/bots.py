@@ -77,10 +77,11 @@ async def update_flex_message(
 @router.post("/line-profile/preview", response_model=LineBotProfileResponse)
 async def preview_line_bot_profile(
     profile_data: LineBotProfilePreviewRequest,
+    db: AsyncSession = Depends(get_async_db),
     _current_user: User = Depends(get_current_user_async)
 ):
     """用未儲存的 LINE Channel 憑證預覽官方帳號基本資料"""
-    return await BotService.preview_line_bot_profile(profile_data)
+    return await BotService.preview_line_bot_profile(db, profile_data)
 
 @router.get("/{bot_id}", response_model=BotResponse)
 async def get_bot(

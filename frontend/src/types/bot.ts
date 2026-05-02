@@ -4,6 +4,9 @@ export interface Bot {
   description?: string;
   channel_token: string;
   channel_secret: string;
+  line_bot_user_id?: string | null;
+  line_bot_basic_id?: string | null;
+  line_bot_display_name?: string | null;
   user_id: string;
   is_active?: boolean;
   created_at: string;
