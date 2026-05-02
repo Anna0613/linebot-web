@@ -2,12 +2,15 @@ export interface BotAnalytics {
   totalMessages: number;
   activeUsers: number;
   userRetention: number;
-  peakHour: number;
+  peakHour?: number;
   todayMessages: number;
   weekMessages: number;
   monthMessages: number;
   responseTime?: number;
   successRate?: number;
+  lineFollowers?: number;
+  lineTargetedReaches?: number;
+  source?: string;
 }
 
 export interface MessageStats {
@@ -89,6 +92,7 @@ export interface PaginationInfo {
 export interface GetBotUsersResponse {
   users: LineUser[];
   total_count: number;
+  error?: string | null;
   pagination: PaginationInfo;
 }
 

@@ -293,7 +293,7 @@ const DropZone: React.FC<DropZoneProps> = ({
       {/* 上下文提示 */}
       <div className="mb-4 flex-shrink-0 text-sm text-slate-500">
         當前模式 <span className="font-medium text-slate-700">
-          {context === WorkspaceContext.LOGIC ? '邏輯編輯器' : 'Flex 設計器'}
+          {context === WorkspaceContext.LOGIC ? '邏輯編輯器' : 'Flex Message 編輯'}
         </span>
         <span className="ml-2 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
           {context || 'undefined'}

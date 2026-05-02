@@ -15,6 +15,7 @@ import json
 logger = logging.getLogger(__name__)
 
 from app.models.bot import Bot, FlexMessage, BotCode, LogicTemplate
+from app.services.line.line_bot_service import LineBotService
 from app.schemas.bot import (
     BotCreate, BotUpdate, BotResponse,
     FlexMessageCreate, FlexMessageUpdate, FlexMessageResponse, FlexMessageSummary,
@@ -24,6 +25,23 @@ from app.schemas.bot import (
 
 class BotService:
     """Bot 管理服務類別（async）"""
+
+    @staticmethod
+    async def _auto_bind_line_webhook(bot: Bot) -> Dict[str, Any]:
+        """Set the LINE Messaging API webhook endpoint for this bot."""
+        if not bot.channel_token or not bot.channel_secret:
+            return {"success": False, "error": "Bot 尚未設定 LINE Channel Token 或 Secret"}
+
+        endpoint = LineBotService.build_webhook_endpoint(str(bot.id))
+        line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+        result = await line_bot_service.ensure_webhook_endpoint(endpoint)
+
+        if result.get("success"):
+            logger.info("LINE Webhook 已自動綁定: bot_id=%s endpoint=%s", bot.id, endpoint)
+        else:
+            logger.warning("LINE Webhook 自動綁定失敗: bot_id=%s endpoint=%s error=%s", bot.id, endpoint, result.get("error"))
+
+        return result
     
     @staticmethod
     async def create_bot(db: AsyncSession, user_id: UUID, bot_data: BotCreate) -> BotResponse:
@@ -59,6 +77,11 @@ class BotService:
         db.add(db_bot)
         await db.commit()
         await db.refresh(db_bot)
+
+        try:
+            await BotService._auto_bind_line_webhook(db_bot)
+        except Exception as e:
+            logger.warning("建立 Bot 後自動綁定 LINE Webhook 失敗: bot_id=%s error=%s", db_bot.id, e)
         
         return BotResponse(
             id=str(db_bot.id),
@@ -181,6 +204,12 @@ class BotService:
         
         await db.commit()
         await db.refresh(bot)
+
+        if "channel_token" in update_data or "channel_secret" in update_data:
+            try:
+                await BotService._auto_bind_line_webhook(bot)
+            except Exception as e:
+                logger.warning("更新 Bot 後自動綁定 LINE Webhook 失敗: bot_id=%s error=%s", bot.id, e)
         
         return BotResponse(
             id=str(bot.id),

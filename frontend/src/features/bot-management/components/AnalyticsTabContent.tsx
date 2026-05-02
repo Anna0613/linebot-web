@@ -4,7 +4,6 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Bot as BotIcon,
-  Clock3,
   MessageSquare,
   RefreshCw,
   Send,
@@ -62,18 +61,18 @@ const analyticsCopy = {
     emptyState: "Select a Bot first to view analytics.",
     kpis: {
       totalMessages: "Messages",
-      activeUsers: "Active users",
-      retentionRate: "Retention rate",
-      peakTime: "Peak time",
+      activeUsers: "Targeted reach",
+      retentionRate: "Reach rate",
+      peakTime: "Followers",
     },
     comparisons: {
-      messages: "Compared with last week",
-      activeUsers: "Compared with yesterday",
-      retention: "Compared with last week",
-      peak: "Highest interaction window",
+      messages: "From LINE Insight",
+      activeUsers: "Reachable friends from LINE",
+      retention: "Targeted reach / followers",
+      peak: "LINE follower count",
     },
     chartTitle: "Message trend over time",
-    chartSubtitle: "Smooth curve of sent and received LINE Bot messages.",
+    chartSubtitle: "Delivered message trend from LINE Insight.",
     timeRange: {
       day: "Today",
       week: "This week",
@@ -83,19 +82,19 @@ const analyticsCopy = {
     refreshActivities: "Refresh activities",
     chartEmpty: "No message trend data yet",
     activityTitle: "Real-time activity",
-    activitySubtitle: "Recent system and user events.",
+    activitySubtitle: "Recent LINE Insight snapshots.",
     live: "Live",
     syncing: "Syncing",
     activityEmpty: "No real-time activity yet",
-    heatmapTitle: "24-hour activity heatmap",
-    heatmapSubtitle: "Green intensity shows active user concentration by hour.",
-    usageTitle: "Feature usage distribution",
-    usageSubtitle: "Donut chart for feature interactions.",
+    heatmapTitle: "Hourly activity",
+    heatmapSubtitle: "LINE Insight doesn't expose hourly active users.",
+    usageTitle: "Follower demographics",
+    usageSubtitle: "Distribution from LINE Insight demographics.",
     noData: "No data",
     usageEmpty: "No feature usage data yet",
-    insightTitle: "Users are most active at",
+    insightTitle: "LINE Insight snapshot",
     insightBody:
-      "Consider sending messages during this time window to improve retention and response quality.",
+      "Overview data is sourced from LINE delivery, follower, and demographic APIs.",
     viewFullReport: "View full report",
     chartMetric: "Messages",
   },
@@ -103,18 +102,18 @@ const analyticsCopy = {
     emptyState: "請先選擇一個 Bot 來查看分析數據。",
     kpis: {
       totalMessages: "總訊息數",
-      activeUsers: "活躍用戶",
-      retentionRate: "用戶留存率",
-      peakTime: "高峰時段",
+      activeUsers: "可觸及好友",
+      retentionRate: "好友觸及率",
+      peakTime: "LINE 好友數",
     },
     comparisons: {
-      messages: "較上週訊息量",
-      activeUsers: "較昨日活躍度",
-      retention: "較上週留存率",
-      peak: "訊息互動最密集",
+      messages: "來自 LINE Insight",
+      activeUsers: "LINE 可觸及好友數",
+      retention: "可觸及好友 / 好友數",
+      peak: "LINE 官方好友數",
     },
     chartTitle: "訊息趨勢",
-    chartSubtitle: "LINE Bot 發送與接收訊息的平滑趨勢曲線。",
+    chartSubtitle: "LINE Insight 回傳的訊息送達趨勢。",
     timeRange: {
       day: "今日",
       week: "本週",
@@ -124,18 +123,18 @@ const analyticsCopy = {
     refreshActivities: "刷新活動",
     chartEmpty: "尚無訊息趨勢資料",
     activityTitle: "即時活動",
-    activitySubtitle: "最近的系統事件與用戶訊息。",
+    activitySubtitle: "最近的 LINE Insight 快照。",
     live: "即時",
     syncing: "同步中",
     activityEmpty: "尚無即時活動",
-    heatmapTitle: "24 小時活躍熱力圖",
-    heatmapSubtitle: "綠色深淺代表各時段的活躍用戶集中度。",
-    usageTitle: "功能使用分布",
-    usageSubtitle: "以圓環圖呈現各功能互動占比。",
+    heatmapTitle: "每小時活躍資料",
+    heatmapSubtitle: "LINE Insight 未提供每小時活躍用戶資料。",
+    usageTitle: "好友人口統計分布",
+    usageSubtitle: "來自 LINE Insight demographics 的分布資料。",
     noData: "無資料",
     usageEmpty: "尚無功能使用資料",
-    insightTitle: "使用者最活躍時段",
-    insightBody: "建議在此時段推送訊息，以提升留存與回覆品質。",
+    insightTitle: "LINE Insight 最新快照",
+    insightBody: "總覽資料來自 LINE 的訊息送達、好友與人口統計 API。",
     viewFullReport: "查看完整報表",
     chartMetric: "訊息量",
   },
@@ -340,7 +339,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
         name: formatMessageStatsLabel(stat, timeRange, language),
         sent: stat.sent,
         received: stat.received,
-        messages: stat.sent + stat.received,
+        messages: stat.sent,
       })),
     [language, messageStats, timeRange]
   );
@@ -356,9 +355,11 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
     }));
   }, [userActivity]);
 
+  const hasHourlyActivity = userActivity.some((item) => item.activeUsers > 0);
   const heatmapMax = Math.max(...heatmapData.map((item) => item.value), 1);
   const usageTotal = usageData.reduce((total, item) => total + item.usage, 0);
   const recentActivities = activities.slice(0, 6);
+  const lineFollowers = analytics?.lineFollowers || 0;
 
   if (!selectedBotId) {
     return <EmptyState message={copy.emptyState} />;
@@ -375,7 +376,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
           icon={MessageSquare}
           title={copy.kpis.totalMessages}
           value={formatNumber(analytics?.totalMessages || 0)}
-          trend={12.4}
+          trend={0}
           comparison={copy.comparisons.messages}
           accentClass="bg-emerald-100 text-emerald-700"
         />
@@ -383,7 +384,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
           icon={Users}
           title={copy.kpis.activeUsers}
           value={formatNumber(analytics?.activeUsers || 0)}
-          trend={5.8}
+          trend={0}
           comparison={copy.comparisons.activeUsers}
           accentClass="bg-sky-100 text-sky-700"
         />
@@ -391,15 +392,15 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
           icon={TrendingUp}
           title={copy.kpis.retentionRate}
           value={`${formatPercent(analytics?.userRetention || 0)}%`}
-          trend={3.2}
+          trend={0}
           comparison={copy.comparisons.retention}
           accentClass="bg-violet-100 text-violet-700"
         />
         <KpiCard
-          icon={Clock3}
+          icon={UserMinus}
           title={copy.kpis.peakTime}
-          value={peakHourRange}
-          trend={1.6}
+          value={formatNumber(lineFollowers)}
+          trend={0}
           comparison={copy.comparisons.peak}
           accentClass="bg-amber-100 text-amber-700"
         />
@@ -603,36 +604,44 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                 {copy.heatmapSubtitle}
               </p>
             </div>
-            <Badge className="border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
-              {peakHourRange}
-            </Badge>
+            {hasHourlyActivity && (
+              <Badge className="border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                {peakHourRange}
+              </Badge>
+            )}
           </div>
 
-          <div className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-6 xl:grid-cols-8">
-            {heatmapData.map((item) => {
-              const intensity = item.value / heatmapMax;
+          {hasHourlyActivity ? (
+            <div className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-6 xl:grid-cols-8">
+              {heatmapData.map((item) => {
+                const intensity = item.value / heatmapMax;
 
-              return (
-                <div
-                  key={item.hour}
-                  className={cn(
-                    "flex h-16 flex-col justify-between rounded-[14px] border border-white/70 p-3 shadow-sm",
-                    intensity > 0.58 ? "text-white" : "text-slate-700"
-                  )}
-                  style={{
-                    backgroundColor: `rgba(22, 163, 74, ${0.08 + intensity * 0.74})`,
-                  }}
-                >
-                  <span className="text-xs font-semibold">
-                    {String(item.hour).padStart(2, "0")}:00
-                  </span>
-                  <span className="text-sm font-semibold">
-                    {formatNumber(item.value)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+                return (
+                  <div
+                    key={item.hour}
+                    className={cn(
+                      "flex h-16 flex-col justify-between rounded-[14px] border border-white/70 p-3 shadow-sm",
+                      intensity > 0.58 ? "text-white" : "text-slate-700"
+                    )}
+                    style={{
+                      backgroundColor: `rgba(22, 163, 74, ${0.08 + intensity * 0.74})`,
+                    }}
+                  >
+                    <span className="text-xs font-semibold">
+                      {String(item.hour).padStart(2, "0")}:00
+                    </span>
+                    <span className="text-sm font-semibold">
+                      {formatNumber(item.value)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-6 flex h-[192px] items-center justify-center rounded-[16px] bg-white/60 text-sm text-slate-400">
+              {copy.noData}
+            </div>
+          )}
         </section>
 
         <section className="rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
@@ -718,7 +727,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-950">
-              {copy.insightTitle} {peakHourRange}
+              {copy.insightTitle}
             </p>
             <p className="mt-1 text-sm leading-6 text-slate-500">
               {copy.insightBody}

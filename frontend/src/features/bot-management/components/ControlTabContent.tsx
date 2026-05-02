@@ -578,7 +578,7 @@ const ControlTabContent: React.FC<ControlTabContentProps> = ({
                   <Layout className="h-6 w-6 text-green-600" />
                 </div>
                 <span className="text-xs font-medium text-center">
-                  FLEX 設計器
+                  Flex Message 編輯
                 </span>
                 <span className="text-xs text-muted-foreground text-center mt-1">
                   訊息設計

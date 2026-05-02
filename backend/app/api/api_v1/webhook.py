@@ -400,11 +400,22 @@ async def get_webhook_status(
         webhook_endpoint_info = None
         last_webhook_time = None
         bot_info = None
+        auto_bind_result = None
 
         if is_configured:
             try:
                 # 初始化 LINE Bot Service 來測試連接（改用異步版本）
                 line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+                expected_webhook_url = LineBotService.build_webhook_endpoint(bot_id)
+                auto_bind_result = await line_bot_service.ensure_webhook_endpoint(expected_webhook_url)
+                if not auto_bind_result.get("success"):
+                    logger.warning(
+                        "Webhook 自動綁定檢查未成功: bot_id=%s endpoint=%s error=%s",
+                        bot_id,
+                        expected_webhook_url,
+                        auto_bind_result.get("error"),
+                    )
+
                 line_api_accessible, webhook_endpoint_info = await asyncio.gather(
                     line_bot_service.async_check_connection(),
                     line_bot_service.async_check_webhook_endpoint(),
@@ -444,9 +455,7 @@ async def get_webhook_status(
 
         from datetime import datetime
 
-        # 獲取 webhook 域名
-        import os
-        webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
+        webhook_url = LineBotService.build_webhook_endpoint(bot_id)
 
         result = {
             "bot_id": bot_id,
@@ -456,8 +465,9 @@ async def get_webhook_status(
             "is_configured": is_configured,
             "line_api_accessible": line_api_accessible,
             "webhook_working": webhook_working,
-            "webhook_url": f"{webhook_domain}/api/v1/webhooks/{bot_id}",
+            "webhook_url": webhook_url,
             "webhook_endpoint_info": webhook_endpoint_info,
+            "webhook_auto_bind": auto_bind_result,
             "last_webhook_time": last_webhook_time,
             "checked_at": datetime.now().isoformat()
         }

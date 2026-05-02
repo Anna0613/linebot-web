@@ -197,7 +197,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
       contents: bodyBlocks.length > 0 ? bodyBlocks : [
         {
           type: 'text',
-          text: '請在 Flex 設計器中添加內容',
+          text: '請在 Flex Message 編輯中添加內容',
           color: '#999999',
           align: 'center'
         }
@@ -438,7 +438,7 @@ const LineBotSimulator: React.FC<SimulatorProps> = ({ blocks, flexBlocks = [], t
             flexMessage: { type: 'flex', contents: b.blockData.flexContent as Record<string, unknown> }
           });
         } else {
-          responses.push({ type: 'bot', content: '請在 Flex 設計器中設計 Flex 訊息內容', messageType: 'text' });
+          responses.push({ type: 'bot', content: '請在 Flex Message 編輯中設計 Flex 訊息內容', messageType: 'text' });
         }
       } else if (replyType === 'image') {
         const imageUrl = (b.blockData.originalContentUrl || b.blockData.url) as string;

@@ -102,6 +102,9 @@ class Settings(BaseSettings):
 
     # 前端 URL
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:8080")
+    # 對外可被 LINE 平台存取的後端網域，用於自動設定 Messaging API Webhook。
+    # LINE Webhook endpoint 必須是 HTTPS；本機開發請設定為 ngrok / tunnel URL。
+    WEBHOOK_DOMAIN: str = os.getenv("WEBHOOK_DOMAIN", os.getenv("PUBLIC_API_URL", "http://localhost:8000"))
 
     # 郵件設定
     MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")

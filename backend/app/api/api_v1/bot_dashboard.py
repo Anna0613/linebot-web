@@ -317,6 +317,14 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
     
     try:
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+        webhook_url = LineBotService.build_webhook_endpoint(str(bot.id))
+        auto_bind_result = await line_bot_service.ensure_webhook_endpoint(webhook_url)
+        if not auto_bind_result.get("success"):
+            logger.warning(
+                "Dashboard webhook auto-bind failed: bot_id=%s error=%s",
+                bot.id,
+                auto_bind_result.get("error"),
+            )
         
         # 使用 asyncio.gather 並行執行 API 檢查 - 效能優化
         check_tasks = [
@@ -359,10 +367,6 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
             status = "inactive"
             status_text = "未綁定"
         
-        # 獲取 webhook 域名
-        import os
-        webhook_domain = os.getenv('WEBHOOK_DOMAIN', 'http://localhost:8000')
-        
         result = {
             "bot_id": str(bot.id),
             "bot_name": bot.name,
@@ -371,8 +375,9 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
             "is_configured": True,
             "line_api_accessible": line_api_accessible,
             "webhook_working": webhook_working,
-            "webhook_url": f"{webhook_domain}/api/v1/webhooks/{bot.id}",
+            "webhook_url": webhook_url,
             "webhook_endpoint_info": webhook_endpoint_info,
+            "webhook_auto_bind": auto_bind_result,
             "checked_at": datetime.now().isoformat()
         }
         

@@ -290,12 +290,12 @@ const Workspace: React.FC<WorkspaceProps> = ({
       });
     }
 
-    // 檢查 Flex 設計器驗證結果
+    // 檢查 Flex Message 編輯驗證結果
     if (flexValidation.errors.length > 0 && 
         JSON.stringify(flexValidation.errors) !== JSON.stringify(prevFlexErrors)) {
       toast({
         variant: 'destructive',
-        title: 'Flex 設計器錯誤',
+        title: 'Flex Message 編輯錯誤',
         description: flexValidation.errors.join('; ')
       });
     }
@@ -303,7 +303,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
     if (flexValidation.warnings.length > 0 && 
         JSON.stringify(flexValidation.warnings) !== JSON.stringify(prevFlexWarnings)) {
       toast({
-        title: 'Flex 設計器建議',
+        title: 'Flex Message 編輯建議',
         description: flexValidation.warnings.join('; ')
       });
     }
@@ -351,7 +351,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   }, [onLogicBlocksChange]);
 
   const handleFlexDrop = useCallback((item: UnifiedDropItem) => {
-    console.log('🎨 Flex 設計器積木放置:', {
+    console.log('🎨 Flex Message 編輯積木放置:', {
       item: item,
       itemType: 'category' in item ? 'unified' : 'legacy',
       currentTab: activeTab,
@@ -365,7 +365,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
         children: []
       };
       
-      console.log('✅ 積木成功添加到 Flex 設計器:', blockToAdd);
+      console.log('✅ 積木成功添加到 Flex Message 編輯:', blockToAdd);
       onFlexBlocksChange(prev => [...prev, blockToAdd]);
     } catch (_error) {
       console.error("Error occurred:", _error);
@@ -429,7 +429,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   }, [onLogicBlocksChange]);
 
   const insertFlexBlock = useCallback((index: number, item: UnifiedDropItem) => {
-    console.log('🎨 Flex 設計器積木插入:', {
+    console.log('🎨 Flex Message 編輯積木插入:', {
       insertIndex: index,
       item: item,
       currentTab: activeTab,
@@ -446,7 +446,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
       onFlexBlocksChange(prev => {
         const newBlocks = [...prev];
         newBlocks.splice(index, 0, blockToAdd);
-        console.log('✅ 積木成功插入到 Flex 設計器位置', index, blockToAdd);
+        console.log('✅ 積木成功插入到 Flex Message 編輯位置', index, blockToAdd);
         return newBlocks;
       });
     } catch (_error) {
@@ -539,7 +539,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
               )}
             </TabsTrigger>
             <TabsTrigger value="flex" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
-              Flex 設計器
+              Flex Message 編輯
               {currentFlexMessageName && (
                 <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 text-xs text-[#166534]">
                   {currentFlexMessageName}
@@ -602,8 +602,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
                     <div className="flex flex-col h-full overflow-hidden">
                       <DropZone
                         title={currentFlexMessageName ?
-                          `Flex 設計器 - ${currentFlexMessageName}` :
-                          "Flex 設計器 - 請選擇 FlexMessage"
+                          `Flex Message 編輯 - ${currentFlexMessageName}` :
+                          "Flex Message 編輯 - 請選擇 FlexMessage"
                         }
                         context={WorkspaceContext.FLEX}
                         onDrop={handleFlexDrop}

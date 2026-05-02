@@ -39,7 +39,7 @@ export function isBlockCompatible(
       reason: '工作區上下文未正確初始化',
       suggestions: [
         '請重新整理頁面',
-        '確認是否正確選擇了邏輯編輯器或 Flex 設計器標籤',
+        '確認是否正確選擇了邏輯編輯器或 Flex Message 編輯標籤',
         '檢查瀏覽器控制台是否有其他錯誤'
       ]
     };
@@ -98,7 +98,7 @@ export function isBlockCompatible(
         smartSuggestions.push('Flex 相關積木通常可以在兩種模式下使用');
       }
       if (context === WorkspaceContext.FLEX) {
-        smartSuggestions.push('Flex 設計器支援大多數積木類型');
+        smartSuggestions.push('Flex Message 編輯支援大多數積木類型');
       }
       smartSuggestions.push('如果積木無法正常工作，請檢查積木的具體配置');
       
@@ -145,19 +145,19 @@ export function isBlockCompatible(
   if (!rule.allowedIn.includes(context)) {
     console.log('❌ 積木不相容於當前上下文 - 嘗試寬鬆政策');
     
-    // 對於 Flex 設計器，採用更寬鬆的政策
+    // 對於 Flex Message 編輯，採用更寬鬆的政策
     if (context === WorkspaceContext.FLEX) {
-      // 在 Flex 設計器中，允許大多數積木類型
+      // 在 Flex Message 編輯中，允許大多數積木類型
       if (category === BlockCategory.FLEX_CONTAINER || 
           category === BlockCategory.FLEX_CONTENT || 
           category === BlockCategory.FLEX_LAYOUT ||
           category === BlockCategory.CONTROL) {
-        console.log('✅ Flex 設計器寬鬆政策：允許此積木');
+        console.log('✅ Flex Message 編輯寬鬆政策：允許此積木');
         return {
           isValid: true,
-          reason: `Flex 設計器支援 ${category} 積木（寬鬆政策）`,
+          reason: `Flex Message 編輯支援 ${category} 積木（寬鬆政策）`,
           suggestions: [
-            'Flex 設計器支援多種積木類型來創建豐富的介面',
+            'Flex Message 編輯支援多種積木類型來創建豐富的介面',
             '如果積木表現異常，請檢查具體的配置參數'
           ]
         };
@@ -187,7 +187,7 @@ export function isBlockCompatible(
       reason: `${category} 積木不適合在 ${context} 上下文中使用`,
       suggestions: [
         `此積木主要設計用於 ${rule.allowedIn.join(', ')} 上下文`,
-        context === WorkspaceContext.LOGIC ? '嘗試切換到 Flex 設計器標籤' : '嘗試切換到邏輯編輯器標籤',
+        context === WorkspaceContext.LOGIC ? '嘗試切換到 Flex Message 編輯標籤' : '嘗試切換到邏輯編輯器標籤',
         '查看積木說明了解正確的使用方式'
       ]
     };
@@ -212,14 +212,14 @@ export function isBlockCompatible(
     );
     
     if (!hasValidParent) {
-      // 在 Flex 設計器中，放寬父積木依賴要求
+      // 在 Flex Message 編輯中，放寬父積木依賴要求
       if (context === WorkspaceContext.FLEX) {
-        console.log('🎨 Flex 設計器：放寬父積木依賴要求');
+        console.log('🎨 Flex Message 編輯：放寬父積木依賴要求');
         return {
           isValid: true,
-          reason: `${category} 積木在 Flex 設計器中可獨立使用`,
+          reason: `${category} 積木在 Flex Message 編輯中可獨立使用`,
           suggestions: [
-            'Flex 設計器允許更靈活的積木組合',
+            'Flex Message 編輯允許更靈活的積木組合',
             '建議按照 Flex Message 的結構來組織積木',
             `完整結構中建議包含 ${rule.restrictions.requiresParent.join(' 或 ')} 積木`
           ]
@@ -400,7 +400,7 @@ export function getBlockUsageSuggestions(category: BlockCategory): string[] {
   }
   
   if (rule?.allowedIn.includes(WorkspaceContext.FLEX)) {
-    suggestions.push('可以在 Flex 設計器中使用');
+    suggestions.push('可以在 Flex Message 編輯中使用');
   }
   
   if (rule?.dependencies) {
