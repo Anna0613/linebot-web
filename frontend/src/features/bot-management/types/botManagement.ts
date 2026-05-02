@@ -118,6 +118,13 @@ export interface WebhookEndpointInfo {
   is_set?: boolean;
   active?: boolean;
   endpoint?: string;
+  error?: string;
+}
+
+export interface WebhookAutoBindInfo {
+  success?: boolean;
+  changed?: boolean;
+  error?: unknown;
 }
 
 export interface WebhookStatus extends Record<string, unknown> {
@@ -125,7 +132,9 @@ export interface WebhookStatus extends Record<string, unknown> {
   status_text?: string;
   is_configured?: boolean;
   line_api_accessible?: boolean;
+  webhook_working?: boolean;
   checked_at?: string;
   basic_id?: string;
   webhook_endpoint_info?: WebhookEndpointInfo;
+  webhook_auto_bind?: WebhookAutoBindInfo;
 }

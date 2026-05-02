@@ -1,13 +1,19 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import {
+  Activity,
   AlertCircle,
   Bot,
   CheckCircle2,
+  Copy,
+  Download,
   ExternalLink,
   Eye,
   EyeOff,
+  QrCode,
   RefreshCw,
   Save,
+  Wifi,
 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -18,7 +24,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/services/UnifiedApiClient";
 import type { Bot as BotRecord, BotUpdateData, LineBotProfile } from "@/types/bot";
+import type { WebhookStatus } from "@/features/bot-management/types/botManagement";
+import { QuotaStatusCard } from "@/features/bot-management/components/quota/QuotaStatusCard";
+import { useQuotaStatus } from "@/hooks/useQuotaStatus";
 import { useToast } from "@/hooks/use-toast";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 interface BotBasicInfoPanelProps {
   selectedBotId: string;
@@ -44,6 +54,48 @@ const formatDateTime = (value?: string | null) => {
 
 const displayValue = (value?: string | null) => value || "未提供";
 
+const getBotHealthFromWebhook = (webhookStatus: WebhookStatus | null) => {
+  if (!webhookStatus) return "offline";
+  if (webhookStatus.status === "active") return "online";
+  if (
+    webhookStatus.status === "not_configured" ||
+    webhookStatus.status === "configuration_error"
+  ) {
+    return "error";
+  }
+  return "offline";
+};
+
+const getHealthBadgeClass = (health: "online" | "offline" | "error") => {
+  if (health === "online") return "border-emerald-200 bg-emerald-50 text-[#166534]";
+  if (health === "offline") return "border-amber-200 bg-amber-50 text-amber-700";
+  return "border-red-200 bg-red-50 text-red-700";
+};
+
+const getHealthLabel = (health: "online" | "offline" | "error") => {
+  if (health === "online") return "運作正常";
+  if (health === "offline") return "離線";
+  return "錯誤";
+};
+
+const getWebhookBadgeClass = (webhookStatus: WebhookStatus | null) => {
+  if (webhookStatus?.status === "active") {
+    return "border-emerald-200 bg-emerald-50 text-[#166534]";
+  }
+  if (webhookStatus?.status === "not_configured") {
+    return "border-slate-200 bg-slate-50 text-slate-600";
+  }
+  if (!webhookStatus) {
+    return "border-slate-200 bg-slate-50 text-slate-600";
+  }
+  return "border-red-200 bg-red-50 text-red-700";
+};
+
+const isWebhookBound = (webhookStatus: WebhookStatus | null) =>
+  webhookStatus?.status === "active" ||
+  webhookStatus?.webhook_working === true ||
+  webhookStatus?.webhook_endpoint_info?.active === true;
+
 const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
   selectedBotId,
   onBotUpdated,
@@ -59,10 +111,30 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncingLine, setIsSyncingLine] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [webhookStatus, setWebhookStatus] = useState<WebhookStatus | null>(null);
+  const [webhookStatusLoading, setWebhookStatusLoading] = useState(false);
+  const [controlLoading, setControlLoading] = useState(false);
+  const [copiedQrCode, setCopiedQrCode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
+  const qrCodeRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
+  const { isConnected } = useWebSocket({
+    botId: selectedBotId || undefined,
+    autoReconnect: true,
+    enabled: !!selectedBotId,
+  });
+  const {
+    quotaStatus,
+    isLoading: quotaLoading,
+    error: quotaError,
+    refetch: refetchQuota,
+  } = useQuotaStatus({
+    botId: selectedBotId || null,
+    enabled: !!selectedBotId,
+    refreshInterval: 5 * 60 * 1000,
+  });
 
   const hasChanges = useMemo(
     () =>
@@ -124,10 +196,33 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
     }
   }, [selectedBotId]);
 
+  const fetchWebhookStatus = useCallback(async () => {
+    if (!selectedBotId) return null;
+
+    setWebhookStatusLoading(true);
+    try {
+      const response = await apiClient.getWebhookStatus(selectedBotId);
+      if (response.data && !response.error) {
+        const statusData = response.data as WebhookStatus;
+        setWebhookStatus(statusData);
+        return statusData;
+      }
+
+      setWebhookStatus(null);
+      return null;
+    } catch (_err) {
+      setWebhookStatus(null);
+      return null;
+    } finally {
+      setWebhookStatusLoading(false);
+    }
+  }, [selectedBotId]);
+
   useEffect(() => {
     void loadBot();
     void loadLineProfile();
-  }, [loadBot, loadLineProfile]);
+    void fetchWebhookStatus();
+  }, [loadBot, loadLineProfile, fetchWebhookStatus]);
 
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -170,6 +265,7 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
       await onBotUpdated?.();
       await loadBot();
       await loadLineProfile();
+      await fetchWebhookStatus();
     } catch (_err) {
       toast({
         variant: "destructive",
@@ -185,8 +281,153 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
     setFormData(originalData);
   };
 
+  const handleCheckBotHealth = async () => {
+    if (!selectedBotId || controlLoading) return;
+
+    setControlLoading(true);
+    try {
+      const statusData = await fetchWebhookStatus();
+      if (statusData?.status === "active") {
+        toast({
+          title: "狀態檢查完成",
+          description: "Bot 運作正常，Webhook 已綁定",
+        });
+        return;
+      }
+
+      toast({
+        variant: "destructive",
+        title: "狀態檢查完成",
+        description: statusData?.status_text || "無法確認 Bot 狀態",
+      });
+    } catch (_err) {
+      toast({
+        variant: "destructive",
+        title: "檢查失敗",
+        description: "無法取得 Bot 狀態",
+      });
+    } finally {
+      setControlLoading(false);
+    }
+  };
+
+  const getQrCodeSvg = () =>
+    qrCodeRef.current?.querySelector("svg") as SVGElement | null;
+
+  const copyQrCodeImage = async () => {
+    try {
+      const svg = getQrCodeSvg();
+      if (!svg) return;
+
+      const canvas = document.createElement("canvas");
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const img = new Image();
+      const svgBlob = new Blob([svgData], {
+        type: "image/svg+xml;charset=utf-8",
+      });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = async () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+
+          await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": blob }),
+          ]);
+          setCopiedQrCode(true);
+          toast({
+            title: "複製成功",
+            description: "QR Code 已複製到剪貼簿",
+          });
+          window.setTimeout(() => setCopiedQrCode(false), 2000);
+        });
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    } catch (_error) {
+      toast({
+        variant: "destructive",
+        title: "複製失敗",
+        description: "無法複製 QR Code",
+      });
+    }
+  };
+
+  const downloadQrCodeImage = () => {
+    const svg = getQrCodeSvg();
+    if (!svg || !bot) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    const svgBlob = new Blob([svgData], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+
+          const downloadUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = downloadUrl;
+          link.download = `${bot.name}_QRCode.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(downloadUrl);
+
+          toast({
+            title: "下載成功",
+            description: "QR Code 已下載",
+          });
+        });
+      }
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  };
+
   const officialName = lineProfile?.display_name || bot?.name || "LINE Bot";
   const officialAvatar = lineProfile?.picture_url || undefined;
+  const botHealth = getBotHealthFromWebhook(webhookStatus);
+  const qrCodeBasicId = webhookStatus?.basic_id || lineProfile?.basic_id || "";
+  const webhookBound = isWebhookBound(webhookStatus);
+  const webhookAutoBindError = webhookStatus?.webhook_auto_bind?.error;
+  const webhookNeedsHttpsDomain =
+    typeof webhookAutoBindError === "string" &&
+    webhookAutoBindError.includes("HTTPS");
+  const webhookBindingLabel = !webhookStatus
+    ? "尚未檢查綁定狀態"
+    : webhookBound
+      ? "Webhook 已綁定並啟用"
+      : !webhookStatus.is_configured
+        ? "待完成 Channel 設定"
+        : webhookStatus.status === "configuration_error"
+          ? "LINE API 設定錯誤"
+          : "Webhook 尚未啟用";
+  const webhookBindingDescription = webhookBound
+    ? "系統會自動維護 LINE webhook 綁定，不需手動複製 URL。"
+    : webhookNeedsHttpsDomain
+      ? "LINE webhook 自動綁定需要可公開 HTTPS WEBHOOK_DOMAIN；localhost 不能直接綁定 LINE。"
+      : "請確認 Channel Token、Channel Secret 與後端 WEBHOOK_DOMAIN 設定後重新檢查。";
+  const webhookBindingClass = webhookBound
+    ? "border-emerald-100 bg-emerald-50 text-[#166534]"
+    : webhookStatus?.status === "configuration_error"
+      ? "border-red-100 bg-red-50 text-red-700"
+      : "border-amber-100 bg-amber-50 text-amber-700";
 
   return (
     <div className="h-full overflow-y-auto p-4">
@@ -251,6 +492,223 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
             <AlertDescription>{error || lineProfile?.error}</AlertDescription>
           </Alert>
         )}
+
+        <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
+          <section className="app-panel p-5 sm:p-6">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="app-kicker">Control</p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-950">Bot 資訊與狀態</h3>
+              </div>
+              <Badge variant="outline" className={getHealthBadgeClass(botHealth)}>
+                <Activity className="mr-1.5 h-3.5 w-3.5" />
+                {getHealthLabel(botHealth)}
+              </Badge>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <InfoItem label="Bot 名稱" value={displayValue(bot?.name)} />
+              <InfoItem
+                label="頻道設定"
+                value={bot?.channel_token && bot?.channel_secret ? "已設定" : "未設定"}
+              />
+              <InfoItem label="建立時間" value={formatDateTime(bot?.created_at)} />
+              <InfoItem label="最後更新" value={formatDateTime(bot?.updated_at)} />
+              <div className="rounded-lg border border-white/70 bg-white/60 p-4 sm:col-span-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">即時連接</p>
+                    <p
+                      className={`mt-2 text-sm font-semibold ${
+                        isConnected ? "text-[#166534]" : "text-red-700"
+                      }`}
+                    >
+                      {isConnected ? "WebSocket 已連線" : "離線模式"}
+                    </p>
+                  </div>
+                  <Wifi
+                    className={`h-5 w-5 ${isConnected ? "text-[#16a34a]" : "text-red-500"}`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                className="app-secondary-button"
+                onClick={() => void handleCheckBotHealth()}
+                disabled={controlLoading}
+              >
+                <Activity className="h-4 w-4" />
+                {controlLoading ? "檢查中..." : "重新檢查狀態"}
+              </Button>
+            </div>
+          </section>
+
+          <section className="app-panel p-5 sm:p-6">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="app-kicker">Webhook</p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-950">綁定狀態</h3>
+              </div>
+              <Badge variant="outline" className={getWebhookBadgeClass(webhookStatus)}>
+                {webhookStatusLoading ? "檢查中..." : webhookStatus?.status_text || "尚未檢查"}
+              </Badge>
+            </div>
+
+            <div className={`mb-4 rounded-lg border px-4 py-3 ${webhookBindingClass}`}>
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                {webhookBound ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <AlertCircle className="h-4 w-4" />
+                )}
+                {webhookBindingLabel}
+              </div>
+              <p className="mt-1 text-xs font-medium opacity-80">
+                {webhookBindingDescription}
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <StatusItem
+                label="Bot 配置"
+                active={Boolean(webhookStatus?.is_configured)}
+                activeText="已配置"
+                inactiveText="未配置"
+              />
+              <StatusItem
+                label="LINE API"
+                active={Boolean(webhookStatus?.line_api_accessible)}
+                activeText="可連接"
+                inactiveText="連接失敗"
+              />
+              <StatusItem
+                label="Webhook 端點"
+                active={Boolean(webhookStatus?.webhook_endpoint_info?.is_set)}
+                warning={
+                  Boolean(webhookStatus?.webhook_endpoint_info?.is_set) &&
+                  !webhookStatus?.webhook_endpoint_info?.active
+                }
+                activeText="已啟用"
+                warningText="已設定但未啟用"
+                inactiveText="未設定"
+                className="sm:col-span-2"
+              />
+              <InfoItem
+                label="最後檢查"
+                value={formatDateTime(webhookStatus?.checked_at)}
+                className="sm:col-span-2"
+              />
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                className="app-secondary-button"
+                onClick={() => void fetchWebhookStatus()}
+                disabled={webhookStatusLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${webhookStatusLoading ? "animate-spin" : ""}`} />
+                {webhookStatusLoading ? "檢查中..." : "重新檢查"}
+              </Button>
+            </div>
+          </section>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+          <section className="app-panel p-5 sm:p-6">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="app-kicker">Messaging API</p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-950">訊息配額</h3>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="app-icon-button h-9 w-9"
+                onClick={() => void refetchQuota()}
+                disabled={quotaLoading}
+                title="重新整理配額"
+              >
+                <RefreshCw className={`h-4 w-4 ${quotaLoading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+            <QuotaStatusCard
+              quotaStatus={quotaStatus}
+              isLoading={quotaLoading}
+              error={quotaError}
+              onRefresh={refetchQuota}
+              compact
+            />
+          </section>
+
+          <section className="app-panel p-5 sm:p-6">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="app-kicker">LINE OA</p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-950">QR Code</h3>
+              </div>
+              <QrCode className="h-5 w-5 text-[#16a34a]" />
+            </div>
+
+            {qrCodeBasicId ? (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div
+                  ref={qrCodeRef}
+                  className="w-fit rounded-lg border border-slate-200 bg-white p-3"
+                >
+                  <QRCodeSVG
+                    value={`https://line.me/R/ti/p/${encodeURIComponent(qrCodeBasicId)}`}
+                    size={156}
+                    level="H"
+                    includeMargin
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-950">
+                    {officialName}
+                  </p>
+                  <p className="mt-1 break-all text-sm text-slate-500">
+                    {qrCodeBasicId}
+                  </p>
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="app-secondary-button"
+                      onClick={() => void copyQrCodeImage()}
+                    >
+                      {copiedQrCode ? (
+                        <CheckCircle2 className="h-4 w-4 text-[#16a34a]" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                      複製圖片
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="app-secondary-button"
+                      onClick={downloadQrCodeImage}
+                    >
+                      <Download className="h-4 w-4" />
+                      下載圖片
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex min-h-[170px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/50 text-sm text-slate-500">
+                尚未取得 Basic ID
+              </div>
+            )}
+          </section>
+        </div>
 
         <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
           <section className="app-panel p-5 sm:p-6">
@@ -371,6 +829,40 @@ const InfoItem: React.FC<InfoItemProps> = ({ label, value, className }) => (
     <p className="mt-2 break-all text-sm font-medium text-slate-900">{value}</p>
   </div>
 );
+
+interface StatusItemProps {
+  label: string;
+  active: boolean;
+  warning?: boolean;
+  activeText: string;
+  inactiveText: string;
+  warningText?: string;
+  className?: string;
+}
+
+const StatusItem: React.FC<StatusItemProps> = ({
+  label,
+  active,
+  warning,
+  activeText,
+  inactiveText,
+  warningText,
+  className,
+}) => {
+  const tone = warning
+    ? "text-amber-700"
+    : active
+      ? "text-[#166534]"
+      : "text-red-700";
+  const value = warning ? warningText || activeText : active ? activeText : inactiveText;
+
+  return (
+    <div className={`rounded-lg border border-white/70 bg-white/60 p-4 ${className || ""}`}>
+      <p className="text-xs font-semibold text-slate-500">{label}</p>
+      <p className={`mt-2 text-sm font-semibold ${tone}`}>{value}</p>
+    </div>
+  );
+};
 
 interface SecretInputProps {
   id: string;
