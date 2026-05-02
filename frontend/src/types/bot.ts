@@ -22,6 +22,20 @@ export interface BotUpdateData {
   channel_secret?: string;
 }
 
+export interface LineBotProfile {
+  user_id?: string | null;
+  channel_id?: string | null;
+  basic_id?: string | null;
+  premium_id?: string | null;
+  display_name?: string | null;
+  picture_url?: string | null;
+  chat_mode?: string | null;
+  mark_as_read_mode?: string | null;
+  is_live: boolean;
+  error?: string | null;
+  fetched_at: string;
+}
+
 export interface LogicTemplate {
   id: string;
   user_id: string;

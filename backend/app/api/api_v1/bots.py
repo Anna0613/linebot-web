@@ -12,7 +12,7 @@ from app.dependencies import get_current_user_async
 from app.models.user import User
 from app.schemas.bot import (
     BotCreate, BotUpdate, BotResponse, FlexMessageCreate, FlexMessageResponse, FlexMessageUpdate, FlexMessageSummary,
-    BotSummary,
+    BotSummary, LineBotProfileResponse,
     LogicTemplateCreate, LogicTemplateUpdate, LogicTemplateResponse, LogicTemplateSummary
 )
 from app.services.bot.bot_service import BotService
@@ -92,6 +92,15 @@ async def update_bot(
 ):
     """更新 Bot"""
     return await BotService.update_bot(db, bot_id, current_user.id, bot_data)
+
+@router.get("/{bot_id}/line-profile", response_model=LineBotProfileResponse)
+async def get_line_bot_profile(
+    bot_id: str,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async)
+):
+    """透過 LINE API 取得目前 Bot 的官方帳號基本資料"""
+    return await BotService.get_line_bot_profile(db, bot_id, current_user.id)
 
 @router.delete("/{bot_id}")
 async def delete_bot(

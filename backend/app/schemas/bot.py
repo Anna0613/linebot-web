@@ -63,6 +63,20 @@ class BotResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class LineBotProfileResponse(BaseModel):
+    """LINE 平台回傳的 Bot 官方帳號資訊"""
+    user_id: Optional[str] = None
+    channel_id: Optional[str] = None
+    basic_id: Optional[str] = None
+    premium_id: Optional[str] = None
+    display_name: Optional[str] = None
+    picture_url: Optional[str] = None
+    chat_mode: Optional[str] = None
+    mark_as_read_mode: Optional[str] = None
+    is_live: bool = False
+    error: Optional[str] = None
+    fetched_at: datetime
+
 class FlexMessageBase(BaseModel):
     """Flex 訊息基礎 schema
     - content: 編譯後的合法 Flex JSON（bubble/carousel 或其字串）或設計器格式（含 blocks）

@@ -24,7 +24,7 @@ export const VisualBotEditor: React.FC = () => {
   const location = useLocation();
   const initialRouteState = location.state as VisualEditorRouteState | null;
   const initialActiveTab = initialRouteState?.activeTab || 'logic';
-  const { selectedBotId: globalSelectedBotId, selectBot } = useSelectedBot();
+  const { selectedBotId: globalSelectedBotId, selectBot, refreshBots } = useSelectedBot();
   const initialSelectedBotId = initialRouteState?.selectedBotId || globalSelectedBotId || '';
   const routeSelectedBotIdRef = useRef(initialRouteState?.selectedBotId || '');
   const routeSelectionAppliedRef = useRef(false);
@@ -550,6 +550,7 @@ export const VisualBotEditor: React.FC = () => {
             onFlexMessageSelect={handleFlexMessageSelect}
             onFlexMessageCreate={handleFlexMessageCreate}
             onFlexMessageSave={handleFlexMessageSave}
+            onBotUpdated={refreshBots}
             initialActiveTab={initialActiveTab}
           />
         </div>
