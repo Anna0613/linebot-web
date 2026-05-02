@@ -8,6 +8,7 @@ import { secureLog } from '../utils/secureTokenUtils';
 import { API_CONFIG, getApiUrl } from '../config/apiConfig';
 import LocalStorageCacheService from './LocalStorageCacheService';
 import { CACHE_KEYS } from '../config/cacheConfig';
+import type { LineBotProfile } from '@/types/bot';
 
 interface ApiResponse<T = unknown> {
   data?: T;
@@ -452,6 +453,12 @@ export class UnifiedApiClient {
   public async getBot(botId: string): Promise<ApiResponse> {
     return this.get(
       getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.GET_BOT(botId))
+    );
+  }
+
+  public async getLineBotProfile(botId: string): Promise<ApiResponse<LineBotProfile>> {
+    return this.get(
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/line-profile`)
     );
   }
 

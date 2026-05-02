@@ -4,6 +4,7 @@ Bot 管理服務模組
 """
 import logging
 from typing import List, Dict, Any
+from datetime import datetime
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -17,7 +18,7 @@ from app.models.bot import Bot, FlexMessage, BotCode, LogicTemplate
 from app.schemas.bot import (
     BotCreate, BotUpdate, BotResponse,
     FlexMessageCreate, FlexMessageUpdate, FlexMessageResponse, FlexMessageSummary,
-    BotSummary,
+    BotSummary, LineBotProfileResponse,
     LogicTemplateCreate, LogicTemplateUpdate, LogicTemplateResponse, LogicTemplateSummary
 )
 
@@ -189,6 +190,69 @@ class BotService:
             user_id=str(bot.user_id),
             created_at=bot.created_at,
             updated_at=bot.updated_at
+        )
+
+    @staticmethod
+    async def get_line_bot_profile(db: AsyncSession, bot_id: str, user_id: UUID) -> LineBotProfileResponse:
+        """透過 LINE Messaging API 取得官方帳號真實 Bot 資訊"""
+        try:
+            from uuid import UUID as PyUUID
+            bot_uuid = PyUUID(bot_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無效的 Bot ID 格式"
+            )
+
+        res_bot = await db.execute(select(Bot).where(Bot.id == bot_uuid, Bot.user_id == user_id))
+        bot = res_bot.scalars().first()
+
+        if not bot:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Bot 不存在"
+            )
+
+        from app.services.line.line_bot_service import LineBotService
+
+        if not bot.channel_token or not bot.channel_secret:
+            return LineBotProfileResponse(
+                is_live=False,
+                error="尚未設定 Channel Access Token 或 Channel Secret",
+                fetched_at=datetime.utcnow(),
+            )
+
+        line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+        info = await line_bot_service.async_get_bot_info()
+
+        if not info:
+            return LineBotProfileResponse(
+                is_live=False,
+                error="無法從 LINE API 取得 Bot 資訊",
+                fetched_at=datetime.utcnow(),
+            )
+
+        error = info.get("error")
+        is_live = not bool(error) and bool(info.get("channel_id") or info.get("user_id"))
+
+        if not is_live:
+            return LineBotProfileResponse(
+                is_live=False,
+                error=error or "LINE API 未回傳有效 Bot 資訊",
+                fetched_at=datetime.utcnow(),
+            )
+
+        return LineBotProfileResponse(
+            user_id=info.get("user_id"),
+            channel_id=info.get("channel_id") or info.get("user_id"),
+            basic_id=info.get("basic_id"),
+            premium_id=info.get("premium_id"),
+            display_name=info.get("display_name"),
+            picture_url=info.get("picture_url"),
+            chat_mode=info.get("chat_mode"),
+            mark_as_read_mode=info.get("mark_as_read_mode"),
+            is_live=True,
+            fetched_at=datetime.utcnow(),
         )
     
     @staticmethod

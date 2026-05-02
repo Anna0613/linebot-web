@@ -9,6 +9,7 @@ import FlexMessageSelector from './FlexMessageSelector';
 import LogicEditorWithCode from './LogicEditorWithCode';
 // 已移除舊的預覽控制台（PreviewControlPanel）與增強模擬器（EnhancedLineBotSimulator）在 AI 知識庫頁面
 import RichMenuPanel from './RichMenuPanel';
+import BotBasicInfoPanel from './BotBasicInfoPanel';
 import AIKnowledgeBaseManager from '@/features/ai/components/AIKnowledgeBaseManager';
 import { CodeDisplayProvider } from './CodeDisplayContext';
 import {
@@ -129,6 +130,7 @@ interface WorkspaceProps {
   onFlexMessageSelect?: (messageId: string) => void;
   onFlexMessageCreate?: (name: string) => void;
   onFlexMessageSave?: (messageId: string, data: { flexBlocks: Block[] }) => void;
+  onBotUpdated?: () => Promise<unknown> | void;
   // 初始活動標籤
   initialActiveTab?: string;
 }
@@ -157,6 +159,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   onFlexMessageSelect,
   onFlexMessageCreate,
   onFlexMessageSave,
+  onBotUpdated,
   initialActiveTab = 'logic'
 }) => {
   const navigate = useNavigate();
@@ -521,6 +524,9 @@ const Workspace: React.FC<WorkspaceProps> = ({
           className="h-full flex flex-col relative"
         >
           <TabsList className="app-panel m-4 h-auto flex-shrink-0 justify-start gap-1 overflow-x-auto p-1">
+            <TabsTrigger value="basic" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
+              基本資料
+            </TabsTrigger>
             <TabsTrigger value="logic" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
               邏輯編輯器
               {currentLogicTemplateName && (
@@ -552,6 +558,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
             </div>
           ) : (
             <>
+              <TabsContent value="basic" className="absolute inset-0 top-[60px] overflow-hidden data-[state=inactive]:hidden">
+                <BotBasicInfoPanel
+                  selectedBotId={selectedBotId}
+                  onBotUpdated={onBotUpdated}
+                />
+              </TabsContent>
+
               <TabsContent value="logic" className="absolute inset-0 top-[60px] overflow-hidden data-[state=inactive]:hidden">
                 <LogicEditorWithCode
                   selectedBotId={selectedBotId}

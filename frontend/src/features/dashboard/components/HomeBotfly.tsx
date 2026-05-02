@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Activity,
   ArrowDownRight,
@@ -12,7 +12,6 @@ import {
   Edit3,
   Grid3X3,
   LayoutDashboard,
-  LineChart,
   List,
   MessageSquare,
   Plus,
@@ -22,7 +21,6 @@ import {
   SlidersHorizontal,
   Sparkles,
   Users,
-  Workflow,
 } from "lucide-react";
 import {
   Area,
@@ -58,12 +56,6 @@ import { useBotManagement } from "@/features/bot-management/hooks/useBotManageme
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { Bot as BotType } from "@/types/bot";
 
-const EditOptionModal = lazy(
-  () => import("@/features/bots/components/EditOptionModal")
-);
-const BotEditModal = lazy(
-  () => import("@/features/bots/components/BotEditModal")
-);
 const BotDetailsModal = lazy(() => import("./BotDetailsModal"));
 
 interface User {
@@ -153,30 +145,6 @@ const dashboardCopy = {
       "Build new bots, tune conversations, and watch aggregate performance across your entire LINE Bot portfolio.",
     createLineBot: "Create LINE Bot",
     viewMyBots: "View My Bots",
-    quickActionsTitle: "Quick actions",
-    quickActionsSubtitle: "Common workflows for building and operating bots.",
-    quickActions: {
-      create: {
-        title: "Create Bot",
-        description: "Launch a new LINE Bot with channel credentials.",
-        cta: "Create",
-      },
-      editor: {
-        title: "Bot Editor",
-        description: "Design conversations, rules, and Flex messages.",
-        cta: "Open",
-      },
-      analytics: {
-        title: "Analytics",
-        description: "Review users, messages, and engagement signals.",
-        cta: "View",
-      },
-      management: {
-        title: "Management Center",
-        description: "Monitor webhook, channel, and bot health status.",
-        cta: "Manage",
-      },
-    },
     myBotsTitle: "My Bots",
     myBotsSubtitle: "Search, filter, and open the right bot quickly.",
     newBot: "New Bot",
@@ -231,35 +199,11 @@ const dashboardCopy = {
     openNavigation: "開啟導覽",
     notifications: "通知",
     heroBadge: "所有 LINE Bot 數據集中管理",
-    heroTitle: "在同一個清爽的工作台管理所有 LINE Bot。",
+    heroTitle: "簡單快速的建立與管理你的 LINE Bot。",
     heroBody:
-      "快速建立 Bot、調整對話流程，並查看所有 LINE Bot 加總後的營運表現。",
+      "快速建立 Bot、調整對話流程，並查看所有 LINE Bot 的數據。",
     createLineBot: "建立 LINE Bot",
     viewMyBots: "查看我的 Bot",
-    quickActionsTitle: "快速操作",
-    quickActionsSubtitle: "常用的 Bot 建立、編輯與管理流程。",
-    quickActions: {
-      create: {
-        title: "建立 Bot",
-        description: "使用 Channel 憑證快速建立新的 LINE Bot。",
-        cta: "建立",
-      },
-      editor: {
-        title: "Bot 編輯器",
-        description: "設計對話流程、規則與 Flex 訊息。",
-        cta: "開啟",
-      },
-      analytics: {
-        title: "數據分析",
-        description: "檢視用戶、訊息與互動表現。",
-        cta: "查看",
-      },
-      management: {
-        title: "管理中心",
-        description: "監控 Webhook、Channel 與 Bot 健康狀態。",
-        cta: "管理",
-      },
-    },
     myBotsTitle: "我的 Bot",
     myBotsSubtitle: "搜尋、篩選並快速開啟要管理的 Bot。",
     newBot: "新增 Bot",
@@ -297,8 +241,6 @@ const dashboardCopy = {
     chartSent: "已發送",
   },
 };
-
-type DashboardCopy = (typeof dashboardCopy)["en"];
 
 const fallbackTrendData = (): TrendPoint[] =>
   ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => ({
@@ -379,45 +321,6 @@ const getApiData = <T,>(
   return (result.value.data as T) || null;
 };
 
-const getQuickActions = (
-  copy: DashboardCopy
-): Array<{
-  title: string;
-  description: string;
-  href: string;
-  icon: IconComponent;
-  accent: string;
-}> => [
-  {
-    title: copy.quickActions.create.title,
-    description: copy.quickActions.create.description,
-    href: "/bots/create",
-    icon: Plus,
-    accent: "bg-emerald-100 text-emerald-700",
-  },
-  {
-    title: copy.quickActions.editor.title,
-    description: copy.quickActions.editor.description,
-    href: "/bots/visual-editor",
-    icon: Workflow,
-    accent: "bg-sky-100 text-sky-700",
-  },
-  {
-    title: copy.quickActions.analytics.title,
-    description: copy.quickActions.analytics.description,
-    href: "/bots/management",
-    icon: LineChart,
-    accent: "bg-violet-100 text-violet-700",
-  },
-  {
-    title: copy.quickActions.management.title,
-    description: copy.quickActions.management.description,
-    href: "/bots/management",
-    icon: Settings2,
-    accent: "bg-amber-100 text-amber-700",
-  },
-];
-
 const TrendPill = ({ value }: { value: number }) => {
   const isPositive = value >= 0;
   const Icon = isPositive ? ArrowUpRight : ArrowDownRight;
@@ -477,6 +380,7 @@ const MetricCard = ({
 );
 
 const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
+  const navigate = useNavigate();
   const { language } = useLanguagePreference();
   const copy = dashboardCopy[language];
   const { bots, isLoading, error, fetchBots } = useBotManagement();
@@ -489,24 +393,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
   const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary>(
     initialAnalyticsSummary
   );
-
-  const [editOptionModal, setEditOptionModal] = useState<{
-    isOpen: boolean;
-    botId: string;
-  }>({
-    isOpen: false,
-    botId: "",
-  });
-
-  const [editModal, setEditModal] = useState<{
-    isOpen: boolean;
-    botId: string;
-    editType: "name" | "token" | "secret" | "all";
-  }>({
-    isOpen: false,
-    botId: "",
-    editType: "all",
-  });
 
   const [detailsModal, setDetailsModal] = useState<{
     isOpen: boolean;
@@ -651,7 +537,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
   }, [bots, language]);
 
   const avatarUrl = user?.picture_url;
-  const quickActions = useMemo(() => getQuickActions(copy), [copy]);
 
   const filteredBots = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
@@ -703,42 +588,13 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
   ];
 
   const handleEditClick = (botId: string) => {
-    setEditOptionModal({
-      isOpen: true,
-      botId,
-    });
-  };
-
-  const handleEditOptionClose = () => {
-    setEditOptionModal({
-      isOpen: false,
-      botId: "",
-    });
-  };
-
-  const handleEditBasicInfo = () => {
-    setEditModal({
-      isOpen: true,
-      botId: editOptionModal.botId,
-      editType: "all",
-    });
-    setEditOptionModal({ isOpen: false, botId: "" });
-  };
-
-  const handleEditModalClose = () => {
-    setEditModal({
-      isOpen: false,
-      botId: "",
-      editType: "all",
-    });
-  };
-
-  const handleBotUpdated = () => {
-    fetchBots();
-    setEditModal({
-      isOpen: false,
-      botId: "",
-      editType: "all",
+    navigate("/bots/visual-editor", {
+      state: {
+        selectedBotId: botId,
+        activeTab: "logic",
+        returnTo: "/dashboard",
+        returnLabel: "返回數據看板",
+      },
     });
   };
 
@@ -804,51 +660,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
             </div>
             <div className="flex items-end justify-center bg-gradient-to-br from-emerald-100/70 via-white/40 to-stone-100/80 px-6 py-8">
               <AppRobotIllustration />
-            </div>
-          </section>
-
-          <section>
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-950">
-                  {copy.quickActionsTitle}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {copy.quickActionsSubtitle}
-                </p>
-              </div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {quickActions.map((action) => {
-                const Icon = action.icon;
-
-                return (
-                  <Link
-                    to={action.href}
-                    key={action.title}
-                    className="group block rounded-[16px] border border-white/70 bg-white/70 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-emerald-100 hover:bg-white/85 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                    aria-label={action.title}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <span
-                        className={cn(
-                          "flex h-11 w-11 items-center justify-center rounded-[14px] transition-transform group-hover:scale-105",
-                          action.accent
-                        )}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </span>
-                      <ChevronRight className="h-5 w-5 text-slate-300 transition-colors group-hover:text-emerald-600" />
-                    </div>
-                    <h3 className="mt-5 text-base font-semibold text-slate-950">
-                      {action.title}
-                    </h3>
-                    <p className="mt-2 min-h-10 text-sm leading-5 text-slate-500">
-                      {action.description}
-                    </p>
-                  </Link>
-                );
-              })}
             </div>
           </section>
 
@@ -1254,25 +1065,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
             </div>
           </section>
         </div>
-
-        <Suspense fallback={null}>
-          <EditOptionModal
-            isOpen={editOptionModal.isOpen}
-            onClose={handleEditOptionClose}
-            botId={editOptionModal.botId}
-            onEditBasicInfo={handleEditBasicInfo}
-          />
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <BotEditModal
-            isOpen={editModal.isOpen}
-            onClose={handleEditModalClose}
-            botId={editModal.botId}
-            editType={editModal.editType}
-            onBotUpdated={handleBotUpdated}
-          />
-        </Suspense>
 
         <Suspense fallback={null}>
           <BotDetailsModal
