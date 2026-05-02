@@ -211,7 +211,7 @@ class LogicEngineService:
         bubble["body"] = {
             "type": "box",
             "layout": "vertical",
-            "contents": body_blocks or [{"type": "text", "text": "請在 Flex 設計器中添加內容", "color": "#999999", "align": "center"}],
+            "contents": body_blocks or [{"type": "text", "text": "請在 Flex Message 編輯中添加內容", "color": "#999999", "align": "center"}],
         }
         if footer_blocks:
             bubble["footer"] = {"type": "box", "layout": "vertical", "contents": footer_blocks}

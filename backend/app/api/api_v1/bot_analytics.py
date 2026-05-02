@@ -4,8 +4,8 @@ LINE Bot 分析 API 路由
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+from datetime import date, datetime, timedelta
 import json
 import logging
 import asyncio
@@ -14,12 +14,142 @@ from app.db.database_async import get_async_db
 from app.dependencies import get_current_user_async, get_db_primary
 from app.models.user import User
 from app.models.bot import Bot
+from app.models.line_user import LineBotUser
 from app.services.line.line_bot_service import LineBotService
 from sqlalchemy import select, func
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _line_yesterday_jst() -> date:
+    """LINE Insight date parameters are based on UTC+9."""
+    return (datetime.utcnow() + timedelta(hours=9) - timedelta(days=1)).date()
+
+
+def _line_date(value: date) -> str:
+    return value.strftime("%Y%m%d")
+
+
+def _period_days(period: Optional[str]) -> int:
+    if period == "day":
+        return 1
+    if period == "month":
+        return 30
+    return 7
+
+
+def _insight_dates(days: int) -> List[date]:
+    days = max(1, min(int(days or 7), 30))
+    end = _line_yesterday_jst()
+    start = end - timedelta(days=days - 1)
+    return [start + timedelta(days=index) for index in range(days)]
+
+
+def _safe_number(value: Any) -> float:
+    if isinstance(value, bool):
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return 0.0
+    return 0.0
+
+
+def _sum_numeric_values(value: Any) -> int:
+    if isinstance(value, dict):
+        return int(sum(_sum_numeric_values(v) for k, v in value.items() if k not in {"status_code"}))
+    if isinstance(value, list):
+        return int(sum(_sum_numeric_values(item) for item in value))
+    return int(_safe_number(value))
+
+
+def _extract_delivery_count(data: Dict[str, Any]) -> int:
+    if not data or data.get("status") in {"error", "unavailable"}:
+        return 0
+    # LINE Insight responses contain numeric delivery fields. Sum only the
+    # returned counters so the page stays fully LINE-backed without local data.
+    return _sum_numeric_values({k: v for k, v in data.items() if k not in {"status", "error"}})
+
+
+def _extract_followers(data: Dict[str, Any]) -> int:
+    for key in ("followers", "follower", "followersCount"):
+        if key in data:
+            return int(_safe_number(data.get(key)))
+    return 0
+
+
+def _extract_targeted_reaches(data: Dict[str, Any]) -> int:
+    for key in ("targetedReaches", "targetedReach", "reachableFollowers"):
+        if key in data:
+            return int(_safe_number(data.get(key)))
+    return 0
+
+
+def _format_demographic_label(field: str, item: Dict[str, Any]) -> str:
+    raw = (
+        item.get("gender")
+        or item.get("age")
+        or item.get("area")
+        or item.get("appType")
+        or item.get("subscriptionPeriod")
+        or item.get("label")
+        or "unknown"
+    )
+    mappings = {
+        "male": "男性",
+        "female": "女性",
+        "unknown": "未知",
+        "from0to14": "0-14 歲",
+        "from15to19": "15-19 歲",
+        "from20to24": "20-24 歲",
+        "from25to29": "25-29 歲",
+        "from30to34": "30-34 歲",
+        "from35to39": "35-39 歲",
+        "from40to44": "40-44 歲",
+        "from45to49": "45-49 歲",
+        "from50": "50 歲以上",
+    }
+    prefix = {
+        "genders": "性別",
+        "ages": "年齡",
+        "areas": "地區",
+        "appTypes": "裝置",
+        "subscriptionPeriods": "加入期間",
+    }.get(field, "分布")
+    return f"{prefix}: {mappings.get(str(raw), str(raw))}"
+
+
+async def _get_owned_bot(db: AsyncSession, bot_id: str, user_id) -> Bot:
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == user_id))
+    bot = result.scalars().first()
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
+    if not bot.channel_token or not bot.channel_secret:
+        raise HTTPException(status_code=400, detail="Bot 尚未配置 Channel Token 或 Channel Secret")
+    return bot
+
+
+async def _line_delivery_series(line_bot_service: LineBotService, days: int) -> List[Dict[str, Any]]:
+    dates = _insight_dates(days)
+    semaphore = asyncio.Semaphore(3)
+
+    async def fetch_day(day: date) -> Dict[str, Any]:
+        async with semaphore:
+            data = await line_bot_service.get_message_delivery_insight(_line_date(day))
+            return {
+                "date": day.isoformat(),
+                "sent": _extract_delivery_count(data),
+                "received": 0,
+                "line_status": data.get("status"),
+                "source": "line_insight",
+            }
+
+    return await asyncio.gather(*(fetch_day(day) for day in dates))
 
 
 async def sync_users_from_line_api(db: AsyncSession, bot: Bot, line_user_ids: List[str], conversations: List[Dict]) -> List:
@@ -135,39 +265,39 @@ async def get_bot_analytics(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取 Bot 分析數據"""
-    
-    # 驗證 Bot 所有權
-    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
-    bot = result.scalars().first()
-    
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
-    
+    """獲取 Bot 分析數據（全部來自 LINE Insight API）"""
     try:
-        # 計算時間範圍 (使用 UTC 時間以匹配 MongoDB 中的時間戳)
-        end_date = datetime.utcnow()
-        if period == "day":
-            start_date = end_date - timedelta(days=1)
-        elif period == "week":
-            start_date = end_date - timedelta(weeks=1)
-        elif period == "month":
-            start_date = end_date - timedelta(days=30)
-        else:
-            start_date = end_date - timedelta(weeks=1)
+        bot = await _get_owned_bot(db, bot_id, current_user.id)
+        line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+        days = _period_days(period)
+        series = await _line_delivery_series(line_bot_service, days)
 
-        # 使用 MongoDB ConversationService 獲取分析數據
-        from app.services.conversation.conversation_service import ConversationService
+        latest_date = _line_date(_line_yesterday_jst())
+        followers_data = await line_bot_service.get_followers_insight(latest_date)
+        followers = _extract_followers(followers_data)
+        targeted_reaches = _extract_targeted_reaches(followers_data)
+        reach_rate = (targeted_reaches / followers * 100) if followers else 0.0
 
-        analytics_data = await ConversationService.get_bot_analytics(bot_id, start_date, end_date)
-        analytics_data.update({
+        total_messages = sum(item["sent"] for item in series)
+
+        return {
+            "totalMessages": total_messages,
+            "activeUsers": targeted_reaches or followers,
+            "userRetention": round(reach_rate, 2),
+            "todayMessages": series[-1]["sent"] if series else 0,
+            "weekMessages": sum(item["sent"] for item in series[-7:]),
+            "monthMessages": total_messages,
             "period": period,
-            "startDate": start_date.isoformat(),
-            "endDate": end_date.isoformat()
-        })
+            "startDate": series[0]["date"] if series else None,
+            "endDate": series[-1]["date"] if series else None,
+            "source": "line_insight",
+            "lineFollowers": followers,
+            "lineTargetedReaches": targeted_reaches,
+            "lineFollowersStatus": followers_data.get("status"),
+        }
 
-        return analytics_data
-
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"獲取分析數據失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取分析數據失敗: {str(e)}")
@@ -180,7 +310,7 @@ async def get_message_stats(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取訊息統計數據
+    """獲取訊息統計數據（全部來自 LINE Insight API）
 
     Args:
         bot_id: Bot ID
@@ -188,21 +318,13 @@ async def get_message_stats(
         granularity: 時間粒度 (hour, day, month)
     """
 
-    # 驗證 Bot 所有權
-    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
-    bot = result.scalars().first()
-
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
-
     try:
-        # 使用 MongoDB ConversationService 獲取訊息統計
-        from app.services.conversation.conversation_service import ConversationService
+        bot = await _get_owned_bot(db, bot_id, current_user.id)
+        line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+        return await _line_delivery_series(line_bot_service, days or 7)
 
-        stats = await ConversationService.get_message_stats(bot_id, days, granularity)
-
-        return stats
-
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"獲取訊息統計失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取訊息統計失敗: {str(e)}")
@@ -213,23 +335,17 @@ async def get_user_activity(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取用戶活躍度數據"""
-    
-    # 驗證 Bot 所有權
-    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
-    bot = result.scalars().first()
-    
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
-    
+    """獲取用戶活躍度數據。
+
+    LINE Insight 不提供管理頁原本需要的每小時活躍用戶資料；為避免混用本地
+    ConversationService，此端點回傳空陣列。
+    """
     try:
-        # 使用 MongoDB ConversationService 獲取用戶活躍度數據
-        from app.services.conversation.conversation_service import ConversationService
+        await _get_owned_bot(db, bot_id, current_user.id)
+        return []
 
-        activity = await ConversationService.get_user_activity(bot_id)
-
-        return activity
-
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"獲取用戶活躍度失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取用戶活躍度失敗: {str(e)}")
@@ -240,23 +356,39 @@ async def get_usage_stats(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取功能使用統計"""
-    
-    # 驗證 Bot 所有權
-    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
-    bot = result.scalars().first()
-    
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
-    
+    """獲取 LINE Insight 人口統計分布，供管理頁圖表使用。"""
     try:
-        # 使用 MongoDB ConversationService 獲取功能使用統計
-        from app.services.conversation.conversation_service import ConversationService
+        bot = await _get_owned_bot(db, bot_id, current_user.id)
+        line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+        demographic = await line_bot_service.get_demographic_insight()
 
-        usage_stats = await ConversationService.get_usage_stats(bot_id)
+        if not demographic.get("available", True):
+            return []
 
-        return usage_stats
+        items: List[Dict[str, Any]] = []
+        for field in ("genders", "ages", "areas", "appTypes", "subscriptionPeriods"):
+            values = demographic.get(field) or []
+            if not isinstance(values, list):
+                continue
+            for value in values[:6]:
+                if not isinstance(value, dict):
+                    continue
+                percentage = _safe_number(value.get("percentage"))
+                if percentage <= 0:
+                    continue
+                items.append(
+                    {
+                        "feature": _format_demographic_label(field, value),
+                        "usage": percentage,
+                        "percentage": percentage,
+                        "source": "line_insight_demographic",
+                    }
+                )
 
+        return items[:12]
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"獲取使用統計失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取使用統計失敗: {str(e)}")
@@ -269,151 +401,66 @@ async def get_bot_users(
     db: AsyncSession = Depends(get_db_primary),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取 Bot 的用戶列表（從 MongoDB 和 PostgreSQL 組合數據）"""
-
-    # 驗證 Bot 所有權
-    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
-    bot = result.scalars().first()
-
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
+    """獲取 Bot 的用戶列表（本系統資料庫 line_bot_users）"""
 
     try:
-        from app.models.line_user import LineBotUser
-        from app.services.conversation.conversation_service import ConversationService
+        result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
+        bot = result.scalars().first()
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
 
-        # 首先從 MongoDB 獲取有對話記錄的用戶
-        conversations, total_conversations = await ConversationService.get_bot_conversations(
-            bot_id=bot_id,
-            limit=1000,  # 獲取所有對話
-            offset=0
+        limit = max(1, min(int(limit or 50), 100))
+        offset = max(0, int(offset or 0))
+
+        res_cnt = await db.execute(
+            select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id)
         )
+        total_count = res_cnt.scalar() or 0
 
-        # 提取所有有對話的用戶 ID
-        line_user_ids = [conv["line_user_id"] for conv in conversations]
+        res_users = await db.execute(
+            select(LineBotUser)
+            .where(LineBotUser.bot_id == bot_id)
+            .order_by(LineBotUser.last_interaction.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        users = res_users.scalars().all()
 
-        if not line_user_ids:
-            # 如果 MongoDB 中沒有對話記錄，回退到 PostgreSQL（async）
-            # Count
-            res_cnt = await db.execute(select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id))
-            total_count = res_cnt.scalar() or 0
-            # Page items
-            res_users = await db.execute(
-                select(LineBotUser)
-                .where(LineBotUser.bot_id == bot_id)
-                .order_by(LineBotUser.last_interaction.desc())
-                .offset(offset)
-                .limit(limit)
-            )
-            users = res_users.scalars().all()
-            use_mongodb_data = False
-        else:
-            # 從 PostgreSQL 獲取這些用戶的基本信息
-            res_cnt = await db.execute(
-                select(func.count()).select_from(LineBotUser).where(
-                    LineBotUser.bot_id == bot_id, LineBotUser.line_user_id.in_(line_user_ids)
-                )
-            )
-            total_count = res_cnt.scalar() or 0
-            res_users = await db.execute(
-                select(LineBotUser)
-                .where(LineBotUser.bot_id == bot_id, LineBotUser.line_user_id.in_(line_user_ids))
-                .order_by(LineBotUser.last_interaction.desc())
-                .offset(offset)
-                .limit(limit)
-            )
-            users = res_users.scalars().all()
+        user_list = [
+            {
+                "id": str(user.id),
+                "line_user_id": user.line_user_id,
+                "display_name": user.display_name or "未設定名稱",
+                "picture_url": user.picture_url or "",
+                "status_message": user.status_message or "",
+                "language": user.language or "",
+                "first_interaction": user.first_interaction.isoformat() if user.first_interaction else "",
+                "last_interaction": user.last_interaction.isoformat() if user.last_interaction else "",
+                "interaction_count": user.interaction_count or "0",
+                "is_followed": user.is_followed,
+                "source": "system_database",
+            }
+            for user in users
+        ]
 
-            # 如果 PostgreSQL 中沒有對應的用戶記錄，從 LINE API 獲取並同步
-            if len(users) == 0 and len(line_user_ids) > 0:
-                # 獲取 Bot 的 LINE 配置
-                res_bot = await db.execute(select(Bot).where(Bot.id == bot_id))
-                bot = res_bot.scalars().first()
-                if bot and bot.channel_token:
-                    try:
-                        # 同步用戶資料到 PostgreSQL
-                        synced_users = await sync_users_from_line_api(
-                            db, bot, line_user_ids, conversations
-                        )
-                        logger.info(f"成功同步 {len(synced_users)} 個用戶到 PostgreSQL")
-
-                        # 重新查詢同步後的用戶
-                        users = synced_users
-                        total_count = len(users)
-                        use_mongodb_data = False
-                    except Exception as e:
-                        logger.error(f"同步用戶資料失敗: {e}")
-                        # 同步失敗時回退到 MongoDB 資料
-                        use_mongodb_data = True
-                        total_count = len(conversations)
-                else:
-                    logger.warning("Bot 沒有配置 LINE Channel Token，無法同步用戶資料")
-                    use_mongodb_data = True
-                    total_count = len(conversations)
-            else:
-                use_mongodb_data = False
-
-        # 轉換為前端需要的格式
-        user_list = []
-
-        if use_mongodb_data:
-            # 直接從 MongoDB 對話記錄創建用戶列表
-
-            for i, conv in enumerate(conversations):
-                if i >= offset and len(user_list) < limit:
-                    # 獲取最後一條訊息的時間作為最後互動時間
-                    last_message_time = conv.get('updated_at', conv.get('created_at', ''))
-                    if isinstance(last_message_time, str):
-                        last_interaction = last_message_time
-                    else:
-                        last_interaction = last_message_time.isoformat() if last_message_time else ""
-
-                    user_data = {
-                        "id": f"mongo_{conv['line_user_id']}",  # 臨時 ID
-                        "line_user_id": conv['line_user_id'],
-                        "display_name": "未設定名稱",  # MongoDB 中沒有顯示名稱
-                        "picture_url": "",
-                        "status_message": "",
-                        "language": "",
-                        "first_interaction": conv.get('created_at', ''),
-                        "last_interaction": last_interaction,
-                        "interaction_count": str(conv.get('message_count', 0)),
-                        "is_followed": True  # 假設有對話記錄就是關注者
-                    }
-                    user_list.append(user_data)
-        else:
-            # 從 PostgreSQL 用戶記錄創建用戶列表
-            for user in users:
-                user_data = {
-                    "id": str(user.id),
-                    "line_user_id": user.line_user_id,
-                    "display_name": user.display_name or "未設定名稱",
-                    "picture_url": user.picture_url or "",
-                    "status_message": user.status_message or "",
-                    "language": user.language or "",
-                    "first_interaction": user.created_at.isoformat() if user.created_at else "",
-                    "last_interaction": user.last_interaction.isoformat() if user.last_interaction else "",
-                    "interaction_count": user.interaction_count or "0",
-                    "is_followed": user.is_followed
-                }
-                user_list.append(user_data)
-
-
-
-        result = {
+        return {
             "bot_id": bot_id,
             "users": user_list,
             "total_count": total_count,
             "pagination": {
                 "limit": limit,
                 "offset": offset,
-                "has_more": len(user_list) == limit,
-                "total": total_count
-            }
+                "has_next": offset + len(user_list) < total_count,
+                "has_prev": offset > 0,
+                "has_more": offset + len(user_list) < total_count,
+                "total": total_count,
+            },
+            "source": "system_database",
+            "error": None,
         }
 
-        return result
-
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"獲取用戶列表失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取用戶列表失敗: {str(e)}")
@@ -775,29 +822,35 @@ async def get_bot_activities(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取 Bot 活動記錄"""
-
-    # 驗證 Bot 所有權
-    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
-    bot = result.scalars().first()
-
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
+    """獲取 Bot 活動記錄（由 LINE Insight 快照產生，不讀取本地對話資料）"""
 
     try:
-        # 使用 MongoDB ConversationService 獲取活動記錄
-        from app.services.conversation.conversation_service import ConversationService
+        bot = await _get_owned_bot(db, bot_id, current_user.id)
+        line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+        series = await _line_delivery_series(line_bot_service, min(max(limit + offset, 1), 7))
+        sliced = series[offset: offset + limit]
 
-        logger.info(f"獲取 Bot 活動記錄: bot_id={bot_id}, limit={limit}, offset={offset}")
-
-        activities = await ConversationService.get_bot_activities(bot_id, limit, offset)
+        activities = [
+            {
+                "id": f"line_insight_delivery_{item['date']}",
+                "interaction_type": "message",
+                "message_content": f"LINE Insight 送達訊息 {item['sent']} 則",
+                "timestamp": f"{item['date']}T00:00:00+09:00",
+                "display_name": "LINE Insight",
+                "source": "line_insight",
+            }
+            for item in reversed(sliced)
+        ]
 
         return {
             "activities": activities,
-            "total_count": len(activities),
-            "has_more": len(activities) == limit
+            "total_count": len(series),
+            "has_more": offset + limit < len(series),
+            "source": "line_insight",
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"獲取活動記錄失敗: {str(e)}")
         raise HTTPException(status_code=500, detail=f"獲取活動記錄失敗: {str(e)}")

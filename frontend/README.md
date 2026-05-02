@@ -82,7 +82,7 @@ frontend/
 │   │   ├── DashboardPage.tsx      # 儀表板
 │   │   ├── BotManagementPage.tsx  # Bot 管理
 │   │   ├── VisualBotEditorPage.tsx # 視覺化編輯器
-│   │   ├── FlexMessageDesigner.tsx # Flex 設計器
+│   │   ├── FlexMessageDesigner.tsx # Flex Message 編輯
 │   │   ├── BotUsersPage.tsx       # 使用者清單
 │   │   ├── AIKnowledgePage.tsx    # AI 知識庫
 │   │   ├── LoginPage.tsx          # 登入

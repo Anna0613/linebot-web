@@ -17,7 +17,7 @@ export enum BlockCategory {
 // 積木相容性上下文
 export enum WorkspaceContext {
   LOGIC = 'logic',          // 邏輯編輯器上下文
-  FLEX = 'flex'             // Flex 設計器上下文
+  FLEX = 'flex'             // Flex Message 編輯上下文
 }
 
 // 基礎積木數據介面
@@ -92,7 +92,7 @@ export const BLOCK_COMPATIBILITY_RULES: CompatibilityRule[] = [
     }
   },
   
-  // Flex 佈局積木：主要在 Flex 設計器中，但可以在邏輯編輯器的 Flex 相關積木中使用
+  // Flex 佈局積木：主要在 Flex Message 編輯中，但可以在邏輯編輯器的 Flex 相關積木中使用
   {
     category: BlockCategory.FLEX_LAYOUT,
     allowedIn: [WorkspaceContext.FLEX, WorkspaceContext.LOGIC],

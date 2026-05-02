@@ -149,8 +149,6 @@ const managementCopy = {
   },
 };
 
-type ManagementCopy = (typeof managementCopy)["en"];
-
 const ManagementLoadingPanel = () => (
   <section
     className="rounded-[16px] border border-white/70 bg-white/75 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl"
@@ -285,7 +283,12 @@ const BotManagementPage: React.FC = () => {
 
   // 獲取分析數據 - 使用真實API，改善錯誤處理
   const fetchAnalytics = useCallback(
-    async (botId: string, abortSignal?: AbortSignal, isInitialLoad = false) => {
+    async (
+      botId: string,
+      abortSignal?: AbortSignal,
+      isInitialLoad = false,
+      range = timeRange
+    ) => {
       setAnalyticsLoading(true);
       let hasError = false;
       let errorCount = 0;
@@ -296,8 +299,8 @@ const BotManagementPage: React.FC = () => {
           return;
         }
 
-        const queryDays = getDaysFromTimeRange(timeRange);
-        const granularity = getGranularityFromTimeRange(timeRange);
+        const queryDays = getDaysFromTimeRange(range);
+        const granularity = getGranularityFromTimeRange(range);
 
         // 使用 apiClient 調用真實的後端API端點
         const [
@@ -307,7 +310,7 @@ const BotManagementPage: React.FC = () => {
           usageStatsRes,
           activitiesRes,
         ] = await Promise.all([
-          apiClient.getBotAnalytics(botId, timeRange),
+          apiClient.getBotAnalytics(botId, range),
           apiClient.getBotMessageStats(botId, queryDays, granularity), // 根據時間範圍動態調整天數和粒度
           apiClient.getBotUserActivity(botId),
           apiClient.getBotUsageStats(botId),
@@ -801,7 +804,7 @@ const BotManagementPage: React.FC = () => {
     setTimeRange(newRange);
     if (selectedBotId) {
       // 時間範圍變更不算作初始載入，可以顯示錯誤提示
-      fetchAnalytics(selectedBotId, undefined, false);
+      fetchAnalytics(selectedBotId, undefined, false, newRange);
     }
   };
 
@@ -1080,6 +1083,7 @@ const BotManagementPage: React.FC = () => {
                   (prev) =>
                     ({
                       ...prev,
+                      ...analyticsData,
                       totalMessages:
                         analyticsData.totalMessages || prev?.totalMessages || 0,
                       activeUsers:

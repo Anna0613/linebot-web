@@ -288,10 +288,33 @@ async def _line_set_default(channel_token: str, rich_menu_id: str) -> bool:
         return False
 
 
+async def _line_delete_rich_menu(channel_token: str, rich_menu_id: Optional[str]) -> bool:
+    """Delete a LINE rich menu if it exists."""
+    if not rich_menu_id:
+        return True
+
+    import aiohttp
+    base = "https://api.line.me/v2/bot"
+    headers = {"Authorization": f"Bearer {channel_token}"}
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.delete(f"{base}/richmenu/{rich_menu_id}", headers=headers, timeout=15) as resp:
+                if resp.status in (200, 404):
+                    return True
+
+                text = await resp.text()
+                logger.warning(f"Delete rich menu failed: id={rich_menu_id} HTTP {resp.status} - {text}")
+                return False
+    except Exception as e:
+        logger.warning(f"Error deleting Rich Menu {rich_menu_id}: {e}")
+        return False
+
+
 async def _line_upload_content(channel_token: str, rich_menu_id: str, image_bytes: bytes, content_type: str) -> bool:
     """Upload image content to existing Rich Menu."""
     import aiohttp
-    base = "https://api.line.me/v2/bot"
+    base = "https://api-data.line.me/v2/bot"
     headers = {"Authorization": f"Bearer {channel_token}", "Content-Type": content_type}
 
     try:
@@ -593,6 +616,8 @@ async def publish_rich_menu(
         success = await _line_set_default(bot.channel_token, rid)
         if success:
             logger.info(f"已成功將 Rich Menu {rid} 設為預設功能選單")
+            if old_rich_menu_id and old_rich_menu_id != rid:
+                await _line_delete_rich_menu(bot.channel_token, old_rich_menu_id)
         else:
             logger.error(f"設定預設 Rich Menu 失敗: {rid}")
             raise HTTPException(status_code=502, detail="Rich Menu 已發布但設定為預設失敗")
@@ -880,28 +905,18 @@ async def upload_rich_menu_image(
                 "chatBarText": m.chat_bar_text,
                 "areas": processed_areas,
             }
-            rid: Optional[str] = existing_line_rich_menu_id
-            if not rid:
-                logger.info(f"Creating new Rich Menu on LINE platform for {menu_id}")
-                rid = await _line_create_and_upload(bot.channel_token, rm_payload, processed_bytes, content_type)
-                if rid:
-                    m.line_rich_menu_id = rid
-                    await db.commit()
-                    await db.refresh(m)
-                    logger.info(f"Rich Menu {menu_id} created on LINE with ID: {rid}")
-                else:
-                    logger.error(f"Failed to create Rich Menu {menu_id} on LINE platform")
+            logger.info(f"Creating fresh Rich Menu on LINE platform for {menu_id}")
+            rid = await _line_create_and_upload(bot.channel_token, rm_payload, processed_bytes, content_type)
+            if rid:
+                m.line_rich_menu_id = rid
+                await db.commit()
+                await db.refresh(m)
+                logger.info(f"Rich Menu {menu_id} created on LINE with ID: {rid}")
+
+                if existing_line_rich_menu_id and existing_line_rich_menu_id != rid:
+                    await _line_delete_rich_menu(bot.channel_token, existing_line_rich_menu_id)
             else:
-                # 既有 id：只更新內容圖
-                logger.info(f"Updating existing Rich Menu {rid} content on LINE platform")
-                success = await _line_upload_content(bot.channel_token, rid, processed_bytes, content_type)
-                if success:
-                    m.line_rich_menu_id = rid
-                    await db.commit()
-                    await db.refresh(m)
-                    logger.info(f"Rich Menu {rid} content updated successfully")
-                else:
-                    logger.error(f"Failed to update Rich Menu {rid} content")
+                logger.error(f"Failed to create Rich Menu {menu_id} on LINE platform")
 
             if m.selected and m.line_rich_menu_id:
                 logger.info(f"Setting Rich Menu {m.line_rich_menu_id} as default")

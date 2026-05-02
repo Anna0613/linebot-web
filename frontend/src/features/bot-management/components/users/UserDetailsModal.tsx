@@ -30,6 +30,8 @@ interface LineUser {
   first_interaction: string;
   last_interaction: string;
   interaction_count: string;
+  is_followed?: boolean;
+  source?: string;
 }
 
 interface UserDetailsModalProps {
@@ -43,7 +45,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
 
   // 格式化時間
   const formatDateTime = (timestamp: string) => {
+    if (!timestamp) return "LINE 未提供";
     const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return "LINE 未提供";
     return date.toLocaleString("zh-TW", {
       year: "numeric",
       month: "long",
@@ -57,6 +61,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
   // 計算活躍度
   const getActivityLevel = (count: string) => {
     const num = parseInt(count);
+    if (!Number.isFinite(num) || num <= 0) return { level: "LINE", color: "bg-slate-500", text: "text-slate-700" };
     if (num >= 100) return { level: "非常活躍", color: "bg-green-500", text: "text-green-700" };
     if (num >= 50) return { level: "活躍", color: "bg-blue-500", text: "text-blue-700" };
     if (num >= 20) return { level: "一般", color: "bg-yellow-500", text: "text-yellow-700" };
@@ -81,7 +86,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
 
   // 計算使用天數
   const getDaysFromFirst = (firstInteraction: string) => {
+    if (!firstInteraction) return null;
     const first = new Date(firstInteraction);
+    if (Number.isNaN(first.getTime())) return null;
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - first.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -90,6 +97,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
 
   const activityLevel = getActivityLevel(user.interaction_count);
   const daysFromFirst = getDaysFromFirst(user.first_interaction);
+  const hasInteractionDates = Boolean(user.first_interaction || user.last_interaction);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -100,7 +108,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
             用戶詳細資訊
           </DialogTitle>
           <DialogDescription>
-            查看用戶的完整資料和活動統計
+            查看本系統資料庫中的用戶資料和活動統計
           </DialogDescription>
         </DialogHeader>
 
@@ -153,7 +161,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
                 <span>使用天數</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold">{daysFromFirst}</span>
+                <span className="text-2xl font-bold">
+                  {daysFromFirst || 0}
+                </span>
                 <span className="text-sm text-muted-foreground">天</span>
               </div>
             </div>
@@ -194,22 +204,24 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
                 <div className="text-sm font-medium">
                   {formatDateTime(user.last_interaction)}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {(() => {
-                    const lastActive = new Date(user.last_interaction);
-                    const now = new Date();
-                    const diffHours = Math.round((now.getTime() - lastActive.getTime()) / (1000 * 60 * 60));
-                    
-                    if (diffHours < 1) return "不到 1 小時前";
-                    if (diffHours < 24) return `${diffHours} 小時前`;
-                    const diffDays = Math.round(diffHours / 24);
-                    if (diffDays < 7) return `${diffDays} 天前`;
-                    const diffWeeks = Math.round(diffDays / 7);
-                    if (diffWeeks < 4) return `${diffWeeks} 週前`;
-                    const diffMonths = Math.round(diffDays / 30);
-                    return `${diffMonths} 個月前`;
-                  })()}
-                </div>
+                {user.last_interaction && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {(() => {
+                      const lastActive = new Date(user.last_interaction);
+                      const now = new Date();
+                      const diffHours = Math.round((now.getTime() - lastActive.getTime()) / (1000 * 60 * 60));
+
+                      if (diffHours < 1) return "不到 1 小時前";
+                      if (diffHours < 24) return `${diffHours} 小時前`;
+                      const diffDays = Math.round(diffHours / 24);
+                      if (diffDays < 7) return `${diffDays} 天前`;
+                      const diffWeeks = Math.round(diffDays / 7);
+                      if (diffWeeks < 4) return `${diffWeeks} 週前`;
+                      const diffMonths = Math.round(diffDays / 30);
+                      return `${diffMonths} 個月前`;
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -221,10 +233,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
               <span>互動統計</span>
             </div>
             <div className="text-xs text-blue-600">
-              {(() => {
-                const avgPerDay = (parseInt(user.interaction_count) / daysFromFirst).toFixed(1);
-                return `平均每天 ${avgPerDay} 次互動`;
-              })()}
+              {hasInteractionDates && daysFromFirst
+                ? `平均每天 ${(parseInt(user.interaction_count) / daysFromFirst).toFixed(1)} 次互動`
+                : "尚無足夠的互動時間資料。"}
             </div>
           </div>
         </div>

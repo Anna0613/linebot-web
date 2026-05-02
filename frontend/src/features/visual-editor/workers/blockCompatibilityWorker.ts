@@ -189,14 +189,14 @@ function checkBlockCompatibility(block: Record<string, unknown>, context: string
   
   // 檢查基本相容性
   if (!rule.allowedIn.includes(context as keyof typeof WorkspaceContext)) {
-    // Flex 設計器寬鬆政策
+    // Flex Message 編輯寬鬆政策
     if (context === WorkspaceContext.FLEX) {
       if ([BlockCategory.FLEX_CONTAINER, BlockCategory.FLEX_CONTENT, 
            BlockCategory.FLEX_LAYOUT, BlockCategory.CONTROL].includes(category as keyof typeof BlockCategory)) {
         return {
           isValid: true,
-          reason: `Flex 設計器支援 ${category} 積木（寬鬆政策）`,
-          suggestions: ['Flex 設計器支援多種積木類型來創建豐富的介面']
+          reason: `Flex Message 編輯支援 ${category} 積木（寬鬆政策）`,
+          suggestions: ['Flex Message 編輯支援多種積木類型來創建豐富的介面']
         };
       }
     }
@@ -215,7 +215,7 @@ function checkBlockCompatibility(block: Record<string, unknown>, context: string
       reason: `${category} 積木不適合在 ${context} 上下文中使用`,
       suggestions: [
         `此積木主要設計用於 ${rule.allowedIn.join(', ')} 上下文`,
-        context === WorkspaceContext.LOGIC ? '嘗試切換到 Flex 設計器標籤' : '嘗試切換到邏輯編輯器標籤'
+        context === WorkspaceContext.LOGIC ? '嘗試切換到 Flex Message 編輯標籤' : '嘗試切換到邏輯編輯器標籤'
       ]
     };
   }
@@ -245,13 +245,13 @@ function checkBlockCompatibility(block: Record<string, unknown>, context: string
     });
     
     if (!hasValidParent) {
-      // Flex 設計器放寬要求
+      // Flex Message 編輯放寬要求
       if (context === WorkspaceContext.FLEX) {
         return {
           isValid: true,
-          reason: `${category} 積木在 Flex 設計器中可獨立使用`,
+          reason: `${category} 積木在 Flex Message 編輯中可獨立使用`,
           suggestions: [
-            'Flex 設計器允許更靈活的積木組合',
+            'Flex Message 編輯允許更靈活的積木組合',
             `完整結構中建議包含 ${rule.restrictions.requiresParent.join(' 或 ')} 積木`
           ]
         };

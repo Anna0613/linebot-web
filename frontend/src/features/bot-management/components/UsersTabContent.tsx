@@ -136,9 +136,11 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                關注者列表 ({totalCount})
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  系統用戶列表 ({totalCount})
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -181,7 +183,9 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
               ) : filteredUsers.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">尚無關注者</p>
+                  <p className="text-muted-foreground">
+                    尚無系統用戶
+                  </p>
                 </div>
               ) : (
                 filteredUsers.map((user) => (
@@ -237,14 +241,22 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
 
                       <div className="text-center">
                         <Badge variant="secondary" className="text-xs">
-                          <Hash className="h-3 w-3 mr-1" />
-                          {user.interaction_count}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(user.last_interaction).toLocaleDateString(
-                            "zh-TW"
+                          {user.interaction_count && user.interaction_count !== "0" ? (
+                            <>
+                              <Hash className="h-3 w-3 mr-1" />
+                              {user.interaction_count}
+                            </>
+                          ) : (
+                            "LINE"
                           )}
-                        </p>
+                        </Badge>
+                        {user.last_interaction && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(user.last_interaction).toLocaleDateString(
+                              "zh-TW"
+                            )}
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex flex-col gap-1">

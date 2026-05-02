@@ -6,7 +6,8 @@ import hashlib
 import hmac
 import json
 import logging
-from typing import Dict, List, Optional, Any
+import time
+from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 import asyncio
 import aiohttp
@@ -21,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 class LineBotService:
     """LINE Bot API 服務類"""
+
+    _api_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+    _api_inflight: Dict[str, asyncio.Task] = {}
 
     def __init__(self, channel_token: str, channel_secret: str):
         """
@@ -48,6 +52,22 @@ class LineBotService:
     def is_configured(self) -> bool:
         """檢查是否已正確配置"""
         return self.line_bot_api is not None and self.handler is not None
+
+    def _channel_cache_key(self) -> str:
+        return hashlib.sha256((self.channel_token or "").encode("utf-8")).hexdigest()[:16]
+
+    @staticmethod
+    def _friendly_line_error(response_body: str, status_code: int) -> str:
+        try:
+            data = json.loads(response_body)
+            message = str(data.get("message") or response_body)
+        except Exception:
+            message = response_body
+
+        if status_code == 403 and "Access to this API is not available for your account" in message:
+            return "此 LINE 官方帳號無法使用 Followers IDs API；LINE 只開放符合資格的官方帳號列出好友 userId。"
+
+        return message or f"LINE API 錯誤: {status_code}"
 
     def verify_signature(self, body: bytes, signature: str) -> bool:
         """
@@ -316,6 +336,354 @@ class LineBotService:
                 "active": False,
                 "error": str(e)
             }
+
+    @staticmethod
+    def build_webhook_endpoint(bot_id: str, domain: Optional[str] = None) -> str:
+        """Build the public webhook endpoint LINE should call for a bot."""
+        if not domain:
+            from app.config import settings
+            domain = settings.WEBHOOK_DOMAIN
+
+        return f"{str(domain).rstrip('/')}/api/v1/webhooks/{bot_id}"
+
+    async def set_webhook_endpoint(self, endpoint: str) -> Dict:
+        """
+        Configure the Messaging API webhook endpoint URL on LINE.
+
+        LINE requires a public HTTPS endpoint. Validation errors are returned in
+        the result instead of being raised so Bot creation/update can still
+        complete and expose the failure in webhook status checks.
+        """
+        if not self.is_configured():
+            return {"success": False, "endpoint": endpoint, "error": "Bot 未配置"}
+
+        if not endpoint or not endpoint.startswith("https://"):
+            return {
+                "success": False,
+                "endpoint": endpoint,
+                "error": "LINE Webhook endpoint 必須是 HTTPS URL，請設定 WEBHOOK_DOMAIN",
+            }
+
+        headers = {
+            "Authorization": f"Bearer {self.channel_token}",
+            "Content-Type": "application/json",
+        }
+
+        try:
+            timeout = aiohttp.ClientTimeout(total=15)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.put(
+                    "https://api.line.me/v2/bot/channel/webhook/endpoint",
+                    headers=headers,
+                    json={"endpoint": endpoint},
+                ) as response:
+                    if response.status == 200:
+                        return {"success": True, "endpoint": endpoint, "error": None}
+
+                    error_text = await response.text()
+                    logger.error("設定 LINE Webhook endpoint 失敗: %s - %s", response.status, error_text)
+                    return {
+                        "success": False,
+                        "endpoint": endpoint,
+                        "status_code": response.status,
+                        "error": error_text or f"API 錯誤: {response.status}",
+                    }
+        except Exception as e:
+            logger.error(f"設定 LINE Webhook endpoint 失敗: {e}")
+            return {"success": False, "endpoint": endpoint, "error": str(e)}
+
+    async def test_webhook_endpoint(self, endpoint: Optional[str] = None) -> Dict:
+        """Ask LINE to test the configured webhook endpoint."""
+        if not self.is_configured():
+            return {"success": False, "endpoint": endpoint, "error": "Bot 未配置"}
+
+        headers = {
+            "Authorization": f"Bearer {self.channel_token}",
+            "Content-Type": "application/json",
+        }
+        payload = {"endpoint": endpoint} if endpoint else {}
+
+        try:
+            timeout = aiohttp.ClientTimeout(total=20)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(
+                    "https://api.line.me/v2/bot/channel/webhook/test",
+                    headers=headers,
+                    json=payload,
+                ) as response:
+                    try:
+                        data = await response.json()
+                    except Exception:
+                        data = {"raw": await response.text()}
+
+                    if response.status == 200:
+                        return {"success": True, "endpoint": endpoint, "result": data, "error": None}
+
+                    logger.error("測試 LINE Webhook endpoint 失敗: %s - %s", response.status, data)
+                    return {
+                        "success": False,
+                        "endpoint": endpoint,
+                        "status_code": response.status,
+                        "result": data,
+                        "error": data,
+                    }
+        except Exception as e:
+            logger.error(f"測試 LINE Webhook endpoint 失敗: {e}")
+            return {"success": False, "endpoint": endpoint, "error": str(e)}
+
+    async def ensure_webhook_endpoint(self, endpoint: str, run_test: bool = True) -> Dict:
+        """
+        Ensure LINE is configured to call the expected webhook endpoint.
+
+        Returns a structured status object containing whether LINE was changed,
+        the current endpoint after the operation, and any test result.
+        """
+        current = await self.async_check_webhook_endpoint()
+        current_endpoint = (current or {}).get("endpoint")
+
+        if current_endpoint and current_endpoint.rstrip("/") == endpoint.rstrip("/") and current.get("active"):
+            test_result = await self.test_webhook_endpoint(endpoint) if run_test else None
+            return {
+                "success": True,
+                "changed": False,
+                "endpoint": endpoint,
+                "current": current,
+                "test": test_result,
+                "error": None,
+            }
+
+        set_result = await self.set_webhook_endpoint(endpoint)
+        if not set_result.get("success"):
+            return {
+                "success": False,
+                "changed": False,
+                "endpoint": endpoint,
+                "current": current,
+                "set": set_result,
+                "test": None,
+                "error": set_result.get("error"),
+            }
+
+        refreshed = await self.async_check_webhook_endpoint()
+        test_result = await self.test_webhook_endpoint(endpoint) if run_test else None
+        return {
+            "success": bool(set_result.get("success")),
+            "changed": True,
+            "endpoint": endpoint,
+            "current": refreshed,
+            "set": set_result,
+            "test": test_result,
+            "error": None if set_result.get("success") else set_result.get("error"),
+        }
+
+    async def get_message_delivery_insight(self, line_date: str) -> Dict:
+        """Get LINE Insight message delivery statistics for a yyyyMMdd date."""
+        if not self.is_configured():
+            return {"status": "unavailable", "error": "Bot 未配置"}
+
+        url = f"https://api.line.me/v2/bot/insight/message/delivery?date={line_date}"
+        headers = {"Authorization": f"Bearer {self.channel_token}"}
+        cache_key = f"insight:delivery:{self._channel_cache_key()}:{line_date}"
+
+        try:
+            return await self._cached_get_json(
+                cache_key=cache_key,
+                url=url,
+                headers=headers,
+                timeout=10.0,
+                success_ttl=3600,
+                error_ttl=120,
+                log_label=f"LINE Insight 訊息統計 date={line_date}",
+            )
+        except Exception as e:
+            logger.error(f"LINE Insight 訊息統計失敗 date={line_date}: {e}")
+            return {"status": "error", "error": str(e)}
+
+    async def get_followers_insight(self, line_date: str) -> Dict:
+        """Get LINE Insight friend/follower statistics for a yyyyMMdd date."""
+        if not self.is_configured():
+            return {"status": "unavailable", "error": "Bot 未配置"}
+
+        url = f"https://api.line.me/v2/bot/insight/followers?date={line_date}"
+        headers = {"Authorization": f"Bearer {self.channel_token}"}
+        cache_key = f"insight:followers:{self._channel_cache_key()}:{line_date}"
+
+        try:
+            return await self._cached_get_json(
+                cache_key=cache_key,
+                url=url,
+                headers=headers,
+                timeout=10.0,
+                success_ttl=3600,
+                error_ttl=120,
+                log_label=f"LINE Insight 好友統計 date={line_date}",
+            )
+        except Exception as e:
+            logger.error(f"LINE Insight 好友統計失敗 date={line_date}: {e}")
+            return {"status": "error", "error": str(e)}
+
+    async def get_demographic_insight(self) -> Dict:
+        """Get LINE Insight demographic distribution for followers."""
+        if not self.is_configured():
+            return {"available": False, "error": "Bot 未配置"}
+
+        url = "https://api.line.me/v2/bot/insight/demographic"
+        headers = {"Authorization": f"Bearer {self.channel_token}"}
+        cache_key = f"insight:demographic:{self._channel_cache_key()}"
+
+        try:
+            return await self._cached_get_json(
+                cache_key=cache_key,
+                url=url,
+                headers=headers,
+                timeout=10.0,
+                success_ttl=3600,
+                error_ttl=120,
+                log_label="LINE Insight 人口統計",
+            )
+        except Exception as e:
+            logger.error(f"LINE Insight 人口統計失敗: {e}")
+            return {"available": False, "error": str(e)}
+
+    async def get_followers_ids(self, limit: int = 1000, start: Optional[str] = None) -> Dict:
+        """Get follower user IDs from LINE. Available only for verified/premium accounts."""
+        if not self.is_configured():
+            return {"userIds": [], "error": "Bot 未配置"}
+
+        limit = max(1, min(int(limit or 1000), 1000))
+        params = f"limit={limit}"
+        if start:
+            params += f"&start={start}"
+        url = f"https://api.line.me/v2/bot/followers/ids?{params}"
+        headers = {"Authorization": f"Bearer {self.channel_token}"}
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15.0)) as response:
+                    if response.status == 200:
+                        return await response.json()
+
+                    text = await response.text()
+                    error_message = self._friendly_line_error(text, response.status)
+                    logger.warning("取得 LINE follower IDs 失敗 status=%s body=%s", response.status, text)
+                    return {
+                        "userIds": [],
+                        "status_code": response.status,
+                        "error": error_message,
+                        "line_error": text,
+                    }
+        except Exception as e:
+            logger.error(f"取得 LINE follower IDs 失敗: {e}")
+            return {"userIds": [], "error": str(e)}
+
+    async def get_followers_page(self, limit: int = 50, offset: int = 0) -> Tuple[List[str], bool, Optional[str]]:
+        """Adapt LINE continuation-token follower IDs to offset pagination for the UI."""
+        limit = max(1, min(int(limit or 50), 1000))
+        offset = max(0, int(offset or 0))
+        target_count = offset + limit + 1
+        collected: List[str] = []
+        start = None
+        last_error = None
+
+        while len(collected) < target_count:
+            response = await self.get_followers_ids(limit=min(1000, target_count - len(collected)), start=start)
+            if response.get("error"):
+                last_error = response.get("error")
+                break
+
+            collected.extend(response.get("userIds") or [])
+            start = response.get("next")
+            if not start:
+                break
+
+        page = collected[offset: offset + limit]
+        has_next = len(collected) > offset + limit or bool(start)
+        return page, has_next, str(last_error) if last_error else None
+
+    async def _cached_get_json(
+        self,
+        *,
+        cache_key: str,
+        url: str,
+        headers: Dict[str, str],
+        timeout: float,
+        success_ttl: int,
+        error_ttl: int,
+        log_label: str,
+    ) -> Dict:
+        now = time.monotonic()
+        cached = self._api_cache.get(cache_key)
+        if cached and cached[0] > now:
+            return dict(cached[1])
+
+        task = self._api_inflight.get(cache_key)
+        if task is None:
+            task = asyncio.create_task(
+                self._fetch_json(
+                    url=url,
+                    headers=headers,
+                    timeout=timeout,
+                    success_ttl=success_ttl,
+                    error_ttl=error_ttl,
+                    log_label=log_label,
+                )
+            )
+            self._api_inflight[cache_key] = task
+
+        try:
+            ttl, data = await task
+            self._api_cache[cache_key] = (time.monotonic() + ttl, data)
+            return dict(data)
+        finally:
+            if self._api_inflight.get(cache_key) is task:
+                self._api_inflight.pop(cache_key, None)
+
+    async def _fetch_json(
+        self,
+        *,
+        url: str,
+        headers: Dict[str, str],
+        timeout: float,
+        success_ttl: int,
+        error_ttl: int,
+        log_label: str,
+    ) -> Tuple[int, Dict]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=timeout)) as response:
+                if response.status == 200:
+                    return success_ttl, await response.json()
+
+                text = await response.text()
+                logger.warning("%s 失敗 status=%s body=%s", log_label, response.status, text)
+                return error_ttl, {"status": "error", "status_code": response.status, "error": text}
+
+    async def async_get_user_profile(self, user_id: str) -> Optional[Dict]:
+        """Async version of get_user_profile using the Messaging API profile endpoint."""
+        if not self.is_configured():
+            return None
+
+        url = f"https://api.line.me/v2/bot/profile/{user_id}"
+        headers = {"Authorization": f"Bearer {self.channel_token}"}
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10.0)) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return {
+                            "user_id": data.get("userId") or user_id,
+                            "display_name": data.get("displayName"),
+                            "picture_url": data.get("pictureUrl"),
+                            "status_message": data.get("statusMessage"),
+                            "language": data.get("language"),
+                        }
+
+                    text = await response.text()
+                    logger.warning("取得 LINE user profile 失敗 user=%s status=%s body=%s", user_id, response.status, text)
+                    return None
+        except Exception as e:
+            logger.error(f"取得 LINE user profile 失敗 user={user_id}: {e}")
+            return None
 
     def split_long_text(self, text: str, max_length: int = 4500) -> List[str]:
         """

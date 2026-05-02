@@ -385,7 +385,7 @@ class MinIOService:
                                  line_user_id: str, message_type: str) -> Tuple[Optional[str], Optional[str]]:
         """使用 HTTP 方式下載媒體檔案（回退方案）"""
         try:
-            line_api_url = f"https://api.line.me/v2/bot/message/{line_message_id}/content"
+            line_api_url = f"https://api-data.line.me/v2/bot/message/{line_message_id}/content"
             headers = {
                 "Authorization": f"Bearer {channel_token}",
             }
