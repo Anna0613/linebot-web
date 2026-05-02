@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -17,12 +17,15 @@ import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
 import { useBotManagement } from "@/features/bot-management/hooks/useBotManagement";
 import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
+import { apiClient } from "@/services/UnifiedApiClient";
 
 interface BotData {
   name: string;
   accessToken: string;
   channelSecret: string;
 }
+
+type LineProfileStatus = "idle" | "loading" | "success" | "error";
 
 const credentialHints = [
   "LINE Developers Console",
@@ -43,6 +46,79 @@ const BotCreationForm = () => {
   const [success, setSuccess] = useState(false);
   const [createdBotId, setCreatedBotId] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [lineProfileStatus, setLineProfileStatus] =
+    useState<LineProfileStatus>("idle");
+  const [lineProfileError, setLineProfileError] = useState("");
+
+  useEffect(() => {
+    const accessToken = formData.accessToken.trim();
+    const channelSecret = formData.channelSecret.trim();
+    const hasCredentials =
+      accessToken.length >= 10 && channelSecret.length >= 10;
+
+    if (!hasCredentials) {
+      setLineProfileStatus("idle");
+      setLineProfileError("");
+      setFormData((prev) => (prev.name ? { ...prev, name: "" } : prev));
+      setFieldErrors((prev) => (prev.name ? { ...prev, name: "" } : prev));
+      return;
+    }
+
+    let cancelled = false;
+    setLineProfileStatus("loading");
+    setLineProfileError("");
+    setFormData((prev) => (prev.name ? { ...prev, name: "" } : prev));
+    setFieldErrors((prev) => (prev.name ? { ...prev, name: "" } : prev));
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await apiClient.previewLineBotProfile({
+          channel_token: accessToken,
+          channel_secret: channelSecret,
+        });
+
+        if (cancelled) return;
+
+        const profile = response.data;
+        const displayName = profile?.display_name?.trim();
+
+        if (response.error || !profile?.is_live || !displayName) {
+          setLineProfileStatus("error");
+          setLineProfileError(
+            profile?.error ||
+              response.error ||
+              "無法取得 LINE Bot 名稱，請確認憑證是否正確"
+          );
+          return;
+        }
+
+        setFormData((prev) => {
+          if (
+            prev.accessToken.trim() !== accessToken ||
+            prev.channelSecret.trim() !== channelSecret
+          ) {
+            return prev;
+          }
+
+          return { ...prev, name: displayName };
+        });
+        setLineProfileStatus("success");
+      } catch (fetchError) {
+        if (cancelled) return;
+        setLineProfileStatus("error");
+        setLineProfileError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "無法取得 LINE Bot 名稱，請稍後再試"
+        );
+      }
+    }, 700);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [formData.accessToken, formData.channelSecret]);
 
   const handleInputChange = (field: keyof BotData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -58,9 +134,6 @@ const BotCreationForm = () => {
         if (!value.trim()) return "請輸入 LINE Bot 名稱";
         if (value.trim().length < 2) return "Bot 名稱至少需要 2 個字符";
         if (value.trim().length > 50) return "Bot 名稱不能超過 50 個字符";
-        if (!/^[a-zA-Z0-9\u4e00-\u9fff\-_\s]+$/.test(value.trim())) {
-          return "Bot 名稱只能包含中英文、數字、空格、連字號和底線";
-        }
         return "";
       case "accessToken":
         if (!value.trim()) return "請輸入 Channel Access Token";
@@ -131,6 +204,8 @@ const BotCreationForm = () => {
     setCreatedBotId(null);
     setFormData({ name: "", accessToken: "", channelSecret: "" });
     setFieldErrors({});
+    setLineProfileStatus("idle");
+    setLineProfileError("");
     clearError();
   };
 
@@ -202,6 +277,7 @@ const BotCreationForm = () => {
 
   const isSubmitDisabled =
     isLoading ||
+    lineProfileStatus !== "success" ||
     !formData.name ||
     !formData.accessToken ||
     !formData.channelSecret;
@@ -212,7 +288,7 @@ const BotCreationForm = () => {
         <p className="app-kicker">Create Bot</p>
         <h1 className="app-page-title mt-2">建立新的 LINE Bot</h1>
         <p className="app-subtitle mt-3">
-          輸入 Bot 名稱與 LINE Channel 憑證。建立後即可進入視覺化編輯器。
+          輸入 LINE Channel 憑證後，系統會先帶入官方帳號名稱。建立前仍可自行修改名稱。
         </p>
       </div>
 
@@ -226,23 +302,6 @@ const BotCreationForm = () => {
       <div className="grid gap-4 lg:grid-cols-[1fr_0.72fr]">
         <form onSubmit={handleSubmit} className="app-panel-strong p-5 sm:p-7">
           <div className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="bot-name" className="text-slate-700">
-                Bot 名稱
-              </Label>
-              <Input
-                id="bot-name"
-                value={formData.name}
-                onChange={(event) => handleInputChange("name", event.target.value)}
-                onBlur={(event) => handleFieldBlur("name", event.target.value)}
-                placeholder="例如：客服助手"
-                className="app-input"
-              />
-              {fieldErrors.name && (
-                <p className="text-sm text-rose-600">{fieldErrors.name}</p>
-              )}
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="access-token" className="text-slate-700">
                 Channel Access Token
@@ -288,6 +347,46 @@ const BotCreationForm = () => {
                 </p>
               )}
             </div>
+
+            {lineProfileStatus === "loading" && (
+              <div className="flex items-center gap-2 rounded-[14px] border border-sky-100 bg-sky-50 px-3 py-3 text-sm text-sky-700">
+                <Loader size="sm" />
+                正在取得 LINE Bot 名稱
+              </div>
+            )}
+
+            {lineProfileStatus === "error" && (
+              <div className="flex items-start gap-2 rounded-[14px] border border-rose-100 bg-rose-50 px-3 py-3 text-sm text-rose-700">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{lineProfileError}</span>
+              </div>
+            )}
+
+            {lineProfileStatus === "success" && (
+              <div className="space-y-2">
+                <Label htmlFor="bot-name" className="text-slate-700">
+                  Bot 名稱
+                </Label>
+                <Input
+                  id="bot-name"
+                  value={formData.name}
+                  onChange={(event) =>
+                    handleInputChange("name", event.target.value)
+                  }
+                  onBlur={(event) =>
+                    handleFieldBlur("name", event.target.value)
+                  }
+                  placeholder="例如：客服助手"
+                  className="app-input"
+                />
+                <p className="text-sm text-slate-500">
+                  已從 LINE 官方帳號帶入，可在建立前修改。
+                </p>
+                {fieldErrors.name && (
+                  <p className="text-sm text-rose-600">{fieldErrors.name}</p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">

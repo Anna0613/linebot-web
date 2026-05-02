@@ -36,6 +36,11 @@ export interface LineBotProfile {
   fetched_at: string;
 }
 
+export interface LineBotProfilePreviewData {
+  channel_token: string;
+  channel_secret: string;
+}
+
 export interface LogicTemplate {
   id: string;
   user_id: string;

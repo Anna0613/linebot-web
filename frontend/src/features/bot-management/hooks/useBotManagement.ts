@@ -197,7 +197,7 @@ export const useCreateBot = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (botData: { name: string, channel_access_token: string, channel_secret: string }) => {
+    mutationFn: async (botData: { name: string, channel_token: string, channel_secret: string }) => {
       const result = await apiClient.createBot(botData);
       if (result.error) {
         throw new Error(result.error);
@@ -233,7 +233,7 @@ export const useBotManagement = () => {
     isLoading: isLoading || createBotMutation.isPending,
     error: customError || error?.message || createBotMutation.error?.message,
     fetchBots: refetch,
-    createBot: async (botData: { name: string, channel_access_token: string, channel_secret: string }) => {
+    createBot: async (botData: { name: string, channel_token: string, channel_secret: string }) => {
       try {
         setCustomError(null);
         const result = await createBotMutation.mutateAsync(botData);

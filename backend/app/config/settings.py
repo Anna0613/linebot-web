@@ -4,6 +4,7 @@
 """
 import os
 import re
+from pathlib import Path
 from typing import List, Optional
 try:
     from pydantic_settings import BaseSettings
@@ -11,8 +12,19 @@ except ImportError:
     from pydantic import BaseSettings
 from dotenv import load_dotenv
 
-# 載入環境變數
+# 載入環境變數。後端設定優先；frontend/.env 只作為本機開發的公開 URL fallback。
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+REPO_ROOT = BACKEND_DIR.parent
+load_dotenv(BACKEND_DIR / ".env")
+load_dotenv(REPO_ROOT / "frontend" / ".env")
 load_dotenv()
+
+def first_env_value(*names: str, default: str = "") -> str:
+    for name in names:
+        value = os.getenv(name)
+        if value and value.strip():
+            return value.strip()
+    return default
 
 class Settings(BaseSettings):
     """應用程式設定類別"""
@@ -104,7 +116,12 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:8080")
     # 對外可被 LINE 平台存取的後端網域，用於自動設定 Messaging API Webhook。
     # LINE Webhook endpoint 必須是 HTTPS；本機開發請設定為 ngrok / tunnel URL。
-    WEBHOOK_DOMAIN: str = os.getenv("WEBHOOK_DOMAIN", os.getenv("PUBLIC_API_URL", "http://localhost:8000"))
+    WEBHOOK_DOMAIN: str = first_env_value(
+        "WEBHOOK_DOMAIN",
+        "PUBLIC_API_URL",
+        "VITE_WEBHOOK_DOMAIN",
+        default="http://localhost:8000",
+    )
 
     # 郵件設定
     MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")

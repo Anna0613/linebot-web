@@ -77,6 +77,23 @@ class LineBotProfileResponse(BaseModel):
     error: Optional[str] = None
     fetched_at: datetime
 
+class LineBotProfilePreviewRequest(BaseModel):
+    """用未儲存的 LINE Channel 憑證預覽官方帳號資訊"""
+    channel_token: str
+    channel_secret: str
+
+    @validator('channel_token')
+    def validate_channel_token(cls, v):
+        if len(v.strip()) < 10:
+            raise ValueError('Channel Access Token 格式無效')
+        return v.strip()
+
+    @validator('channel_secret')
+    def validate_channel_secret(cls, v):
+        if len(v.strip()) < 10:
+            raise ValueError('Channel Secret 格式無效')
+        return v.strip()
+
 class FlexMessageBase(BaseModel):
     """Flex 訊息基礎 schema
     - content: 編譯後的合法 Flex JSON（bubble/carousel 或其字串）或設計器格式（含 blocks）
