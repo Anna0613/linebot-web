@@ -16,6 +16,9 @@ class Bot(Base):
     name = Column(String(255), nullable=False)
     channel_token = Column(String(500), nullable=False)
     channel_secret = Column(String(255), nullable=False)
+    line_bot_user_id = Column(String(255), nullable=True)
+    line_bot_basic_id = Column(String(255), nullable=True)
+    line_bot_display_name = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     # AI 接管開關（預設關閉），以及 AI 模型設定
@@ -40,6 +43,7 @@ class Bot(Base):
     __table_args__ = (
         UniqueConstraint('user_id', 'name', name='unique_bot_name_per_user'),
         Index('idx_bot_user_created', 'user_id', 'created_at'),
+        Index('idx_bot_line_bot_user_id', 'line_bot_user_id', unique=True),
     )
     
     def __repr__(self):

@@ -56,6 +56,9 @@ class BotResponse(BaseModel):
     name: str
     channel_token: str
     channel_secret: str
+    line_bot_user_id: Optional[str] = None
+    line_bot_basic_id: Optional[str] = None
+    line_bot_display_name: Optional[str] = None
     user_id: str
     created_at: datetime
     updated_at: datetime
