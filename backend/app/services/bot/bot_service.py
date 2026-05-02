@@ -19,7 +19,7 @@ from app.services.line.line_bot_service import LineBotService
 from app.schemas.bot import (
     BotCreate, BotUpdate, BotResponse,
     FlexMessageCreate, FlexMessageUpdate, FlexMessageResponse, FlexMessageSummary,
-    BotSummary, LineBotProfileResponse,
+    BotSummary, LineBotProfilePreviewRequest, LineBotProfileResponse,
     LogicTemplateCreate, LogicTemplateUpdate, LogicTemplateResponse, LogicTemplateSummary
 )
 
@@ -277,6 +277,43 @@ class BotService:
             basic_id=info.get("basic_id"),
             premium_id=info.get("premium_id"),
             display_name=info.get("display_name"),
+            picture_url=info.get("picture_url"),
+            chat_mode=info.get("chat_mode"),
+            mark_as_read_mode=info.get("mark_as_read_mode"),
+            is_live=True,
+            fetched_at=datetime.utcnow(),
+        )
+
+    @staticmethod
+    async def preview_line_bot_profile(profile_data: LineBotProfilePreviewRequest) -> LineBotProfileResponse:
+        """用尚未儲存的 LINE Channel 憑證取得官方帳號資訊"""
+        line_bot_service = LineBotService(profile_data.channel_token, profile_data.channel_secret)
+        info = await line_bot_service.async_get_bot_info()
+
+        if not info:
+            return LineBotProfileResponse(
+                is_live=False,
+                error="無法從 LINE API 取得 Bot 資訊",
+                fetched_at=datetime.utcnow(),
+            )
+
+        error = info.get("error")
+        display_name = info.get("display_name")
+        is_live = not bool(error) and bool(display_name) and bool(info.get("channel_id") or info.get("user_id"))
+
+        if not is_live:
+            return LineBotProfileResponse(
+                is_live=False,
+                error=error or "LINE API 未回傳有效 Bot 資訊",
+                fetched_at=datetime.utcnow(),
+            )
+
+        return LineBotProfileResponse(
+            user_id=info.get("user_id"),
+            channel_id=info.get("channel_id") or info.get("user_id"),
+            basic_id=info.get("basic_id"),
+            premium_id=info.get("premium_id"),
+            display_name=display_name,
             picture_url=info.get("picture_url"),
             chat_mode=info.get("chat_mode"),
             mark_as_read_mode=info.get("mark_as_read_mode"),

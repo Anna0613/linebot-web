@@ -9,6 +9,7 @@ services:
       - "8001:8005"
     env_file:
       - ./backend/.env
+      - ./frontend/.env
     volumes:
       - ./backend/media:/app/media
       - ./backend/logs:/app/logs

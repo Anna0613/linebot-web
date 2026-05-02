@@ -12,7 +12,7 @@ from app.dependencies import get_current_user_async
 from app.models.user import User
 from app.schemas.bot import (
     BotCreate, BotUpdate, BotResponse, FlexMessageCreate, FlexMessageResponse, FlexMessageUpdate, FlexMessageSummary,
-    BotSummary, LineBotProfileResponse,
+    BotSummary, LineBotProfilePreviewRequest, LineBotProfileResponse,
     LogicTemplateCreate, LogicTemplateUpdate, LogicTemplateResponse, LogicTemplateSummary
 )
 from app.services.bot.bot_service import BotService
@@ -73,6 +73,14 @@ async def update_flex_message(
 ):
     """更新 Flex 訊息"""
     return await BotService.update_flex_message(db, message_id, current_user.id, message_data)
+
+@router.post("/line-profile/preview", response_model=LineBotProfileResponse)
+async def preview_line_bot_profile(
+    profile_data: LineBotProfilePreviewRequest,
+    _current_user: User = Depends(get_current_user_async)
+):
+    """用未儲存的 LINE Channel 憑證預覽官方帳號基本資料"""
+    return await BotService.preview_line_bot_profile(profile_data)
 
 @router.get("/{bot_id}", response_model=BotResponse)
 async def get_bot(
