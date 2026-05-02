@@ -6,7 +6,6 @@ import { Mail, CheckCircle, RefreshCw } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { UnifiedApiClient } from "@/services/UnifiedApiClient";
-import "@/components/ui/loader.css";
 const EmailVerificationPending = () => {
   const navigate = useNavigate();
   const location = useLocation();

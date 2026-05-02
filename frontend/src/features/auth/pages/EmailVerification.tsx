@@ -5,7 +5,6 @@ import { Loader } from "@/components/ui/loader";
 import { CheckCircle, XCircle } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
 const EmailVerification = () => {

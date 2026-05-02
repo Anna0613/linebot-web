@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader } from "@/components/ui/loader";
 import { apiClient } from "@/services/UnifiedApiClient";
 import type { Bot as BotRecord, BotUpdateData, LineBotProfile } from "@/types/bot";
 import type { WebhookStatus } from "@/features/bot-management/types/botManagement";
@@ -472,7 +473,7 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
                 onClick={() => void loadLineProfile()}
                 disabled={isSyncingLine}
               >
-                <RefreshCw className={`h-4 w-4 ${isSyncingLine ? "animate-spin" : ""}`} />
+                {isSyncingLine ? <Loader size="sm" /> : <RefreshCw className="h-4 w-4" />}
                 重新同步
               </Button>
               <Button asChild variant="outline" className="app-secondary-button">
@@ -541,7 +542,7 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
                 onClick={() => void handleCheckBotHealth()}
                 disabled={controlLoading}
               >
-                <Activity className="h-4 w-4" />
+                {controlLoading ? <Loader size="sm" /> : <Activity className="h-4 w-4" />}
                 {controlLoading ? "檢查中..." : "重新檢查狀態"}
               </Button>
             </div>
@@ -612,7 +613,7 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
                 onClick={() => void fetchWebhookStatus()}
                 disabled={webhookStatusLoading}
               >
-                <RefreshCw className={`h-4 w-4 ${webhookStatusLoading ? "animate-spin" : ""}`} />
+                {webhookStatusLoading ? <Loader size="sm" /> : <RefreshCw className="h-4 w-4" />}
                 {webhookStatusLoading ? "檢查中..." : "重新檢查"}
               </Button>
             </div>
@@ -635,7 +636,7 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
                 disabled={quotaLoading}
                 title="重新整理配額"
               >
-                <RefreshCw className={`h-4 w-4 ${quotaLoading ? "animate-spin" : ""}`} />
+                {quotaLoading ? <Loader size="sm" /> : <RefreshCw className="h-4 w-4" />}
               </Button>
             </div>
             <QuotaStatusCard
@@ -746,7 +747,7 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
             {isLoading ? (
               <div className="flex min-h-[260px] items-center justify-center">
                 <div className="flex items-center gap-3 text-sm font-medium text-slate-500">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-100 border-b-[#16a34a]" />
+                  <Loader size="sm" />
                   載入中...
                 </div>
               </div>
@@ -804,7 +805,7 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
                     className="app-primary-button"
                     disabled={!hasChanges || isSaving}
                   >
-                    <Save className="h-4 w-4" />
+                    {isSaving ? <Loader size="sm" /> : <Save className="h-4 w-4" />}
                     {isSaving ? "儲存中..." : "儲存連線設定"}
                   </Button>
                 </div>

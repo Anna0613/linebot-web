@@ -188,7 +188,7 @@ export function QuotaStatusCard({
                 disabled={isLoading}
                 className="h-7 w-7 p-0"
               >
-                <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? <Loader size="sm" /> : <RefreshCw className="h-3 w-3" />}
               </Button>
             )}
           </div>
@@ -258,4 +258,3 @@ export function QuotaStatusCard({
     </Card>
   );
 }
-

@@ -6,6 +6,7 @@ import Workspace from './Workspace';
 import SaveStatusIndicator from './SaveStatusIndicator';
 import { SaveStatus } from '@/features/visual-editor/types/saveStatus';
 import { Button } from '@/components/ui/button';
+import { Loader } from '@/components/ui/loader';
 import { useSelectedBot } from '@/features/bots/context/SelectedBotContext';
 import { UnifiedBlock } from '@/features/visual-editor/types/block';
 import VisualEditorApi, { FlexMessage } from '@/features/visual-editor/api/visualEditorApi';
@@ -528,7 +529,7 @@ export const VisualBotEditor: React.FC = () => {
           {isLoadingData && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/55 backdrop-blur-sm">
               <div className="app-panel flex items-center gap-3 p-4">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-100 border-b-[#16a34a]" />
+                <Loader size="sm" />
                 <span className="text-sm font-medium text-slate-600">載入 Bot 數據中...</span>
               </div>
             </div>

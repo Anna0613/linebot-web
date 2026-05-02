@@ -12,7 +12,6 @@ import LINELoginButton from "../components/LINELoginButton";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { authManager } from "@/services/UnifiedAuthManager";
 import { useToast } from "@/hooks/use-toast";
-import "@/components/ui/loader.css";
 import $ from "jquery";
 import "jquery-validation";
 import { Eye, EyeOff } from "lucide-react";

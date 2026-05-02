@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FileText, Loader2, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { FileText, Plus, Search, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Loader } from '@/components/ui/loader';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
@@ -440,7 +441,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
             <Popover open={addMenuOpen} onOpenChange={setAddMenuOpen}>
               <PopoverTrigger asChild>
                 <Button type="button" size="icon" aria-label="新增知識">
-                  {uploading ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Plus aria-hidden="true" />}
+                  {uploading ? <Loader size="sm" /> : <Plus aria-hidden="true" />}
                   <span className="sr-only">新增知識</span>
                 </Button>
               </PopoverTrigger>
@@ -503,7 +504,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
             onClick={deleteSelected}
             disabled={!Object.values(selected).some(Boolean) || isOperatingRef.current || deleting}
           >
-            {deleting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Trash2 aria-hidden="true" />}
+            {deleting ? <Loader size="sm" /> : <Trash2 aria-hidden="true" />}
             {deleting ? '刪除中...' : '刪除'}
           </Button>
         </div>
@@ -531,7 +532,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
         <div className="max-h-[52vh] divide-y overflow-auto">
           {loading ? (
             <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              <Loader size="sm" />
               載入中...
             </div>
           ) : items.length === 0 ? (
@@ -589,7 +590,14 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
               取消
             </Button>
             <Button type="button" onClick={addText} disabled={!textInput.trim() || isOperatingRef.current}>
-              {isOperatingRef.current ? '處理中...' : '新增'}
+              {isOperatingRef.current ? (
+                <>
+                  <Loader size="sm" />
+                  處理中...
+                </>
+              ) : (
+                '新增'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

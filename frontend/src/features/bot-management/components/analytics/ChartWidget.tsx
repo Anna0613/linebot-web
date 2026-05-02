@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Loader } from "@/components/ui/loader";
 import { 
   Select, 
   SelectContent, 
@@ -82,20 +82,9 @@ const defaultColors = [
   "#8b5a2b"
 ];
 
-const ChartSkeleton: React.FC<{ height: number }> = ({ height }) => (
-  <div className="space-y-4">
-    <div className="flex items-center justify-between">
-      <Skeleton className="h-6 w-32" />
-      <div className="flex space-x-2">
-        <Skeleton className="h-8 w-20" />
-        <Skeleton className="h-8 w-8" />
-      </div>
-    </div>
-    <Skeleton className={`w-full h-[${height}px] rounded-lg`} />
-    <div className="flex justify-between">
-      <Skeleton className="h-4 w-24" />
-      <Skeleton className="h-4 w-16" />
-    </div>
+const ChartLoading: React.FC<{ height: number }> = ({ height }) => (
+  <div className="flex items-center justify-center" style={{ minHeight: height }}>
+    <Loader text="載入圖表..." />
   </div>
 );
 
@@ -347,7 +336,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
     return (
       <Card className={cn("w-full", className)}>
         <CardContent className="p-6">
-          <ChartSkeleton height={height} />
+          <ChartLoading height={height} />
         </CardContent>
       </Card>
     );

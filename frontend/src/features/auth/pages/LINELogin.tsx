@@ -4,7 +4,6 @@ import LINELoginButton from "../components/LINELoginButton";
 // Removed unused Card components
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Loader } from "@/components/ui/loader";
-import "@/components/ui/loader.css";
 // import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
 interface User {

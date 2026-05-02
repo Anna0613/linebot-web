@@ -7,6 +7,7 @@ import {
 } from "react";
 import { apiClient } from "@/services/UnifiedApiClient";
 import { Bot } from "@/types/bot";
+import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import EditOptionModal from "./EditOptionModal";
@@ -199,7 +200,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
         {loading ? (
           <div className="flex items-center justify-center h-32">
-            <div className="text-foreground text-base sm:text-lg">載入中...</div>
+            <Loader text="載入中..." />
           </div>
         ) : filteredBots.length === 0 ? (
           <div className="flex items-center justify-center h-32">

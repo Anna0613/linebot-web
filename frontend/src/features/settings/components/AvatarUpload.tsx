@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { Loader } from "@/components/ui/loader";
 import { Upload, User, Camera, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -241,7 +242,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
 
               {isUploading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/40 rounded-lg">
-                  <div className="text-sm text-muted-foreground">處理中...</div>
+                  <Loader text="處理中..." />
                 </div>
               )}
             </div>

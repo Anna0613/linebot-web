@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
@@ -72,7 +73,14 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin, disabled }) 
       disabled={disabled || loading}
       className="app-secondary-button w-full border-emerald-100 text-[#166534]"
     >
-      {loading ? "登入中..." : "使用 LINE 登入"}
+      {loading ? (
+        <>
+          <Loader size="sm" />
+          登入中...
+        </>
+      ) : (
+        "使用 LINE 登入"
+      )}
     </Button>
   );
 };

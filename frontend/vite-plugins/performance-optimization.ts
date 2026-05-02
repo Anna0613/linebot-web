@@ -182,7 +182,7 @@ function criticalCSSPlugin(): Plugin {
         html{line-height:1.15;-webkit-text-size-adjust:100%}
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;background-color:#ffffff;color:#1f2937}
         .loading-container{display:flex;align-items:center;justify-content:center;min-height:100vh;background-color:#f9fafb}
-        .loading-spinner{width:2rem;height:2rem;border:2px solid #e5e7eb;border-top:2px solid #2563eb;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 0.75rem}
+        .loading-spinner{width:2rem;height:2rem;border:2px solid #dcfce7;border-top:2px solid #16a34a;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 0.75rem}
         @keyframes spin{to{transform:rotate(360deg)}}
         .loading-text{font-size:0.875rem;color:#6b7280;text-align:center}
       `.replace(/\s+/g, ' ').trim();

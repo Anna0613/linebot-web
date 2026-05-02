@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Loader } from "@/components/ui/loader";
 import {
   Card,
   CardContent,
@@ -131,7 +132,14 @@ const SocialAccountSection = ({
                   disabled={linkingInProgress}
                   className="w-full bg-green-500 hover:bg-green-600 text-white"
                 >
-                  {linkingInProgress ? "連結中..." : "連結 LINE 帳號"}
+                  {linkingInProgress ? (
+                    <>
+                      <Loader size="sm" />
+                      連結中...
+                    </>
+                  ) : (
+                    "連結 LINE 帳號"
+                  )}
                 </Button>
               </div>
             )}

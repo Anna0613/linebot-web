@@ -9,7 +9,6 @@ import { Separator } from "@/components/ui/separator";
 import AuthFormLayout from "../components/AuthFormLayout";
 import LINELoginButton from "../components/LINELoginButton";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
-import "@/components/ui/loader.css";
 import $ from "jquery";
 import "jquery-validation";
 import { Eye, EyeOff } from "lucide-react"; 

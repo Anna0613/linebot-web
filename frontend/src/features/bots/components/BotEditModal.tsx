@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { apiClient } from "@/services/UnifiedApiClient";
 import { Bot, BotUpdateData } from "@/types/bot";
+import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 
 interface BotEditModalProps {
@@ -246,7 +247,7 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-muted-foreground loading-pulse">載入中...</div>
+            <Loader text="載入中..." />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -342,14 +343,21 @@ const BotEditModal: React.FC<BotEditModalProps> = ({
               </div>
               <button
                 type="submit"
-                className={`px-4 py-2 rounded-md font-bold transition-all duration-200 ${
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-md font-bold transition-all duration-200 ${
                   hasDataChanged
                     ? "bg-[hsl(var(--primary))] text-white hover:brightness-95"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
                 disabled={loading || !hasDataChanged}
               >
-                {loading ? "更新中..." : "確認更新"}
+                {loading ? (
+                  <>
+                    <Loader size="sm" />
+                    更新中...
+                  </>
+                ) : (
+                  "確認更新"
+                )}
               </button>
             </div>
           </form>

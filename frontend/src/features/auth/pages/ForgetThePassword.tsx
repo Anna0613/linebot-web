@@ -7,7 +7,6 @@ import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import "@/components/ui/loader.css";
 import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
 const ForgetPassword = () => {
@@ -94,7 +93,7 @@ const ForgetPassword = () => {
         navigate("/login");
       }, 3000);
     } catch (error: unknown) {
-      console.error("Error occurred:", _error);
+      console.error("Error occurred:", error);
       toast({
         variant: "destructive",
         title: "發送失敗",
@@ -144,7 +143,14 @@ const ForgetPassword = () => {
                 disabled={loading}
                 className="web3-primary-button w-full rounded-full text-base font-bold h-11"
               >
-                {loading ? "載入中..." : "寄送重設連結"}
+                {loading ? (
+                  <>
+                    <Loader size="sm" />
+                    載入中...
+                  </>
+                ) : (
+                  "寄送重設連結"
+                )}
               </Button>
             </form>
 

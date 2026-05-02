@@ -5,7 +5,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, RefreshCw } from 'lucide-react';
+import { Loader } from '@/components/ui/loader';
+import { Clock } from 'lucide-react';
 import { authManager } from '@/services/UnifiedAuthManager';
 import { useToast } from '@/hooks/use-toast';
 import { useOptimizedAuthCheck } from '@/hooks/useOptimizedPolling';
@@ -163,7 +164,7 @@ export const OptimizedTokenExpiryWarning: React.FC<OptimizedTokenExpiryWarningPr
           >
             {isExtending ? (
               <>
-                <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                <Loader size="sm" className="mr-1" />
                 延長中...
               </>
             ) : (
