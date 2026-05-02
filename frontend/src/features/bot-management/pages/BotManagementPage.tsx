@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   LineChart,
   Radio,
-  Settings,
   Users,
   Wifi,
   Zap,
@@ -23,13 +22,9 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
 import { apiClient } from "@/services/UnifiedApiClient";
 import { LogicTemplate } from "@/types/bot";
-import { getWebhookUrl } from "@/config/apiConfig";
 import UserDetailsModal from "../components/users/UserDetailsModal";
 
-// 導入配額管理相關元件
-import { useQuotaStatus } from "@/hooks/useQuotaStatus";
 import AnalyticsTabContent from "@/features/bot-management/components/AnalyticsTabContent";
-import ControlTabContent from "@/features/bot-management/components/ControlTabContent";
 import LogicTabContent from "@/features/bot-management/components/LogicTabContent";
 import UsersTabContent from "@/features/bot-management/components/UsersTabContent";
 import {
@@ -95,7 +90,6 @@ const managementCopy = {
     viewSetupGuide: "View setup guide",
     tabs: {
       analytics: "Overview",
-      control: "Bot Control",
       logic: "Advanced Reports",
       users: "User Behavior",
     },
@@ -141,7 +135,6 @@ const managementCopy = {
     viewSetupGuide: "查看建立教學",
     tabs: {
       analytics: "數據總覽",
-      control: "Bot 控制",
       logic: "進階報表",
       users: "用戶行為",
     },
@@ -196,12 +189,6 @@ const BotManagementPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [logicLoading, setLogicLoading] = useState(false);
-  const [controlLoading, setControlLoading] = useState(false);
-  const [copiedWebhookUrl, setCopiedWebhookUrl] = useState(false);
-  const [webhookStatus, setWebhookStatus] = useState<WebhookStatus | null>(
-    null
-  );
-  const [webhookStatusLoading, setWebhookStatusLoading] = useState(false);
   const [timeRange, setTimeRange] = useState("week");
   const [_refreshing, setRefreshing] = useState(false);
   const [botHealth, setBotHealth] = useState<"online" | "offline" | "error">(
@@ -253,18 +240,6 @@ const BotManagementPage: React.FC = () => {
     () => isConnected,
     [isConnected]
   );
-
-  // 配額狀態查詢 - 每 5 分鐘自動刷新一次
-  const {
-    quotaStatus,
-    isLoading: quotaLoading,
-    error: quotaError,
-    refetch: refetchQuota,
-  } = useQuotaStatus({
-    botId: selectedBotId,
-    enabled: !!selectedBotId && activeTab === "control", // 只在控制頁籤時啟用
-    refreshInterval: 5 * 60 * 1000, // 5 分鐘
-  });
 
   // 獲取邏輯模板
   const fetchLogicTemplates = useCallback(async (botId: string) => {
@@ -731,44 +706,14 @@ const BotManagementPage: React.FC = () => {
       user.line_user_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 複製 Webhook URL
-  const handleCopyWebhookUrl = async () => {
-    if (!selectedBotId) return;
-
-    try {
-      const webhookUrl = getWebhookUrl(selectedBotId);
-      await navigator.clipboard.writeText(webhookUrl);
-
-      setCopiedWebhookUrl(true);
-      toast({
-        title: "複製成功",
-        description: "Webhook URL 已複製到剪貼簿",
-      });
-
-      // 2秒後重置圖標狀態
-      setTimeout(() => {
-        setCopiedWebhookUrl(false);
-      }, 2000);
-    } catch (error) {
-      console.error("複製 Webhook URL 失敗:", error);
-      toast({
-        variant: "destructive",
-        title: "複製失敗",
-        description: "無法複製 Webhook URL",
-      });
-    }
-  };
-
   // 獲取 Webhook 狀態
   const fetchWebhookStatus = useCallback(async (botId: string) => {
     if (!botId) return;
 
-    setWebhookStatusLoading(true);
     try {
       const response = await apiClient.getWebhookStatus(botId);
       if (response.data && !response.error) {
         const statusData = response.data as WebhookStatus;
-        setWebhookStatus(statusData);
 
         // 根據 Webhook 狀態設置 Bot 健康狀態
         if (statusData.status === "active") {
@@ -781,23 +726,13 @@ const BotManagementPage: React.FC = () => {
           setBotHealth("offline");
         }
       } else {
-        setWebhookStatus(null);
         setBotHealth("error");
       }
     } catch (error) {
       console.error("獲取 Webhook 狀態失敗:", error);
-      setWebhookStatus(null);
       setBotHealth("error");
-    } finally {
-      setWebhookStatusLoading(false);
     }
   }, []);
-
-  // 檢查 Webhook 狀態
-  const handleCheckWebhookStatus = async () => {
-    if (!selectedBotId) return;
-    await fetchWebhookStatus(selectedBotId);
-  };
 
   // 處理時間範圍變更
   const handleTimeRangeChange = (newRange: string) => {
@@ -870,68 +805,6 @@ const BotManagementPage: React.FC = () => {
     }
   };
 
-  // 處理Bot健康檢查
-  const handleCheckBotHealth = async () => {
-    if (!selectedBotId) return;
-
-    setControlLoading(true);
-
-    try {
-      // 使用 webhook status API 來檢查 Bot 狀態
-      const response = await apiClient.getWebhookStatus(selectedBotId);
-
-      if (response.data && !response.error) {
-        const statusData = response.data as WebhookStatus;
-
-        // 根據 Bot 的配置和 LINE API 連接狀態設定健康狀態
-        if (statusData.status === "active") {
-          setBotHealth("online");
-          toast({
-            title: "狀態檢查",
-            description: "Bot 運作正常，Webhook 已綁定",
-          });
-        } else if (statusData.status === "not_configured") {
-          setBotHealth("error");
-          toast({
-            title: "狀態檢查",
-            description: "Bot 尚未配置 Channel Token 或 Channel Secret",
-            variant: "destructive",
-          });
-        } else if (statusData.status === "configuration_error") {
-          setBotHealth("error");
-          toast({
-            title: "狀態檢查",
-            description: "Bot 配置錯誤，無法連接 LINE API",
-            variant: "destructive",
-          });
-        } else {
-          setBotHealth("offline");
-          toast({
-            title: "狀態檢查",
-            description: "Bot 已配置但 Webhook 未綁定",
-            variant: "destructive",
-          });
-        }
-      } else {
-        setBotHealth("error");
-        toast({
-          variant: "destructive",
-          title: "檢查失敗",
-          description: response.error || "無法獲取 Bot 狀態",
-        });
-      }
-    } catch (_error) {
-      setBotHealth("error");
-      toast({
-        variant: "destructive",
-        title: "檢查失敗",
-        description: "網路錯誤，無法檢查 Bot 狀態",
-      });
-    } finally {
-      setControlLoading(false);
-    }
-  };
-
   // 初始化全域 Bot 列表
   useEffect(() => {
     const initializeData = async () => {
@@ -980,7 +853,6 @@ const BotManagementPage: React.FC = () => {
         setSearchTerm("");
         setBroadcastMessage("");
         setLogicTemplates([]);
-        setWebhookStatus(null);
 
         try {
           // 順序載入，避免並發問題
@@ -1220,20 +1092,7 @@ const BotManagementPage: React.FC = () => {
       }
 
       case "webhook_status_update":
-        setWebhookStatusLoading(true);
-        apiClient
-          .getWebhookStatus(selectedBotId)
-          .then((response) => {
-            if (response.data) {
-              setWebhookStatus(response.data as WebhookStatus);
-            }
-          })
-          .catch(() => {
-            // 靜默處理錯誤
-          })
-          .finally(() => {
-            setWebhookStatusLoading(false);
-          });
+        void fetchWebhookStatus(selectedBotId);
         break;
 
       case "pong":
@@ -1254,6 +1113,7 @@ const BotManagementPage: React.FC = () => {
     selectedUser,
     fetchUsersSilently,
     fetchUserInteractionsSilently,
+    fetchWebhookStatus,
   ]);
 
   // 更新渲染時間
@@ -1389,13 +1249,6 @@ const BotManagementPage: React.FC = () => {
                 {copy.tabs.analytics}
               </TabsTrigger>
               <TabsTrigger
-                value="control"
-                className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-sm font-semibold text-slate-500 shadow-none transition-colors data-[state=active]:border-[#16a34a] data-[state=active]:bg-transparent data-[state=active]:text-[#166534] data-[state=active]:shadow-none"
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                {copy.tabs.control}
-              </TabsTrigger>
-              <TabsTrigger
                 value="logic"
                 className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-sm font-semibold text-slate-500 shadow-none transition-colors data-[state=active]:border-[#16a34a] data-[state=active]:bg-transparent data-[state=active]:text-[#166534] data-[state=active]:shadow-none"
               >
@@ -1425,26 +1278,6 @@ const BotManagementPage: React.FC = () => {
                 onRefreshActivities={handleRefreshActivities}
                 onTimeRangeChange={handleTimeRangeChange}
                 isWebSocketConnected={checkWebSocketConnection}
-              />
-            </TabsContent>
-
-            <TabsContent value="control" className="space-y-6">
-              <ControlTabContent
-                selectedBotId={selectedBotId}
-                selectedBot={selectedBot}
-                botHealth={botHealth}
-                isConnected={isConnected}
-                quotaStatus={quotaStatus}
-                quotaLoading={quotaLoading}
-                quotaError={quotaError}
-                webhookStatus={webhookStatus}
-                webhookStatusLoading={webhookStatusLoading}
-                copiedWebhookUrl={copiedWebhookUrl}
-                controlLoading={controlLoading}
-                onRefreshQuota={refetchQuota}
-                onCheckBotHealth={handleCheckBotHealth}
-                onCopyWebhookUrl={handleCopyWebhookUrl}
-                onCheckWebhookStatus={handleCheckWebhookStatus}
               />
             </TabsContent>
 
