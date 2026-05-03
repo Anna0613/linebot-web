@@ -47,6 +47,7 @@ const Setting: React.FC = () => {
     user,
     setUser,
     userImage,
+    setUserImage,
     loading: profileLoading,
     setLoading: setProfileLoading,
     avatarLoading,
@@ -88,6 +89,7 @@ const Setting: React.FC = () => {
         setDisplayName(completeUser.display_name);
         setEmail(authUser.email || "");
         setEmailVerified(authUser.email_verified || false);
+        setUserImage(authUser.picture_url || authUser.avatar || null);
 
         // 載入詳細的用戶資料
         if (!authUser.isLineUser) {
@@ -111,6 +113,7 @@ const Setting: React.FC = () => {
     loadUserAvatar,
     loadEmailStatus,
     setProfileLoading,
+    setUserImage,
   ]);
 
   // 處理顯示名稱保存

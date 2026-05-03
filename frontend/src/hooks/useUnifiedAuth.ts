@@ -68,16 +68,22 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
         
         if (result.data || result.id) {
           const profileData = result.data || result;
+          const isLineUser = Boolean(
+            profileData.isLineUser ||
+            profileData.line_id ||
+            profileData.picture_url
+          );
           const userData: UnifiedUser = {
             id: profileData.id || profileData.username,
             username: profileData.username,
             email: profileData.email,
+            email_verified: profileData.email_verified,
             display_name: profileData.display_name || profileData.username,
-            login_type: authManager.getUserInfo()?.login_type || 'traditional',
+            login_type: isLineUser ? 'line' : authManager.getUserInfo()?.login_type || 'traditional',
             // LINE 用戶相關資料
             line_id: profileData.line_id,
             picture_url: profileData.picture_url,
-            isLineUser: profileData.isLineUser || false,
+            isLineUser,
           };
 
           authManager.setUserInfo(userData);
