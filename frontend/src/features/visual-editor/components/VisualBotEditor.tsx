@@ -11,6 +11,16 @@ import { useSelectedBot } from '@/features/bots/context/SelectedBotContext';
 import { UnifiedBlock } from '@/features/visual-editor/types/block';
 import VisualEditorApi, { FlexMessage } from '@/features/visual-editor/api/visualEditorApi';
 import { VisualEditorProvider } from '@/features/visual-editor/context/VisualEditorContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // 專案資料介面（未使用,已移除）
 type VisualEditorRouteState = {
@@ -19,6 +29,10 @@ type VisualEditorRouteState = {
   returnTo?: string;
   returnLabel?: string;
 };
+
+type PendingUnsavedAction =
+  | { type: 'back' }
+  | { type: 'switchBot'; botId: string };
 
 export const VisualBotEditor: React.FC = () => {
   const navigate = useNavigate();
@@ -46,6 +60,7 @@ export const VisualBotEditor: React.FC = () => {
   const [lastSavedTime, setLastSavedTime] = useState<Date | undefined>();
   const [saveError, setSaveError] = useState<string>('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingUnsavedAction, setPendingUnsavedAction] = useState<PendingUnsavedAction | null>(null);
 
   // 標記為有未儲存變更 - 使用防抖優化
   const markAsChanged = useCallback(() => {
@@ -80,9 +95,7 @@ export const VisualBotEditor: React.FC = () => {
 
     // 如果有未儲存的變更，先嘗試儲存
     if (hasUnsavedChanges) {
-      if (confirm('您有未儲存的變更，確定要離開嗎？變更將會遺失。')) {
-        goBack();
-      }
+      setPendingUnsavedAction({ type: 'back' });
     } else {
       goBack();
     }
@@ -92,25 +105,7 @@ export const VisualBotEditor: React.FC = () => {
   const isInitialLoadRef = useRef(true);
   const previousBlocksRef = useRef({ logicBlocks: [], flexBlocks: [] });
   const isSavingRef = useRef(false);
-
-  // 頁面離開前的確認
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        event.preventDefault();
-        event.returnValue = '您有未儲存的變更，確定要離開嗎？';
-        return '您有未儲存的變更，確定要離開嗎？';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [hasUnsavedChanges]);
-
-
+  const confirmingUnsavedActionRef = useRef(false);
 
   const applyBotSelection = useCallback((botId: string) => {
     setSelectedBotId(botId);
@@ -155,13 +150,8 @@ export const VisualBotEditor: React.FC = () => {
     if (!globalSelectedBotId || globalSelectedBotId === selectedBotId) return;
 
     if (hasUnsavedChanges) {
-      const shouldSwitch = confirm('您有未儲存的變更，切換 Bot 後目前變更將會遺失。確定要切換嗎？');
-      if (!shouldSwitch) {
-        if (selectedBotId) {
-          selectBot(selectedBotId);
-        }
-        return;
-      }
+      setPendingUnsavedAction({ type: 'switchBot', botId: globalSelectedBotId });
+      return;
     }
 
     void handleBotSelect(globalSelectedBotId);
@@ -483,6 +473,41 @@ export const VisualBotEditor: React.FC = () => {
     console.log('視覺化編輯器已載入，請選擇一個 Bot 開始編輯');
   }, []);
 
+  const cancelPendingUnsavedAction = () => {
+    if (pendingUnsavedAction?.type === 'switchBot' && selectedBotId) {
+      selectBot(selectedBotId);
+    }
+    setPendingUnsavedAction(null);
+  };
+
+  const confirmPendingUnsavedAction = () => {
+    const action = pendingUnsavedAction;
+    confirmingUnsavedActionRef.current = true;
+    setPendingUnsavedAction(null);
+
+    if (!action) {
+      confirmingUnsavedActionRef.current = false;
+      return;
+    }
+
+    if (action.type === 'back') {
+      navigate(returnTo);
+      return;
+    }
+
+    void handleBotSelect(action.botId);
+  };
+
+  const unsavedDialogTitle =
+    pendingUnsavedAction?.type === 'switchBot'
+      ? '切換 Bot'
+      : '離開編輯器';
+
+  const unsavedDialogDescription =
+    pendingUnsavedAction?.type === 'switchBot'
+      ? '您有未儲存的變更，切換 Bot 後目前變更將會遺失。'
+      : '您有未儲存的變更，離開後目前變更將會遺失。';
+
   return (
     <VisualEditorProvider selectedBotId={selectedBotId}>
       <DragDropProvider>
@@ -556,6 +581,34 @@ export const VisualBotEditor: React.FC = () => {
           />
         </div>
       </div>
+      <AlertDialog open={Boolean(pendingUnsavedAction)} onOpenChange={(open) => {
+        if (open) return;
+        if (confirmingUnsavedActionRef.current) {
+          confirmingUnsavedActionRef.current = false;
+          return;
+        }
+        cancelPendingUnsavedAction();
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{unsavedDialogTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {unsavedDialogDescription}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelPendingUnsavedAction}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmPendingUnsavedAction}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              確定
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DragDropProvider>
     </VisualEditorProvider>
   );

@@ -105,7 +105,6 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
 
   const onDelete = async (m: RichMenu) => {
     if (!selectedBotId) return;
-    if (!confirm(`確定刪除 Rich Menu「${m.name}」？`)) return;
     try {
       await RichMenuApi.remove(selectedBotId, m.id);
       toast({ title: '已刪除', description: 'Rich Menu 已刪除' });

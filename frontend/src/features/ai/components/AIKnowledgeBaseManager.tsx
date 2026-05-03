@@ -8,6 +8,17 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import AIKnowledgeApi, { KnowledgeDocumentItem, Scope } from '../api/aiKnowledgeApi';
 import { API_CONFIG } from '@/config/apiConfig';
 import ProcessingJobTracker from './ProcessingJobTracker';
@@ -364,9 +375,6 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     const ids = Object.entries(selected).filter(([, value]) => value).map(([id]) => id);
     if (!ids.length) return;
 
-    const confirmMessage = `確定要刪除 ${ids.length} 個文件嗎？`;
-    if (!window.confirm(confirmMessage)) return;
-
     const operationId = 'deleteSelected';
     setDeleting(true);
     isOperatingRef.current = true;
@@ -498,15 +506,35 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
             )}
           </div>
 
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={deleteSelected}
-            disabled={!Object.values(selected).some(Boolean) || isOperatingRef.current || deleting}
-          >
-            {deleting ? <Loader size="sm" /> : <Trash2 aria-hidden="true" />}
-            {deleting ? '刪除中...' : '刪除'}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={!Object.values(selected).some(Boolean) || isOperatingRef.current || deleting}
+              >
+                {deleting ? <Loader size="sm" /> : <Trash2 aria-hidden="true" />}
+                {deleting ? '刪除中...' : '刪除'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>刪除知識文件</AlertDialogTitle>
+                <AlertDialogDescription>
+                  確定要刪除 {selectedCount} 個文件嗎？此操作完成後無法復原。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => void deleteSelected()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  確認刪除
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         <div className="grid grid-cols-12 border-b px-3 py-2 text-xs text-muted-foreground">
