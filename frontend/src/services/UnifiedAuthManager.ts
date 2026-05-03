@@ -24,8 +24,10 @@ export interface UnifiedUser {
   id: string;
   username: string;
   email?: string;
+  email_verified?: boolean;
   display_name: string;
   picture_url?: string;
+  avatar?: string;
   line_id?: string;
   isLineUser?: boolean;
   login_type: 'traditional' | 'line' | 'oauth';
@@ -39,6 +41,11 @@ export interface TokenInfo {
   scope?: string;
   rememberMe?: boolean; // 新增記住我選項
 }
+
+type ApiUserPayload = Partial<UnifiedUser> & {
+  email_verified?: boolean;
+  line_display_name?: string;
+};
 
 export class UnifiedAuthManager {
   private static instance: UnifiedAuthManager;
@@ -191,6 +198,31 @@ export class UnifiedAuthManager {
     }
   }
 
+  private normalizeApiUser(user: ApiUserPayload): UnifiedUser {
+    const isLineUser = Boolean(
+      user.isLineUser ||
+      user.login_type === 'line' ||
+      user.line_id ||
+      user.picture_url
+    );
+    const loginType: UnifiedUser['login_type'] =
+      user.login_type === 'oauth' ? 'oauth' : isLineUser ? 'line' : 'traditional';
+    const username = user.username || user.display_name || user.line_display_name || '';
+
+    return {
+      id: user.id || username,
+      username,
+      email: user.email,
+      email_verified: user.email_verified,
+      display_name: user.display_name || user.line_display_name || username,
+      picture_url: user.picture_url,
+      avatar: user.avatar,
+      line_id: user.line_id,
+      isLineUser,
+      login_type: loginType
+    };
+  }
+
   /**
    * 檢查是否已認證（帶自動刷新和快取）
    */
@@ -209,13 +241,7 @@ export class UnifiedAuthManager {
       const ok = !!data?.authenticated;
       cacheService.set(CACHE_KEYS.AUTH_STATUS, ok, CACHE_TTL.AUTH_STATUS);
       if (ok && data.user) {
-        this.setUserInfo({
-          id: data.user.id || data.user.username,
-          username: data.user.username,
-          email: data.user.email,
-          display_name: data.user.username,
-          login_type: 'traditional'
-        });
+        this.setUserInfo(this.normalizeApiUser(data.user));
       }
       return ok;
     } catch {

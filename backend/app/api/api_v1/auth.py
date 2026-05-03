@@ -235,12 +235,24 @@ async def check_login(
     """檢查登入狀態"""
     try:
         user = await get_current_user_async(request, db)
+        line_account = user.line_account
+        is_line_user = line_account is not None
         return {
             "authenticated": True,
             "user": {
                 "id": str(user.id),
                 "username": user.username,
-                "email": user.email
+                "email": user.email,
+                "email_verified": user.email_verified,
+                "display_name": (
+                    line_account.display_name
+                    if is_line_user and line_account.display_name
+                    else user.username
+                ),
+                "login_type": "line" if is_line_user else "traditional",
+                "line_id": line_account.line_id if is_line_user else None,
+                "picture_url": line_account.picture_url if is_line_user else None,
+                "isLineUser": is_line_user
             }
         }
     except HTTPException:
