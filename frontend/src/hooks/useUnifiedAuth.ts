@@ -173,7 +173,11 @@ export const useUnifiedAuth = (options: UseUnifiedAuthOptions = {}) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || errorData.detail || '登錄失敗');
+        const backendMessage = errorData.error || errorData.detail || '登錄失敗';
+        if (typeof backendMessage === 'string' && backendMessage.includes('郵箱尚未驗證')) {
+          throw new Error('請先到信箱完成驗證，再回來登入。');
+        }
+        throw new Error(backendMessage);
       }
 
       // 成功時由後端以 Set-Cookie 建立會話；不再依賴回傳 token

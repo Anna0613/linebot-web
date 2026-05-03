@@ -93,92 +93,163 @@ class EmailService:
             <title>信箱驗證</title>
             <style>
                 body {{
-                    font-family: 'Helvetica Neue', Arial, sans-serif;
-                    background-color: #f4f4f4;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+                    background: #f8fafc;
+                    color: #0f172a;
                     margin: 0;
                     padding: 0;
+                }}
+                a {{
+                    color: inherit;
+                }}
+                .page {{
+                    background: linear-gradient(135deg, #ecfdf5 0%, #f8fafc 48%, #f6efe5 100%);
+                    padding: 36px 16px;
                 }}
                 .container {{
                     max-width: 600px;
                     margin: 0 auto;
-                    background-color: #ffffff;
-                    padding: 20px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    overflow: hidden;
+                    background: rgba(255, 255, 255, 0.92);
+                    border: 1px solid rgba(255, 255, 255, 0.8);
+                    border-radius: 8px;
+                    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.10);
                 }}
                 .header {{
-                    text-align: center;
-                    color: #333;
-                    margin-bottom: 30px;
+                    padding: 32px 32px 20px;
+                    text-align: left;
+                }}
+                .kicker {{
+                    margin: 0 0 10px;
+                    color: #047857;
+                    font-size: 12px;
+                    font-weight: 700;
+                    letter-spacing: 0.04em;
+                    text-transform: uppercase;
+                }}
+                h1 {{
+                    margin: 0;
+                    color: #0f172a;
+                    font-size: 28px;
+                    line-height: 1.25;
+                    font-weight: 700;
                 }}
                 .content {{
-                    color: #555;
-                    line-height: 1.6;
-                    margin-bottom: 30px;
+                    padding: 0 32px 32px;
+                    color: #475569;
+                    font-size: 15px;
+                    line-height: 1.7;
                 }}
                 .verify-button {{
                     display: inline-block;
-                    background-color: #06c755;
-                    color: white;
-                    padding: 12px 30px;
-                    text-decoration: none;
-                    border-radius: 5px;
-                    font-weight: bold;
-                    margin: 20px 0;
+                    background: #16a34a;
+                    color: #ffffff !important;
+                    padding: 13px 22px;
+                    text-decoration: none !important;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 700;
+                    box-shadow: 0 12px 24px rgba(22, 163, 74, 0.22);
                 }}
-                .verify-button:hover {{
-                    background-color: #05b84d;
+                .verify-button:link,
+                .verify-button:visited,
+                .verify-button:hover,
+                .verify-button:active {{
+                    color: #ffffff !important;
+                    text-decoration: none !important;
+                }}
+                .verify-button span {{
+                    color: #ffffff !important;
+                    text-decoration: none !important;
+                    -webkit-text-fill-color: #ffffff;
+                }}
+                .notice {{
+                    margin: 24px 0;
+                    padding: 16px;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                }}
+                .notice-title {{
+                    margin: 0 0 8px;
+                    color: #1e293b;
+                    font-size: 14px;
+                    font-weight: 700;
+                }}
+                .notice ul {{
+                    margin: 0;
+                    padding-left: 20px;
+                }}
+                .link-box {{
+                    margin: 12px 0 0;
+                    padding: 12px;
+                    background: #f1f5f9;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    color: #334155;
+                    font-size: 13px;
+                    line-height: 1.6;
+                    word-break: break-all;
                 }}
                 .footer {{
-                    margin-top: 30px;
-                    padding-top: 20px;
-                    border-top: 1px solid #eee;
-                    color: #888;
+                    padding: 20px 32px 28px;
+                    border-top: 1px solid #e2e8f0;
+                    color: #64748b;
                     font-size: 12px;
-                    text-align: center;
+                    line-height: 1.6;
+                    text-align: left;
                 }}
-                .warning {{
-                    background-color: #fff3cd;
-                    border: 1px solid #ffeaa7;
-                    padding: 10px;
-                    border-radius: 5px;
-                    margin: 15px 0;
-                    color: #856404;
+                @media (max-width: 480px) {{
+                    .page {{
+                        padding: 24px 12px;
+                    }}
+                    .header {{
+                        padding: 28px 22px 16px;
+                    }}
+                    .content {{
+                        padding: 0 22px 28px;
+                    }}
+                    .footer {{
+                        padding: 18px 22px 24px;
+                    }}
+                    h1 {{
+                        font-size: 24px;
+                    }}
                 }}
             </style>
         </head>
         <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🤖 LineBot-Web 信箱驗證</h1>
-                </div>
-                
-                <div class="content">
-                    <p>親愛的用戶您好，</p>
-                    <p>感謝您註冊 LineBot-Web 服務！為了確保您的帳戶安全，請點擊下方按鈕完成信箱驗證：</p>
-                    
-                    <div style="text-align: center;">
-                        <a href="{verify_url}" class="verify-button">驗證信箱</a>
+            <div class="page">
+                <div class="container">
+                    <div class="header">
+                        <p class="kicker">Account Verification</p>
+                        <h1>完成信箱驗證</h1>
                     </div>
-                    
-                    <div class="warning">
-                        <strong>⚠️ 重要提醒：</strong>
-                        <ul>
-                            <li>此驗證連結將在 24 小時後失效</li>
-                            <li>如果您沒有註冊 LineBot-Web 帳戶，請忽略此郵件</li>
-                            <li>請勿將此連結分享給他人</li>
-                        </ul>
+                    <div class="content">
+                        <p>您好，</p>
+                        <p>感謝您註冊 LineBot-Web。請先完成信箱驗證，帳號啟用後即可登入 LINE Bot 工作台。</p>
+
+                        <div style="margin: 28px 0;">
+                            <a href="{verify_url}" class="verify-button" style="display:inline-block;background:#16a34a;color:#ffffff !important;padding:13px 22px;text-decoration:none !important;border-radius:8px;font-size:14px;font-weight:700;box-shadow:0 12px 24px rgba(22, 163, 74, 0.22);">
+                                <span style="color:#ffffff !important;text-decoration:none !important;-webkit-text-fill-color:#ffffff;">驗證電子郵件</span>
+                            </a>
+                        </div>
+
+                        <div class="notice">
+                            <p class="notice-title">驗證前請留意</p>
+                            <ul>
+                                <li>驗證連結將在 1 小時後失效。</li>
+                                <li>完成驗證前，帳號無法登入工作台。</li>
+                                <li>如果您沒有註冊 LineBot-Web，請忽略此郵件。</li>
+                            </ul>
+                        </div>
+
+                        <p>如果按鈕無法開啟，請複製以下連結到瀏覽器：</p>
+                        <div class="link-box">{verify_url}</div>
                     </div>
-                    
-                    <p>如果按鈕無法點擊，請複製以下連結至瀏覽器：</p>
-                    <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">
-                        {verify_url}
-                    </p>
-                </div>
-                
-                <div class="footer">
-                    <p>此郵件由 LineBot-Web 系統自動發送，請勿回覆。</p>
-                    <p>如有任何問題，請聯繫我們的客服團隊。</p>
+                    <div class="footer">
+                        此郵件由 LineBot-Web 系統自動發送，請勿回覆。為了保護帳號安全，請勿將驗證連結轉寄給他人。
+                    </div>
                 </div>
             </div>
         </body>
@@ -188,7 +259,7 @@ class EmailService:
         # 發送郵件
         try:
             email_service = EmailService._get_email_service()
-            email_service._send_email_sync(email, "【LineBot-Web】信箱驗證", email_template)
+            email_service._send_email_sync(email, "【LineBot-Web】完成信箱驗證", email_template)
             logging.getLogger(__name__).info("驗證郵件發送成功", extra={"email": email})
         except Exception as e:
             logging.getLogger(__name__).warning("驗證郵件發送失敗", extra={"email": email, "error": str(e)})

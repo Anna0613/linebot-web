@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 import aiohttp
 import secrets
@@ -57,9 +58,36 @@ class AuthService:
             password=hashed_password,
             email_verified=False if user_data.email else True  # 沒有郵箱的話直接設為已驗證
         )
-        db.add(db_user)
-        await db.commit()
-        await db.refresh(db_user)
+        try:
+            db.add(db_user)
+            await db.commit()
+            await db.refresh(db_user)
+        except IntegrityError as e:
+            await db.rollback()
+
+            detail = "用戶名稱或郵箱已被註冊"
+            try:
+                res = await db.execute(select(User).where(User.username == user_data.username))
+                if res.scalars().first():
+                    detail = "用戶名稱已被註冊"
+                elif user_data.email:
+                    res = await db.execute(select(User).where(User.email == user_data.email))
+                    if res.scalars().first():
+                        detail = "郵箱地址已被註冊"
+            except Exception:
+                logger.warning(
+                    "註冊唯一鍵衝突後查詢既有用戶失敗",
+                    extra={"username": user_data.username, "email": user_data.email},
+                )
+
+            logger.info(
+                "註冊資料已存在",
+                extra={"username": user_data.username, "email": user_data.email, "detail": detail},
+            )
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=detail,
+            ) from e
         
         # 發送驗證郵件（如果有提供郵箱）
         if user_data.email:
