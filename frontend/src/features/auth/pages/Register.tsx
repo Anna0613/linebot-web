@@ -15,6 +15,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 const Register = () => {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const isSubmittingRef = useRef(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -102,23 +103,28 @@ const Register = () => {
       },
       submitHandler: async (form, evt) => {
         evt?.preventDefault();
-        clearError();
-        
-        // 從表單直接獲取值，確保是最新的
-        const formData = new FormData(form);
-        const usernameValue = formData.get('username') as string || username;
-        const passwordValue = formData.get('password') as string || password;
-        const emailValue = formData.get('email') as string || email;
-        
-        console.log('表單提交資料:', { usernameValue, passwordValue, emailValue });
-        
-        const success = await register(usernameValue, passwordValue, emailValue);
+        if (isSubmittingRef.current) return;
 
-        if (success) {
-          navigate("/email-verification-pending", {
-            replace: true,
-            state: { email: emailValue }
-          });
+        isSubmittingRef.current = true;
+        clearError();
+
+        try {
+          // 從表單直接獲取值，確保是最新的
+          const formData = new FormData(form);
+          const usernameValue = formData.get('username') as string || username;
+          const passwordValue = formData.get('password') as string || password;
+          const emailValue = formData.get('email') as string || email;
+
+          const success = await register(usernameValue, passwordValue, emailValue);
+
+          if (success) {
+            navigate("/email-verification-pending", {
+              replace: true,
+              state: { email: emailValue }
+            });
+          }
+        } finally {
+          isSubmittingRef.current = false;
         }
       },
     });
@@ -126,6 +132,8 @@ const Register = () => {
 
   const noopSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading || isSubmittingRef.current) return;
+
     if (formRef.current) {
       $(formRef.current).submit();
     }

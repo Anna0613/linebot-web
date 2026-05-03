@@ -2,9 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
-import { CheckCircle, XCircle } from "lucide-react";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  RotateCw,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
+import AuthFormLayout from "../components/AuthFormLayout";
 import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
 const EmailVerification = () => {
@@ -38,10 +44,10 @@ const EmailVerification = () => {
 
         if (response.ok) {
           setStatus("success");
-          setMessage("電子郵件驗證成功！");
+          setMessage(data.message || "電子郵件驗證成功！");
         } else {
           setStatus("error");
-          setMessage(data.message || "驗證失敗，請重試");
+          setMessage(data.detail || data.message || "驗證失敗，請重試");
         }
       } catch (_error) {
         setStatus("error");
@@ -56,81 +62,73 @@ const EmailVerification = () => {
     switch (status) {
       case "loading":
         return (
-          <div className="flex flex-col items-center">
-            <Loader fullPage={false} text="正在驗證您的電子郵件..." web3Style={true} />
+          <div className="flex flex-col items-center gap-4 py-4 text-center">
+            <Loader fullPage={false} text="正在確認驗證連結" />
+            <p className="text-sm leading-6 text-slate-500">
+              請稍候，我們正在啟用您的帳號。
+            </p>
           </div>
         );
       case "success":
         return (
-          <div className="flex flex-col items-center">
-            <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
-              <CheckCircle className="w-12 h-12 text-green-500" />
+          <div className="flex flex-col items-center text-center">
+            <div className="app-soft-icon mb-5 h-14 w-14">
+              <CheckCircle2 className="h-7 w-7" />
             </div>
-            <h2 className="text-2xl font-bold text-green-600 mb-4">
-              驗證成功！
-            </h2>
-            <p className="text-muted-foreground text-center mb-8">
-              您的電子郵件已經成功驗證。
-              <br />
-              現在可以使用您的帳號登入了。
+            <p className="text-sm leading-6 text-slate-600">
+              {message || "您的電子郵件已成功驗證。"}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              現在可以使用帳號登入 LINE Bot 工作台。
             </p>
             <Button
               onClick={() => navigate("/login")}
-              className="web3-primary-button px-8"
+              className="app-primary-button mt-6 w-full"
             >
               前往登入
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         );
       case "error":
         return (
-          <div className="flex flex-col items-center">
-            <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-6">
-              <XCircle className="w-12 h-12 text-red-500" />
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-rose-100 text-rose-700">
+              <XCircle className="h-7 w-7" />
             </div>
-            <h2 className="text-2xl font-bold text-red-600 mb-4">驗證失敗</h2>
-            <p className="text-muted-foreground text-center mb-4">
-              {message}
-            </p>
-            
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
-              <div className="text-sm text-amber-800">
-                <p className="font-medium mb-2">💡 可能的解決方法：</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>檢查您是否點擊了正確的驗證連結</li>
-                  <li>驗證連結可能已經過期（24小時後失效）</li>
-                  <li>如果連結已過期，您可以重新註冊</li>
-                  <li>確認您的網路連線正常</li>
-                </ul>
+            <p className="text-sm leading-6 text-slate-600">{message}</p>
+
+            <div className="app-muted-panel mt-6 w-full space-y-3 text-left">
+              <div className="flex gap-3">
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-none text-amber-700" />
+                <p className="text-sm leading-6 text-slate-600">
+                  請確認您點擊的是最新一封驗證信中的連結，且連結仍在有效時間內。
+                </p>
+              </div>
+              <div className="flex gap-3 border-t border-slate-200/70 pt-3">
+                <ShieldCheck className="mt-0.5 h-5 w-5 flex-none text-emerald-700" />
+                <p className="text-sm leading-6 text-slate-600">
+                  帳號必須完成信箱驗證後才能登入。若連結已失效，請回到註冊流程重新取得驗證信。
+                </p>
               </div>
             </div>
-            
-            <div className="space-y-4 w-full">
+
+            <div className="mt-6 space-y-3 w-full">
               <Button
                 onClick={() => window.location.reload()}
                 variant="outline"
-                className="rounded-full px-8 w-full"
+                className="app-secondary-button w-full"
               >
+                <RotateCw className="h-4 w-4" />
                 重試
               </Button>
               <Button
                 onClick={() => navigate("/register")}
-                className="web3-button px-8 w-full"
+                className="app-primary-button w-full"
               >
-                重新註冊
+                返回註冊頁
+                <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button
-                onClick={() => navigate("/login")}
-                className="web3-primary-button px-8 w-full"
-              >
-                返回登入頁面
-              </Button>
-            </div>
-            
-            <div className="mt-6 text-center">
-              <p className="text-xs text-muted-foreground">
-                如果問題持續存在，請聯繫我們的客服團隊尋求協助
-              </p>
             </div>
           </div>
         );
@@ -139,18 +137,22 @@ const EmailVerification = () => {
     }
   };
 
+  const pageTitle = {
+    loading: "正在驗證信箱",
+    success: "信箱驗證成功",
+    error: "信箱驗證失敗",
+  }[status];
+
+  const pageDescription = {
+    loading: "我們正在確認您的驗證連結。",
+    success: "帳號已啟用，現在可以登入工作台。",
+    error: "驗證連結無法完成啟用，請確認連結狀態。",
+  }[status];
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
-        <div className="max-w-md w-full">
-          <div className="web3-glass-card p-8 web3-hover-glow">
-            {renderContent()}
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
+    <AuthFormLayout title={pageTitle} description={pageDescription}>
+      {renderContent()}
+    </AuthFormLayout>
   );
 };
 

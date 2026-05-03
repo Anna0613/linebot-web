@@ -7,7 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
 import AuthFormLayout from "../components/AuthFormLayout";
-import EmailVerificationPrompt from "../components/EmailVerificationPrompt";
 import LINELoginButton from "../components/LINELoginButton";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { authManager } from "@/services/UnifiedAuthManager";
@@ -22,12 +21,10 @@ const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [showEmailVerificationPrompt, setShowEmailVerificationPrompt] =
-    useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { login, loading, error, clearError, handleLineLogin } = useUnifiedAuth({
+  const { login, loading, clearError, handleLineLogin } = useUnifiedAuth({
     redirectTo: "/login"
   });
 
@@ -100,11 +97,6 @@ const LoginPage = () => {
         const success = await login(username, password, rememberMe);
 
         if (success) {
-          // 檢查是否需要郵件驗證
-          if (error && error.includes("電子郵件")) {
-            setShowEmailVerificationPrompt(true);
-            return;
-          }
           navigate("/dashboard", { replace: true });
         }
       },
@@ -121,7 +113,7 @@ const LoginPage = () => {
         // Ignore cleanup errors
       }
     };
-  }, [clearError, error, login, navigate, password, rememberMe, username]);
+  }, [clearError, login, navigate, password, rememberMe, username]);
 
   // 保留在 LINE 登入前先存 remember 狀態
   const handleLINELoginWithRememberMe = async () => {
@@ -168,12 +160,6 @@ const LoginPage = () => {
           const success = await login(username, password, rememberMe);
 
           if (success) {
-            // 檢查是否需要郵件驗證
-            if (error && error.includes("電子郵件")) {
-              setShowEmailVerificationPrompt(true);
-              return;
-            }
-
             // 登入成功，顯示成功訊息並導航
             console.info('登入成功，導航至 dashboard');
             navigate("/dashboard", { replace: true });
@@ -186,20 +172,8 @@ const LoginPage = () => {
     }
   };
 
-  const handleResendEmail = async () => {
-    // 實作重新發送驗證郵件
-    console.log("重新發送驗證郵件功能待實現");
-  };
-
   return (
     <AuthFormLayout title="登入" description="進入 LINE Bot 工作台">
-      {showEmailVerificationPrompt && (
-        <EmailVerificationPrompt
-          onResendEmail={handleResendEmail}
-          initialCooldown={0}
-        />
-      )}
-
       <form ref={formRef} onSubmit={noopSubmit} className="space-y-4" noValidate>
         <div className="space-y-2">
           <Label htmlFor="username" className="text-slate-700">帳號</Label>
