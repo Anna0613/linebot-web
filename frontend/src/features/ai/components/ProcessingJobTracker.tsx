@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -25,17 +25,25 @@ interface ProcessingJob {
 
 interface ProcessingJobTrackerProps {
   botId: string;
+  refreshKey?: number;
   onJobCompleted?: (jobId: string) => void;
   onJobFailed?: (jobId: string, error: string) => void;
 }
 
 const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
   botId,
+  refreshKey,
   onJobCompleted,
   onJobFailed
 }) => {
   const { toast } = useToast();
   const [jobs, setJobs] = useState<ProcessingJob[]>([]);
+  const jobsRef = useRef<ProcessingJob[]>([]);
+  const callbacksRef = useRef({ onJobCompleted, onJobFailed });
+
+  useEffect(() => {
+    callbacksRef.current = { onJobCompleted, onJobFailed };
+  }, [onJobCompleted, onJobFailed]);
 
   // 獲取任務列表
   const fetchJobs = useCallback(async () => {
@@ -48,21 +56,26 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
       
       if (response.ok) {
         const jobList = await response.json();
+        const previousJobs = jobsRef.current;
+
         setJobs(jobList);
+        jobsRef.current = jobList;
         
         // 檢查是否有新完成或失敗的任務
         jobList.forEach((job: ProcessingJob) => {
-          const existingJob = jobs.find(j => j.job_id === job.job_id);
+          const existingJob = previousJobs.find(j => j.job_id === job.job_id);
           
           if (existingJob && existingJob.status !== job.status) {
-            if (job.status === 'completed' && onJobCompleted) {
-              onJobCompleted(job.job_id);
+            const { onJobCompleted: handleCompleted, onJobFailed: handleFailed } = callbacksRef.current;
+
+            if (job.status === 'completed' && handleCompleted) {
+              handleCompleted(job.job_id);
               toast({
                 title: '處理完成',
                 description: `${job.metadata.filename || '文字內容'} 已成功處理`
               });
-            } else if (job.status === 'failed' && onJobFailed) {
-              onJobFailed(job.job_id, job.error_message || '處理失敗');
+            } else if (job.status === 'failed' && handleFailed) {
+              handleFailed(job.job_id, job.error_message || '處理失敗');
               toast({
                 variant: 'destructive',
                 title: '處理失敗',
@@ -75,7 +88,7 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
     } catch (error) {
       console.error('獲取任務列表失敗:', error);
     }
-  }, [botId, jobs, onJobCompleted, onJobFailed, toast]);
+  }, [botId, toast]);
 
   // 定期更新任務狀態
   useEffect(() => {
@@ -85,7 +98,7 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
     
     // 每 2 秒更新一次進行中的任務
     const interval = setInterval(() => {
-      const hasActiveJobs = jobs.some(job => 
+      const hasActiveJobs = jobsRef.current.some(job => 
         job.status === 'pending' || job.status === 'processing'
       );
       
@@ -95,7 +108,7 @@ const ProcessingJobTracker: React.FC<ProcessingJobTrackerProps> = ({
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [botId, fetchJobs, jobs]);
+  }, [botId, fetchJobs, refreshKey]);
 
   // 取消任務
   const cancelJob = async (jobId: string) => {

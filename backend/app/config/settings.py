@@ -191,12 +191,6 @@ class Settings(BaseSettings):
     EMBEDDING_BATCH_SIZE: int = int(os.getenv("EMBEDDING_BATCH_SIZE", "64"))
     EMBEDDING_MAX_RETRIES: int = int(os.getenv("EMBEDDING_MAX_RETRIES", "3"))
 
-    # RAG fallback 設定
-    RAG_FALLBACK_ENABLED: bool = os.getenv("RAG_FALLBACK_ENABLED", "true").lower() == "true"
-    RAG_DEFAULT_TOP_K: int = int(os.getenv("RAG_DEFAULT_TOP_K", "3"))
-    RAG_DEFAULT_THRESHOLD: float = float(os.getenv("RAG_DEFAULT_THRESHOLD", "0.7"))
-    RAG_RERANK_ENABLED: bool = os.getenv("RAG_RERANK_ENABLED", "false").lower() == "true"
-
     # 通用 AI 設定
     AI_MAX_HISTORY_MESSAGES: int = int(os.getenv("AI_MAX_HISTORY_MESSAGES", "200"))
 

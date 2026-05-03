@@ -1,5 +1,5 @@
 """
-Knowledge base models for RAG
+Knowledge base models.
 """
 from sqlalchemy import (
     Column,

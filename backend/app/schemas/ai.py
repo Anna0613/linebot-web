@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -30,6 +30,9 @@ class AIQueryResponse(BaseModel):
     model: Optional[str] = Field(default=None, description="使用的模型名")
     provider: Optional[str] = Field(default=None, description="使用的 AI 提供商")
     usage_note: Optional[str] = Field(default=None, description="使用說明或備註")
+    context_metadata: Optional[Dict[str, Any]] = Field(
+        default=None, description="本次 AI 分析使用的上下文裁切與 token 估算資訊"
+    )
 
 
 class AIModelInfo(BaseModel):
@@ -44,4 +47,3 @@ class AIModelInfo(BaseModel):
 class AIModelsResponse(BaseModel):
     models: List[AIModelInfo] = Field(..., description="可用模型列表")
     current_provider: str = Field(..., description="當前使用的提供商")
-

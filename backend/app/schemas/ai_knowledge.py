@@ -9,8 +9,6 @@ class AIToggleResponse(BaseModel):
     ai_takeover_enabled: bool
     provider: Optional[str] = None
     model: Optional[str] = None
-    rag_threshold: Optional[float] = None
-    rag_top_k: Optional[int] = None
     history_messages: Optional[int] = None
     system_prompt: Optional[str] = None
 
@@ -19,8 +17,6 @@ class AIToggleRequest(BaseModel):
     enabled: bool
     provider: Optional[str] = None
     model: Optional[str] = None
-    rag_threshold: Optional[float] = None
-    rag_top_k: Optional[int] = None
     history_messages: Optional[int] = None
     system_prompt: Optional[str] = None
 

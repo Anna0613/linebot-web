@@ -114,7 +114,14 @@ class ContextFormatter:
                 if isinstance(content.get("text"), dict):
                     text = str(content["text"].get("text", "")).strip()
                 else:
-                    text = str(content.get("text") or content.get("content") or "").strip()
+                    text = str(
+                        content.get("text")
+                        or content.get("content")
+                        or content.get("altText")
+                        or content.get("title")
+                        or content.get("address")
+                        or ""
+                    ).strip()
             else:
                 text = str(content).strip()
             
@@ -122,7 +129,12 @@ class ContextFormatter:
             if not text:
                 message_type = getattr(message, 'message_type', 'message')
                 if message_type in ['image', 'video', 'audio', 'file']:
-                    text = f"[{message_type}]"
+                    text = {
+                        "image": "[圖片]",
+                        "video": "[影片]",
+                        "audio": "[語音]",
+                        "file": "[檔案]",
+                    }.get(message_type, f"[{message_type}]")
                 elif message_type == 'sticker':
                     text = "[貼圖]"
                 elif message_type == 'location':

@@ -708,12 +708,6 @@ export class UnifiedApiClient {
     data: {
       question: string;
       history?: Array<{ role: 'user'|'assistant'; content: string }>;
-      time_range_days?: number;
-      max_messages?: number;
-      model?: string;
-      provider?: string;
-      system_prompt?: string;
-      context_format?: string;
     }
   ): Promise<ApiResponse> {
     return this.post(
@@ -730,7 +724,7 @@ export class UnifiedApiClient {
     );
   }
 
-  // 清除 AI 對話歷史
+  // 清除 AI 分析快取
   public async clearAIConversationHistory(botId: string, lineUserId: string): Promise<ApiResponse> {
     return this.delete(
       getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/ai/history`)

@@ -8,7 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.sql import text as sql_text
 
 from app.db.database_async import get_async_db
@@ -23,48 +23,10 @@ from app.schemas.ai_knowledge import (
     KnowledgeDocumentResponse, KnowledgeDocumentListResponse, BatchDeleteDocumentsRequest,
 )
 from app.services.storage.text_chunker import recursive_split
-from app.services.embedding.embedding_service import embed_texts
-from app.config import settings
-
-# 導入 pgvector 支援
-try:
-    from pgvector.sqlalchemy import Vector
-except ImportError:
-    Vector = None
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-def _format_embedding_for_db(embedding: list[float]) -> any:
-    """
-    格式化嵌入向量以便儲存到資料庫
-
-    Args:
-        embedding: 嵌入向量列表
-
-    Returns:
-        適合資料庫儲存的格式
-    """
-    import math
-
-    # 清理嵌入向量，移除 NaN、Infinity 等無效值
-    cleaned_embedding = []
-    for value in embedding:
-        if math.isnan(value) or math.isinf(value):
-            cleaned_embedding.append(0.0)  # 用 0.0 替換無效值
-        else:
-            cleaned_embedding.append(float(value))
-
-    if Vector is not None:
-        # 如果有 pgvector，返回清理後的列表
-        return cleaned_embedding
-    else:
-        # 如果沒有 pgvector，轉換為 JSON 字串格式
-        import json
-        return json.dumps(cleaned_embedding)
-
 
 async def _ensure_bot_owned(db: AsyncSession, bot_id: str, user_id) -> Bot:
     res = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == user_id))
@@ -86,8 +48,6 @@ async def get_ai_settings(
         ai_takeover_enabled=bool(bot.ai_takeover_enabled),
         provider=getattr(bot, 'ai_model_provider', None),
         model=getattr(bot, 'ai_model', None),
-        rag_threshold=getattr(bot, 'ai_rag_threshold', None),
-        rag_top_k=getattr(bot, 'ai_rag_top_k', None),
         history_messages=getattr(bot, 'ai_history_messages', None),
         system_prompt=getattr(bot, 'ai_system_prompt', None),
     )
@@ -115,11 +75,6 @@ async def set_ai_settings(
         except ImportError:
             pass
         bot.ai_model = payload.model
-    # RAG 參數
-    if payload.rag_threshold is not None:
-        bot.ai_rag_threshold = float(payload.rag_threshold)
-    if payload.rag_top_k is not None:
-        bot.ai_rag_top_k = int(payload.rag_top_k)
     if payload.history_messages is not None:
         bot.ai_history_messages = int(payload.history_messages)
     if payload.system_prompt is not None:
@@ -131,8 +86,6 @@ async def set_ai_settings(
         ai_takeover_enabled=bool(bot.ai_takeover_enabled),
         provider=getattr(bot, 'ai_model_provider', None),
         model=getattr(bot, 'ai_model', None),
-        rag_threshold=getattr(bot, 'ai_rag_threshold', None),
-        rag_top_k=getattr(bot, 'ai_rag_top_k', None),
         history_messages=getattr(bot, 'ai_history_messages', None),
         system_prompt=getattr(bot, 'ai_system_prompt', None),
     )
@@ -176,6 +129,7 @@ async def add_text_knowledge(
         source_type="text",
         title=(payload.content[:40] + ("…" if len(payload.content) > 40 else "")),
         chunked=payload.auto_chunk,
+        original_content=payload.content,
         meta={"source_type": "text"},
     )
     db.add(doc)
@@ -192,20 +146,12 @@ async def add_text_knowledge(
     if not chunks:
         raise HTTPException(status_code=400, detail="內容不可為空")
 
-    embs = await embed_texts(
-        chunks,
-        model_name=settings.EMBEDDING_MODEL,
-        batch_size=settings.EMBEDDING_BATCH_SIZE,
-    )
     created_chunk = None
-    for i, (txt, emb) in enumerate(zip(chunks, embs)):
+    for i, txt in enumerate(chunks):
         kc = KnowledgeChunk(
             document_id=doc.id,
             bot_id=scope_bot,
             content=txt,
-            embedding=_format_embedding_for_db(emb),
-            embedding_model=settings.EMBEDDING_MODEL,
-            embedding_dimensions=str(settings.EMBEDDING_DIMENSIONS),
             meta={"chunk_index": i, "source_type": "text"},
         )
         db.add(kc)
@@ -224,9 +170,29 @@ async def search_knowledge(
     current_user: User = Depends(get_current_user_async),
 ):
     await _ensure_bot_owned(db, bot_id, current_user.id)
-    # vector search using raw SQL to compute cosine similarity
-    from app.services.rag.rag_service import RAGService
-    items = await RAGService.retrieve(db, bot_id, q)
+    pattern = f"%{q.strip()}%"
+    if not q.strip():
+        return KnowledgeSearchResponse(items=[])
+
+    stmt = (
+        select(KnowledgeChunk)
+        .join(KnowledgeDocument, KnowledgeChunk.document_id == KnowledgeDocument.id)
+        .where(
+            KnowledgeChunk.bot_id == bot_id,
+            KnowledgeChunk.deleted_at.is_(None),
+            KnowledgeDocument.deleted_at.is_(None),
+            or_(
+                KnowledgeChunk.content.ilike(pattern),
+                KnowledgeDocument.title.ilike(pattern),
+                KnowledgeDocument.original_file_name.ilike(pattern),
+                KnowledgeDocument.ai_summary.ilike(pattern),
+                KnowledgeDocument.original_content.ilike(pattern),
+            ),
+        )
+        .order_by(KnowledgeChunk.created_at.desc())
+        .limit(10)
+    )
+    rows = (await db.execute(stmt)).scalars().all()
     return KnowledgeSearchResponse(
         items=[
             KnowledgeSearchResponseItem(
@@ -234,9 +200,9 @@ async def search_knowledge(
                 document_id=str(kc.document_id),
                 bot_id=str(kc.bot_id) if kc.bot_id else None,
                 content=kc.content,
-                score=score,
+                score=1.0,
             )
-            for kc, score in items
+            for kc in rows
         ]
     )
 

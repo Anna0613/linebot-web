@@ -181,6 +181,7 @@ class GroqService:
         context_text: str,
         history: Optional[List[Dict[str, str]]] = None,
         system_prompt: Optional[str] = None,
+        context_kind: str = "knowledge_base",
     ) -> List[Dict[str, str]]:
         """
         建立 Groq API 的訊息列表（使用優化的提示詞模板）
@@ -196,8 +197,19 @@ class GroqService:
         """
         messages: List[Dict[str, str]] = []
 
-        # 建構系統提示詞（使用新的模板）
-        full_system_prompt = PromptTemplates.build_system_prompt(system_prompt)
+        if context_kind == "control":
+            if system_prompt and system_prompt.strip():
+                messages.append({"role": "system", "content": system_prompt.strip()})
+            if context_text and context_text.strip():
+                messages.append({"role": "user", "content": context_text.strip()})
+            messages.append({"role": "user", "content": question.strip()})
+            return messages
+
+        # 建構系統提示詞（自主回覆不套用知識庫約束）
+        if context_kind == "autonomous":
+            full_system_prompt = PromptTemplates.build_autonomous_system_prompt(system_prompt)
+        else:
+            full_system_prompt = PromptTemplates.build_system_prompt(system_prompt)
         messages.append({"role": "system", "content": full_system_prompt})
 
         # 添加對話歷史（如果有）
@@ -206,9 +218,12 @@ class GroqService:
             if history_content:
                 messages.append({"role": "user", "content": history_content})
 
-        # 添加知識庫資料（如果有）
+        # 添加上下文資料（如果有）
         if context_text and context_text.strip():
-            kb_content = PromptTemplates.wrap_knowledge_base(context_text)
+            if context_kind == "user_context":
+                kb_content = PromptTemplates.wrap_user_context(context_text)
+            else:
+                kb_content = PromptTemplates.wrap_knowledge_base(context_text)
             messages.append({"role": "user", "content": kb_content})
 
         # 添加當前問題
@@ -227,6 +242,7 @@ class GroqService:
         api_key: Optional[str] = None,
         system_prompt: Optional[str] = None,
         max_tokens: Optional[int] = None,
+        context_kind: str = "knowledge_base",
     ) -> str:
         """
         呼叫 Groq API 以取得答案（舊版本，建議使用 ask_groq_with_retry）。
@@ -238,7 +254,8 @@ class GroqService:
             model=model,
             api_key=api_key,
             system_prompt=system_prompt,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            context_kind=context_kind,
         )
 
     @staticmethod
@@ -260,6 +277,7 @@ class GroqService:
         api_key: Optional[str] = None,
         system_prompt: Optional[str] = None,
         max_tokens: Optional[int] = None,
+        context_kind: str = "knowledge_base",
     ) -> str:
         """
         帶重試機制和熔斷器的 Groq API 調用。
@@ -283,7 +301,13 @@ class GroqService:
         client = GroqService._get_client(api_key)
 
         # 準備訊息
-        messages = GroqService._build_messages_for_groq(question, context_text, history, system_prompt)
+        messages = GroqService._build_messages_for_groq(
+            question,
+            context_text,
+            history,
+            system_prompt,
+            context_kind=context_kind,
+        )
 
         # 取得模型配置
         model_config = GroqService.GROQ_MODELS.get(model)
@@ -310,9 +334,9 @@ class GroqService:
                 client.chat.completions.create(
                     model=model,
                     messages=messages,
-                    temperature=0.3,
+                    temperature=0.0 if context_kind == "control" else 0.3,
                     max_tokens=actual_max_tokens,
-                    top_p=0.9,
+                    top_p=1.0 if context_kind == "control" else 0.9,
                     stream=False
                 ),
                 timeout=30.0
@@ -502,7 +526,7 @@ class GroqService:
             system_prompt = (
                 f"你是專業的文件摘要助手。請分析以下文件內容，生成 {min_length} 到 {max_length} 字的重點摘要。\n\n"
                 "摘要要求：\n"
-                "・使用繁體中文\n"
+                "・使用與文件內容相同的主要語言；如果文件語言不明確，使用檔案名稱或內容中最主要的語言\n"
                 f"・摘要長度必須在 {min_length} 到 {max_length} 字之間\n"
                 "・簡潔明確，涵蓋文件核心內容\n"
                 "・足以讓人理解文件主題和重點\n"
