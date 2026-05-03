@@ -84,9 +84,6 @@ const SocialAccountSection = ({
                       <p className="font-medium text-green-800">
                         {user.display_name}
                       </p>
-                      <p className="text-xs text-green-600">
-                        LINE ID: {user.line_id || "N/A"}
-                      </p>
                     </div>
                   </div>
                 </div>

@@ -157,16 +157,22 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* 側邊選單遮罩 */}
-        {mobileMenuOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-slate-950/25 backdrop-blur-sm"
-            onClick={toggleMobileMenu}
-          />
-        )}
-        <div
-          className={`mobile-menu-sidebar fixed left-0 top-0 z-40 h-full w-72 border-r border-white/70 bg-white/82 p-6 text-slate-800 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur-2xl ${mobileMenuOpen ? "animate-slide-in-left" : "hidden"}`}
-        >
+      </header>
+
+      {/* 側邊選單遮罩（放在 header 外，避免 backdrop-filter 形成的包含區塊限制 fixed 定位） */}
+      <div
+        onClick={toggleMobileMenu}
+        aria-hidden={!mobileMenuOpen}
+        className={`fixed inset-0 z-[55] bg-slate-950/25 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${
+          mobileMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+      <div
+        aria-hidden={!mobileMenuOpen}
+        className={`mobile-menu-sidebar fixed left-0 top-0 z-[60] h-full w-72 border-r border-white/70 bg-white/82 p-6 text-slate-800 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur-2xl transform-gpu transition-transform duration-300 ease-in-out ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
           <div className="flex justify-end">
             <button
               onClick={toggleMobileMenu}
@@ -221,9 +227,8 @@ const Navbar = () => {
                 註冊
               </Link>
             </li>
-          </ul>
-        </div>
-      </header>
+        </ul>
+      </div>
 
       <QuickActions />
     </>
