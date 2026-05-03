@@ -42,20 +42,39 @@ class MinIOService:
         # 建立 http_client 規則：
         # 1) 若提供自訂 CA -> 強制驗證且使用 CA 檔案
         # 2) 若關閉憑證檢查 -> 設為 CERT_NONE（僅限測試環境）
-        # 3) 其他 -> 使用預設（系統/Certifi）
+        # 3) 其他 -> 使用 certifi 驗證
+        # 一律放大連線池大小，避免高併發時被預設 maxsize=10 卡住
         try:
             import urllib3  # 由 minio 依賴帶入
+            pool_kwargs = {
+                "num_pools": 10,
+                "maxsize": 50,
+                "block": False,
+                "timeout": urllib3.Timeout(connect=5.0, read=30.0),
+            }
             if settings.MINIO_CA_CERT_FILE:
                 http_client = urllib3.PoolManager(
                     cert_reqs='CERT_REQUIRED',
-                    ca_certs=settings.MINIO_CA_CERT_FILE
+                    ca_certs=settings.MINIO_CA_CERT_FILE,
+                    **pool_kwargs,
                 )
                 logger.info(f"使用自訂 CA 憑證: {settings.MINIO_CA_CERT_FILE}")
             elif not settings.MINIO_CERT_CHECK:
                 # 關閉憑證驗證（僅限開發測試使用）
                 urllib3.disable_warnings()  # 抑制 InsecureRequestWarning
-                http_client = urllib3.PoolManager(cert_reqs='CERT_NONE')
+                http_client = urllib3.PoolManager(cert_reqs='CERT_NONE', **pool_kwargs)
                 logger.warning("已關閉 HTTPS 憑證檢查（MINIO_CERT_CHECK=false）")
+            else:
+                try:
+                    import certifi
+                    ca_certs = certifi.where()
+                except ImportError:
+                    ca_certs = None
+                http_client = urllib3.PoolManager(
+                    cert_reqs='CERT_REQUIRED',
+                    ca_certs=ca_certs,
+                    **pool_kwargs,
+                )
         except Exception as e:
             # 若 urllib3 初始化失敗則沿用預設 http_client=None
             logger.warning(f"建立客製 http_client 失敗，改用預設: {e}")
