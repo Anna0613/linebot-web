@@ -4,6 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Loader } from '@/components/ui/loader';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import type { RichMenu } from '@/features/rich-menu/types/richMenu';
 
 type Props = {
@@ -154,14 +165,34 @@ const RichMenuList: React.FC<Props> = ({
                           '發佈到 LINE'
                         )}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => onDelete(menu)}
-                        disabled={publishingMenuId === menu.id}
-                      >
-                        刪除
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={publishingMenuId === menu.id}
+                          >
+                            刪除
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>刪除 Rich Menu</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              確定要刪除 Rich Menu「{menu.name}」嗎？此操作完成後無法復原。
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>取消</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onDelete(menu)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              確認刪除
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </CardContent>
