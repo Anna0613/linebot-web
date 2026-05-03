@@ -8,7 +8,6 @@ import {
   BarChart3,
   Bot as BotIcon,
   CheckCircle2,
-  ChevronRight,
   Edit3,
   Grid3X3,
   LayoutDashboard,
@@ -644,16 +643,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                   <Link to="/bots/create">
                     <Plus className="mr-2 h-4 w-4" />
                     {copy.createLineBot}
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="h-12 rounded-[16px] border-white/80 bg-white/70 px-5 font-semibold text-slate-700 hover:bg-white"
-                >
-                  <Link to="/bots/management">
-                    {copy.viewMyBots}
-                    <ChevronRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               </div>

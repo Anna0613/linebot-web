@@ -240,14 +240,14 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
 
                       <div
                         className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => onUserSelect(user)}
+                        onClick={() => {
+                          onUserSelect(user);
+                          onStartChat(user);
+                        }}
                       >
                         <h3 className="font-medium text-foreground truncate">
                           {user.display_name || "未設定名稱"}
                         </h3>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {user.line_user_id}
-                        </p>
                         {user.status_message && (
                           <p className="text-xs text-muted-foreground truncate">
                             {user.status_message}
@@ -275,30 +275,17 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onViewUserDetails(user);
-                          }}
-                          className="px-2"
-                        >
-                          <Info className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onStartChat(user);
-                          }}
-                          className="px-2"
-                        >
-                          <MessageSquare className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewUserDetails(user);
+                        }}
+                        className="px-2"
+                      >
+                        <Info className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
                 ))

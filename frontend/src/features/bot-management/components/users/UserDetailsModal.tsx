@@ -125,9 +125,6 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
               <h3 className="font-semibold text-lg">
                 {user.display_name || "未設定名稱"}
               </h3>
-              <p className="text-sm text-muted-foreground font-mono">
-                {user.line_user_id}
-              </p>
               {user.status_message && (
                 <p className="text-sm text-muted-foreground mt-1 italic">
                   "{user.status_message}"
