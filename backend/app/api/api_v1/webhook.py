@@ -42,7 +42,7 @@ def _build_ai_reply_flex_message(answer: str) -> Dict[str, Any]:
             "contents": [
                 {
                     "type": "text",
-                    "text": "🤖 AI 回覆",
+                    "text": "AI",
                     "weight": "bold",
                     "size": "sm",
                     "color": "#1E88E5"
@@ -64,31 +64,11 @@ def _build_ai_reply_flex_message(answer: str) -> Dict[str, Any]:
             ],
             "paddingTop": "sm",
             "paddingBottom": "sm"
-        },
-        "footer": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "separator",
-                    "margin": "sm"
-                },
-                {
-                    "type": "text",
-                    "text": "AI 可能會出錯，請查核重要資訊。",
-                    "size": "xxs",
-                    "color": "#999999",
-                    "margin": "sm",
-                    "wrap": True,
-                    "align": "end"
-                }
-            ],
-            "paddingTop": "sm"
         }
     }
 
 
-# 背景任務：AI 接管（RAG → 產生回答 → 發送 → 紀錄）
+# 背景任務：AI 接管（檔案查詢 → AI 自主回覆 → 發送 → 紀錄）
 async def _ai_takeover_background_task(
     *,
     bot_id: str,
@@ -97,17 +77,12 @@ async def _ai_takeover_background_task(
     reply_token: Optional[str],
     provider: Optional[str],
     model: Optional[str],
-    threshold: Optional[float],
-    top_k: Optional[int],
     hist_n: Optional[int],
     system_prompt: Optional[str],
 ):
     """在背景執行 AI 接管流程，避免阻塞 webhook 響應。"""
     try:
-        # 延遲導入以避免循環相依
-        import importlib
-        rag_module = importlib.import_module('app.services.rag.rag_service')
-        RAGService = getattr(rag_module, 'RAGService')
+        from app.services.ai.ai_takeover_service import AITakeoverService
 
         # 資料庫工作階段（獨立於請求生命週期）
         async with AsyncSessionLocal() as db:
@@ -123,22 +98,21 @@ async def _ai_takeover_background_task(
             # 建立 LineBotService 以便回覆
             line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
 
-            # 產生 AI 回答
-            answer = await RAGService.answer(
+            # 產生 AI 回答：先判斷是否需要檔案查詢，否則由 AI 自主回覆
+            answer = await AITakeoverService.answer(
                 db,
                 bot_id,
                 user_query,
                 provider=provider or getattr(bot, 'ai_model_provider', None),
                 model=model or getattr(bot, 'ai_model', None),
-                threshold=threshold or getattr(bot, 'ai_rag_threshold', None),
-                top_k=top_k or getattr(bot, 'ai_rag_top_k', None),
                 line_user_id=user_id,
                 history_messages=hist_n or getattr(bot, 'ai_history_messages', None),
                 system_prompt=system_prompt or getattr(bot, 'ai_system_prompt', None),
             )
 
             if not answer:
-                answer = "我在這裡，請告訴我您的問題。"
+                logger.warning("AI 背景任務：未產生可發送的 AI 回覆")
+                return
 
             # 構建 AI 回覆的 Flex Message
             flex_content = _build_ai_reply_flex_message(answer)
@@ -148,7 +122,7 @@ async def _ai_takeover_background_task(
                 send_result = await asyncio.to_thread(
                     line_bot_service.send_flex_message,
                     user_id,
-                    "🤖 AI 回覆",  # alt_text
+                    "AI",  # alt_text
                     flex_content
                 )
                 logger.info(f"AI 背景任務：Flex 訊息發送結果: {send_result}")
@@ -202,8 +176,6 @@ async def _schedule_ai_takeover(
     reply_token: Optional[str],
     provider: Optional[str],
     model: Optional[str],
-    threshold: Optional[float],
-    top_k: Optional[int],
     hist_n: Optional[int],
     system_prompt: Optional[str],
 ):
@@ -224,14 +196,12 @@ async def _schedule_ai_takeover(
                 'reply_token': reply_token,
                 'provider': provider,
                 'model': model,
-                'threshold': threshold,
-                'top_k': top_k,
                 'hist_n': hist_n,
                 'system_prompt': system_prompt,
             },
             priority=TaskPriority.HIGH,
             delay=0,
-            max_retries=2,
+            max_retries=0,
         )
         logger.info(f"已排入 AI 接管背景任務: {task_id}")
     except Exception as e:
@@ -696,7 +666,7 @@ async def process_single_event(
                     )
                     logger.debug(f"邏輯模板匹配結果: {len(results) if results else 0} 個回覆")
 
-                    # RAG 備援：若無符合的積木回覆、AI 接管啟用、且為文字訊息
+                    # AI 接管：若無符合的積木回覆、AI 接管啟用、且為文字訊息
                     ai_takeover_enabled = bool(getattr(bot, 'ai_takeover_enabled', False))
                     is_text_message = event_type == 'message' and event.get('message', {}).get('type') == 'text'
                     user_query = event.get('message', {}).get('text') or '' if is_text_message else ''
@@ -719,25 +689,15 @@ async def process_single_event(
                         and ai_takeover_enabled
                         and is_text_message
                     ):
-                        logger.info(f"觸發 AI 接管，開始 RAG 處理")
+                        logger.info("觸發 AI 接管，開始檔案查詢 / AI 自主回覆流程")
                         try:
-                            # 延遲導入避免循環導入問題
-                            import importlib
-                            rag_module = importlib.import_module('app.services.rag.rag_service')
-                            RAGService = getattr(rag_module, 'RAGService')
-                            logger.debug("RAGService 導入成功")
-
                             provider = getattr(bot, 'ai_model_provider', None) or 'groq'
                             model = getattr(bot, 'ai_model', None)
-                            threshold = getattr(bot, 'ai_rag_threshold', None)
-                            top_k = getattr(bot, 'ai_rag_top_k', None)
                             hist_n = getattr(bot, 'ai_history_messages', None)
 
-                            logger.info(f"🔧 RAG 參數:")
+                            logger.info("🔧 AI 接管參數:")
                             logger.info(f"  - 提供商: {provider}")
                             logger.info(f"  - 模型: {model}")
-                            logger.info(f"  - 門檻: {threshold}")
-                            logger.info(f"  - Top-K: {top_k}")
                             logger.info(f"  - 歷史訊息數: {hist_n}")
 
                             # 改為背景任務執行，避免阻塞 webhook 回應
@@ -749,14 +709,12 @@ async def process_single_event(
                                 reply_token=reply_token,
                                 provider=provider,
                                 model=model,
-                                threshold=threshold,
-                                top_k=top_k,
                                 hist_n=hist_n,
                                 system_prompt=getattr(bot, 'ai_system_prompt', None),
                             )
                             logger.info(f"AI 接管背景任務已排入")
-                        except Exception as rag_err:
-                            logger.error(f"RAG 備援失敗: {rag_err}", exc_info=True)
+                        except Exception as takeover_err:
+                            logger.error(f"AI 接管排程失敗: {takeover_err}", exc_info=True)
                     else:
                         logger.info(f"跳過 AI 接管 (條件不符合)")
             except Exception as le_err:

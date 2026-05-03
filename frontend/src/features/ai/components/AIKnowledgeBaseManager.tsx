@@ -57,6 +57,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   const [textInput, setTextInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [jobTrackerRefreshKey, setJobTrackerRefreshKey] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const loadListTimeoutRef = useRef<NodeJS.Timeout>();
@@ -281,6 +282,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
         setQuery('');
         setSubmittedQuery('');
         setPage(1);
+        setJobTrackerRefreshKey(key => key + 1);
         isOperatingRef.current = false;
         currentOperationRef.current = '';
       }
@@ -634,6 +636,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
       {botId && (
         <ProcessingJobTracker
           botId={botId}
+          refreshKey={jobTrackerRefreshKey}
           onJobCompleted={handleJobCompleted}
           onJobFailed={handleJobFailed}
         />

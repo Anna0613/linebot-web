@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -14,6 +15,7 @@ import httpx
 from app.config import settings
 from app.models.mongodb.conversation import ConversationDocument
 from app.services.ai.groq_service import GroqService
+from app.services.conversation.context_manager import TokenCounter
 from app.services.conversation.context_formatter import ContextFormatter
 from app.services.ai.prompt_templates import PromptTemplates
 from app.config.redis_config import CacheService as AsyncCache, redis_manager
@@ -21,10 +23,26 @@ from app.config.redis_config import CacheService as AsyncCache, redis_manager
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class ContextBuildResult:
+    """AI 分析上下文建構結果。"""
+
+    context_text: str
+    metadata: Dict[str, Any]
+
+
 class AIAnalysisService:
     """提供 AI 分析能力（支援 Groq 和 Google Gemini）。"""
 
     GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    ANALYSIS_PROVIDER = "groq"
+    ANALYSIS_MODEL = "openai/gpt-oss-120b"
+    ANALYSIS_MAX_OUTPUT_TOKENS = 4096
+    ANALYSIS_SAFETY_MARGIN_TOKENS = 2048
+    ANALYSIS_MAX_USER_CONTEXT_TOKENS = 32000
+    ANALYSIS_MAX_CANDIDATE_MESSAGES = 500
+    ANALYSIS_HISTORY_TURNS = 6
+    ANALYSIS_SYSTEM_PROMPT = PromptTemplates.CUSTOMER_SERVICE_ANALYSIS_PROMPT
 
     @staticmethod
     async def ask_ai(
@@ -36,6 +54,7 @@ class AIAnalysisService:
         provider: Optional[str] = None,
         system_prompt: Optional[str] = None,
         max_tokens: Optional[int] = None,
+        context_kind: str = "knowledge_base",
     ) -> Dict[str, Any]:
         """
         統一的 AI 調用介面，根據配置選擇 AI 提供商。
@@ -65,7 +84,8 @@ class AIAnalysisService:
                 history=history,
                 model=model,
                 system_prompt=system_prompt,
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
+                context_kind=context_kind,
             )
 
             return {
@@ -84,7 +104,8 @@ class AIAnalysisService:
                 context_text=context_text,
                 history=history,
                 model=model,
-                system_prompt=system_prompt
+                system_prompt=system_prompt,
+                context_kind=context_kind,
             )
 
             return {
@@ -132,16 +153,22 @@ class AIAnalysisService:
         time_range_days: Optional[int] = None,
         max_messages: int = 200,
         context_format: str = "standard",
-    ) -> str:
+        question: str = "",
+        history: Optional[List[Dict[str, str]]] = None,
+        model: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        max_output_tokens: Optional[int] = None,
+        return_metadata: bool = False,
+    ) -> str | ContextBuildResult:
         """
         從 MongoDB 讀取該用戶的對話歷史，整理為可供大模型理解的上下文文字。
 
         - 依 updated_at 取對話，若提供 time_range_days 則僅取該期間內訊息。
-        - 最多包含 max_messages 筆（越新的訊息優先）。
-        - 使用 ContextFormatter 進行格式優化以減少 token 消耗。
+        - 最多讀取固定候選上限內的最新訊息（越新的訊息優先）。
+        - 依模型 context window 自動控制 token 預算與格式。
 
         Returns:
-            str: 格式化的對話上下文，如果沒有對話則返回提示訊息
+            str 或 ContextBuildResult: 格式化的對話上下文與可選 metadata
         """
         try:
             # 先嘗試從快取獲取對話歷史（改為非同步 Redis 方案）
@@ -243,11 +270,12 @@ class AIAnalysisService:
                 messages = [m for m in messages if m['timestamp'] >= since]
                 logger.debug(f"時間範圍過濾: {original_count} -> {len(messages)} 筆訊息 (最近 {time_range_days} 天)")
 
-            # 依時間排序（舊→新），然後截取最後 max_messages 筆
+            # 依時間排序（舊→新），然後取固定候選上限；真正納入 AI 的內容由 token budget 決定
             messages.sort(key=lambda m: m['timestamp'])
-            if len(messages) > max_messages:
-                messages = messages[-max_messages:]
-                logger.debug(f"訊息數量限制: 截取最新 {max_messages} 筆")
+            candidate_limit = AIAnalysisService.ANALYSIS_MAX_CANDIDATE_MESSAGES
+            if len(messages) > candidate_limit:
+                messages = messages[-candidate_limit:]
+                logger.debug(f"訊息候選限制: 截取最新 {candidate_limit} 筆")
 
             # 最終檢查
             if not messages:
@@ -273,15 +301,204 @@ class AIAnalysisService:
             if not formatted_messages:
                 return "(訊息格式化失敗，無法進行分析)"
 
-            # 使用 ContextFormatter 進行格式化
-            context_text = ContextFormatter.format_context(formatted_messages, context_format)
-            logger.info(f"✓ 上下文建立完成: {len(formatted_messages)} 筆訊息, 格式: {context_format}, 快取命中: {cache_hit}")
+            context_result = AIAnalysisService._build_token_aware_context(
+                formatted_messages,
+                question=question,
+                history=history,
+                model=model or AIAnalysisService.ANALYSIS_MODEL,
+                system_prompt=system_prompt or AIAnalysisService.ANALYSIS_SYSTEM_PROMPT,
+                max_output_tokens=max_output_tokens or AIAnalysisService.ANALYSIS_MAX_OUTPUT_TOKENS,
+                total_candidate_messages=len(formatted_messages),
+                cache_hit=cache_hit,
+            )
+            logger.info(
+                "✓ 上下文建立完成: %s/%s 筆訊息, 格式: %s, 預估 tokens: %s, 快取命中: %s",
+                context_result.metadata.get("included_messages"),
+                context_result.metadata.get("candidate_messages"),
+                context_result.metadata.get("context_format"),
+                context_result.metadata.get("estimated_context_tokens"),
+                cache_hit,
+            )
 
-            return context_text
+            if return_metadata:
+                return context_result
+            return context_result.context_text
 
         except Exception as e:
             logger.error(f"建立用戶上下文失敗: {e}", exc_info=True)
             return f"(讀取對話歷史時發生錯誤: {str(e)})"
+
+    @staticmethod
+    def _trim_analysis_history(history: Optional[List[Dict[str, str]]]) -> List[Dict[str, str]]:
+        """保留最近少量 AI 分析對話，避免分析聊天室本身吃掉主要 token 預算。"""
+        if not history:
+            return []
+
+        cleaned: List[Dict[str, str]] = []
+        for turn in history:
+            role = turn.get("role")
+            content = str(turn.get("content") or "").strip()
+            if role not in {"user", "assistant"} or not content:
+                continue
+            cleaned.append({"role": role, "content": content})
+
+        return cleaned[-AIAnalysisService.ANALYSIS_HISTORY_TURNS:]
+
+    @staticmethod
+    def _get_model_context_length(model: str) -> int:
+        """取得固定分析模型的 context window，找不到時使用保守預設。"""
+        model_config = GroqService.get_model_info(model) or {}
+        return int(model_config.get("context_length") or 131072)
+
+    @staticmethod
+    def _calculate_user_context_budget(
+        *,
+        counter: TokenCounter,
+        model: str,
+        question: str,
+        history: Optional[List[Dict[str, str]]],
+        system_prompt: str,
+        max_output_tokens: int,
+    ) -> Dict[str, int]:
+        """依模型 context window 扣除固定提示、分析歷史、問題、輸出與安全邊界。"""
+        trimmed_history = AIAnalysisService._trim_analysis_history(history)
+        full_system_prompt = PromptTemplates.build_system_prompt(system_prompt)
+        history_text = PromptTemplates.wrap_conversation_history(trimmed_history)
+        query_text = PromptTemplates.wrap_current_query(question or "")
+
+        system_tokens = counter.count_tokens(full_system_prompt)
+        history_tokens = counter.count_tokens(history_text) if history_text else 0
+        question_tokens = counter.count_tokens(query_text)
+        context_length = AIAnalysisService._get_model_context_length(model)
+
+        raw_budget = (
+            context_length
+            - max_output_tokens
+            - system_tokens
+            - history_tokens
+            - question_tokens
+            - AIAnalysisService.ANALYSIS_SAFETY_MARGIN_TOKENS
+        )
+        user_context_budget = max(
+            1024,
+            min(raw_budget, AIAnalysisService.ANALYSIS_MAX_USER_CONTEXT_TOKENS),
+        )
+
+        return {
+            "context_length": context_length,
+            "max_output_tokens": max_output_tokens,
+            "system_tokens": system_tokens,
+            "history_tokens": history_tokens,
+            "question_tokens": question_tokens,
+            "safety_margin_tokens": AIAnalysisService.ANALYSIS_SAFETY_MARGIN_TOKENS,
+            "user_context_budget": user_context_budget,
+        }
+
+    @staticmethod
+    def _format_messages_with_budget(
+        messages: List[Any],
+        *,
+        counter: TokenCounter,
+        token_budget: int,
+    ) -> Dict[str, Any]:
+        """用 standard 優先、compact 備援的方式，從最新訊息往前放入 token 預算。"""
+        best_result: Optional[Dict[str, Any]] = None
+
+        for format_mode in ("standard", "compact"):
+            config = ContextFormatter.FORMAT_CONFIGS.get(format_mode, ContextFormatter.FORMAT_CONFIGS["standard"])
+            filtered_messages = ContextFormatter._filter_messages(messages, config)
+
+            header_lines: List[str] = []
+            if format_mode == "standard":
+                header_lines.append("LINE 對話紀錄（依時間由舊到新）：")
+
+            selected_lines: List[str] = []
+            current_tokens = counter.count_tokens("\n".join(header_lines)) if header_lines else 0
+            omitted_messages = 0
+
+            for message in reversed(filtered_messages):
+                line = ContextFormatter._format_single_message(message, config)
+                if not line:
+                    omitted_messages += 1
+                    continue
+
+                line_tokens = counter.count_tokens(line) + 1
+                if current_tokens + line_tokens <= token_budget:
+                    selected_lines.insert(0, line)
+                    current_tokens += line_tokens
+                else:
+                    omitted_messages += 1
+
+            context_text = "\n".join(header_lines + selected_lines).strip()
+            result = {
+                "context_text": context_text or "(無可納入的對話紀錄)",
+                "context_format": format_mode,
+                "included_messages": len(selected_lines),
+                "omitted_messages": omitted_messages,
+                "filtered_messages": len(filtered_messages),
+                "estimated_context_tokens": current_tokens,
+            }
+
+            if omitted_messages == 0:
+                return result
+            if best_result is None or result["included_messages"] > best_result["included_messages"]:
+                best_result = result
+
+        return best_result or {
+            "context_text": "(無可納入的對話紀錄)",
+            "context_format": "compact",
+            "included_messages": 0,
+            "omitted_messages": len(messages),
+            "filtered_messages": len(messages),
+            "estimated_context_tokens": 0,
+        }
+
+    @staticmethod
+    def _build_token_aware_context(
+        messages: List[Any],
+        *,
+        question: str,
+        history: Optional[List[Dict[str, str]]],
+        model: str,
+        system_prompt: str,
+        max_output_tokens: int,
+        total_candidate_messages: int,
+        cache_hit: bool,
+    ) -> ContextBuildResult:
+        """建立固定模型策略下的 token-aware LINE 對話上下文。"""
+        counter = TokenCounter(model)
+        budget = AIAnalysisService._calculate_user_context_budget(
+            counter=counter,
+            model=model,
+            question=question,
+            history=history,
+            system_prompt=system_prompt,
+            max_output_tokens=max_output_tokens,
+        )
+        formatted = AIAnalysisService._format_messages_with_budget(
+            messages,
+            counter=counter,
+            token_budget=budget["user_context_budget"],
+        )
+
+        metadata = {
+            "context_policy": "auto_token_budget",
+            "provider": AIAnalysisService.ANALYSIS_PROVIDER,
+            "model": model,
+            "candidate_messages": total_candidate_messages,
+            "included_messages": formatted["included_messages"],
+            "omitted_messages": max(0, total_candidate_messages - formatted["included_messages"]),
+            "filtered_messages": formatted["filtered_messages"],
+            "context_format": formatted["context_format"],
+            "estimated_context_tokens": formatted["estimated_context_tokens"],
+            "cache_hit": cache_hit,
+            **budget,
+        }
+
+        return ContextBuildResult(
+            context_text=formatted["context_text"],
+            metadata=metadata,
+        )
 
     @staticmethod
     def _build_contents_for_gemini(
@@ -289,6 +506,7 @@ class AIAnalysisService:
         context_text: str,
         history: Optional[List[Dict[str, str]]] = None,
         system_prompt: Optional[str] = None,
+        context_kind: str = "knowledge_base",
     ) -> Dict[str, Any]:
         """
         建立 Gemini REST API 的請求 payload（使用優化的提示詞模板）
@@ -304,6 +522,31 @@ class AIAnalysisService:
         """
         contents: List[Dict[str, Any]] = []
 
+        if context_kind == "control":
+            if context_text and context_text.strip():
+                contents.append({
+                    "role": "user",
+                    "parts": [{"text": context_text.strip()}]
+                })
+            contents.append({
+                "role": "user",
+                "parts": [{"text": question.strip()}]
+            })
+
+            return {
+                "systemInstruction": {
+                    "role": "system",
+                    "parts": [{"text": (system_prompt or "").strip()}]
+                },
+                "contents": contents,
+                "generationConfig": {
+                    "temperature": 0.0,
+                    "topP": 1.0,
+                    "topK": 1,
+                    "maxOutputTokens": 256,
+                },
+            }
+
         # 添加對話歷史（如果有）
         if history:
             history_content = PromptTemplates.wrap_conversation_history(history)
@@ -313,9 +556,12 @@ class AIAnalysisService:
                     "parts": [{"text": history_content}]
                 })
 
-        # 添加知識庫資料（如果有）
+        # 添加上下文資料（如果有）
         if context_text and context_text.strip():
-            kb_content = PromptTemplates.wrap_knowledge_base(context_text)
+            if context_kind == "user_context":
+                kb_content = PromptTemplates.wrap_user_context(context_text)
+            else:
+                kb_content = PromptTemplates.wrap_knowledge_base(context_text)
             contents.append({
                 "role": "user",
                 "parts": [{"text": kb_content}]
@@ -328,8 +574,11 @@ class AIAnalysisService:
             "parts": [{"text": query_content}]
         })
 
-        # 建構系統提示詞
-        full_system_prompt = PromptTemplates.build_system_prompt(system_prompt)
+        # 建構系統提示詞（自主回覆不套用知識庫約束）
+        if context_kind == "autonomous":
+            full_system_prompt = PromptTemplates.build_autonomous_system_prompt(system_prompt)
+        else:
+            full_system_prompt = PromptTemplates.build_system_prompt(system_prompt)
 
         payload: Dict[str, Any] = {
             "systemInstruction": {
@@ -355,6 +604,7 @@ class AIAnalysisService:
         model: Optional[str] = None,
         api_key: Optional[str] = None,
         system_prompt: Optional[str] = None,
+        context_kind: str = "knowledge_base",
     ) -> str:
         """
         呼叫 Google Gemini 以取得答案。若設定缺失，拋出例外。
@@ -367,7 +617,13 @@ class AIAnalysisService:
 
         endpoint = AIAnalysisService.GEMINI_ENDPOINT.format(model=model)
         params = {"key": api_key}
-        payload = AIAnalysisService._build_contents_for_gemini(question, context_text, history, system_prompt)
+        payload = AIAnalysisService._build_contents_for_gemini(
+            question,
+            context_text,
+            history,
+            system_prompt,
+            context_kind=context_kind,
+        )
 
         try:
             async with httpx.AsyncClient(timeout=30) as client:
@@ -391,4 +647,3 @@ class AIAnalysisService:
         except Exception as e:
             logger.error(f"Gemini 呼叫失敗: {e}")
             raise
-

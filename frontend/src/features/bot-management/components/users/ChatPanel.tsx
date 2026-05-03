@@ -20,24 +20,12 @@ import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/services/UnifiedApiClient";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import FlexMessagePreview from "@/components/preview/FlexMessagePreview";
-import ModelSelector from "@/features/ai/components/ModelSelector";
-import AISettingsModal, { AISettings } from "@/features/ai/components/AISettingsModal";
 
 // API 回應類型定義
 interface ChatHistoryResponse {
   success: boolean;
   chat_history: ChatMessage[];
   total_count: number;
-}
-
-// AI 模型類型定義
-interface AIModel {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  max_tokens: number;
-  context_length: number;
 }
 
 interface SendMessageResponse {
@@ -105,6 +93,16 @@ interface ChatMessage {
   };
 }
 
+interface AIContextMetadata {
+  provider?: string;
+  model?: string;
+  candidate_messages?: number;
+  included_messages?: number;
+  omitted_messages?: number;
+  context_format?: string;
+  estimated_context_tokens?: number;
+}
+
 interface ChatPanelProps {
   botId: string;
   selectedUser: LineUser | null;
@@ -129,14 +127,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const [aiMode, setAiMode] = useState(false);
   const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
   const [awaitingAI, setAwaitingAI] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>('');
-  const [models, setModels] = useState<AIModel[]>([]);
   const [clearingHistory, setClearingHistory] = useState(false);
-  const [aiSettings, setAiSettings] = useState<AISettings>({
-    systemPrompt: "你是一位專精客服對話洞察的分析助手。請使用繁體中文回答，聚焦於：意圖、重複問題、關鍵需求、常見痛點、情緒/情感傾向、有效回覆策略與改進建議。若資訊不足，請說明不確定並提出需要的補充資訊。",
-    timeRangeDays: 30,
-    contextFormat: 'standard'
-  });
+  const [aiContextMetadata, setAiContextMetadata] = useState<AIContextMetadata | null>(null);
 
   // WebSocket 連接，用於即時更新
   const { isConnected, lastMessage } = useWebSocket({
@@ -447,6 +439,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       // 切換用戶時重設 AI 模式與內容
       setAiMode(false);
       setAiMessages([]);
+      setAiContextMetadata(null);
     } else {
       setChatHistory([]);
     }
@@ -522,30 +515,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     }
   }, [lastMessage, selectedUser, loadInitial]);
 
-  // 載入 AI 模型列表
-  useEffect(() => {
-    const loadModels = async () => {
-      try {
-        const response = await apiClient.getAIModels();
-        if (response.success && response.data) {
-          const data = response.data as { models: AIModel[]; current_provider: string };
-          setModels(data.models);
-
-          // 如果沒有選中的模型，選擇第一個
-          if (!selectedModel && data.models.length > 0) {
-            setSelectedModel(data.models[0].id);
-          }
-        }
-      } catch (error) {
-        console.error('載入 AI 模型失敗:', error);
-      }
-    };
-
-    if (aiMode) {
-      void loadModels();
-    }
-  }, [aiMode, selectedModel]);
-
   // 處理 Enter 鍵發送
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -581,6 +550,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   const buildAIHistory = (): Array<{ role: 'user' | 'assistant'; content: string }> => {
     const turns: Array<{ role: 'user' | 'assistant'; content: string }> = [];
     for (const m of aiMessages) {
+      if (m.id.startsWith('ai-welcome-')) continue;
       const content = (() => {
         const c: MessageContent = m.message_content;
         if (typeof c === 'string') return c;
@@ -600,7 +570,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         turns.push({ role: 'assistant', content });
       }
     }
-    return turns;
+    return turns.slice(-12);
   };
 
   // AI 提問
@@ -629,38 +599,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       interface AskAIRequest {
         question: string;
         history: Array<{ role: 'user' | 'assistant'; content: string }>;
-        max_messages: number;
-        model?: string;
-        system_prompt: string;
-        context_format: string;
-        max_tokens: number;
-        time_range_days?: number;
       }
       const requestParams: AskAIRequest = {
         question: q,
         history,
-        max_messages: 200,
-        model: selectedModel || undefined,
-        system_prompt: aiSettings.systemPrompt,
-        context_format: aiSettings.contextFormat || 'standard',
-        max_tokens: aiSettings.maxTokens || 4096,
       };
-
-      // 處理時間範圍設定
-      if (aiSettings.timeRangeDays) {
-        requestParams.time_range_days = aiSettings.timeRangeDays;
-      } else if (aiSettings.customDateRange) {
-        // 計算自訂日期範圍的天數
-        const diffTime = aiSettings.customDateRange.to.getTime() - aiSettings.customDateRange.from.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        requestParams.time_range_days = diffDays;
-      }
 
       const resp = await apiClient.askAI(botId, selectedUser.line_user_id, requestParams);
       if (resp.success && resp.data) {
-        type AskAIResponse = { answer?: string };
+        type AskAIResponse = { answer?: string; context_metadata?: AIContextMetadata };
         const data = resp.data as AskAIResponse;
         const answer = typeof data?.answer === 'string' ? data.answer : '（無回應）';
+        setAiContextMetadata(data.context_metadata || null);
         const ts = new Date().toISOString();
         const botMsg: ChatMessage = {
           id: `ai-a-${ts}`,
@@ -682,7 +632,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
     }
   };
 
-  // 清除 AI 對話歷史
+  // 清除 AI 分析快取
   const handleClearAIHistory = async () => {
     if (!selectedUser || !botId || clearingHistory) return;
 
@@ -693,22 +643,23 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       const response = await apiClient.clearAIConversationHistory(botId, selectedUser.line_user_id);
 
       if (response.success) {
-        // 清除前端 AI 對話狀態
+        // 清除前端 AI 分析對話狀態
         setAiMessages([]);
+        setAiContextMetadata(null);
 
         toast({
           title: '清除成功',
-          description: 'AI 對話歷史已清除',
+          description: 'AI 分析快取已清除',
         });
       } else {
         throw new Error(response.error || '清除失敗');
       }
     } catch (error) {
-      console.error('清除 AI 對話歷史失敗:', error);
+      console.error('清除 AI 分析快取失敗:', error);
       toast({
         variant: 'destructive',
         title: '清除失敗',
-        description: '無法清除 AI 對話歷史，請稍後再試',
+        description: '無法清除 AI 分析快取，請稍後再試',
       });
     } finally {
       setClearingHistory(false);
@@ -776,26 +727,29 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         </div>
       </CardHeader>
 
-      {/* AI 模型選擇器與設定 */}
+      {/* AI 分析固定策略 */}
       {aiMode && (
         <div className="px-4 pb-4 border-b flex-shrink-0">
-          {/* 頂部對齊區域：模型選擇器與按鈕 */}
           <div className="flex items-center gap-2 mb-2">
-            <div className="flex-1">
-              <ModelSelector
-                value={selectedModel}
-                onChange={setSelectedModel}
-                disabled={awaitingAI}
-                className="w-full"
-                hideDescription={true}
-              />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 text-sm">
+                <Badge variant="secondary">Groq GPT-OSS 120B</Badge>
+                <span className="text-muted-foreground truncate">自動控制上下文與 token 預算</span>
+              </div>
+              {aiContextMetadata && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  已納入 {aiContextMetadata.included_messages ?? 0} 則
+                  {typeof aiContextMetadata.omitted_messages === 'number' && (
+                    <>，省略 {aiContextMetadata.omitted_messages} 則</>
+                  )}
+                  {aiContextMetadata.context_format && (
+                    <>，格式 {aiContextMetadata.context_format}</>
+                  )}
+                </div>
+              )}
             </div>
-            <AISettingsModal
-              onSettingsChange={setAiSettings}
-              disabled={awaitingAI}
-            />
 
-            {/* 清除 AI 對話歷史按鈕 */}
+            {/* 清除 AI 分析快取按鈕 */}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -805,14 +759,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                   className="h-10 flex items-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
-                  清除對話
+                  清除快取
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>確認清除 AI 對話歷史</AlertDialogTitle>
+                  <AlertDialogTitle>確認清除 AI 分析快取</AlertDialogTitle>
                   <AlertDialogDescription>
-                    此操作將清除當前用戶的所有 AI 分析對話記錄。
+                    此操作將清除當前用戶的 AI 分析快取與畫面上的 AI 分析對話。
                     <br />
                     <strong>注意：</strong>此操作不會影響用戶與 LINE Bot 的正常聊天記錄。
                   </AlertDialogDescription>
@@ -829,13 +783,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
               </AlertDialogContent>
             </AlertDialog>
           </div>
-
-          {/* 模型說明文字 */}
-          {selectedModel && models.length > 0 && (
-            <div className="text-xs text-muted-foreground">
-              {models.find(m => m.id === selectedModel)?.description}
-            </div>
-          )}
         </div>
       )}
 
