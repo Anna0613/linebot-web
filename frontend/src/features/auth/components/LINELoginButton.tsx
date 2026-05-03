@@ -71,7 +71,7 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin, disabled }) 
     <Button
       onClick={handleLogin}
       disabled={disabled || loading}
-      className="app-secondary-button w-full border-emerald-100 text-[#166534]"
+      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-transparent bg-[#06C755] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#05b04a] disabled:pointer-events-none disabled:opacity-50"
     >
       {loading ? (
         <>
