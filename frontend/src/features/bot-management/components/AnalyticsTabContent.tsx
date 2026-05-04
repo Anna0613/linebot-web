@@ -66,13 +66,13 @@ const analyticsCopy = {
       peakTime: "Followers",
     },
     comparisons: {
-      messages: "From LINE Insight",
+      messages: "From conversation history",
       activeUsers: "Reachable friends from LINE",
       retention: "Targeted reach / followers",
       peak: "LINE follower count",
     },
     chartTitle: "Message trend over time",
-    chartSubtitle: "Delivered message trend from LINE Insight.",
+    chartSubtitle: "Sent and received messages from stored conversations.",
     timeRange: {
       day: "Today",
       week: "This week",
@@ -94,7 +94,7 @@ const analyticsCopy = {
     usageEmpty: "No feature usage data yet",
     insightTitle: "LINE Insight snapshot",
     insightBody:
-      "Overview data is sourced from LINE delivery, follower, and demographic APIs.",
+      "Message counts come from stored conversations; follower and demographic data come from LINE Insight.",
     viewFullReport: "View full report",
     chartMetric: "Messages",
   },
@@ -107,13 +107,13 @@ const analyticsCopy = {
       peakTime: "LINE 好友數",
     },
     comparisons: {
-      messages: "來自 LINE Insight",
+      messages: "來自系統對話紀錄",
       activeUsers: "LINE 可觸及好友數",
       retention: "可觸及好友 / 好友數",
       peak: "LINE 官方好友數",
     },
     chartTitle: "訊息趨勢",
-    chartSubtitle: "LINE Insight 回傳的訊息送達趨勢。",
+    chartSubtitle: "系統已儲存對話中的發送與接收訊息趨勢。",
     timeRange: {
       day: "今日",
       week: "本週",
@@ -134,7 +134,7 @@ const analyticsCopy = {
     noData: "無資料",
     usageEmpty: "尚無功能使用資料",
     insightTitle: "LINE Insight 最新快照",
-    insightBody: "總覽資料來自 LINE 的訊息送達、好友與人口統計 API。",
+    insightBody: "訊息數來自系統對話紀錄；好友與人口統計資料來自 LINE Insight。",
     viewFullReport: "查看完整報表",
     chartMetric: "訊息量",
   },
@@ -323,7 +323,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
         name: formatMessageStatsLabel(stat, timeRange, language),
         sent: stat.sent,
         received: stat.received,
-        messages: stat.sent,
+        messages: stat.sent + stat.received,
       })),
     [language, messageStats, timeRange]
   );

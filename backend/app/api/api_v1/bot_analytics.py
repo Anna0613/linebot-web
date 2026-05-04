@@ -15,6 +15,7 @@ from app.dependencies import get_current_user_async, get_db_primary
 from app.models.user import User
 from app.models.bot import Bot
 from app.models.line_user import LineBotUser
+from app.services.conversation.conversation_service import ConversationService
 from app.services.line.line_bot_service import LineBotService
 from sqlalchemy import select, func
 
@@ -265,12 +266,20 @@ async def get_bot_analytics(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取 Bot 分析數據（全部來自 LINE Insight API）"""
+    """獲取 Bot 分析數據。
+
+    訊息量使用系統 MongoDB 對話紀錄，好友與人口統計維持使用 LINE Insight。
+    """
     try:
         bot = await _get_owned_bot(db, bot_id, current_user.id)
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
         days = _period_days(period)
-        series = await _line_delivery_series(line_bot_service, days)
+        now = datetime.utcnow()
+        local_analytics = await ConversationService.get_bot_analytics(
+            bot_id,
+            now - timedelta(days=days),
+            now,
+        )
 
         latest_date = _line_date(_line_yesterday_jst())
         followers_data = await line_bot_service.get_followers_insight(latest_date)
@@ -278,19 +287,18 @@ async def get_bot_analytics(
         targeted_reaches = _extract_targeted_reaches(followers_data)
         reach_rate = (targeted_reaches / followers * 100) if followers else 0.0
 
-        total_messages = sum(item["sent"] for item in series)
-
         return {
-            "totalMessages": total_messages,
+            "totalMessages": local_analytics.get("totalMessages", 0),
             "activeUsers": targeted_reaches or followers,
             "userRetention": round(reach_rate, 2),
-            "todayMessages": series[-1]["sent"] if series else 0,
-            "weekMessages": sum(item["sent"] for item in series[-7:]),
-            "monthMessages": total_messages,
+            "todayMessages": local_analytics.get("todayMessages", 0),
+            "weekMessages": local_analytics.get("weekMessages", 0),
+            "monthMessages": local_analytics.get("monthMessages", 0),
+            "localActiveUsers": local_analytics.get("activeUsers", 0),
             "period": period,
-            "startDate": series[0]["date"] if series else None,
-            "endDate": series[-1]["date"] if series else None,
-            "source": "line_insight",
+            "startDate": local_analytics.get("startDate"),
+            "endDate": local_analytics.get("endDate"),
+            "source": "system_conversations_with_line_insight",
             "lineFollowers": followers,
             "lineTargetedReaches": targeted_reaches,
             "lineFollowersStatus": followers_data.get("status"),
@@ -310,7 +318,7 @@ async def get_message_stats(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取訊息統計數據（全部來自 LINE Insight API）
+    """獲取訊息統計數據（系統 MongoDB 對話紀錄）
 
     Args:
         bot_id: Bot ID
@@ -319,9 +327,12 @@ async def get_message_stats(
     """
 
     try:
-        bot = await _get_owned_bot(db, bot_id, current_user.id)
-        line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
-        return await _line_delivery_series(line_bot_service, days or 7)
+        await _get_owned_bot(db, bot_id, current_user.id)
+        return await ConversationService.get_message_stats(
+            bot_id,
+            days or 7,
+            granularity or "day",
+        )
 
     except HTTPException:
         raise

@@ -10,6 +10,7 @@ import {
   Plus,
   Settings,
   Sparkles,
+  Users,
   X,
 } from "lucide-react";
 
@@ -31,6 +32,7 @@ export type AppShellNavId =
   | "create"
   | "editor"
   | "analytics"
+  | "users"
   | "settings";
 
 export type AppShellUser = {
@@ -50,6 +52,7 @@ const appShellCopy = {
       create: "Create Bot",
       editor: "Bot Editor",
       analytics: "Analytics",
+      users: "User Management",
       settings: "Settings",
     },
     openNavigation: "Open navigation",
@@ -72,6 +75,7 @@ const appShellCopy = {
       create: "建立 Bot",
       editor: "Bot 編輯器",
       analytics: "數據分析",
+      users: "用戶管理",
       settings: "設定",
     },
     openNavigation: "開啟導覽",
@@ -97,6 +101,7 @@ const navItems: Array<{
   { id: "create", href: "/bots/create", icon: Plus },
   { id: "editor", href: "/bots/visual-editor", icon: PencilRuler },
   { id: "analytics", href: "/bots/management", icon: BarChart3 },
+  { id: "users", href: "/bots/user-management", icon: Users },
   { id: "settings", href: "/setting", icon: Settings },
 ];
 
@@ -298,6 +303,7 @@ const AppTopbar = ({
     user?.picture_url,
     user?.username,
     avatarCacheKey,
+    user,
   ]);
 
   useEffect(() => {
