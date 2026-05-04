@@ -38,6 +38,9 @@ const VisualBotEditorPage = lazy(() =>
 const BotManagementPage = lazy(() =>
   import("./features/bot-management/pages/BotManagementPage").then(module => ({ default: module.default }))
 );
+const UserManagementPage = lazy(() =>
+  import("./features/bot-management/pages/UserManagementPage").then(module => ({ default: module.default }))
+);
 const RichMenuManagementPage = lazy(() =>
   import("./features/rich-menu/pages/RichMenuManagementPage").then(module => ({ default: module.default }))
 );
@@ -77,6 +80,7 @@ const AnimatedRoutes = () => {
       <Route path="/bots/editor" element={<BotEditorPage />} />
       <Route path="/bots/visual-editor" element={<VisualBotEditorPage />} />
       <Route path="/bots/management" element={<BotManagementPage />} />
+      <Route path="/bots/user-management" element={<UserManagementPage />} />
       <Route path="/bots/management/richmenu" element={<RichMenuManagementPage />} />
       <Route path="/how-to-establish" element={<HowToEstablish />} />
 

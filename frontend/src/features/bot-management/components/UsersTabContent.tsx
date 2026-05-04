@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Hash,
   Info,
-  MessageSquare,
   Search,
   Send,
   Square,

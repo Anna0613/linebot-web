@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   LineChart,
   Radio,
-  Users,
   Wifi,
   Zap,
 } from "lucide-react";
@@ -23,22 +22,15 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
 import { apiClient } from "@/services/UnifiedApiClient";
 import { LogicTemplate } from "@/types/bot";
-import UserDetailsModal from "../components/users/UserDetailsModal";
 
 import AnalyticsTabContent from "@/features/bot-management/components/AnalyticsTabContent";
 import LogicTabContent from "@/features/bot-management/components/LogicTabContent";
-import UsersTabContent from "@/features/bot-management/components/UsersTabContent";
 import {
   ActivityItem,
   BotAnalytics,
-  GetBotUsersResponse,
-  GetUserInteractionsResponse,
-  LineUser,
   MessageStats,
-  PaginationInfo,
   UsageData,
   UserActivity,
-  UserInteraction,
   WebhookStatus,
 } from "@/features/bot-management/types/botManagement";
 import {
@@ -86,13 +78,12 @@ const managementCopy = {
     },
     noBotsTitle: "Create your first LINE Bot",
     noBotsBody:
-      "After creation, you can manage webhook, logic templates, Rich Menu, AI knowledge base, and user interactions in one flow.",
+      "After creation, you can manage webhook, logic templates, Rich Menu, AI knowledge base, and analytics in one flow.",
     createFirstBot: "Create first Bot",
     viewSetupGuide: "View setup guide",
     tabs: {
       analytics: "Overview",
       logic: "Advanced Reports",
-      users: "User Behavior",
     },
     documentTitle: "Bot Management",
   },
@@ -131,13 +122,12 @@ const managementCopy = {
     },
     noBotsTitle: "先建立第一個 LINE Bot",
     noBotsBody:
-      "建立完成後即可在同一條流程中管理 Webhook、邏輯模板、Rich Menu、AI 知識庫與用戶互動。",
+      "建立完成後即可在同一條流程中管理 Webhook、邏輯模板、Rich Menu、AI 知識庫與數據分析。",
     createFirstBot: "建立第一個 Bot",
     viewSetupGuide: "查看建立教學",
     tabs: {
       analytics: "數據總覽",
       logic: "進階報表",
-      users: "用戶行為",
     },
     documentTitle: "Bot 管理中心",
   },
@@ -188,33 +178,6 @@ const BotManagementPage: React.FC = () => {
     new Date().toISOString()
   );
 
-  // 用戶管理相關狀態
-  const [users, setUsers] = useState<LineUser[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    limit: 20,
-    offset: 0,
-    has_next: false,
-    has_prev: false,
-  });
-  const [selectedUser, setSelectedUser] = useState<LineUser | null>(null);
-  const [_userInteractions, _setUserInteractions] = useState<UserInteraction[]>(
-    []
-  );
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [_interactionsLoading, _setInteractionsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [broadcastMessage, setBroadcastMessage] = useState("");
-  const [broadcastLoading, setBroadcastLoading] = useState(false);
-  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(
-    new Set()
-  );
-  const [showChatPanel, setShowChatPanel] = useState(false);
-  const [showUserDetails, setShowUserDetails] = useState(false);
-  const [currentChatUser, setCurrentChatUser] = useState<LineUser | null>(null);
-  const [selectiveBroadcastLoading, setSelectiveBroadcastLoading] =
-    useState(false);
-  const [_mediaUrls, _setMediaUrls] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState("analytics");
 
   // WebSocket 即時連接 - 在選擇 Bot 後立即連接，由 useWebSocket 內部處理延遲
@@ -435,267 +398,6 @@ const BotManagementPage: React.FC = () => {
     }
   };
 
-  // 用戶管理相關函數
-  // 獲取用戶列表
-  const fetchUsers = useCallback(
-    async (limit: number = 20, offset: number = 0) => {
-      if (!selectedBotId) return;
-
-      setUsersLoading(true);
-      try {
-        const response = await apiClient.getBotUsers(
-          selectedBotId,
-          limit,
-          offset
-        );
-
-        if (response.data) {
-          const data = response.data as Partial<GetBotUsersResponse>;
-          const users = (data.users as LineUser[] | undefined) || [];
-          setUsers(users);
-          setTotalCount((data.total_count as number | undefined) || 0);
-          setPagination(
-            (data.pagination as PaginationInfo | undefined) || {
-              limit,
-              offset,
-              has_next: false,
-              has_prev: false,
-            }
-          );
-        }
-      } catch (error) {
-        console.error("獲取用戶列表失敗:", error);
-        toast({
-          variant: "destructive",
-          title: "載入失敗",
-          description: "無法載入用戶列表",
-        });
-      } finally {
-        setUsersLoading(false);
-      }
-    },
-    [selectedBotId, toast]
-  );
-
-  // 靜默更新用戶列表（WebSocket 更新時使用，不顯示 loading）
-  const fetchUsersSilently = useCallback(
-    async (limit: number = 20, offset: number = 0) => {
-      if (!selectedBotId) return;
-
-      try {
-        const response = await apiClient.getBotUsers(
-          selectedBotId,
-          limit,
-          offset
-        );
-
-        if (response.data && !response.error) {
-          // 使用函數式更新，保持其他狀態不變
-          const data = response.data as Partial<GetBotUsersResponse>;
-          setUsers((data.users as LineUser[] | undefined) || []);
-          setTotalCount((data.total_count as number | undefined) || 0);
-          setPagination((prev) => ({
-            ...prev,
-            ...(data.pagination as PaginationInfo | undefined),
-            limit,
-            offset,
-          }));
-        }
-      } catch (error) {
-        console.error("靜默更新用戶列表失敗:", error);
-        // 靜默處理錯誤，不顯示通知
-      }
-    },
-    [selectedBotId]
-  );
-
-  // 獲取用戶互動歷史
-  const fetchUserInteractions = useCallback(
-    async (lineUserId: string) => {
-      if (!selectedBotId) return;
-
-      _setInteractionsLoading(true);
-      try {
-        const response = await apiClient.getUserInteractions(
-          selectedBotId,
-          lineUserId
-        );
-
-        if (response.data) {
-          const data = response.data as Partial<GetUserInteractionsResponse>;
-          const interactions =
-            (data.interactions as UserInteraction[] | undefined) || [];
-          _setUserInteractions(interactions);
-        }
-      } catch (error) {
-        console.error("獲取用戶互動失敗:", error);
-        toast({
-          variant: "destructive",
-          title: "載入失敗",
-          description: "無法載入用戶互動歷史",
-        });
-      } finally {
-        _setInteractionsLoading(false);
-      }
-    },
-    [selectedBotId, toast]
-  );
-
-  // 靜默更新用戶互動記錄（WebSocket 更新時使用，不顯示 loading）
-  const fetchUserInteractionsSilently = useCallback(
-    async (lineUserId: string) => {
-      if (!selectedBotId) return;
-
-      try {
-        const response = await apiClient.getUserInteractions(
-          selectedBotId,
-          lineUserId
-        );
-
-        if (response.data && !response.error) {
-          const d = response.data as Partial<{
-            interactions: UserInteraction[];
-          }>;
-          _setUserInteractions(
-            (d.interactions as UserInteraction[] | undefined) || []
-          );
-        }
-      } catch (error) {
-        console.error("靜默更新用戶互動記錄失敗:", error);
-        // 靜默處理錯誤，不顯示通知
-      }
-    },
-    [selectedBotId]
-  );
-
-  // 廣播訊息
-  const handleBroadcast = async () => {
-    if (!selectedBotId || !broadcastMessage.trim()) {
-      toast({
-        variant: "destructive",
-        title: "參數不足",
-        description: "請填寫廣播訊息內容",
-      });
-      return;
-    }
-
-    setBroadcastLoading(true);
-    try {
-      await apiClient.broadcastMessage(selectedBotId, {
-        message: broadcastMessage,
-      });
-
-      toast({
-        title: "廣播成功",
-        description: "訊息已發送給所有關注者",
-      });
-
-      setBroadcastMessage("");
-    } catch (error) {
-      console.error("廣播失敗:", error);
-      toast({
-        variant: "destructive",
-        title: "廣播失敗",
-        description: "無法發送廣播訊息",
-      });
-    } finally {
-      setBroadcastLoading(false);
-    }
-  };
-
-  // 處理分頁
-  const handlePageChange = (newOffset: number) => {
-    fetchUsers(pagination.limit, newOffset);
-  };
-
-  // 處理用戶選擇
-  const handleUserSelect = (user: LineUser) => {
-    setSelectedUser(user);
-    fetchUserInteractions(user.line_user_id);
-  };
-
-  // 處理用戶多選
-  const handleUserCheck = (userId: string, checked: boolean) => {
-    const newSelected = new Set(selectedUserIds);
-    if (checked) {
-      newSelected.add(userId);
-    } else {
-      newSelected.delete(userId);
-    }
-    setSelectedUserIds(newSelected);
-  };
-
-  // 全選/取消全選
-  const handleSelectAll = () => {
-    if (selectedUserIds.size === filteredUsers.length) {
-      setSelectedUserIds(new Set());
-    } else {
-      setSelectedUserIds(
-        new Set(filteredUsers.map((user) => user.line_user_id))
-      );
-    }
-  };
-
-  // 開始聊天
-  const handleStartChat = (user: LineUser) => {
-    setCurrentChatUser(user);
-    setShowChatPanel(true);
-  };
-
-  // 查看用戶詳情
-  const handleViewUserDetails = (user: LineUser) => {
-    setSelectedUser(user);
-    setShowUserDetails(true);
-  };
-
-  // 選擇性廣播
-  const handleSelectiveBroadcast = async () => {
-    if (
-      !selectedBotId ||
-      !broadcastMessage.trim() ||
-      selectedUserIds.size === 0
-    ) {
-      toast({
-        variant: "destructive",
-        title: "參數不足",
-        description: "請選擇用戶並填寫廣播訊息內容",
-      });
-      return;
-    }
-
-    setSelectiveBroadcastLoading(true);
-    try {
-      await apiClient.selectiveBroadcastMessage(selectedBotId, {
-        message: broadcastMessage,
-        user_ids: Array.from(selectedUserIds),
-      });
-
-      toast({
-        title: "廣播成功",
-        description: `訊息已發送給 ${selectedUserIds.size} 個選中的用戶`,
-      });
-
-      setBroadcastMessage("");
-      setSelectedUserIds(new Set());
-    } catch (error) {
-      console.error("選擇性廣播失敗:", error);
-      toast({
-        variant: "destructive",
-        title: "廣播失敗",
-        description: "無法發送選擇性廣播訊息",
-      });
-    } finally {
-      setSelectiveBroadcastLoading(false);
-    }
-  };
-
-  // 過濾用戶列表
-  const filteredUsers = users.filter(
-    (user) =>
-      user.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.line_user_id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   // 獲取 Webhook 狀態
   const fetchWebhookStatus = useCallback(async (botId: string) => {
     if (!botId) return;
@@ -827,21 +529,6 @@ const BotManagementPage: React.FC = () => {
     const fetchBotData = async () => {
       if (selectedBotId && isMounted) {
         // 清空前一個 Bot 的所有相關資料
-        setUsers([]);
-        setTotalCount(0);
-        setPagination({
-          limit: 20,
-          offset: 0,
-          has_next: false,
-          has_prev: false,
-        });
-        setSelectedUser(null);
-        setShowChatPanel(false);
-        setShowUserDetails(false);
-        setCurrentChatUser(null);
-        setSelectedUserIds(new Set());
-        setSearchTerm("");
-        setBroadcastMessage("");
         setLogicTemplates([]);
 
         try {
@@ -889,14 +576,6 @@ const BotManagementPage: React.FC = () => {
     fetchWebhookStatus,
     toast,
   ]);
-
-  // 當切換到用戶管理 Tab 時載入用戶數據
-  useEffect(() => {
-    if (activeTab === "users" && selectedBotId) {
-      // 移除 users.length === 0 的條件，確保每次切換 Bot 或進入用戶 Tab 時都會重新載入
-      fetchUsers();
-    }
-  }, [activeTab, selectedBotId, fetchUsers]);
 
   // 處理 WebSocket 即時更新消息
   useEffect(() => {
@@ -1039,44 +718,6 @@ const BotManagementPage: React.FC = () => {
               console.error("WebSocket 活動更新錯誤:", error);
             });
 
-          // 如果在用戶管理 Tab，也更新用戶列表
-          if (activeTab === "users") {
-            fetchUsersSilently(pagination.limit, pagination.offset);
-            // 如果有選中的用戶，靜默更新其互動記錄
-            if (selectedUser) {
-              fetchUserInteractionsSilently(selectedUser.line_user_id);
-            }
-          }
-        }
-        break;
-      }
-
-      case "new_user_message": {
-        // 收到新用戶訊息時更新用戶列表和對話記錄
-        if (lastMessage?.data) {
-          const lm = lastMessage as unknown;
-          const lineUserId =
-            lm &&
-            typeof lm === "object" &&
-            "line_user_id" in (lm as Record<string, unknown>)
-              ? String((lm as { line_user_id?: string }).line_user_id)
-              : undefined;
-          if (lineUserId && activeTab === "users") {
-            // 靜默更新用戶列表以更新互動次數和最後互動時間
-            fetchUsersSilently(pagination.limit, pagination.offset);
-
-            // 如果當前選中的用戶就是發送訊息的用戶，更新其互動記錄
-            if (selectedUser && selectedUser.line_user_id === lineUserId) {
-              fetchUserInteractionsSilently(selectedUser.line_user_id);
-            }
-
-            // 顯示新訊息通知
-            toast({
-              title: "收到新訊息",
-              description: "用戶發送了新訊息",
-              duration: 2000,
-            });
-          }
         }
         break;
       }
@@ -1097,12 +738,6 @@ const BotManagementPage: React.FC = () => {
     selectedBotId,
     timeRange,
     toast,
-    activeTab,
-    pagination.limit,
-    pagination.offset,
-    selectedUser,
-    fetchUsersSilently,
-    fetchUserInteractionsSilently,
     fetchWebhookStatus,
   ]);
 
@@ -1245,13 +880,6 @@ const BotManagementPage: React.FC = () => {
                 <Zap className="mr-2 h-4 w-4" />
                 {copy.tabs.logic}
               </TabsTrigger>
-              <TabsTrigger
-                value="users"
-                className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-sm font-semibold text-slate-500 shadow-none transition-colors data-[state=active]:border-[#16a34a] data-[state=active]:bg-transparent data-[state=active]:text-[#166534] data-[state=active]:shadow-none"
-              >
-                <Users className="mr-2 h-4 w-4" />
-                {copy.tabs.users}
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="analytics" className="space-y-6">
@@ -1279,45 +907,9 @@ const BotManagementPage: React.FC = () => {
                 onToggleLogicTemplate={toggleLogicTemplate}
               />
             </TabsContent>
-
-            <TabsContent value="users" className="space-y-6">
-              <UsersTabContent
-                selectedBotId={selectedBotId}
-                broadcastMessage={broadcastMessage}
-                totalCount={totalCount}
-                selectedUserIds={selectedUserIds}
-                filteredUsers={filteredUsers}
-                usersLoading={usersLoading}
-                selectedUser={selectedUser}
-                pagination={pagination}
-                broadcastLoading={broadcastLoading}
-                selectiveBroadcastLoading={selectiveBroadcastLoading}
-                searchTerm={searchTerm}
-                showChatPanel={showChatPanel}
-                currentChatUser={currentChatUser}
-                onBroadcastMessageChange={setBroadcastMessage}
-                onSearchTermChange={setSearchTerm}
-                onBroadcast={handleBroadcast}
-                onSelectiveBroadcast={handleSelectiveBroadcast}
-                onSelectAll={handleSelectAll}
-                onUserCheck={handleUserCheck}
-                onUserSelect={handleUserSelect}
-                onViewUserDetails={handleViewUserDetails}
-                onStartChat={handleStartChat}
-                onPageChange={handlePageChange}
-                onCloseChatPanel={() => setShowChatPanel(false)}
-              />
-            </TabsContent>
           </Tabs>
         )}
       </div>
-
-      {/* 用戶詳細資訊彈窗 */}
-      <UserDetailsModal
-        user={selectedUser}
-        isOpen={showUserDetails}
-        onClose={() => setShowUserDetails(false)}
-      />
     </AppShell>
   );
 };
