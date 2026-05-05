@@ -1,11 +1,23 @@
 {
   "version": 1,
   "skills": {
+    "competition-proposal-writing": {
+      "source": "TabithaFanny/claude-skills-collection",
+      "sourceType": "github",
+      "skillPath": "competition-proposal-writing/SKILL.md",
+      "computedHash": "d362827f6a371139db3a07692c2c433ad712bb8574aa7e19b487977ecb8220d0"
+    },
     "line": {
       "source": "vm0-ai/vm0-skills",
       "sourceType": "github",
       "skillPath": "line/SKILL.md",
       "computedHash": "e5a2edeaea9c6e95def74b4c3d49ce2237186018cc3bb4829ca535ee1c6bf7af"
+    },
+    "research-writing": {
+      "source": "TabithaFanny/claude-skills-collection",
+      "sourceType": "github",
+      "skillPath": "research-writing/SKILL.md",
+      "computedHash": "b70fe60dccc68339f200d1e9c62afe333708727f47467f66ba09e1641517c3cf"
     }
   }
 }
