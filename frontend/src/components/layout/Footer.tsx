@@ -1,35 +1,34 @@
 import { Link } from "react-router-dom";
+import BotcraftBrand from "@/components/brand/BotcraftBrand";
 import LanguageToggle from "../LanguageToggle/LanguageToggle";
 
 const Footer = () => {
   return (
     <footer
       id="contact"
-      className="border-t border-white/60 bg-white/55 py-8 text-slate-900 backdrop-blur-2xl"
+      className="border-t border-[var(--bc-line-2)] bg-[var(--bc-ink)] py-10 text-[var(--bc-bg)]"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[2fr_1fr_1fr]">
-          {/* 品牌與說明 */}
           <div className="space-y-3 text-center md:text-left">
-            <span className="block text-lg font-semibold text-slate-950 sm:text-xl">
-              LineBot Web
-            </span>
-            <p className="max-w-md text-sm leading-6 text-slate-500 md:max-w-lg">
-              給一般使用者的 LINE Bot 工作台。建立、設計、查看互動，一次完成。
+            <div className="flex justify-center md:justify-start">
+              <BotcraftBrand inverted />
+            </div>
+            <p className="max-w-md text-sm leading-6 text-[oklch(0.7_0.012_270)] md:max-w-lg">
+              視覺化的對話機器人建構平台。建立、設計、查看互動，一個工作台完成。
             </p>
             <div className="flex items-center justify-center md:justify-start">
               <LanguageToggle />
             </div>
           </div>
 
-          {/* 快速連結 */}
           <div className="hidden md:flex w-full flex-col">
-            <h3 className="mb-3 text-sm font-semibold text-slate-950">快速連結</h3>
+            <h3 className="mb-3 font-mono text-[11px] font-normal uppercase tracking-[0.1em] text-[oklch(0.6_0.012_270)]">快速連結</h3>
             <ul className="space-y-2">
               <li>
                 <Link
                   to="/"
-                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
+                  className="block py-1 text-sm text-[oklch(0.85_0.012_270)] transition-colors hover:text-[var(--bc-bg)]"
                 >
                   首頁
                 </Link>
@@ -37,7 +36,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/about"
-                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
+                  className="block py-1 text-sm text-[oklch(0.85_0.012_270)] transition-colors hover:text-[var(--bc-bg)]"
                 >
                   關於我們
                 </Link>
@@ -45,7 +44,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/login"
-                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
+                  className="block py-1 text-sm text-[oklch(0.85_0.012_270)] transition-colors hover:text-[var(--bc-bg)]"
                 >
                   登入
                 </Link>
@@ -53,7 +52,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/register"
-                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
+                  className="block py-1 text-sm text-[oklch(0.85_0.012_270)] transition-colors hover:text-[var(--bc-bg)]"
                 >
                   建立帳號
                 </Link>
@@ -61,7 +60,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/how-to-establish"
-                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
+                  className="block py-1 text-sm text-[oklch(0.85_0.012_270)] transition-colors hover:text-[var(--bc-bg)]"
                 >
                   建立教學
                 </Link>
@@ -69,15 +68,14 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* 聯絡我們 */}
           <div className="w-full flex flex-col text-center md:text-left">
-            <h3 className="mb-3 text-sm font-semibold text-slate-950">聯絡我們</h3>
+            <h3 className="mb-3 font-mono text-[11px] font-normal uppercase tracking-[0.1em] text-[oklch(0.6_0.012_270)]">聯絡我們</h3>
             <ul className="space-y-2">
-              <li className="py-1 text-sm text-slate-500">Taoyuan, Taiwan</li>
+              <li className="py-1 text-sm text-[oklch(0.85_0.012_270)]">Taoyuan, Taiwan</li>
               <li>
                 <a
                   href="mailto:jkl921102@gmail.com"
-                  className="block break-all py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
+                  className="block break-all py-1 text-sm text-[oklch(0.85_0.012_270)] transition-colors hover:text-[var(--bc-bg)]"
                 >
                   jkl921102@gmail.com
                 </a>
@@ -85,7 +83,7 @@ const Footer = () => {
               <li>
                 <a
                   href="tel:03-350-7001"
-                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
+                  className="block py-1 text-sm text-[oklch(0.85_0.012_270)] transition-colors hover:text-[var(--bc-bg)]"
                 >
                   03-350-7001
                 </a>
@@ -94,11 +92,10 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* 底線＋版權／社群 */}
-        <div className="mt-8 border-t border-white/60 pt-6">
+        <div className="mt-8 border-t border-[oklch(0.28_0.01_270)] pt-6">
           <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
-            <p className="text-center text-xs text-slate-500 sm:text-sm md:text-left">
-              © {new Date().getFullYear()} LineBot Web
+            <p className="text-center font-mono text-xs text-[oklch(0.6_0.012_270)] sm:text-sm md:text-left">
+              © {new Date().getFullYear()} Botcraft Studio
             </p>
 
             <div className="flex justify-center md:justify-end space-x-4 sm:space-x-6 items-center">
@@ -106,7 +103,7 @@ const Footer = () => {
                 href="https://www.facebook.com/MCU1957"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
+                className="rounded-full p-2 text-[oklch(0.6_0.012_270)] transition-colors hover:bg-white/5 hover:text-[var(--bc-bg)]"
                 aria-label="Facebook"
               >
                 <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 448 512" fill="currentColor">
@@ -118,7 +115,7 @@ const Footer = () => {
                 href="https://www.instagram.com/mcu1957/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
+                className="rounded-full p-2 text-[oklch(0.6_0.012_270)] transition-colors hover:bg-white/5 hover:text-[var(--bc-bg)]"
                 aria-label="Instagram"
               >
                 <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 448 512" fill="currentColor">
@@ -130,7 +127,7 @@ const Footer = () => {
                 href="https://www.youtube.com/mcu1957"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
+                className="rounded-full p-2 text-[oklch(0.6_0.012_270)] transition-colors hover:bg-white/5 hover:text-[var(--bc-bg)]"
                 aria-label="YouTube"
               >
                 <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 576 512" fill="currentColor">
@@ -142,7 +139,7 @@ const Footer = () => {
                 href="https://www.weibo.com/welcomemcu"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-full p-2 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
+                className="rounded-full p-2 text-[oklch(0.6_0.012_270)] transition-colors hover:bg-white/5 hover:text-[var(--bc-bg)]"
                 aria-label="weibo"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor">

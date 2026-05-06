@@ -8,7 +8,7 @@
 declare const __DEV__: boolean;
 
 if (typeof __DEV__ !== 'undefined' && __DEV__) {
-  const prefix = '[LineBot-Web]';
+  const prefix = '[Botcraft]';
 
   const ts = () => new Date().toISOString();
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import BotcraftBrand from "@/components/brand/BotcraftBrand";
 import LanguageToggle from "../LanguageToggle/LanguageToggle";
 import QuickActions from "@/components/common/QuickActions";
 
@@ -25,64 +26,37 @@ const Navbar = () => {
   return (
     <>
       <header
-        className={`fixed left-0 right-0 top-0 z-50 border-b border-white/60 transition-all duration-300 ${
+        className={`fixed left-0 right-0 top-0 z-50 border-b border-[var(--bc-line-2)] transition-all duration-300 ${
           isScrolled
-            ? "bg-white/78 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-2xl"
-            : "bg-white/62 backdrop-blur-xl"
+            ? "bg-[color-mix(in_oklch,var(--bc-bg)_86%,transparent)] shadow-[0_18px_50px_rgba(24,22,40,0.06)] backdrop-blur-2xl"
+            : "bg-[color-mix(in_oklch,var(--bc-bg)_72%,transparent)] backdrop-blur-xl"
         }`}
       >
         <div className="w-full px-4 sm:px-6 flex items-center justify-between h-14 sm:h-16 md:h-20">
-          {/* 左側：漢堡選單和Logo */}
           <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
             <button
-              className="rounded-[14px] p-2 text-slate-700 transition-colors hover:bg-emerald-50"
+              className="rounded-[14px] p-2 text-[var(--bc-ink-2)] transition-colors hover:bg-[var(--bc-accent-soft)] hover:text-[var(--bc-accent-ink)]"
               onClick={toggleMobileMenu}
               aria-label="開啟選單"
             >
               <Menu size={24} className="sm:hidden" />
               <Menu size={28} className="hidden sm:block" />
             </button>
-            <Link
-              to="/"
-              className="flex items-center gap-2 sm:gap-3 z-10 min-w-0"
-            >
-              <picture>
-                <source
-                  srcSet="/assets/images/webp/LOGO.webp"
-                  type="image/webp"
-                />
-                <img
-                  src="/assets/images/origin/LOGO.png"
-                  alt="Logo"
-                  loading="eager"
-                  decoding="async"
-                  fetchpriority="high"
-                  width="48"
-                  height="48"
-                  className="block h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain"
-                />
-              </picture>
-              <h6 className="m-0 truncate text-lg font-semibold leading-none tracking-normal text-slate-950 sm:text-xl md:text-[28px]">
-                <span className="hidden lg:inline">LineBot Web</span>
-                <span className="lg:hidden">LINE Bot</span>
-              </h6>
-            </Link>
+            <BotcraftBrand className="z-10 min-w-0" compact />
           </div>
 
-          {/* 右側：桌面版按鈕和手機版登入/註冊按鈕 */}
           <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
             <div className="hidden md:block">
-              <div className="flex h-10 items-center rounded-[14px] border border-white/70 bg-white/70 px-2 shadow-sm">
+              <div className="flex h-10 items-center rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2 shadow-sm">
                 <LanguageToggle className="h-8 min-w-8 text-sm" />
               </div>
             </div>
-            {/* 桌面版按鈕 */}
             <div className="hidden sm:flex items-center space-x-2 md:space-x-4">
               <Link to="/login">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 rounded-[14px] border-emerald-100 bg-white/70 px-4 text-xs font-semibold text-slate-700 shadow-sm hover:bg-white md:h-10 md:text-sm"
+                  className="h-9 rounded-full border-[var(--bc-line)] bg-transparent px-4 text-xs font-medium text-[var(--bc-ink-2)] shadow-none hover:border-[var(--bc-ink)] hover:bg-transparent hover:text-[var(--bc-ink)] md:h-10 md:text-sm"
                 >
                   登入
                 </Button>
@@ -90,19 +64,18 @@ const Navbar = () => {
               <Link to="/register">
                 <Button
                   size="sm"
-                  className="h-9 rounded-[14px] bg-[#16a34a] px-4 text-xs font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-[#15803d] md:h-10 md:text-sm"
+                  className="h-9 rounded-full bg-[var(--bc-ink)] px-4 text-xs font-medium text-[var(--bc-bg)] shadow-none hover:bg-[oklch(0.10_0.012_270)] md:h-10 md:text-sm"
                 >
                   建立帳號
                 </Button>
               </Link>
             </div>
-            {/* 手機版登入/註冊按鈕 */}
             <div className="sm:hidden flex items-center space-x-1">
               <Link to="/login">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 rounded-[12px] border-emerald-100 bg-white/70 px-3 text-xs font-semibold text-slate-700"
+                  className="h-8 rounded-full border-[var(--bc-line)] bg-transparent px-3 text-xs font-medium text-[var(--bc-ink-2)]"
                 >
                   登入
                 </Button>
@@ -110,7 +83,7 @@ const Navbar = () => {
               <Link to="/register">
                 <Button
                   size="sm"
-                  className="h-8 rounded-[12px] bg-[#16a34a] px-3 text-xs font-semibold text-white hover:bg-[#15803d]"
+                  className="h-8 rounded-full bg-[var(--bc-ink)] px-3 text-xs font-medium text-[var(--bc-bg)] hover:bg-[oklch(0.10_0.012_270)]"
                 >
                   建立
                 </Button>
@@ -119,9 +92,8 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* 手機版下拉選單 */}
         <div
-          className={`mobile-menu-dropdown fixed left-0 right-0 top-14 w-full transform border-t border-white/70 bg-white/88 text-slate-800 backdrop-blur-2xl transition-all duration-300 ease-in-out sm:hidden ${
+          className={`mobile-menu-dropdown fixed left-0 right-0 top-14 w-full transform border-t border-[var(--bc-line-2)] bg-[color-mix(in_oklch,var(--bc-bg)_90%,transparent)] text-[var(--bc-ink)] backdrop-blur-2xl transition-all duration-300 ease-in-out sm:hidden ${
             mobileMenuOpen
               ? "translate-y-0 opacity-100 shadow-lg"
               : "-translate-y-full opacity-0"
@@ -139,7 +111,7 @@ const Navbar = () => {
               >
                 <Button
                   variant="outline"
-                  className="h-11 w-full justify-start rounded-[14px] border-emerald-100 bg-white/70 text-sm font-semibold text-slate-700"
+                  className="h-11 w-full justify-start rounded-full border-[var(--bc-line)] bg-transparent text-sm font-medium text-[var(--bc-ink)]"
                 >
                   登入
                 </Button>
@@ -149,7 +121,7 @@ const Navbar = () => {
                 className="block w-full"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Button className="h-11 w-full justify-start rounded-[14px] bg-[#16a34a] text-sm font-semibold text-white hover:bg-[#15803d]">
+                <Button className="h-11 w-full justify-start rounded-full bg-[var(--bc-ink)] text-sm font-medium text-[var(--bc-bg)] hover:bg-[oklch(0.10_0.012_270)]">
                   建立帳號
                 </Button>
               </Link>
@@ -159,7 +131,6 @@ const Navbar = () => {
 
       </header>
 
-      {/* 側邊選單遮罩（放在 header 外，避免 backdrop-filter 形成的包含區塊限制 fixed 定位） */}
       <div
         onClick={toggleMobileMenu}
         aria-hidden={!mobileMenuOpen}
@@ -169,24 +140,25 @@ const Navbar = () => {
       />
       <div
         aria-hidden={!mobileMenuOpen}
-        className={`mobile-menu-sidebar fixed left-0 top-0 z-[60] h-full w-72 border-r border-white/70 bg-white/82 p-6 text-slate-800 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur-2xl transform-gpu transition-transform duration-300 ease-in-out ${
+        className={`mobile-menu-sidebar fixed left-0 top-0 z-[60] h-full w-72 border-r border-[var(--bc-line-2)] bg-[color-mix(in_oklch,var(--bc-bg)_90%,transparent)] p-6 text-[var(--bc-ink)] shadow-[0_24px_80px_rgba(24,22,40,0.12)] backdrop-blur-2xl transform-gpu transition-transform duration-300 ease-in-out ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
           <div className="flex justify-end">
             <button
               onClick={toggleMobileMenu}
-              className="rounded-full bg-white/80 p-2 text-2xl text-slate-700 shadow-sm transition-colors hover:bg-emerald-50"
+              className="rounded-full bg-white/80 p-2 text-2xl text-[var(--bc-ink-2)] shadow-sm transition-colors hover:bg-[var(--bc-accent-soft)] hover:text-[var(--bc-accent-ink)]"
+              aria-label="關閉選單"
             >
               <X />
             </button>
           </div>
-          <ul className="mt-8 space-y-2 text-base text-slate-700">
+          <ul className="mt-8 space-y-2 text-base text-[var(--bc-ink-2)]">
             <li>
               <Link
                 to="/"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 rounded-[16px] px-4 py-3 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
+                className="flex items-center gap-3 rounded-[14px] px-4 py-3 transition-colors hover:bg-[var(--bc-accent-soft)] hover:text-[var(--bc-accent-ink)]"
               >
                 首頁
               </Link>
@@ -195,7 +167,7 @@ const Navbar = () => {
               <Link
                 to="/about"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 rounded-[16px] px-4 py-3 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
+                className="flex items-center gap-3 rounded-[14px] px-4 py-3 transition-colors hover:bg-[var(--bc-accent-soft)] hover:text-[var(--bc-accent-ink)]"
               >
                 關於
               </Link>
@@ -204,7 +176,7 @@ const Navbar = () => {
               <Link
                 to="/how-to-establish"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 rounded-[16px] px-4 py-3 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
+                className="flex items-center gap-3 rounded-[14px] px-4 py-3 transition-colors hover:bg-[var(--bc-accent-soft)] hover:text-[var(--bc-accent-ink)]"
               >
                 建立教學
               </Link>
@@ -213,7 +185,7 @@ const Navbar = () => {
               <Link
                 to="/login"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 rounded-[16px] px-4 py-3 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
+                className="flex items-center gap-3 rounded-[14px] px-4 py-3 transition-colors hover:bg-[var(--bc-accent-soft)] hover:text-[var(--bc-accent-ink)]"
               >
                 登入
               </Link>
@@ -222,7 +194,7 @@ const Navbar = () => {
               <Link
                 to="/register"
                 onClick={toggleMobileMenu}
-                className="flex items-center gap-3 rounded-[16px] px-4 py-3 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
+                className="flex items-center gap-3 rounded-[14px] px-4 py-3 transition-colors hover:bg-[var(--bc-accent-soft)] hover:text-[var(--bc-accent-ink)]"
               >
                 建立帳號
               </Link>

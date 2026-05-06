@@ -65,9 +65,9 @@ const About = () => {
             <div className="app-panel grid overflow-hidden p-0 lg:grid-cols-[1fr_0.82fr]">
               <div className="p-8 sm:p-10 lg:p-12">
                 <p className="app-kicker mb-2">關於</p>
-                <h1 className="text-3xl font-semibold leading-tight tracking-normal text-slate-950 sm:text-4xl lg:text-5xl">關於 LineBot Web</h1>
-                <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
-                  LineBot Web 是一個給一般使用者操作的 LINE Bot 工作台。重點是把建立、設計與查看互動放在同一個清楚流程裡。
+                <h1 className="text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl lg:text-5xl">關於 Botcraft</h1>
+                <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--bc-ink-2)]">
+                  Botcraft 是一個視覺化的對話機器人工作台。重點是把建立、設計、AI 接管與查看互動放在同一個清楚流程裡。
                 </p>
                 <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                   <Button
@@ -87,7 +87,7 @@ const About = () => {
                   </Button>
                 </div>
               </div>
-              <div className="flex items-end justify-center bg-gradient-to-br from-emerald-100/70 via-white/50 to-emerald-50/80 p-6">
+              <div className="flex items-end justify-center bg-gradient-to-br from-[var(--bc-accent-soft)] via-white/50 to-[var(--bc-hi-soft)] p-6">
                 <AppRobotIllustration />
               </div>
             </div>
@@ -97,9 +97,9 @@ const About = () => {
             <div className="mb-12 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
                 <p className="app-kicker mb-2">重點</p>
-                <h2 className="text-3xl font-semibold tracking-normal text-slate-950 sm:text-4xl">平台做三件事</h2>
+                <h2 className="text-3xl font-medium tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl">平台做三件事</h2>
               </div>
-              <p className="text-slate-600 max-w-md text-base leading-relaxed">
+              <p className="text-[var(--bc-ink-2)] max-w-md text-base leading-relaxed">
                 減少跳轉、減少設定負擔，讓 Bot 從建立到日常調整都更容易。
               </p>
             </div>
@@ -111,8 +111,8 @@ const About = () => {
                     <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-[14px] bg-emerald-100 text-emerald-700">
                       <Icon className="h-6 w-6" />
                     </div>
-                    <h3 className="text-xl font-semibold text-slate-950 mb-3">{item.title}</h3>
-                    <p className="text-slate-600 leading-relaxed">{item.description}</p>
+                    <h3 className="text-xl font-medium text-[var(--bc-ink)] mb-3">{item.title}</h3>
+                    <p className="text-[var(--bc-ink-2)] leading-relaxed">{item.description}</p>
                   </div>
                 );
               })}
@@ -127,8 +127,8 @@ const About = () => {
                     <ShieldCheck className="h-6 w-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-semibold tracking-normal text-slate-950">適合需要固定維護 LINE Bot 的情境</h2>
-                    <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600">
+                    <h2 className="text-2xl font-medium tracking-[-0.02em] text-[var(--bc-ink)]">適合需要固定維護對話機器人的情境</h2>
+                    <p className="mt-3 max-w-2xl text-base leading-relaxed text-[var(--bc-ink-2)]">
                       客服、活動通知、教育助理與社群互動都能用同一套流程處理，不需要在多個工具之間來回切換。
                     </p>
                   </div>
