@@ -59,8 +59,8 @@ const LegalPage = () => {
 
   const title = isTerms ? "服務條款" : "隱私政策";
   const description = isTerms
-    ? "使用 LineBot Web 前，請先了解平台使用範圍與帳號責任。"
-    : "了解平台如何使用資料支援 LINE Bot 建立、設定與互動查看。";
+    ? "使用 Botcraft 前，請先了解平台使用範圍與帳號責任。"
+    : "了解平台如何使用資料支援 Bot 建立、設定、AI 接管與互動查看。";
   const sections = isTerms ? termsSections : privacySections;
 
   if (loading) {
@@ -94,7 +94,7 @@ const LegalPage = () => {
             <div className="max-w-4xl mx-auto">
               <div className="mb-8 text-center">
                 <h1 className="app-page-title mb-3">{title}</h1>
-                <p className="text-base leading-relaxed text-slate-600 sm:text-lg">
+                <p className="text-base leading-relaxed text-[var(--bc-ink-2)] sm:text-lg">
                   {description}
                 </p>
               </div>
@@ -113,7 +113,7 @@ const LegalPage = () => {
                       <h2 className="mb-2 text-lg font-semibold text-slate-950">
                         {section.title}
                       </h2>
-                      <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
+                  <p className="text-sm leading-relaxed text-[var(--bc-ink-2)] sm:text-base">
                         {section.body}
                       </p>
                     </section>

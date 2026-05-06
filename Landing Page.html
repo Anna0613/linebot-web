@@ -1,0 +1,1527 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Botcraft — 把對話機器人，做成你的樣子</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --bg: oklch(0.98 0.006 85);
+    --bg-2: oklch(0.96 0.008 85);
+    --ink: oklch(0.18 0.012 270);
+    --ink-2: oklch(0.36 0.014 270);
+    --ink-3: oklch(0.58 0.012 270);
+    --line: oklch(0.88 0.008 270);
+    --line-2: oklch(0.93 0.006 270);
+    --accent: oklch(0.62 0.18 290);
+    --accent-soft: oklch(0.92 0.06 290);
+    --accent-ink: oklch(0.32 0.16 290);
+    --hi: oklch(0.90 0.13 95);
+    --hi-soft: oklch(0.95 0.08 95);
+    --card: #ffffff;
+
+    --f-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --f-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --rad: 14px;
+    --rad-sm: 8px;
+
+    --max: 1240px;
+    --pad-x: 56px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--f-sans);
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01", "cv11";
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--accent); color: #fff; }
+
+  .mono { font-family: var(--f-mono); font-feature-settings: "tnum", "ss01"; }
+
+  /* ───────── nav ───────── */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(14px);
+    background: color-mix(in oklch, var(--bg) 78%, transparent);
+    border-bottom: 1px solid var(--line-2);
+  }
+  .nav-inner {
+    max-width: var(--max); margin: 0 auto;
+    padding: 14px var(--pad-x);
+    display: flex; align-items: center; gap: 32px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }
+  .brand-mark {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: var(--ink); position: relative;
+    display: grid; place-items: center;
+  }
+  .brand-mark::before, .brand-mark::after {
+    content: ""; position: absolute;
+    border-radius: 50%;
+  }
+  .brand-mark::before {
+    width: 6px; height: 6px; background: var(--accent);
+    top: 7px; left: 6px;
+  }
+  .brand-mark::after {
+    width: 6px; height: 6px; background: var(--hi);
+    top: 7px; right: 6px;
+  }
+  .brand-tail {
+    position: absolute; bottom: 5px; left: 9px;
+    width: 8px; height: 4px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 2px;
+    background: #fff;
+  }
+  .nav-links { display: flex; gap: 28px; font-size: 14px; color: var(--ink-2); }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .nav-cta .login { font-size: 14px; color: var(--ink-2); }
+  .nav-cta .login:hover { color: var(--ink); }
+
+  /* ───────── buttons ───────── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 18px; border-radius: 999px;
+    font-size: 14px; font-weight: 500;
+    border: 1px solid transparent;
+    cursor: pointer; transition: transform .15s ease, background .2s ease, color .2s ease, border-color .2s ease;
+    line-height: 1; white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--ink); color: var(--bg); }
+  .btn-primary:hover { background: oklch(0.10 0.012 270); }
+  .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn-ghost:hover { border-color: var(--ink); }
+  .btn-arrow { width: 14px; height: 14px; }
+
+  /* ───────── hero ───────── */
+  .hero {
+    max-width: var(--max); margin: 0 auto;
+    padding: 88px var(--pad-x) 60px;
+    position: relative;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--f-mono); font-size: 12px;
+    color: var(--ink-2); letter-spacing: 0.04em;
+    padding: 6px 12px; border-radius: 999px;
+    background: var(--bg-2); border: 1px solid var(--line-2);
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 18%, transparent); }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 64px;
+    align-items: center;
+    margin-top: 28px;
+  }
+  .h1 {
+    font-size: clamp(48px, 6vw, 88px);
+    line-height: 0.96; letter-spacing: -0.035em;
+    font-weight: 500;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .h1 .ital { font-style: italic; font-weight: 400; color: var(--accent-ink); }
+  .h1 .hi-mark {
+    background: linear-gradient(180deg, transparent 60%, var(--hi-soft) 60%);
+    padding: 0 4px;
+    border-radius: 2px;
+  }
+  .lead {
+    margin-top: 24px;
+    font-size: 18px; line-height: 1.6;
+    color: var(--ink-2);
+    max-width: 48ch;
+    text-wrap: pretty;
+  }
+  .hero-cta { margin-top: 36px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .hero-meta {
+    margin-top: 28px;
+    display: flex; gap: 24px; flex-wrap: wrap;
+    font-family: var(--f-mono); font-size: 12px;
+    color: var(--ink-3);
+  }
+  .hero-meta b { color: var(--ink); font-weight: 500; }
+
+  /* hero visual: chat composer */
+  .hero-visual {
+    position: relative;
+    aspect-ratio: 1 / 1.05;
+  }
+
+  /* ───────── decorative grid bg ───────── */
+  .grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--line-2) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-2) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at 50% 35%, black 30%, transparent 75%);
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  /* ───────── ticker ───────── */
+  .ticker {
+    border-top: 1px solid var(--line-2);
+    border-bottom: 1px solid var(--line-2);
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .ticker-inner {
+    max-width: var(--max); margin: 0 auto;
+    padding: 18px var(--pad-x);
+    display: flex; align-items: center; gap: 36px;
+    font-family: var(--f-mono); font-size: 12px; color: var(--ink-3);
+  }
+  .ticker-label {
+    flex-shrink: 0; padding-right: 24px; border-right: 1px solid var(--line-2);
+    color: var(--ink-2);
+  }
+  .ticker-track {
+    overflow: hidden; flex: 1; mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+  }
+  .ticker-row {
+    display: inline-flex; gap: 48px;
+    animation: ticker 40s linear infinite;
+    white-space: nowrap;
+  }
+  .ticker-row span { display: inline-flex; align-items: center; gap: 8px; }
+  .ticker-row span::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); }
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* ───────── sections ───────── */
+  section { position: relative; }
+  .section {
+    max-width: var(--max); margin: 0 auto;
+    padding: 120px var(--pad-x);
+  }
+  .section-head { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 48px; align-items: end; margin-bottom: 56px; }
+  .section-tag {
+    font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.12em;
+    color: var(--accent-ink); text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-tag::before {
+    content: ""; width: 18px; height: 1px; background: var(--accent-ink);
+  }
+  .section-title {
+    font-size: clamp(36px, 4.4vw, 56px);
+    line-height: 1.0; letter-spacing: -0.03em;
+    font-weight: 500;
+    margin: 14px 0 0;
+    text-wrap: balance;
+  }
+  .section-desc {
+    font-size: 17px; line-height: 1.55; color: var(--ink-2);
+    max-width: 52ch; text-wrap: pretty;
+  }
+
+  /* ───────── feature mosaic ───────── */
+  .mosaic {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: 220px;
+    gap: 16px;
+  }
+  .tile {
+    background: var(--card);
+    border: 1px solid var(--line-2);
+    border-radius: var(--rad);
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 14px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .25s ease, transform .25s ease;
+  }
+  .tile:hover { border-color: var(--ink); }
+  .tile h3 {
+    margin: 0; font-size: 19px; font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+  .tile p {
+    margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-2);
+  }
+  .tile-num {
+    position: absolute; top: 18px; right: 22px;
+    font-family: var(--f-mono); font-size: 11px; color: var(--ink-3);
+  }
+  .tile-art { flex: 1; min-height: 0; }
+
+  .t-flow    { grid-column: span 4; grid-row: span 2; }
+  .t-ai      { grid-column: span 2; grid-row: span 2; background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .t-ai p    { color: oklch(0.78 0.01 270); }
+  .t-ai .tile-num { color: oklch(0.6 0.01 270); }
+  .t-flex    { grid-column: span 2; grid-row: span 2; }
+  .t-rich    { grid-column: span 2; grid-row: span 2; background: var(--accent-soft); border-color: transparent; }
+  .t-broad   { grid-column: span 2; grid-row: span 2; }
+
+  /* tile arts */
+  .art-flow {
+    position: relative; width: 100%; height: 100%;
+  }
+  .node {
+    position: absolute;
+    background: #fff; border: 1px solid var(--line);
+    border-radius: 10px; padding: 8px 12px;
+    font-size: 12px; font-family: var(--f-mono); color: var(--ink-2);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+  }
+  .node.accent { border-color: var(--accent); color: var(--accent-ink); }
+  .node.dark { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .wire { position: absolute; pointer-events: none; }
+  .wire path { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 4; }
+  .wire.live path { stroke: var(--accent); stroke-dasharray: 4 4; animation: dash 1.4s linear infinite; }
+  @keyframes dash { to { stroke-dashoffset: -16; } }
+
+  .art-ai {
+    position: relative; width: 100%; height: 100%;
+    display: flex; align-items: end;
+  }
+  .ai-blob {
+    position: relative;
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--accent), oklch(0.42 0.18 290));
+    filter: blur(0.4px);
+    margin-left: auto;
+    animation: blob 6s ease-in-out infinite;
+  }
+  .ai-blob::after {
+    content: ""; position: absolute; inset: -10px;
+    border-radius: 50%;
+    border: 1px dashed oklch(0.55 0.01 270);
+    animation: spin 24s linear infinite;
+  }
+  @keyframes blob { 0%,100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.05) translateY(-6px); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .ai-tags { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; gap: 8px; }
+  .ai-tag {
+    font-family: var(--f-mono); font-size: 11px;
+    padding: 4px 10px; border-radius: 999px;
+    border: 1px solid oklch(0.45 0.01 270);
+    color: oklch(0.85 0.01 270);
+    background: oklch(0.22 0.01 270);
+  }
+  .ai-tag.hot { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .art-flex {
+    position: relative; width: 100%; height: 100%;
+    display: grid; place-items: center;
+  }
+  .flex-card {
+    width: 80%; max-width: 200px; aspect-ratio: 3 / 4;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 40px -22px rgba(20,18,40,0.18);
+    display: flex; flex-direction: column;
+    transform: rotate(-3deg);
+    transition: transform .35s ease;
+  }
+  .tile:hover .flex-card { transform: rotate(-1deg) translateY(-4px); }
+  .flex-card-img {
+    flex: 1.4;
+    background:
+      repeating-linear-gradient(135deg, var(--accent-soft) 0 8px, transparent 8px 16px),
+      var(--bg-2);
+  }
+  .flex-card-body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .flex-line { height: 6px; border-radius: 3px; background: var(--line); }
+  .flex-line.l1 { width: 90%; background: var(--ink); height: 8px; }
+  .flex-line.l2 { width: 70%; }
+  .flex-line.l3 { width: 50%; }
+  .flex-btn {
+    margin-top: auto;
+    background: var(--ink); color: #fff;
+    font-size: 10px; font-family: var(--f-mono);
+    padding: 6px; border-radius: 5px;
+    text-align: center;
+  }
+
+  .art-rich {
+    width: 100%; height: 100%;
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+    gap: 6px; padding: 4px;
+  }
+  .rich-cell {
+    background: #fff; border-radius: 8px;
+    display: grid; place-items: center;
+    color: var(--accent-ink); font-family: var(--f-mono); font-size: 11px;
+    border: 1px solid color-mix(in oklch, var(--accent) 25%, transparent);
+  }
+  .rich-cell.dark { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .art-broad {
+    position: relative; width: 100%; height: 100%;
+    display: flex; flex-direction: column; gap: 6px; justify-content: center;
+  }
+  .broad-bar {
+    height: 14px; border-radius: 4px;
+    background: var(--bg-2);
+    position: relative; overflow: hidden;
+    border: 1px solid var(--line-2);
+  }
+  .broad-bar::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--ink);
+    border-radius: 4px;
+    width: var(--w, 50%);
+  }
+  .broad-bar.acc::after { background: var(--accent); }
+  .broad-meta { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 10px; color: var(--ink-3); }
+
+  /* ───────── builder showcase ───────── */
+  .builder {
+    background: var(--ink);
+    color: var(--bg);
+    padding: 120px 0;
+    margin-top: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .builder::before {
+    content: ""; position: absolute; inset: 0;
+    background-image: linear-gradient(oklch(0.24 0.01 270) 1px, transparent 1px),
+                      linear-gradient(90deg, oklch(0.24 0.01 270) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%);
+    opacity: 0.5;
+  }
+  .builder-inner { max-width: var(--max); margin: 0 auto; padding: 0 var(--pad-x); position: relative; }
+  .builder-head { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 56px; align-items: end; }
+  .builder .section-tag { color: oklch(0.78 0.10 290); }
+  .builder .section-tag::before { background: oklch(0.78 0.10 290); }
+  .builder-title {
+    font-size: clamp(40px, 5vw, 64px); margin: 14px 0 0;
+    line-height: 1; letter-spacing: -0.03em; font-weight: 500;
+    text-wrap: balance;
+  }
+  .builder-desc {
+    font-size: 17px; line-height: 1.55; color: oklch(0.78 0.012 270);
+    max-width: 50ch; text-wrap: pretty;
+  }
+  .builder-stage {
+    background: oklch(0.13 0.01 270);
+    border: 1px solid oklch(0.26 0.01 270);
+    border-radius: 18px;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    display: grid;
+    grid-template-columns: 220px 1fr 280px;
+    position: relative;
+  }
+  .stage-rail {
+    background: oklch(0.10 0.01 270);
+    border-right: 1px solid oklch(0.22 0.01 270);
+    padding: 18px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .rail-head {
+    font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.1em;
+    color: oklch(0.55 0.01 270); text-transform: uppercase;
+    margin: 14px 0 6px;
+  }
+  .rail-head:first-child { margin-top: 0; }
+  .rail-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    font-size: 13px; color: oklch(0.85 0.012 270);
+    cursor: grab;
+    transition: background .2s ease;
+  }
+  .rail-item:hover { background: oklch(0.16 0.01 270); }
+  .rail-item .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--accent); flex-shrink: 0; }
+  .rail-item .dot.y { background: var(--hi); }
+  .rail-item .dot.b { background: oklch(0.65 0.14 240); }
+  .rail-item .dot.g { background: oklch(0.7 0.15 150); }
+
+  .stage-canvas {
+    position: relative;
+    background:
+      radial-gradient(circle at 1px 1px, oklch(0.24 0.01 270) 1px, transparent 0) 0 0 / 22px 22px;
+  }
+  .canvas-node {
+    position: absolute;
+    background: oklch(0.18 0.01 270);
+    border: 1px solid oklch(0.30 0.01 270);
+    border-radius: 10px;
+    padding: 10px 14px;
+    min-width: 140px;
+    color: var(--bg);
+    font-size: 13px;
+    box-shadow: 0 8px 20px -10px rgba(0,0,0,0.6);
+  }
+  .canvas-node .nh {
+    font-family: var(--f-mono); font-size: 10px; color: oklch(0.6 0.01 270);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .canvas-node.start { border-color: var(--hi); }
+  .canvas-node.start .nh { color: var(--hi); }
+  .canvas-node.cond { border-color: var(--accent); }
+  .canvas-node.cond .nh { color: oklch(0.78 0.10 290); }
+  .canvas-node.action { border-color: oklch(0.65 0.14 240); }
+  .canvas-node.action .nh { color: oklch(0.75 0.12 240); }
+
+  .canvas-wire { position: absolute; inset: 0; pointer-events: none; }
+  .canvas-wire path { fill: none; stroke: oklch(0.42 0.01 270); stroke-width: 1.5; }
+  .canvas-wire path.live { stroke: var(--accent); stroke-dasharray: 5 5; animation: dash 1.6s linear infinite; }
+
+  .stage-insp {
+    background: oklch(0.10 0.01 270);
+    border-left: 1px solid oklch(0.22 0.01 270);
+    padding: 18px 18px;
+    font-size: 13px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .insp-head {
+    font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .insp-pill {
+    font-family: var(--f-mono); font-size: 10px;
+    padding: 2px 8px; border-radius: 999px;
+    background: oklch(0.32 0.10 290 / 0.4);
+    color: oklch(0.85 0.10 290);
+  }
+  .insp-row { display: flex; flex-direction: column; gap: 6px; }
+  .insp-row label { font-family: var(--f-mono); font-size: 10px; color: oklch(0.55 0.01 270); text-transform: uppercase; letter-spacing: 0.08em; }
+  .insp-input {
+    background: oklch(0.16 0.01 270);
+    border: 1px solid oklch(0.26 0.01 270);
+    border-radius: 6px; padding: 7px 10px;
+    color: var(--bg); font-size: 12px; font-family: var(--f-mono);
+  }
+  .insp-input.ml { min-height: 56px; line-height: 1.4; }
+
+  /* ───────── chat hero visual ───────── */
+  .chat-canvas {
+    position: absolute; inset: 0;
+    border-radius: 18px;
+    background: var(--card);
+    border: 1px solid var(--line-2);
+    overflow: hidden;
+    box-shadow: 0 30px 80px -40px oklch(0.3 0.05 290 / 0.35);
+  }
+  .chat-canvas-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(800px 400px at 20% 0%, var(--accent-soft), transparent 60%),
+      radial-gradient(600px 300px at 100% 100%, var(--hi-soft), transparent 70%);
+    opacity: 0.6;
+  }
+  .chat-head {
+    position: relative; padding: 14px 18px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid var(--line-2);
+    font-family: var(--f-mono); font-size: 11px; color: var(--ink-3);
+    background: color-mix(in oklch, var(--card) 80%, transparent);
+    backdrop-filter: blur(6px);
+  }
+  .chat-head .traffic { display: flex; gap: 5px; }
+  .chat-head .traffic i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+  .chat-head .traffic i:nth-child(1) { background: oklch(0.78 0.13 25); }
+  .chat-head .traffic i:nth-child(2) { background: oklch(0.85 0.14 90); }
+  .chat-head .traffic i:nth-child(3) { background: oklch(0.78 0.13 150); }
+  .chat-head .url { margin-left: auto; }
+
+  .chat-body {
+    position: absolute; inset: 42px 0 0 0;
+    padding: 28px 28px 24px;
+    display: flex; flex-direction: column; gap: 14px;
+    overflow: hidden;
+  }
+  .bubble {
+    max-width: 75%;
+    padding: 12px 16px; border-radius: 16px;
+    font-size: 14px; line-height: 1.5;
+    box-shadow: 0 1px 0 rgba(20,18,40,0.03);
+    animation: bubbleIn 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+  .bubble.in {
+    background: #fff; border: 1px solid var(--line-2);
+    border-bottom-left-radius: 4px;
+    align-self: flex-start;
+  }
+  .bubble.out {
+    background: var(--ink); color: var(--bg);
+    border-bottom-right-radius: 4px;
+    align-self: flex-end;
+  }
+  .bubble.ai {
+    background: var(--accent-soft);
+    border: 1px solid color-mix(in oklch, var(--accent) 30%, transparent);
+    color: var(--accent-ink);
+    border-bottom-left-radius: 4px;
+    align-self: flex-start;
+  }
+  .bubble small { display: block; font-family: var(--f-mono); font-size: 10px; color: var(--ink-3); margin-top: 4px; letter-spacing: 0.04em; }
+  .bubble.ai small { color: oklch(0.45 0.10 290); }
+  .bubble.out small { color: oklch(0.78 0.012 270); }
+
+  .bubble:nth-child(1) { animation-delay: .1s; }
+  .bubble:nth-child(2) { animation-delay: .55s; }
+  .bubble:nth-child(3) { animation-delay: 1.0s; }
+  .bubble:nth-child(4) { animation-delay: 1.5s; }
+  @keyframes bubbleIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .typing {
+    align-self: flex-start;
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 16px; border-bottom-left-radius: 4px;
+    padding: 14px 16px;
+    display: flex; gap: 4px;
+    animation: bubbleIn 0.6s 1.95s backwards;
+  }
+  .typing i {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ink-3);
+    animation: typing 1.2s ease-in-out infinite;
+  }
+  .typing i:nth-child(2) { animation-delay: .15s; }
+  .typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: .4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* floating sticker on chat */
+  .chat-sticker {
+    position: absolute;
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 10px; padding: 10px 12px;
+    font-family: var(--f-mono); font-size: 11px; color: var(--ink-2);
+    box-shadow: 0 12px 30px -16px rgba(20,18,40,0.25);
+    display: flex; align-items: center; gap: 10px;
+    animation: float 6s ease-in-out infinite;
+  }
+  .chat-sticker .pulse {
+    width: 8px; height: 8px; border-radius: 50%; background: oklch(0.7 0.14 145);
+    box-shadow: 0 0 0 4px oklch(0.7 0.14 145 / 0.2);
+  }
+  .chat-sticker.s1 { top: 16%; right: -12px; animation-delay: 0s; }
+  .chat-sticker.s2 { bottom: 24%; left: -28px; animation-delay: 1.4s; }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  /* ───────── how-it-works (3 steps) ───────── */
+  .how {
+    background: var(--bg-2);
+    border-top: 1px solid var(--line-2);
+    border-bottom: 1px solid var(--line-2);
+  }
+  .steps {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--line-2);
+    border-radius: var(--rad);
+    overflow: hidden;
+    background: var(--card);
+  }
+  .step {
+    padding: 32px 28px 28px;
+    border-right: 1px solid var(--line-2);
+    display: flex; flex-direction: column; gap: 18px;
+    position: relative;
+  }
+  .step:last-child { border-right: none; }
+  .step-num {
+    font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.1em;
+    color: var(--accent-ink); text-transform: uppercase;
+  }
+  .step-title { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin: 0; }
+  .step-desc { font-size: 14px; line-height: 1.6; color: var(--ink-2); margin: 0; }
+  .step-art {
+    margin-top: 8px; height: 110px;
+    background: var(--bg);
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    display: grid; place-items: center;
+    color: var(--ink-3);
+    font-family: var(--f-mono); font-size: 11px;
+    overflow: hidden;
+    position: relative;
+  }
+  /* step 1: connect */
+  .step-art.s1 {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    color: var(--ink-2);
+  }
+  .blip {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: #fff; border: 1px solid var(--line);
+    display: grid; place-items: center;
+    font-family: var(--f-mono); font-size: 11px; color: var(--ink-2);
+  }
+  .blip.acc { background: var(--accent-soft); border-color: color-mix(in oklch, var(--accent) 30%, transparent); color: var(--accent-ink); }
+  .blip.dark { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .link-line {
+    width: 24px; height: 1px; background: var(--line); position: relative;
+  }
+  .link-line::after {
+    content: ""; position: absolute; right: -4px; top: -3px;
+    width: 0; height: 0;
+    border-left: 5px solid var(--line); border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent;
+  }
+  /* step 2: design */
+  .step-art.s2 { align-items: stretch; padding: 12px; }
+  .mini-flow { width: 100%; height: 100%; position: relative; }
+  /* step 3: deploy */
+  .step-art.s3 .pulse-ring {
+    width: 50px; height: 50px; border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    position: relative;
+    animation: pulse 2.4s ease-out infinite;
+  }
+  .step-art.s3 .pulse-ring::after {
+    content: ""; position: absolute; inset: -10px;
+    border: 1.5px solid var(--accent); border-radius: 50%;
+    opacity: 0; animation: pulse 2.4s ease-out 0.6s infinite;
+  }
+  .step-art.s3 .pulse-core {
+    position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--accent);
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.85); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+
+  /* ───────── stats ───────── */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--line-2);
+    border-bottom: 1px solid var(--line-2);
+    margin-top: 56px;
+  }
+  .stat {
+    padding: 32px 24px;
+    border-right: 1px solid var(--line-2);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .stat:last-child { border-right: none; }
+  .stat-num {
+    font-family: var(--f-mono); font-feature-settings: "tnum";
+    font-size: 40px; font-weight: 500;
+    letter-spacing: -0.03em; line-height: 1;
+    color: var(--ink);
+  }
+  .stat-num .unit { font-size: 18px; color: var(--ink-3); margin-left: 2px; }
+  .stat-label { font-size: 13px; color: var(--ink-2); }
+
+  /* ───────── pricing ───────── */
+  .price-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .plan {
+    background: var(--card);
+    border: 1px solid var(--line-2);
+    border-radius: var(--rad);
+    padding: 28px 28px 24px;
+    display: flex; flex-direction: column; gap: 16px;
+    position: relative;
+    transition: border-color .2s ease, transform .2s ease;
+  }
+  .plan:hover { border-color: var(--ink); }
+  .plan.featured {
+    background: var(--ink); color: var(--bg); border-color: var(--ink);
+  }
+  .plan.featured .plan-desc, .plan.featured .feat li { color: oklch(0.78 0.012 270); }
+  .plan.featured .feat li::before { background: var(--hi); }
+  .plan-name { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  .plan.featured .plan-name { color: oklch(0.78 0.10 290); }
+  .plan-price {
+    font-size: 48px; font-weight: 500;
+    letter-spacing: -0.03em; line-height: 1;
+    display: flex; align-items: baseline; gap: 6px;
+  }
+  .plan-price .currency { font-size: 18px; color: var(--ink-3); }
+  .plan-price .period { font-size: 14px; color: var(--ink-3); font-weight: 400; }
+  .plan.featured .plan-price .currency, .plan.featured .plan-price .period { color: oklch(0.7 0.012 270); }
+  .plan-desc { font-size: 14px; color: var(--ink-2); line-height: 1.55; min-height: 42px; }
+  .feat { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .feat li { font-size: 14px; color: var(--ink-2); display: flex; align-items: flex-start; gap: 10px; }
+  .feat li::before {
+    content: ""; width: 14px; height: 14px; flex-shrink: 0; margin-top: 4px;
+    background: var(--ink);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3'><path d='M5 13l4 4L19 7'/></svg>") center/contain no-repeat;
+            mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3'><path d='M5 13l4 4L19 7'/></svg>") center/contain no-repeat;
+  }
+  .plan-cta { margin-top: auto; }
+  .plan .btn-primary { background: var(--ink); color: var(--bg); width: 100%; justify-content: center; }
+  .plan.featured .btn-primary { background: var(--bg); color: var(--ink); }
+  .plan-flag {
+    position: absolute; top: 16px; right: 16px;
+    font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.1em;
+    background: var(--hi); color: var(--ink);
+    padding: 3px 8px; border-radius: 4px;
+  }
+
+  /* ───────── faq ───────── */
+  .faq-list {
+    display: flex; flex-direction: column;
+    border-top: 1px solid var(--line-2);
+  }
+  .faq-item {
+    border-bottom: 1px solid var(--line-2);
+    padding: 22px 0;
+    cursor: pointer;
+  }
+  .faq-q {
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    font-size: 19px; font-weight: 500; letter-spacing: -0.015em;
+  }
+  .faq-q .plus {
+    width: 22px; height: 22px; flex-shrink: 0;
+    border: 1px solid var(--line); border-radius: 50%;
+    position: relative;
+    transition: transform .3s ease, background .3s ease, border-color .3s ease;
+  }
+  .faq-q .plus::before, .faq-q .plus::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    background: var(--ink);
+    transform: translate(-50%, -50%);
+  }
+  .faq-q .plus::before { width: 10px; height: 1.5px; }
+  .faq-q .plus::after { width: 1.5px; height: 10px; transition: transform .3s ease; }
+  .faq-item.open .plus { background: var(--ink); border-color: var(--ink); transform: rotate(180deg); }
+  .faq-item.open .plus::before, .faq-item.open .plus::after { background: var(--bg); }
+  .faq-item.open .plus::after { transform: translate(-50%, -50%) rotate(90deg); }
+  .faq-a {
+    max-height: 0; overflow: hidden;
+    transition: max-height .35s ease, margin-top .35s ease;
+    color: var(--ink-2); font-size: 15px; line-height: 1.65;
+    max-width: 70ch;
+  }
+  .faq-item.open .faq-a { max-height: 200px; margin-top: 14px; }
+
+  /* ───────── final cta ───────── */
+  .finale {
+    text-align: left;
+    padding: 140px var(--pad-x);
+    max-width: var(--max); margin: 0 auto;
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px; align-items: end;
+    border-top: 1px solid var(--line-2);
+  }
+  .finale-title {
+    font-size: clamp(48px, 7vw, 104px);
+    line-height: 0.95; letter-spacing: -0.04em; font-weight: 500;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .finale-title .ital { font-style: italic; color: var(--accent-ink); }
+  .finale-side { display: flex; flex-direction: column; gap: 18px; padding-bottom: 8px; }
+  .finale-side p { color: var(--ink-2); font-size: 16px; line-height: 1.55; margin: 0; max-width: 38ch; }
+  .finale-side .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* ───────── footer ───────── */
+  footer {
+    background: var(--ink); color: var(--bg);
+    padding: 60px var(--pad-x) 28px;
+  }
+  .foot-inner { max-width: var(--max); margin: 0 auto; }
+  .foot-grid {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
+    padding-bottom: 48px; border-bottom: 1px solid oklch(0.28 0.01 270);
+  }
+  .foot-brand { display: flex; flex-direction: column; gap: 14px; }
+  .foot-brand .brand-mark { background: var(--bg); }
+  .foot-brand .brand-mark::before { background: var(--accent); }
+  .foot-brand .brand-mark::after { background: var(--hi); }
+  .foot-brand p { font-size: 14px; color: oklch(0.7 0.012 270); line-height: 1.55; max-width: 32ch; }
+  .foot-col h4 {
+    font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: oklch(0.6 0.012 270);
+    margin: 0 0 14px;
+    font-weight: 400;
+  }
+  .foot-col ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .foot-col li a { font-size: 14px; color: oklch(0.85 0.012 270); }
+  .foot-col li a:hover { color: var(--bg); }
+  .foot-bot {
+    padding-top: 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    font-family: var(--f-mono); font-size: 11px; color: oklch(0.6 0.012 270);
+    flex-wrap: wrap;
+  }
+
+  /* ───────── reveal on scroll ───────── */
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .8s ease, transform .8s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* responsive trims */
+  @media (max-width: 980px) {
+    :root { --pad-x: 28px; }
+    .hero-grid, .section-head, .builder-head, .finale { grid-template-columns: 1fr; gap: 32px; }
+    .mosaic { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 200px; }
+    .t-flow, .t-ai, .t-flex, .t-rich, .t-broad { grid-column: span 2; grid-row: span 1; }
+    .builder-stage { grid-template-columns: 1fr; aspect-ratio: auto; }
+    .stage-rail, .stage-insp { display: none; }
+    .stage-canvas { min-height: 360px; }
+    .steps, .price-grid, .stats { grid-template-columns: 1fr; }
+    .step, .stat, .plan { border-right: none; border-bottom: 1px solid var(--line-2); }
+    .step:last-child, .stat:last-child, .plan:last-child { border-bottom: none; }
+    .foot-grid { grid-template-columns: 1fr 1fr; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ───────── nav ───────── -->
+<nav class="nav" data-screen-label="01 Nav">
+  <div class="nav-inner">
+    <a class="brand" href="#">
+      <span class="brand-mark"><span class="brand-tail"></span></span>
+      <span>Botcraft</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">功能</a>
+      <a href="#builder">編輯器</a>
+      <a href="#how">怎麼運作</a>
+      <a href="#pricing">方案</a>
+      <a href="#faq">常見問題</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#" class="login">登入</a>
+      <a href="#" class="btn btn-primary">免費開始
+        <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ───────── hero ───────── -->
+<header class="hero" data-screen-label="02 Hero">
+  <div class="grid-bg"></div>
+  <div class="eyebrow"><span class="dot"></span>v3.0 · AI 對話接管 已上線</div>
+  <div class="hero-grid">
+    <div>
+      <h1 class="h1">
+        把對話機器人，<br />
+        做成<span class="ital">你想要的</span><span class="hi-mark">樣子</span>。
+      </h1>
+      <p class="lead">
+        Botcraft 是一個視覺化的對話流程編輯平台。把訊息積木拖一拖，串起來，就能在 LINE、Web、各種通訊管道上跑起來——不用寫一行程式碼。
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#">開始建立你的 Bot
+          <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+        <a class="btn btn-ghost" href="#builder">先看編輯器長怎樣</a>
+      </div>
+      <div class="hero-meta">
+        <span><b class="mono">3</b>&nbsp;分鐘上手</span>
+        <span><b class="mono">0</b>&nbsp;行程式碼</span>
+        <span><b class="mono">∞</b>&nbsp;對話流程</span>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="chat-canvas">
+        <div class="chat-canvas-bg"></div>
+        <div class="chat-head">
+          <div class="traffic"><i></i><i></i><i></i></div>
+          <span class="url">botcraft.app/preview/onboarding</span>
+        </div>
+        <div class="chat-body">
+          <div class="bubble in">
+            嗨～請問營業時間是？
+            <small>USER · 09:42</small>
+          </div>
+          <div class="bubble out">
+            我們週一到週五 10:00–20:00 都開著喔 ✦
+            <small>BOT · FLOW: hours</small>
+          </div>
+          <div class="bubble in">
+            那我可以預約看店嗎？
+            <small>USER · 09:42</small>
+          </div>
+          <div class="bubble ai">
+            好的，我幫你看了週六下午有空檔，要約 14:30 嗎？
+            <small>AI · KNOWLEDGE BASE</small>
+          </div>
+          <div class="typing"><i></i><i></i><i></i></div>
+        </div>
+        <div class="chat-sticker s1"><span class="pulse"></span>已連線&nbsp;·&nbsp;LINE</div>
+        <div class="chat-sticker s2"><span class="mono">↳</span>觸發節點&nbsp;<b class="mono">#hours</b></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ───────── ticker ───────── -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ticker-label">已整合</span>
+    <div class="ticker-track">
+      <div class="ticker-row">
+        <span>LINE Messaging API</span>
+        <span>Webhook</span>
+        <span>Flex Message</span>
+        <span>Rich Menu</span>
+        <span>Groq</span>
+        <span>Gemini</span>
+        <span>RAG 向量檢索</span>
+        <span>PostgreSQL</span>
+        <span>Redis</span>
+        <span>MongoDB</span>
+        <span>MinIO</span>
+        <span>WebSocket</span>
+        <!-- duplicate for seamless loop -->
+        <span>LINE Messaging API</span>
+        <span>Webhook</span>
+        <span>Flex Message</span>
+        <span>Rich Menu</span>
+        <span>Groq</span>
+        <span>Gemini</span>
+        <span>RAG 向量檢索</span>
+        <span>PostgreSQL</span>
+        <span>Redis</span>
+        <span>MongoDB</span>
+        <span>MinIO</span>
+        <span>WebSocket</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── feature mosaic ───────── -->
+<section class="section" id="features" data-screen-label="03 Features">
+  <div class="section-head reveal">
+    <div>
+      <div class="section-tag">FEATURES · 01</div>
+      <h2 class="section-title">不只是回覆，<br />是<em style="font-style: italic; color: var(--accent-ink);">真的會聊天</em>的助理。</h2>
+    </div>
+    <p class="section-desc">
+      從拖拉式流程編輯、AI 知識庫接管，到 Flex 卡片、Rich Menu、群發排程——把過去散落在各處的 Bot 工作，整合在一個工作台裡。
+    </p>
+  </div>
+
+  <div class="mosaic">
+    <div class="tile t-flow reveal">
+      <span class="tile-num">01 / FLOW</span>
+      <h3>視覺化流程編輯器</h3>
+      <p>把訊息積木一塊一塊接起來，就像畫流程圖。條件分支、變數、跳轉，都看得見。</p>
+      <div class="tile-art">
+        <div class="art-flow">
+          <svg class="wire" style="left:60px; top:50px; width:200px; height:60px;"><path d="M 0 10 C 60 10, 60 50, 130 50"/></svg>
+          <svg class="wire live" style="left:240px; top:60px; width:200px; height:60px;"><path d="M 0 0 C 80 0, 80 60, 160 60"/></svg>
+          <div class="node" style="left:8px; top:34px;">on:訊息</div>
+          <div class="node accent" style="left:80px; top:88px;">if 包含「訂位」</div>
+          <div class="node dark" style="left:240px; top:48px;">回覆 Flex 卡</div>
+          <div class="node" style="left:280px; top:128px;">交給 AI</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tile t-ai reveal">
+      <span class="tile-num">02 / AI</span>
+      <h3>AI 知識庫接管</h3>
+      <p>整合 Groq 與 Gemini，讓 Bot 在你不在線時也能用你的資料回答問題。</p>
+      <div class="tile-art">
+        <div class="art-ai">
+          <div class="ai-tags">
+            <span class="ai-tag">RAG</span>
+            <span class="ai-tag hot">向量檢索</span>
+            <span class="ai-tag">語意搜尋</span>
+          </div>
+          <div class="ai-blob"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tile t-flex reveal">
+      <span class="tile-num">03 / FLEX</span>
+      <h3>Flex 訊息設計</h3>
+      <p>所見即所得地排版卡片訊息，再也不用手刻 JSON。</p>
+      <div class="tile-art">
+        <div class="art-flex">
+          <div class="flex-card">
+            <div class="flex-card-img"></div>
+            <div class="flex-card-body">
+              <div class="flex-line l1"></div>
+              <div class="flex-line l2"></div>
+              <div class="flex-line l3"></div>
+              <div class="flex-btn">查看詳情</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tile t-rich reveal">
+      <span class="tile-num">04 / MENU</span>
+      <h3>圖文選單</h3>
+      <p>分格、上稿、上架——三步驟。</p>
+      <div class="tile-art">
+        <div class="art-rich">
+          <div class="rich-cell dark">A</div>
+          <div class="rich-cell">B</div>
+          <div class="rich-cell">C</div>
+          <div class="rich-cell dark">D</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tile t-broad reveal">
+      <span class="tile-num">05 / BROADCAST</span>
+      <h3>分群推播</h3>
+      <p>排程、A/B、追蹤點擊率，全在儀表板裡。</p>
+      <div class="tile-art">
+        <div class="art-broad">
+          <div class="broad-bar acc" style="--w: 78%"></div>
+          <div class="broad-meta"><span>VIP · 1,204</span><span>78%</span></div>
+          <div class="broad-bar" style="--w: 54%"></div>
+          <div class="broad-meta"><span>新會員 · 3,820</span><span>54%</span></div>
+          <div class="broad-bar" style="--w: 32%"></div>
+          <div class="broad-meta"><span>沉睡用戶 · 8,113</span><span>32%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── builder showcase ───────── -->
+<section class="builder" id="builder" data-screen-label="04 Builder">
+  <div class="builder-inner">
+    <div class="builder-head reveal">
+      <div>
+        <div class="section-tag">BUILDER · 02</div>
+        <h2 class="builder-title">畫得出來，<br />就跑得起來。</h2>
+      </div>
+      <p class="builder-desc">
+        左邊是元件抽屜，中間是畫布，右邊是屬性面板。三欄式工作流，熟悉、直覺、不出錯。底下偷偷把 Webhook、訊息事件、AI 推論都串好了。
+      </p>
+    </div>
+
+    <div class="builder-stage reveal">
+      <!-- left rail -->
+      <aside class="stage-rail">
+        <div class="rail-head">觸發</div>
+        <div class="rail-item"><span class="dot y"></span>收到訊息</div>
+        <div class="rail-item"><span class="dot y"></span>加入好友</div>
+        <div class="rail-item"><span class="dot y"></span>排程</div>
+
+        <div class="rail-head">邏輯</div>
+        <div class="rail-item"><span class="dot"></span>條件分支</div>
+        <div class="rail-item"><span class="dot"></span>變數設定</div>
+        <div class="rail-item"><span class="dot"></span>等待輸入</div>
+
+        <div class="rail-head">動作</div>
+        <div class="rail-item"><span class="dot b"></span>傳送文字</div>
+        <div class="rail-item"><span class="dot b"></span>傳送 Flex</div>
+        <div class="rail-item"><span class="dot g"></span>呼叫 AI</div>
+        <div class="rail-item"><span class="dot g"></span>呼叫 API</div>
+      </aside>
+
+      <!-- canvas -->
+      <div class="stage-canvas">
+        <svg class="canvas-wire" viewBox="0 0 800 460" preserveAspectRatio="none">
+          <path d="M 170 90 C 240 90, 240 200, 320 200" />
+          <path class="live" d="M 470 200 C 540 200, 540 100, 620 100" />
+          <path d="M 470 240 C 540 240, 540 320, 620 320" />
+        </svg>
+        <div class="canvas-node start" style="left: 30px; top: 70px;">
+          <div class="nh">TRIGGER</div>
+          收到訊息
+        </div>
+        <div class="canvas-node cond" style="left: 320px; top: 180px;">
+          <div class="nh">IF</div>
+          包含「預約」
+        </div>
+        <div class="canvas-node action" style="left: 620px; top: 80px;">
+          <div class="nh">ACTION</div>
+          回覆 Flex 卡片
+        </div>
+        <div class="canvas-node action" style="left: 620px; top: 300px;">
+          <div class="nh">ACTION</div>
+          交給 AI 回覆
+        </div>
+      </div>
+
+      <!-- inspector -->
+      <aside class="stage-insp">
+        <div class="insp-head">節點屬性 <span class="insp-pill">IF</span></div>
+        <div class="insp-row">
+          <label>條件類型</label>
+          <div class="insp-input">contains_keyword</div>
+        </div>
+        <div class="insp-row">
+          <label>關鍵字（OR）</label>
+          <div class="insp-input">預約, 訂位, booking</div>
+        </div>
+        <div class="insp-row">
+          <label>不符合時</label>
+          <div class="insp-input ml">→ 流向「交給 AI 回覆」分支，使用 knowledge base「v3-store」</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── how it works ───────── -->
+<section class="how">
+  <div class="section" id="how" data-screen-label="05 How">
+    <div class="section-head reveal">
+      <div>
+        <div class="section-tag">FLOW · 03</div>
+        <h2 class="section-title">三步驟，<br />從 0 到上線。</h2>
+      </div>
+      <p class="section-desc">不需要伺服器、不用部署、不用設 webhook。把 LINE Channel 接上，畫好流程，按下發布。</p>
+    </div>
+
+    <div class="steps reveal">
+      <div class="step">
+        <div class="step-num">STEP 01</div>
+        <h3 class="step-title">連結你的頻道</h3>
+        <p class="step-desc">把 LINE Channel ID 與 Secret 貼進來，剩下的 Webhook、權限、SSL 我們處理。</p>
+        <div class="step-art s1">
+          <div class="blip">CH</div>
+          <div class="link-line"></div>
+          <div class="blip dark">⇄</div>
+          <div class="link-line"></div>
+          <div class="blip acc">BC</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">STEP 02</div>
+        <h3 class="step-title">畫出對話流程</h3>
+        <p class="step-desc">在畫布上把節點拖出來、連起來。即時預覽機器人會怎麼回覆。</p>
+        <div class="step-art s2">
+          <div class="mini-flow">
+            <svg class="wire" style="left:0; top:24px; width:100%; height:60px;"><path d="M 30 10 C 90 10, 90 50, 150 50"/></svg>
+            <div class="node" style="left:6px; top:14px;">trigger</div>
+            <div class="node accent" style="left:80px; top:54px;">flex</div>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">STEP 03</div>
+        <h3 class="step-title">一鍵上線</h3>
+        <p class="step-desc">發布後，每一則訊息都會即時透過 WebSocket 流回儀表板，可以邊看邊調。</p>
+        <div class="step-art s3">
+          <div class="pulse-ring"></div>
+          <div class="pulse-core"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats reveal">
+      <div class="stat">
+        <div class="stat-num" data-count="3">0<span class="unit">分鐘</span></div>
+        <div class="stat-label">平均上手時間</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" data-count="98">0<span class="unit">%</span></div>
+        <div class="stat-label">訊息送達成功率</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" data-count="42">0<span class="unit">ms</span></div>
+        <div class="stat-label">P95 回應延遲</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" data-count="12">0<span class="unit">k+</span></div>
+        <div class="stat-label">已建立的 Bot</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── pricing ───────── -->
+<section class="section" id="pricing" data-screen-label="06 Pricing">
+  <div class="section-head reveal">
+    <div>
+      <div class="section-tag">PRICING · 04</div>
+      <h2 class="section-title">先免費，<br />有需要再升級。</h2>
+    </div>
+    <p class="section-desc">學生與個人用戶永遠有可用的免費額度。需要更多訊息量、AI 接管或團隊協作時，再考慮其他方案。</p>
+  </div>
+
+  <div class="price-grid reveal">
+    <div class="plan">
+      <div class="plan-name">Hobby</div>
+      <div class="plan-price"><span class="currency">NT$</span>0<span class="period">/月</span></div>
+      <p class="plan-desc">給想試試看 Bot 怎麼運作的學生與個人用戶。</p>
+      <ul class="feat">
+        <li>1 個 Bot，1,000 訊息/月</li>
+        <li>視覺化流程編輯</li>
+        <li>Flex 訊息設計</li>
+        <li>社群論壇支援</li>
+      </ul>
+      <div class="plan-cta"><a class="btn btn-primary" href="#">免費開始</a></div>
+    </div>
+
+    <div class="plan featured">
+      <div class="plan-flag">最熱門</div>
+      <div class="plan-name">Studio</div>
+      <div class="plan-price"><span class="currency">NT$</span>299<span class="period">/月</span></div>
+      <p class="plan-desc">適合接案、社團、小品牌。AI 接管 + 知識庫。</p>
+      <ul class="feat">
+        <li>5 個 Bot，50,000 訊息/月</li>
+        <li>AI 接管（Groq / Gemini）</li>
+        <li>RAG 知識庫，3 GB</li>
+        <li>分群推播 + A/B 測試</li>
+        <li>對話歷史 90 天</li>
+      </ul>
+      <div class="plan-cta"><a class="btn btn-primary" href="#">升級 Studio</a></div>
+    </div>
+
+    <div class="plan">
+      <div class="plan-name">Team</div>
+      <div class="plan-price"><span class="currency">NT$</span>999<span class="period">/月</span></div>
+      <p class="plan-desc">給需要協作、稽核、私有部署的團隊。</p>
+      <ul class="feat">
+        <li>不限 Bot，500,000 訊息/月</li>
+        <li>多人協作 + 權限管理</li>
+        <li>對話分析與標註</li>
+        <li>Webhook & API 開放</li>
+        <li>專屬技術支援</li>
+      </ul>
+      <div class="plan-cta"><a class="btn btn-primary" href="#">聯絡我們</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── faq ───────── -->
+<section class="section" id="faq" data-screen-label="07 FAQ">
+  <div class="section-head reveal">
+    <div>
+      <div class="section-tag">FAQ · 05</div>
+      <h2 class="section-title">常見問題</h2>
+    </div>
+    <p class="section-desc">沒看到你的問題？寄信到 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f19998b1939e859283909785df959487">[email&#160;protected]</a>，通常一天內回覆。</p>
+  </div>
+
+  <div class="faq-list reveal">
+    <div class="faq-item">
+      <div class="faq-q">我需要會寫程式才能用嗎？<span class="plus"></span></div>
+      <div class="faq-a">不需要。整個流程從 LINE Channel 連線、訊息設計、上線發布都是視覺化操作。如果你會寫，也可以用 Webhook 與 API 自己擴充。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">免費方案有時間限制嗎？<span class="plus"></span></div>
+      <div class="faq-a">沒有。Hobby 方案永久免費，每月 1,000 則訊息額度。學生用戶提供 NT$0 升級到 Studio 的優惠，請從學生方案頁申請。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Bot 的對話資料儲存在哪？<span class="plus"></span></div>
+      <div class="faq-a">對話歷史儲存在加密的 MongoDB，媒體檔案儲存在 MinIO 物件儲存。你可以隨時下載或刪除所有對話資料，也可以選擇關閉對話記錄功能。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">AI 接管是什麼意思？<span class="plus"></span></div>
+      <div class="faq-a">當你定義的流程沒有匹配到使用者訊息時，可以選擇交給 AI 處理。AI 會基於你上傳到知識庫的內容（PDF、網頁、表格等），用 RAG 檢索方式回覆——不是亂編。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">可以同時連到 LINE 以外的平台嗎？<span class="plus"></span></div>
+      <div class="faq-a">目前主要支援 LINE Messaging API。Web Chat、Telegram、Discord 等管道在 roadmap 上，預計年底前陸續開放。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── final CTA ───────── -->
+<section class="finale" data-screen-label="08 CTA">
+  <h2 class="finale-title reveal">
+    開始畫你的<br />
+    <span class="ital">第一個</span> Bot 吧。
+  </h2>
+  <div class="finale-side reveal">
+    <p>免費註冊不用信用卡。三分鐘內就能在 LINE 上看到你做的機器人回應第一則訊息。</p>
+    <div class="ctas">
+      <a class="btn btn-primary" href="#">免費開始
+        <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+      <a class="btn btn-ghost" href="#">看示範影片</a>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── footer ───────── -->
+<footer data-screen-label="09 Footer">
+  <div class="foot-inner">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <div class="brand">
+          <span class="brand-mark"><span class="brand-tail"></span></span>
+          <span style="color: var(--bg);">Botcraft</span>
+        </div>
+        <p>視覺化的對話機器人建構平台。把想法畫出來，就讓它跑起來。</p>
+        <p class="mono" style="font-size: 11px; color: oklch(0.6 0.012 270);">© 2026 Botcraft Studio</p>
+      </div>
+      <div class="foot-col">
+        <h4>產品</h4>
+        <ul>
+          <li><a href="#features">功能總覽</a></li>
+          <li><a href="#builder">編輯器</a></li>
+          <li><a href="#pricing">方案</a></li>
+          <li><a href="#">更新紀錄</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>資源</h4>
+        <ul>
+          <li><a href="#">說明文件</a></li>
+          <li><a href="#">API 參考</a></li>
+          <li><a href="#">範本庫</a></li>
+          <li><a href="#">部落格</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>公司</h4>
+        <ul>
+          <li><a href="#">關於我們</a></li>
+          <li><a href="#">聯絡</a></li>
+          <li><a href="#">隱私權</a></li>
+          <li><a href="#">服務條款</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span>Made with care · 100% 視覺化</span>
+      <span>v3.0 · build 2604.05</span>
+    </div>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/babel" src="tweaks-panel.jsx"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script>
+  /* reveal on scroll */
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  /* faq toggle */
+  document.querySelectorAll('.faq-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  /* number count-up on view */
+  const numIo = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const target = parseFloat(el.dataset.count);
+      const unit = el.querySelector('.unit')?.outerHTML || '';
+      const dur = 1400; const start = performance.now();
+      const isFloat = !Number.isInteger(target);
+      function tick(now) {
+        const t = Math.min(1, (now - start) / dur);
+        const eased = 1 - Math.pow(1 - t, 3);
+        const v = target * eased;
+        el.innerHTML = (isFloat ? v.toFixed(1) : Math.round(v)) + unit;
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+      numIo.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('.stat-num').forEach(el => numIo.observe(el));
+</script>
+
+<div id="tweaks-root"></div>
+<script type="text/babel">
+  const TWEAKS_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "accentHue": 290,
+    "headlineWeight": 500,
+    "showTicker": true,
+    "darkBuilder": true,
+    "heroLayout": "split"
+  }/*EDITMODE-END*/;
+
+  function TweaksApp() {
+    const [t, setTweak] = useTweaks(TWEAKS_DEFAULTS);
+
+    React.useEffect(() => {
+      const root = document.documentElement;
+      root.style.setProperty('--accent', `oklch(0.62 0.18 ${t.accentHue})`);
+      root.style.setProperty('--accent-soft', `oklch(0.92 0.06 ${t.accentHue})`);
+      root.style.setProperty('--accent-ink', `oklch(0.32 0.16 ${t.accentHue})`);
+      document.querySelectorAll('.h1, .section-title, .builder-title, .finale-title').forEach(el => {
+        el.style.fontWeight = t.headlineWeight;
+      });
+      const ticker = document.querySelector('.ticker');
+      if (ticker) ticker.style.display = t.showTicker ? '' : 'none';
+      const builder = document.querySelector('.builder');
+      if (builder) {
+        builder.style.background = t.darkBuilder ? 'var(--ink)' : 'var(--bg-2)';
+        builder.style.color = t.darkBuilder ? 'var(--bg)' : 'var(--ink)';
+      }
+    }, [t]);
+
+    return (
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="色彩">
+          <TweakColor
+            label="強調色"
+            value={t.accentHue}
+            onChange={v => setTweak('accentHue', v)}
+            options={[290, 25, 145, 240, 60]}
+            renderSwatch={hue => (
+              <div style={{
+                width: '100%', height: '100%',
+                background: `oklch(0.62 0.18 ${hue})`,
+                borderRadius: 6
+              }} />
+            )}
+          />
+        </TweakSection>
+        <TweakSection title="排版">
+          <TweakSlider label="標題字重" min={300} max={700} step={100}
+            value={t.headlineWeight} onChange={v => setTweak('headlineWeight', v)} />
+        </TweakSection>
+        <TweakSection title="顯示">
+          <TweakToggle label="顯示整合 Ticker" value={t.showTicker}
+            onChange={v => setTweak('showTicker', v)} />
+          <TweakToggle label="編輯器深色背景" value={t.darkBuilder}
+            onChange={v => setTweak('darkBuilder', v)} />
+        </TweakSection>
+      </TweaksPanel>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('tweaks-root')).render(<TweaksApp />);
+</script>
+
+</body>
+</html>

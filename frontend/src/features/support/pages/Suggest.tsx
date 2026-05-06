@@ -209,7 +209,7 @@ const Suggest = () => {
                     Email 聯絡
                   </h3>
                   <p className="text-sm text-slate-500">
-                    support@linebotweb.com
+                    support@botcraft.app
                   </p>
                 </div>
 
@@ -226,7 +226,7 @@ const Suggest = () => {
                   <h3 className="mb-2 text-lg font-semibold text-slate-950">
                     LINE 官方帳號
                   </h3>
-                  <p className="text-sm text-slate-500">@linebotweb</p>
+                  <p className="text-sm text-slate-500">@botcraft</p>
                 </div>
               </div>
             </div>
