@@ -29,9 +29,9 @@ const BotSelectorCard: React.FC<BotSelectorCardProps> = ({
 }) => {
   return (
     <div className="mb-6 sticky top-20 z-20">
-      <div className="web3-glass-card p-6 web3-hover-glow">
+      <div className="app-panel p-6">
         <div className="mb-4">
-          <h3 className="neon-text-gradient text-lg font-semibold flex items-center gap-2">
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-950">
             <BotIcon className="h-5 w-5" />
             選擇 Bot
           </h3>
@@ -63,17 +63,17 @@ const BotSelectorCard: React.FC<BotSelectorCardProps> = ({
 
                 <div className="flex items-center gap-2 text-sm">
                   <div
-                    className={`w-2 h-2 rounded-full ${isConnected ? "bg-web3-green" : "bg-web3-red"}`}
+                    className={`h-2 w-2 rounded-full ${isConnected ? "bg-emerald-500" : "bg-rose-500"}`}
                   />
                   <span
                     className={
-                      isConnected ? "text-web3-green" : "text-web3-red"
+                      isConnected ? "text-emerald-700" : "text-rose-700"
                     }
                   >
                     {isConnected ? "即時連接" : "離線模式"}
                   </span>
                   {connectionError && (
-                    <span className="text-web3-red text-xs">
+                    <span className="text-xs text-rose-700">
                       ({connectionError})
                     </span>
                   )}

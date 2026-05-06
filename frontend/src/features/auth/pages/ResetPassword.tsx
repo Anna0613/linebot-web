@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import AuthFormLayout from "../components/AuthFormLayout";
 import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
 const ResetPassword = () => {
@@ -33,7 +32,7 @@ const ResetPassword = () => {
       toast({
         variant: "destructive",
         title: "密碼錯誤",
-        description: "密碼長度至少需要8位",
+        description: "密碼長度至少需要 8 個字元",
       });
       return false;
     }
@@ -42,7 +41,7 @@ const ResetPassword = () => {
       toast({
         variant: "destructive",
         title: "密碼錯誤",
-        description: "密碼需要包含至少一個字母和一個數字",
+        description: "密碼需要包含至少一個字母與一個數字",
       });
       return false;
     }
@@ -102,7 +101,7 @@ const ResetPassword = () => {
 
       toast({
         title: "重設成功",
-        description: "密碼重設成功！",
+        description: "密碼已更新，請使用新密碼登入。",
       });
 
       setTimeout(() => {
@@ -121,73 +120,61 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
+    <AuthFormLayout title="設定新密碼" description="輸入新的密碼，完成後就能重新登入工作台。">
       {loading && <Loader fullPage />}
 
-      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold neon-text-gradient">重設密碼</h2>
-            <p className="text-sm text-muted-foreground mt-2">
-              請輸入您的新密碼
-            </p>
-          </div>
-
-          <div className="web3-glass-card p-8 web3-hover-glow">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="password">新密碼：</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="rounded-lg h-11"
-                />
-                <p className="text-sm text-muted-foreground">
-                  密碼至少需要8位，包含字母和數字
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">確認密碼：</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="rounded-lg h-11"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="web3-primary-button w-full rounded-full font-bold h-11"
-              >
-                {loading ? (
-                  <>
-                    <Loader size="sm" />
-                    處理中...
-                  </>
-                ) : (
-                  "重設密碼"
-                )}
-              </Button>
-            </form>
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-slate-700">
+            新密碼
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="至少 8 個字元"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="app-input"
+          />
+          <p className="text-sm leading-6 text-slate-500">
+            密碼需包含至少一個字母與一個數字。
+          </p>
         </div>
-      </main>
 
-      <Footer />
-    </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword" className="text-slate-700">
+            確認密碼
+          </Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            placeholder="再次輸入新密碼"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            className="app-input"
+          />
+        </div>
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="app-primary-button w-full"
+        >
+          {loading ? (
+            <>
+              <Loader size="sm" />
+              處理中
+            </>
+          ) : (
+            "更新密碼"
+          )}
+        </Button>
+      </form>
+    </AuthFormLayout>
   );
 };
 

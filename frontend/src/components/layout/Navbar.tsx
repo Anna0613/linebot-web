@@ -63,8 +63,8 @@ const Navbar = () => {
                 />
               </picture>
               <h6 className="m-0 truncate text-lg font-semibold leading-none tracking-normal text-slate-950 sm:text-xl md:text-[28px]">
-                <span className="hidden lg:inline">LINE Bot 製作輔助系統</span>
-                <span className="lg:hidden">LINE Bot 系統</span>
+                <span className="hidden lg:inline">LineBot Web</span>
+                <span className="lg:hidden">LINE Bot</span>
               </h6>
             </Link>
           </div>
@@ -92,7 +92,7 @@ const Navbar = () => {
                   size="sm"
                   className="h-9 rounded-[14px] bg-[#16a34a] px-4 text-xs font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-[#15803d] md:h-10 md:text-sm"
                 >
-                  立即加入
+                  建立帳號
                 </Button>
               </Link>
             </div>
@@ -112,7 +112,7 @@ const Navbar = () => {
                   size="sm"
                   className="h-8 rounded-[12px] bg-[#16a34a] px-3 text-xs font-semibold text-white hover:bg-[#15803d]"
                 >
-                  註冊
+                  建立
                 </Button>
               </Link>
             </div>
@@ -150,7 +150,7 @@ const Navbar = () => {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Button className="h-11 w-full justify-start rounded-[14px] bg-[#16a34a] text-sm font-semibold text-white hover:bg-[#15803d]">
-                  立即加入
+                  建立帳號
                 </Button>
               </Link>
             </div>
@@ -224,7 +224,7 @@ const Navbar = () => {
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 rounded-[16px] px-4 py-3 transition-colors hover:bg-emerald-50 hover:text-[#166534]"
               >
-                註冊
+                建立帳號
               </Link>
             </li>
         </ul>

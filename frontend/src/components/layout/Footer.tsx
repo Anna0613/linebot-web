@@ -12,10 +12,10 @@ const Footer = () => {
           {/* 品牌與說明 */}
           <div className="space-y-3 text-center md:text-left">
             <span className="block text-lg font-semibold text-slate-950 sm:text-xl">
-              LINE Bot 製作輔助系統
+              LineBot Web
             </span>
             <p className="max-w-md text-sm leading-6 text-slate-500 md:max-w-lg">
-              建立、編輯與管理 LINE Bot 的簡潔工作台。
+              給一般使用者的 LINE Bot 工作台。建立、設計、查看互動，一次完成。
             </p>
             <div className="flex items-center justify-center md:justify-start">
               <LanguageToggle />
@@ -55,7 +55,15 @@ const Footer = () => {
                   to="/register"
                   className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
                 >
-                  註冊
+                  建立帳號
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/how-to-establish"
+                  className="block py-1 text-sm text-slate-500 transition-colors hover:text-slate-950"
+                >
+                  建立教學
                 </Link>
               </li>
             </ul>
@@ -90,7 +98,7 @@ const Footer = () => {
         <div className="mt-8 border-t border-white/60 pt-6">
           <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
             <p className="text-center text-xs text-slate-500 sm:text-sm md:text-left">
-              © {new Date().getFullYear()} 銘傳大學 Ming Chuan University
+              © {new Date().getFullYear()} LineBot Web
             </p>
 
             <div className="flex justify-center md:justify-end space-x-4 sm:space-x-6 items-center">

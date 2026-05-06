@@ -43,23 +43,22 @@ import {
 
 const managementCopy = {
   en: {
-    sidebarSubtitle: "Management",
-    botHealthTitle: "Bot health is live",
-    botHealthBody:
-      "Track webhook, delivery, and usage quality from the same workspace.",
-    topbarKicker: "Analytics",
+    sidebarSubtitle: "Workspace",
+    botHealthTitle: "Bot is ready",
+    botHealthBody: "Check connection, messages, and friends from here.",
+    topbarKicker: "Interactions",
     welcome: "Welcome back",
     openNavigation: "Open navigation",
     closeNavigation: "Close navigation",
     notifications: "Notifications",
-    heroBadge: "Retention dashboard",
-    dateRange: "2025/09/05 - 2025/09/11",
-    title: "Analytics",
+    heroBadge: "Recent interactions",
+    dateRange: "Last 7 days",
+    title: "Interactions",
     subtitle:
-      "Monitor LINE Bot messages, active users, retention, and real-time events to improve timing and operating quality.",
+      "Check messages, friends, connection status, and recent events for this LINE Bot.",
     channelStatus: "Channel status",
     webSocket: "WebSocket",
-    botHealth: "Bot health",
+    botHealth: "Bot status",
     active: "Active",
     inactive: "Inactive",
     connected: "Connected",
@@ -78,37 +77,37 @@ const managementCopy = {
     },
     noBotsTitle: "Create your first LINE Bot",
     noBotsBody:
-      "After creation, you can manage webhook, logic templates, Rich Menu, AI knowledge base, and analytics in one flow.",
+      "After creation, you can design replies, set rich menus, and check interactions in one place.",
     createFirstBot: "Create first Bot",
     viewSetupGuide: "View setup guide",
     tabs: {
       analytics: "Overview",
-      logic: "Advanced Reports",
+      logic: "Reply settings",
     },
     documentTitle: "Bot Management",
   },
   zh: {
-    sidebarSubtitle: "管理中心",
-    botHealthTitle: "Bot 狀態即時監控",
-    botHealthBody: "在同一個工作區追蹤 Webhook、傳遞與使用品質。",
-    topbarKicker: "數據分析",
+    sidebarSubtitle: "工作台",
+    botHealthTitle: "Bot 目前正常",
+    botHealthBody: "查看連線、訊息與好友互動。",
+    topbarKicker: "互動紀錄",
     welcome: "歡迎回來",
     openNavigation: "開啟導覽",
     closeNavigation: "關閉導覽",
     notifications: "通知",
-    heroBadge: "留存數據看板",
-    dateRange: "2025/09/05 - 2025/09/11",
-    title: "數據分析",
+    heroBadge: "最近互動",
+    dateRange: "最近 7 天",
+    title: "互動紀錄",
     subtitle:
-      "監控 LINE Bot 的訊息量、活躍用戶、留存表現與即時事件，協助你掌握推播時機與營運品質。",
+      "查看這個 Bot 的訊息、好友與連線狀態，需要調整回覆時也能快速進入。",
     channelStatus: "Channel 狀態",
     webSocket: "WebSocket",
-    botHealth: "Bot 健康度",
+    botHealth: "Bot 狀態",
     active: "啟用",
     inactive: "停用",
     connected: "已連線",
     reconnecting: "重新連線中",
-    botSelector: "Bot 選擇器",
+    botSelector: "選擇 Bot",
     selectBot: "選擇 Bot",
     updated: "更新於",
     status: {
@@ -122,14 +121,14 @@ const managementCopy = {
     },
     noBotsTitle: "先建立第一個 LINE Bot",
     noBotsBody:
-      "建立完成後即可在同一條流程中管理 Webhook、邏輯模板、Rich Menu、AI 知識庫與數據分析。",
+      "建立完成後，就能在這裡設計回覆、設定圖文選單，並查看最近互動。",
     createFirstBot: "建立第一個 Bot",
     viewSetupGuide: "查看建立教學",
     tabs: {
-      analytics: "數據總覽",
-      logic: "進階報表",
+      analytics: "總覽",
+      logic: "回覆設定",
     },
-    documentTitle: "Bot 管理中心",
+    documentTitle: "互動紀錄",
   },
 };
 
@@ -138,7 +137,7 @@ const ManagementLoadingPanel = () => (
     className="rounded-[16px] border border-white/70 bg-white/75 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl"
     aria-busy="true"
   >
-    <Loader text="載入管理中心..." />
+    <Loader text="載入互動紀錄..." />
   </section>
 );
 
@@ -349,8 +348,8 @@ const BotManagementPage: React.FC = () => {
         // 只有在首次載入失敗時才顯示錯誤提示
         if (isInitialLoad) {
           toast({
-            title: "數據載入失敗",
-            description: "首次載入時發生錯誤，請刷新頁面或檢查網路連線",
+            title: "互動紀錄載入失敗",
+            description: "首次載入時發生錯誤，請重新整理頁面或檢查網路連線",
             variant: "destructive",
             duration: 5000,
           });
@@ -435,7 +434,7 @@ const BotManagementPage: React.FC = () => {
     }
   };
 
-  // 手動刷新數據
+  // 手動刷新資料
   const handleRefreshData = async () => {
     if (!selectedBotId) return;
     setRefreshing(true);
@@ -444,12 +443,12 @@ const BotManagementPage: React.FC = () => {
       await fetchAnalytics(selectedBotId, undefined, false);
       toast({
         title: "刷新完成",
-        description: "數據已更新",
+      description: "互動紀錄已更新",
       });
     } catch (_error) {
       toast({
         title: "刷新失敗",
-        description: "無法獲取最新數據",
+        description: "無法取得最新互動紀錄",
         variant: "destructive",
       });
     } finally {
@@ -457,7 +456,7 @@ const BotManagementPage: React.FC = () => {
     }
   };
 
-  // 單獨刷新活動數據
+  // 單獨刷新活動資料
   const handleRefreshActivities = async () => {
     if (!selectedBotId) return;
     console.log("手動刷新活動數據...");
@@ -477,13 +476,13 @@ const BotManagementPage: React.FC = () => {
 
         setActivities(convertedActivities);
         toast({
-          title: "活動數據已刷新",
+          title: "活動已刷新",
           description: `載入了 ${convertedActivities.length} 條活動記錄`,
         });
       } else {
         toast({
           title: "刷新活動失敗",
-          description: response.error || "無法獲取活動數據",
+          description: response.error || "無法取得活動紀錄",
           variant: "destructive",
         });
       }

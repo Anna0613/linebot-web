@@ -28,7 +28,7 @@ const LogicTabContent: React.FC<LogicTabContentProps> = ({
         activeTab: "logic",
         selectedBotId,
         returnTo: "/bots/management",
-        returnLabel: "返回管理中心",
+        returnLabel: "返回互動紀錄",
       },
     });
   };
@@ -60,7 +60,7 @@ const LogicTabContent: React.FC<LogicTabContentProps> = ({
       <CardContent>
         {logicLoading ? (
           <div className="flex justify-center py-8">
-            <Loader fullPage={false} text="載入邏輯模板..." web3Style={true} />
+            <Loader fullPage={false} text="載入邏輯模板..." />
           </div>
         ) : logicTemplates.length === 0 ? (
           <div className="text-center py-8">

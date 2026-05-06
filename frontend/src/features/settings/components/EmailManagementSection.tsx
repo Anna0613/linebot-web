@@ -73,10 +73,10 @@ const EmailManagementSection = ({
   };
 
   return (
-    <div className="bg-card text-card-foreground border border-border rounded-lg shadow-md p-6 mb-6">
+    <div className="app-panel mb-6 p-6">
       <div className="flex items-center gap-2 mb-4">
-        <Mail className="w-5 h-5 text-[#1a1a40]" />
-        <h2 className="text-xl font-bold text-[#1a1a40]">電子郵件管理</h2>
+        <Mail className="h-5 w-5 text-emerald-700" />
+        <h2 className="text-xl font-semibold text-slate-950">電子郵件</h2>
       </div>
 
       <div className="space-y-4">
@@ -90,8 +90,8 @@ const EmailManagementSection = ({
               value={email}
               onChange={(e) => onEmailChange(e.target.value)}
               disabled={!isEditingEmail}
-            className={!isEditingEmail ? "bg-secondary" : ""}
-              placeholder="請輸入您的電子郵件地址"
+            className={isEditingEmail ? "app-input" : "app-input bg-slate-50"}
+              placeholder="請輸入電子郵件地址"
             />
             <Button
               variant={isEditingEmail ? "default" : "outline"}
@@ -102,7 +102,7 @@ const EmailManagementSection = ({
                   onEditEmailToggle(true);
                 }
               }}
-              className="whitespace-nowrap"
+              className={isEditingEmail ? "app-primary-button whitespace-nowrap" : "app-secondary-button whitespace-nowrap"}
             >
               {isEditingEmail ? "儲存" : "編輯"}
             </Button>
@@ -119,7 +119,7 @@ const EmailManagementSection = ({
 
         {/* 驗證狀態 */}
         {email && (
-        <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+        <div className="flex items-center justify-between rounded-[14px] border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center gap-3">
               <div className="text-sm">
                 <span className="font-medium">驗證狀態：</span>
@@ -133,17 +133,17 @@ const EmailManagementSection = ({
                 size="sm"
                 onClick={onResendVerification}
                 disabled={isResendingEmailVerification}
-                className="flex items-center gap-2"
+                className="app-secondary-button flex items-center gap-2"
               >
                 {isResendingEmailVerification ? (
                   <>
                     <Loader size="sm" />
-                    發送中...
+                    寄送中
                   </>
                 ) : (
                   <>
                     <Mail className="w-4 h-4" />
-                    重新發送驗證
+                    重新寄送驗證信
                   </>
                 )}
               </Button>
@@ -152,13 +152,13 @@ const EmailManagementSection = ({
         )}
 
         {/* 說明文字 */}
-          <div className="text-sm text-muted-foreground space-y-1">
-          <p>• 驗證的電子郵件將用於重要通知和密碼重設</p>
+          <div className="space-y-1 text-sm leading-6 text-slate-500">
+          <p>• 驗證的電子郵件會用於重要通知和密碼重設</p>
           <p>• 更改電子郵件後需要重新驗證</p>
           {!emailVerified && email && (
-            <p className="text-yellow-600 flex items-center gap-1">
+            <p className="flex items-center gap-1 text-amber-700">
               <Clock className="w-4 h-4" />
-              請檢查您的電子郵件並點擊驗證連結
+              請檢查電子郵件並點擊驗證連結
             </p>
           )}
         </div>

@@ -173,7 +173,7 @@ const LoginPage = () => {
   };
 
   return (
-    <AuthFormLayout title="登入" description="進入 LINE Bot 工作台">
+    <AuthFormLayout title="登入工作台" description="回到你的 LINE Bot 工作台，繼續建立與調整 Bot。">
       <form ref={formRef} onSubmit={noopSubmit} className="space-y-4" noValidate>
         <div className="space-y-2">
           <Label htmlFor="username" className="text-slate-700">帳號</Label>
@@ -184,7 +184,7 @@ const LoginPage = () => {
             autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="請輸入您的帳號"
+            placeholder="輸入帳號"
             disabled={loading}
             className="app-input"
           />
@@ -201,7 +201,7 @@ const LoginPage = () => {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="請輸入您的密碼"
+              placeholder="輸入密碼"
               disabled={loading}
               className="app-input pr-10"
             />
@@ -237,7 +237,7 @@ const LoginPage = () => {
           </div>
           <Link
             to="/forgetthepassword"
-            className="text-sm font-medium text-[#166534] hover:underline"
+            className="text-sm font-medium text-[#16a34a] hover:text-[#15803d] hover:underline"
           >
             忘記密碼？
           </Link>
@@ -264,8 +264,8 @@ const LoginPage = () => {
 
       <p className="mt-4 text-center text-sm text-slate-500">
         還沒有帳號？{" "}
-        <Link to="/register" className="font-medium text-[#166534] hover:underline">
-          立即註冊
+        <Link to="/register" className="font-medium text-[#16a34a] hover:text-[#15803d] hover:underline">
+          建立帳號
         </Link>
       </p>
     </AuthFormLayout>

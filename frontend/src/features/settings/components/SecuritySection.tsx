@@ -104,7 +104,7 @@ const SecuritySection = ({
 
         toast({
           title: "密碼更新成功",
-          description: "您的密碼已成功更新",
+          description: "密碼已成功更新。",
         });
       }
     } catch (error: unknown) {
@@ -112,7 +112,7 @@ const SecuritySection = ({
         variant: "destructive",
         title: "密碼更新失敗",
         description:
-          error instanceof Error ? error.message : "請檢查您的現在密碼是否正確",
+          error instanceof Error ? error.message : "請檢查現在的密碼是否正確",
       });
     } finally {
       setPasswordLoading(false);
@@ -139,21 +139,21 @@ const SecuritySection = ({
   const passwordStrength = getPasswordStrength(passwordForm.newPassword);
 
   return (
-    <div className="bg-card text-card-foreground border border-border rounded-lg shadow-md p-6 mb-6">
+    <div className="app-panel mb-6 p-6">
       <div className="flex items-center gap-2 mb-4">
-        <Shield className="w-5 h-5 text-[#1a1a40]" />
-        <h2 className="text-xl font-bold text-[#1a1a40]">安全設定</h2>
+        <Shield className="h-5 w-5 text-emerald-700" />
+        <h2 className="text-xl font-semibold text-slate-950">安全設定</h2>
       </div>
 
       <div className="space-y-6">
         {/* 密碼更改區塊 */}
-        <Card>
+        <Card className="rounded-[16px] border border-slate-200 bg-white shadow-none">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Key className="w-4 h-4" />
               <CardTitle className="text-lg">更改密碼</CardTitle>
             </div>
-            <CardDescription>定期更改密碼以保護您的帳號安全</CardDescription>
+            <CardDescription>定期更改密碼，保護帳號安全。</CardDescription>
           </CardHeader>
 
           <CardContent>
@@ -161,7 +161,7 @@ const SecuritySection = ({
               <Button
                 onClick={() => setIsChangingPassword(true)}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="app-secondary-button flex items-center gap-2"
               >
                 <Key className="w-4 h-4" />
                 更改密碼
@@ -308,12 +308,12 @@ const SecuritySection = ({
                   <Button
                     onClick={handlePasswordChange}
                     disabled={passwordLoading}
-                    className="flex items-center gap-2"
+                    className="app-primary-button flex items-center gap-2"
                   >
                     {passwordLoading ? (
                       <>
                         <Loader size="sm" />
-                        更新中...
+                        更新中
                       </>
                     ) : (
                       "更新密碼"
@@ -339,20 +339,20 @@ const SecuritySection = ({
         </Card>
 
         {/* 帳號刪除區塊 */}
-        <Card className="border-red-200">
+        <Card className="rounded-[16px] border border-red-200 bg-white shadow-none">
           <CardHeader>
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-red-600" />
               <CardTitle className="text-lg text-red-700">危險區域</CardTitle>
             </div>
-            <CardDescription>以下操作無法復原，請謹慎考慮</CardDescription>
+            <CardDescription>以下操作無法復原，請謹慎考慮。</CardDescription>
           </CardHeader>
 
           <CardContent>
             <Alert className="mb-4">
               <AlertTriangle className="w-4 h-4 text-red-600" />
               <AlertDescription className="text-red-800">
-                刪除帳號將永久移除您的所有資料，包括創建的機器人、對話紀錄等。此操作無法復原。
+                刪除帳號會永久移除你的所有資料，包括建立的 Bot、對話紀錄等。此操作無法復原。
               </AlertDescription>
             </Alert>
 

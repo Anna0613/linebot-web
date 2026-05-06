@@ -79,8 +79,8 @@ const UserProfileSection = ({
   };
 
   return (
-    <div className="bg-card text-card-foreground border border-border rounded-lg shadow-md p-6 mb-6">
-      <h2 className="text-xl font-bold text-[#1a1a40] mb-4">個人資料</h2>
+    <div className="app-panel mb-6 p-6">
+      <h2 className="mb-4 text-xl font-semibold text-slate-950">個人資料</h2>
 
       {/* 頭像區塊 */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
@@ -107,17 +107,17 @@ const UserProfileSection = ({
             disabled={user?.isLineUser || avatarLoading}
           />
           {user?.isLineUser && (
-            <p className="text-xs text-muted-foreground mt-2 max-w-24 text-center">
-              LINE 用戶無法更改頭像
+            <p className="mt-2 max-w-24 text-center text-xs text-slate-500">
+              LINE 帳號頭像會自動同步
             </p>
           )}
         </div>
 
         <div className="flex-1">
-          <Label className="text-sm font-medium text-foreground">用戶頭像</Label>
-          <p className="text-sm text-muted-foreground mt-1">
+          <Label className="text-sm font-medium text-slate-700">頭像</Label>
+          <p className="mt-1 text-sm leading-6 text-slate-500">
             {user?.isLineUser
-              ? "LINE 用戶的頭像將同步您的 LINE 個人資料照片"
+              ? "頭像會同步你的 LINE 個人資料照片"
               : "上傳 JPG、PNG、GIF 或 WebP 格式的圖片，檔案大小不超過 5MB"}
           </p>
         </div>
@@ -141,7 +141,7 @@ const UserProfileSection = ({
             value={displayName}
             onChange={(e) => onDisplayNameChange(e.target.value)}
             disabled={!isEditingName}
-            className={!isEditingName ? "bg-secondary" : ""}
+            className={isEditingName ? "app-input" : "app-input bg-slate-50"}
           />
           <Button
             variant={isEditingName ? "default" : "outline"}
@@ -152,7 +152,7 @@ const UserProfileSection = ({
                 onEditNameToggle(true);
               }
             }}
-            className="whitespace-nowrap"
+            className={isEditingName ? "app-primary-button whitespace-nowrap" : "app-secondary-button whitespace-nowrap"}
           >
             {isEditingName ? "儲存" : "編輯"}
           </Button>
@@ -168,7 +168,7 @@ const UserProfileSection = ({
             </Button>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">這是其他用戶看到的您的名稱</p>
+        <p className="text-sm text-slate-500">這是工作台中顯示的名稱。</p>
       </div>
     </div>
   );

@@ -35,20 +35,22 @@ const NotFound = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="web3-glass-card p-12 text-center web3-hover-glow">
-        <h1 className="neon-text-gradient text-6xl font-bold mb-6">404</h1>
-        <p className="text-xl text-muted-foreground mb-8">Oops! Page not found</p>
+    <div className="app-page-surface flex min-h-screen items-center justify-center px-4">
+      <div className="app-panel max-w-md p-10 text-center sm:p-12">
+        <h1 className="mb-4 text-6xl font-semibold tracking-normal text-slate-950">404</h1>
+        <p className="mb-8 text-base leading-7 text-slate-600">
+          找不到這個頁面。可能是連結已變更，或網址輸入錯誤。
+        </p>
         {isAuthenticated !== null && (
           <Button
             onClick={handleReturnHome}
-            className="web3-primary-button px-8 py-3"
+            className="app-primary-button px-8"
           >
-            Return to Home
+            回到{isAuthenticated ? "工作台" : "首頁"}
           </Button>
         )}
         {isAuthenticated === null && (
-          <Loader text="Loading..." />
+          <Loader text="載入中..." />
         )}
       </div>
     </div>

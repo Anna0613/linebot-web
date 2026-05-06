@@ -155,7 +155,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
         </Select>
         {isLoadingFlexMessages && (
           <div className="scale-50">
-            <Loader fullPage={false} web3Style={true} />
+            <Loader fullPage={false} />
           </div>
         )}
         
@@ -215,7 +215,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
         >
           {isSaving ? (
             <div className="scale-50 mr-1">
-              <Loader fullPage={false} web3Style={true} />
+              <Loader fullPage={false} />
             </div>
           ) : (
             <Save className="w-4 h-4 mr-1" />

@@ -4,6 +4,7 @@ import LINELoginButton from "../components/LINELoginButton";
 // Removed unused Card components
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Loader } from "@/components/ui/loader";
+import AuthFormLayout from "../components/AuthFormLayout";
 // import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
 interface User {
@@ -41,30 +42,27 @@ const LINELogin: React.FC = () => {
   }, [navigate]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <AuthFormLayout title="使用 LINE 登入" description="透過 LINE 帳號快速進入工作台。">
       {loading && <Loader fullPage />}
-      <div className="web3-glass-card w-full max-w-md p-8 web3-hover-glow">
-        <div className="mb-6">
-          <h2 className="neon-text-gradient text-2xl font-bold text-center">LINE Login</h2>
-        </div>
-        <div className="flex flex-col items-center">
-          {user ? (
-            <div className="text-center">
-              <Avatar className="w-24 h-24 mx-auto mb-4">
-                <AvatarImage src={user.picture_url} alt={user.display_name} />
-                <AvatarFallback>{user.display_name[0]}</AvatarFallback>
-              </Avatar>
-              <h2 className="text-xl font-semibold text-foreground">{user.display_name}</h2>
-              <p className="text-muted-foreground">Welcome back!</p>
-            </div>
-          ) : error ? (
-            <p className="text-web3-red">{error}</p>
-          ) : (
-            <LINELoginButton onLogin={() => {}} />
-          )}
-        </div>
+      <div className="flex flex-col items-center">
+        {user ? (
+          <div className="text-center">
+            <Avatar className="mx-auto mb-4 h-24 w-24">
+              <AvatarImage src={user.picture_url} alt={user.display_name} />
+              <AvatarFallback>{user.display_name[0]}</AvatarFallback>
+            </Avatar>
+            <h2 className="text-xl font-semibold text-slate-950">{user.display_name}</h2>
+            <p className="mt-1 text-sm text-slate-500">正在帶你回工作台。</p>
+          </div>
+        ) : error ? (
+          <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+            {error}
+          </p>
+        ) : (
+          <LINELoginButton onLogin={() => {}} />
+        )}
       </div>
-    </div>
+    </AuthFormLayout>
   );
 };
 

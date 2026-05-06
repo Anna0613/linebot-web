@@ -18,7 +18,7 @@ const ControlBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockDat
                 <SelectContent>
                   <SelectItem value="message">訊息內容</SelectItem>
                   <SelectItem value="variable">變數</SelectItem>
-                  <SelectItem value="user">用戶屬性</SelectItem>
+                  <SelectItem value="user">好友屬性</SelectItem>
                   <SelectItem value="custom">自訂條件</SelectItem>
                 </SelectContent>
               </Select>
@@ -158,4 +158,3 @@ const ControlBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockDat
 };
 
 export default ControlBlock;
-

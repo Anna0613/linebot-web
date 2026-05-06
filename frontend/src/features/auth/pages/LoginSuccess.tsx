@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 // Removed unused Card components
 import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import AuthFormLayout from "../components/AuthFormLayout";
 import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
 const LoginSuccess: React.FC = () => {
@@ -47,30 +48,24 @@ const LoginSuccess: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="web3-glass-card w-full max-w-md p-8 web3-hover-glow">
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <CheckCircle className="w-16 h-16 text-web3-green" />
-          </div>
-          <h2 className="neon-text-gradient text-2xl font-bold mb-4">登入成功！</h2>
+    <AuthFormLayout title="登入完成" description="正在帶你回到 LINE Bot 工作台。">
+      <div className="flex flex-col items-center text-center">
+        <div className="app-soft-icon mb-5 h-14 w-14">
+          <CheckCircle2 className="h-7 w-7" />
         </div>
-        <div className="text-center space-y-4">
-          <p className="text-muted-foreground">您已成功登入</p>
-          <p className="text-sm text-muted-foreground">
-            {countdown > 0
-              ? `${countdown} 秒後將自動跳轉到主頁面...`
-              : "正在跳轉..."}
-          </p>
-          <Button
-            onClick={handleContinue}
-            className="w-full web3-primary-button"
-          >
-            立即進入
-          </Button>
-        </div>
+        <p className="text-sm leading-6 text-slate-600">
+          {countdown > 0
+            ? `${countdown} 秒後自動進入工作台。`
+            : "正在前往工作台。"}
+        </p>
+        <Button
+          onClick={handleContinue}
+          className="app-primary-button mt-6 w-full"
+        >
+          進入工作台
+        </Button>
       </div>
-    </div>
+    </AuthFormLayout>
   );
 };
 

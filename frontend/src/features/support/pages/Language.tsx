@@ -6,6 +6,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useEmailManagement } from "@/hooks/useEmailManagement";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { CheckCircle2, Languages } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const Language = () => {
@@ -115,30 +116,28 @@ const Language = () => {
       headerKicker="Language"
       innerClassName="max-w-5xl"
     >
-      {/* 主要內容區域 */}
       <div className="py-8">
-        {/* 標題區域 */}
-        <div className="text-center mb-16">
-          <h1 className="web3-section-title leading-tight tracking-wide px-2">
+        <div className="mb-10 text-center">
+          <p className="app-kicker mb-2">設定</p>
+          <h1 className="app-page-title px-2">
             語言設定
           </h1>
-          <p className="text-muted-foreground text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto px-4">
-            選擇您偏好的語言介面
+          <p className="app-subtitle mx-auto mt-3 max-w-3xl px-4">
+            選擇你偏好的介面語言。
           </p>
         </div>
 
-        {/* 語言選項區域 */}
         <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
-          <div className="bg-card text-card-foreground rounded-lg shadow-lg p-8 sm:p-12 border border-border">
-            <h2 className="text-foreground text-[24px] font-bold mb-8 text-center">
+          <div className="app-panel p-8 sm:p-10">
+            <h2 className="text-center text-2xl font-semibold text-slate-950">
               選擇語言
             </h2>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
               <div
-                className={`p-6 border-2 rounded-lg cursor-pointer hover:bg-[#8ECAE6]/10 dark:hover:bg-secondary transition-colors ${
+                className={`cursor-pointer rounded-[16px] border p-6 transition-colors ${
                   language === "zh"
-                    ? "border-[#8ECAE6] bg-[#8ECAE6]/10"
-                    : "border-border"
+                    ? "border-emerald-200 bg-emerald-50"
+                    : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/60"
                 }`}
                 onClick={() => handleLanguageSelect("zh")}
                 role="button"
@@ -150,19 +149,25 @@ const Language = () => {
                 }}
               >
                 <div className="text-center">
-                  <div className="text-4xl mb-4">🇹🇼</div>
-                  <h3 className="text-foreground font-bold text-xl mb-2">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[14px] bg-white text-emerald-700 shadow-sm">
+                    {language === "zh" ? (
+                      <CheckCircle2 className="h-6 w-6" />
+                    ) : (
+                      <Languages className="h-6 w-6" />
+                    )}
+                  </div>
+                  <h3 className="mb-2 text-xl font-semibold text-slate-950">
                     繁體中文
                   </h3>
-                  <p className="text-muted-foreground">Traditional Chinese</p>
+                  <p className="text-sm text-slate-500">Traditional Chinese</p>
                 </div>
               </div>
 
               <div
-                className={`p-6 border-2 rounded-lg cursor-pointer hover:bg-secondary transition-colors ${
+                className={`cursor-pointer rounded-[16px] border p-6 transition-colors ${
                   language === "en"
-                    ? "border-[#8ECAE6] bg-[#8ECAE6]/10"
-                    : "border-border"
+                    ? "border-emerald-200 bg-emerald-50"
+                    : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/60"
                 }`}
                 onClick={() => handleLanguageSelect("en")}
                 role="button"
@@ -174,17 +179,23 @@ const Language = () => {
                 }}
               >
                 <div className="text-center">
-                  <div className="text-4xl mb-4">🇺🇸</div>
-                  <h3 className="text-foreground font-bold text-xl mb-2">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[14px] bg-white text-emerald-700 shadow-sm">
+                    {language === "en" ? (
+                      <CheckCircle2 className="h-6 w-6" />
+                    ) : (
+                      <Languages className="h-6 w-6" />
+                    )}
+                  </div>
+                  <h3 className="mb-2 text-xl font-semibold text-slate-950">
                     English
                   </h3>
-                  <p className="text-muted-foreground">English (US)</p>
+                  <p className="text-sm text-slate-500">English (US)</p>
                 </div>
               </div>
             </div>
 
             <div className="text-center mt-8">
-              <p className="text-muted-foreground text-sm">
+              <p className="text-sm text-slate-500">
                 更多語言選項即將推出
               </p>
             </div>

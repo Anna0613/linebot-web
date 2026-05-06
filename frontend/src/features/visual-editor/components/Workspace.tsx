@@ -243,7 +243,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
     toast({
       title: "測試動作已執行",
-      description: `已執行${action === 'new-user' ? '新用戶模擬' : action === 'test-message' ? '測試訊息' : '對話預覽'}`,
+      description: `已執行${action === 'new-user' ? '新好友模擬' : action === 'test-message' ? '測試訊息' : '對話預覽'}`,
     });
   }, [toast]);
 
@@ -480,7 +480,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
             className="app-secondary-button"
           >
             <LayoutDashboard className="mr-2 h-4 w-4" />
-            回管理中心
+            回互動紀錄
           </Button>
         </div>
       </div>

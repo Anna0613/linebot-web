@@ -84,7 +84,7 @@ const RichMenuManagementPage: React.FC = () => {
       const res = await RichMenuApi.publish(selectedBotId, menu.id);
       toast({
         title: "已發佈到 LINE 並設為預設",
-        description: `選單「${res.name}」已發佈並設為所有用戶的預設功能選單`,
+        description: `選單「${res.name}」已發佈並設為所有好友的預設功能選單`,
       });
       await loadMenus(selectedBotId);
     } catch (e: unknown) {
@@ -103,10 +103,16 @@ const RichMenuManagementPage: React.FC = () => {
   };
 
   return (
-    <AppShell user={user} activeNav="editor" headerKicker="Rich Menu">
+    <AppShell user={user} activeNav="editor" headerKicker="圖文選單">
       <main className="py-8 space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Rich Menu 管理</h1>
+        <div className="app-panel flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="app-kicker mb-2">設計</p>
+            <h1 className="text-2xl font-semibold text-slate-950">圖文選單</h1>
+            <p className="mt-2 text-sm text-slate-500">
+              建立 LINE 對話下方的快捷選單。
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               onClick={() => {
@@ -114,20 +120,21 @@ const RichMenuManagementPage: React.FC = () => {
                 setEditing(null);
               }}
               disabled={!selectedBotId}
+              className="app-primary-button"
             >
-              新增 Rich Menu
+              新增圖文選單
             </Button>
           </div>
         </div>
 
         {authLoading && (
           <div className="flex justify-center py-10">
-            <Loader fullPage={false} web3Style />
+            <Loader fullPage={false} />
           </div>
         )}
 
         {!authLoading && !selectedBotId && (
-          <div className="text-sm text-muted-foreground">
+          <div className="app-muted-panel text-sm text-slate-600">
             請先從左上角選擇一個 Bot
           </div>
         )}
@@ -147,7 +154,7 @@ const RichMenuManagementPage: React.FC = () => {
 
             {loading ? (
               <div className="flex justify-center py-10">
-                <Loader fullPage={false} web3Style />
+                <Loader fullPage={false} />
               </div>
             ) : (
               <RichMenuList

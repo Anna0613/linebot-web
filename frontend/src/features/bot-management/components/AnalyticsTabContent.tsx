@@ -99,7 +99,7 @@ const analyticsCopy = {
     chartMetric: "Messages",
   },
   zh: {
-    emptyState: "請先選擇一個 Bot 來查看分析數據。",
+    emptyState: "請先選擇一個 Bot 來查看互動紀錄。",
     kpis: {
       totalMessages: "總訊息數",
       activeUsers: "可觸及好友",
@@ -119,7 +119,7 @@ const analyticsCopy = {
       week: "本週",
       month: "本月",
     },
-    refreshData: "刷新數據",
+    refreshData: "刷新紀錄",
     refreshActivities: "刷新活動",
     chartEmpty: "尚無訊息趨勢資料",
     activityTitle: "即時活動",
@@ -128,7 +128,7 @@ const analyticsCopy = {
     syncing: "同步中",
     activityEmpty: "尚無即時活動",
     heatmapTitle: "每小時活躍資料",
-    heatmapSubtitle: "LINE Insight 未提供每小時活躍用戶資料。",
+    heatmapSubtitle: "LINE Insight 未提供每小時活躍好友資料。",
     usageTitle: "好友人口統計分布",
     usageSubtitle: "來自 LINE Insight demographics 的分布資料。",
     noData: "無資料",

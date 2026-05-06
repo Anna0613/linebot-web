@@ -232,7 +232,7 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
                 <div className="space-y-2">
                   <Input placeholder="原始圖片URL (必填)" value={(blockData as any).originalContentUrl || ''} onChange={(e) => setBlockData({ ...blockData, originalContentUrl: e.target.value })} className="text-black" />
                   <Input placeholder="預覽圖片URL (必填)" value={(blockData as any).previewImageUrl || ''} onChange={(e) => setBlockData({ ...blockData, previewImageUrl: e.target.value })} className="text-black" />
-                  <div className="text-xs text-white/60">• 原始圖片: 用戶點擊時顯示的高解析度圖片<br/>• 預覽圖片: 聊天室中顯示的縮圖 (建議 240x240px)</div>
+                  <div className="text-xs text-white/60">• 原始圖片: 好友點擊時顯示的高解析度圖片<br/>• 預覽圖片: 聊天室中顯示的縮圖 (建議 240x240px)</div>
                 </div>
               )}
 

@@ -107,7 +107,7 @@ const SettingBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockDat
             <div className="space-y-2">
               <Input placeholder="資料鍵名" value={(blockData as any).dataKey || ''} onChange={(e) => setBlockData({ ...blockData, dataKey: e.target.value })} className="text-black" />
               <Input placeholder="資料值" value={(blockData as any).dataValue || ''} onChange={(e) => setBlockData({ ...blockData, dataValue: e.target.value })} className="text-black" />
-              <Input placeholder="用戶ID（可選，預設為當前用戶）" value={(blockData as any).userId || ''} onChange={(e) => setBlockData({ ...blockData, userId: e.target.value })} className="text-black" />
+              <Input placeholder="好友 ID（可選，預設為目前好友）" value={(blockData as any).userId || ''} onChange={(e) => setBlockData({ ...blockData, userId: e.target.value })} className="text-black" />
             </div>
           )}
         </div>
@@ -130,7 +130,7 @@ const SettingBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockDat
           {block.blockData.settingType === 'saveUserData' && (
             <div>
               儲存資料: {(blockData as any).dataKey || '未設定'} = {(blockData as any).dataValue || '未設定'}
-              {(blockData as any).userId && <div>目標用戶: {(blockData as any).userId}</div>}
+              {(blockData as any).userId && <div>目標好友: {(blockData as any).userId}</div>}
             </div>
           )}
         </div>

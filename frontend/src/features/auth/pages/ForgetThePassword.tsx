@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import AuthFormLayout from "../components/AuthFormLayout";
 import { API_CONFIG, getApiUrl } from "@/config/apiConfig";
 
 const ForgetPassword = () => {
@@ -85,8 +84,8 @@ const ForgetPassword = () => {
       }
 
       toast({
-        title: "郵件已發送",
-        description: "重設連結已寄出，請檢查您的信箱",
+        title: "信件已寄出",
+        description: "重設連結已寄出，請到信箱查看。",
       });
       setEmail("");
       setTimeout(() => {
@@ -106,68 +105,51 @@ const ForgetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
+    <AuthFormLayout title="重設密碼" description="輸入註冊信箱，我們會寄出重設密碼連結。">
       {loading && <Loader fullPage />}
 
-      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-12">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-10 fade-in-element">
-            <h2 className="text-3xl font-bold neon-text-gradient">忘記密碼</h2>
-            <p className="text-sm text-muted-foreground mt-2">
-              請輸入您的電子郵件地址以重設密碼
-            </p>
-          </div>
-
-          <div
-            className="web3-glass-card p-8 web3-hover-glow fade-in-element"
-            style={{ animationDelay: "0.2s" }}
-          >
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <div className="space-y-1">
-                <Label htmlFor="email">電子郵件：</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="rounded-lg h-11"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="web3-primary-button w-full rounded-full text-base font-bold h-11"
-              >
-                {loading ? (
-                  <>
-                    <Loader size="sm" />
-                    載入中...
-                  </>
-                ) : (
-                  "寄送重設連結"
-                )}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center text-sm">
-              <Link
-                to="/login"
-                className="text-primary hover:text-primary/80 hover-underline"
-              >
-                返回登入頁面
-              </Link>
-            </div>
-          </div>
+      <form className="space-y-5" onSubmit={handleSubmit}>
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-slate-700">
+            電子郵件
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="app-input"
+          />
         </div>
-      </main>
 
-      <Footer />
-    </div>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="app-primary-button w-full"
+        >
+          {loading ? (
+            <>
+              <Loader size="sm" />
+              寄送中
+            </>
+          ) : (
+            "寄送重設連結"
+          )}
+        </Button>
+      </form>
+
+      <div className="mt-4 text-center text-sm">
+        <Link
+          to="/login"
+          className="font-medium text-[#16a34a] transition-colors hover:text-[#15803d] hover:underline"
+        >
+          返回登入
+        </Link>
+      </div>
+    </AuthFormLayout>
   );
 };
 

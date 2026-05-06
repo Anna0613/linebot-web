@@ -43,7 +43,7 @@ const guideSteps = [
     id: 4,
     title: "取得 API 金鑰",
     shortTitle: "API 金鑰",
-    body: "複製 Channel Access Token 與 Channel Secret，貼到本平台建立 Bot。",
+    body: "複製 Channel Access Token 與 Channel Secret，貼到工作台建立 Bot。",
     checklist: ["發行長期 Token", "複製 Channel Secret", "回到平台建立 Bot"],
   },
 ];
@@ -74,11 +74,11 @@ const HowToEstablish = () => {
 
   const PageShell = ({ children }: { children: ReactNode }) =>
     isAuthenticated ? (
-      <AppShell user={user} activeNav="create" headerKicker="Setup Guide">
+      <AppShell user={user} activeNav="create" headerKicker="建立教學">
         {children}
       </AppShell>
     ) : (
-      <div className="app-page-surface flex min-h-screen flex-col">
+      <div className="app-page-surface flex min-h-screen flex-col text-slate-950">
         <Navbar />
         {children}
         <Footer />
@@ -88,19 +88,19 @@ const HowToEstablish = () => {
   return (
     <PageShell>
       <PageContentWrapper>
-        <main className={isAuthenticated ? "py-6" : "pt-28"}>
-          <section className="app-section pb-16">
-            <div className="mb-7">
-              <p className="app-kicker">Setup Guide</p>
-              <h1 className="app-title mt-2">LINE Bot 建立教學</h1>
-              <p className="app-subtitle mt-3">
-                四個步驟取得 LINE Channel 憑證，完成後即可回到平台建立 Bot。
+        <main className={isAuthenticated ? "py-6" : "pt-32"}>
+          <section className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 pb-16 relative z-10">
+            <div className="mb-8">
+              <p className="app-kicker mb-2">建立教學</p>
+              <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-normal text-slate-950 sm:text-4xl">LINE Bot 建立教學</h1>
+              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-600">
+                四個步驟取得 LINE Channel 憑證，完成後即可回到工作台建立 Bot。
               </p>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-[0.68fr_1fr]">
-              <aside className="app-panel p-4">
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="grid gap-6 lg:grid-cols-[0.68fr_1fr]">
+              <aside className="app-panel p-5">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                   {steps.map((step) => {
                     const isActive = step.id === currentStep;
                     const isDone = step.id < currentStep;
@@ -113,7 +113,7 @@ const HowToEstablish = () => {
                         className={`flex items-center gap-3 rounded-[14px] px-3 py-3 text-left transition-colors ${
                           isActive
                             ? "bg-emerald-50 text-[#166534]"
-                            : "bg-white/60 text-slate-600 hover:bg-white"
+                            : "bg-white text-slate-600 hover:bg-emerald-50/70"
                         }`}
                       >
                         <span
@@ -139,70 +139,70 @@ const HowToEstablish = () => {
                 </div>
               </aside>
 
-              <article className="app-panel-strong p-6 sm:p-8">
-                <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+              <article className="app-panel p-8 sm:p-10">
+                <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
                   <div>
-                    <p className="app-kicker">Step {activeStep.id}</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+                    <p className="app-kicker mb-2">Step {activeStep.id}</p>
+                    <h2 className="text-2xl font-semibold tracking-normal text-slate-950">
                       {activeStep.title}
                     </h2>
-                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                    <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600">
                       {activeStep.body}
                     </p>
                   </div>
-                  <span className="app-soft-icon shrink-0">
-                    <KeyRound className="h-5 w-5" />
-                  </span>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-emerald-100 text-emerald-700">
+                    <KeyRound className="h-6 w-6" />
+                  </div>
                 </div>
 
-                <div className="mt-7 grid gap-3">
+                <div className="mt-8 grid gap-4">
                   {activeStep.checklist.map((item) => (
                     <div
                       key={item}
-                      className="flex items-center gap-3 rounded-[14px] bg-slate-50/80 px-4 py-3 text-sm text-slate-700"
+                      className="flex items-center gap-3 rounded-[16px] border border-slate-200 bg-white px-5 py-4 text-base text-slate-700 shadow-sm"
                     >
-                      <CheckCircle2 className="h-4 w-4 text-[#16a34a]" />
+                      <CheckCircle2 className="h-5 w-5 text-[#16a34a]" />
                       {item}
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex gap-3">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={prevStep}
                       disabled={currentStep === 1}
-                      className="app-secondary-button"
+                      className="app-secondary-button px-6 disabled:opacity-50"
                     >
-                      <ArrowLeft className="h-4 w-4" />
+                      <ArrowLeft className="mr-2 h-4 w-4" />
                       上一步
                     </Button>
                     {currentStep < steps.length ? (
                       <Button
                         type="button"
                         onClick={nextStep}
-                        className="app-primary-button"
+                        className="app-primary-button px-6"
                       >
                         下一步
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     ) : (
                       <Button
                         type="button"
                         onClick={() => navigate("/bots/create")}
-                        className="app-primary-button"
+                        className="app-primary-button px-6"
                       >
                         建立 Bot
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     )}
                   </div>
                   <Button
                     asChild
                     variant="outline"
-                    className="app-secondary-button"
+                    className="app-secondary-button px-6"
                   >
                     <a
                       href="https://developers.line.biz/console/"
@@ -210,7 +210,7 @@ const HowToEstablish = () => {
                       rel="noopener noreferrer"
                     >
                       LINE Developers
-                      <ExternalLink className="h-4 w-4" />
+                      <ExternalLink className="ml-2 h-4 w-4" />
                     </a>
                   </Button>
                 </div>

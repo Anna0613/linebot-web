@@ -13,7 +13,7 @@ const blockDefinitions = {
   event: [
     { blockType: 'event', name: '當收到文字訊息時', data: { title: '當收到文字訊息時', eventType: 'message.text' } },
     { blockType: 'event', name: '當收到圖片訊息時', data: { title: '當收到圖片訊息時', eventType: 'message.image' } },
-    { blockType: 'event', name: '當用戶加入好友時', data: { title: '當用戶加入好友時', eventType: 'follow' } },
+    { blockType: 'event', name: '當好友加入時', data: { title: '當好友加入時', eventType: 'follow' } },
     { blockType: 'event', name: '當按鈕被點擊時', data: { title: '當按鈕被點擊時', eventType: 'postback' } }
   ],
   reply: [
@@ -30,7 +30,7 @@ const blockDefinitions = {
   setting: [
     { blockType: 'setting', name: '設定變數', data: { title: '設定變數', settingType: 'setVariable' } },
     { blockType: 'setting', name: '取得變數', data: { title: '取得變數', settingType: 'getVariable' } },
-    { blockType: 'setting', name: '儲存用戶資料', data: { title: '儲存用戶資料', settingType: 'saveUserData' } }
+    { blockType: 'setting', name: '儲存好友資料', data: { title: '儲存好友資料', settingType: 'saveUserData' } }
   ],
   flexContainer: [
     { blockType: 'flex-container', name: 'Bubble 容器', data: { title: 'Bubble 容器', containerType: 'bubble' } },

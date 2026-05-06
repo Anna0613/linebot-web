@@ -34,25 +34,25 @@ const SocialAccountSection = ({
   const isLineLinked = user?.isLineUser || !!user?.line_id;
 
   return (
-    <div className="bg-card text-card-foreground border border-border rounded-lg shadow-md p-6 mb-6">
+    <div className="app-panel mb-6 p-6">
       <div className="flex items-center gap-2 mb-4">
-        <LinkIcon className="w-5 h-5 text-[#1a1a40]" />
-        <h2 className="text-xl font-bold text-[#1a1a40]">社群帳號連結</h2>
+        <LinkIcon className="h-5 w-5 text-emerald-700" />
+        <h2 className="text-xl font-semibold text-slate-950">登入方式</h2>
       </div>
 
       <div className="space-y-4">
         {/* LINE 帳號連結卡片 */}
-        <Card className="border-2 border-green-100">
+        <Card className="rounded-[16px] border border-emerald-100 bg-white shadow-none">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#06C755]">
                   <span className="text-white font-bold text-sm">LINE</span>
                 </div>
                 <div>
                   <CardTitle className="text-lg">LINE 帳號</CardTitle>
                   <CardDescription>
-                    連結您的 LINE 帳號以享受更便捷的登入體驗
+                    連結 LINE 帳號，之後可以更快登入。
                   </CardDescription>
                 </div>
               </div>
@@ -71,7 +71,7 @@ const SocialAccountSection = ({
           <CardContent className="pt-0">
             {isLineLinked ? (
               <div className="space-y-3">
-                <div className="p-3 bg-green-50 rounded-lg">
+                <div className="rounded-[14px] bg-emerald-50 p-3">
                   <div className="flex items-center gap-3">
                     {user.picture_url && (
                       <img
@@ -94,7 +94,7 @@ const SocialAccountSection = ({
                     size="sm"
                     onClick={onUnlinkLineAccount}
                     disabled={linkingInProgress}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
+                    className="border-red-200 text-red-600 hover:bg-red-50"
                   >
                     解除連結
                   </Button>
@@ -113,11 +113,11 @@ const SocialAccountSection = ({
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="p-3 bg-secondary rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    尚未連結 LINE 帳號。連結後您可以：
+                <div className="rounded-[14px] bg-slate-50 p-3">
+                  <p className="text-sm text-slate-600">
+                    尚未連結 LINE 帳號。連結後可以：
                   </p>
-                  <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+                  <ul className="mt-2 space-y-1 text-sm leading-6 text-slate-500">
                     <li>• 使用 LINE 帳號快速登入</li>
                     <li>• 同步 LINE 個人資料照片</li>
                     <li>• 享受更便捷的使用體驗</li>
@@ -127,12 +127,12 @@ const SocialAccountSection = ({
                 <Button
                   onClick={onLinkLineAccount}
                   disabled={linkingInProgress}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white"
+                  className="w-full rounded-[14px] bg-[#06C755] text-white hover:bg-[#05b04a]"
                 >
                   {linkingInProgress ? (
                     <>
                       <Loader size="sm" />
-                      連結中...
+                      連結中
                     </>
                   ) : (
                     "連結 LINE 帳號"
@@ -144,7 +144,7 @@ const SocialAccountSection = ({
         </Card>
 
         {/* 其他社群平台預留位置 */}
-        <Card className="border-2 border-border opacity-60">
+        <Card className="rounded-[16px] border border-slate-200 bg-white shadow-none opacity-70">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">

@@ -170,7 +170,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
         </Select>
         {isLoadingLogicTemplates && (
           <div className="scale-50">
-            <Loader fullPage={false} web3Style={true} />
+            <Loader fullPage={false} />
           </div>
         )}
         
@@ -230,7 +230,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
         >
           {isSaving ? (
             <div className="scale-50 mr-1">
-              <Loader fullPage={false} web3Style={true} />
+              <Loader fullPage={false} />
             </div>
           ) : (
             <Save className="w-4 h-4 mr-1" />

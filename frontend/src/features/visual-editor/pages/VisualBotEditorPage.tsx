@@ -3,7 +3,7 @@ import { VisualBotEditor } from '../components/VisualBotEditor';
 
 const VisualBotEditorPage: React.FC = () => {
   return (
-    <div className="h-screen bg-background">
+    <div className="app-page-surface h-screen">
       <VisualBotEditor />
     </div>
   );

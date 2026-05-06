@@ -127,7 +127,7 @@ const ActivityItem = ({
           <div className="flex items-center space-x-2 mt-1">
             {activity.metadata.user_name && (
               <span className="text-xs text-gray-500">
-                用戶: {activity.metadata.user_name}
+                好友: {activity.metadata.user_name}
               </span>
             )}
             {activity.metadata.bot_name && (
@@ -250,7 +250,7 @@ const OptimizedActivityFeed: React.FC<OptimizedActivityFeedProps> = ({
               <div className="text-center py-8 text-gray-500">
                 <Activity className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p className="text-sm">暫無活動記錄</p>
-                <p className="text-xs mt-1">當有新的用戶互動時，活動將顯示在這裡</p>
+                <p className="text-xs mt-1">當有新的好友互動時，活動會顯示在這裡</p>
               </div>
             )}
           </div>

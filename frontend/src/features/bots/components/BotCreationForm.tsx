@@ -221,7 +221,7 @@ const BotCreationForm = () => {
               <p className="app-kicker mt-5">Created</p>
               <h1 className="app-page-title mt-2">Bot 已建立</h1>
               <p className="app-subtitle mt-3">
-                {formData.name} 已加入工作台。接下來可以開始設計對話流程，或回到管理中心查看狀態。
+                {formData.name} 已加入工作台。接下來可以開始設計回覆，或回到互動紀錄查看狀態。
               </p>
             </div>
             <div className="app-muted-panel min-w-48">
@@ -243,7 +243,7 @@ const BotCreationForm = () => {
                     selectedBotId: createdBotId,
                     activeTab: "logic",
                     returnTo: "/bots/management",
-                    returnLabel: "返回管理中心",
+                    returnLabel: "返回互動紀錄",
                   },
                 })
               }
@@ -258,7 +258,7 @@ const BotCreationForm = () => {
               variant="outline"
               className="app-secondary-button"
             >
-              前往管理中心
+              查看互動紀錄
             </Button>
             <Button
               type="button"
@@ -285,10 +285,10 @@ const BotCreationForm = () => {
   return (
     <div className="mx-auto max-w-5xl py-6">
       <div className="mb-6">
-        <p className="app-kicker">Create Bot</p>
-        <h1 className="app-page-title mt-2">建立新的 LINE Bot</h1>
+        <p className="app-kicker">建立 Bot</p>
+        <h1 className="app-page-title mt-2">連接你的 LINE Bot</h1>
         <p className="app-subtitle mt-3">
-          輸入 LINE Channel 憑證後，系統會先帶入官方帳號名稱。建立前仍可自行修改名稱。
+          貼上 LINE Developers 裡的憑證，我們會自動讀取官方帳號名稱。建立前仍可自行修改。
         </p>
       </div>
 
@@ -423,9 +423,9 @@ const BotCreationForm = () => {
           <span className="app-soft-icon">
             <KeyRound className="h-5 w-5" />
           </span>
-          <h2 className="app-card-title mt-5">需要準備的資訊</h2>
+          <h2 className="app-card-title mt-5">先準備這些資料</h2>
           <p className="app-card-copy mt-2">
-            三個欄位都來自 LINE Developers。確認 Channel 已啟用 Messaging API 後再建立。
+            這些資料都在 LINE Developers。確認 Channel 已啟用 Messaging API 後再建立。
           </p>
           <div className="mt-5 space-y-3">
             {credentialHints.map((hint, index) => (

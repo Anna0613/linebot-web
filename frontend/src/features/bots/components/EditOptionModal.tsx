@@ -28,7 +28,7 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
         selectedBotId: botId,
         activeTab: "logic",
         returnTo: "/bots/management",
-        returnLabel: "返回管理中心",
+        returnLabel: "返回互動紀錄",
       },
     });
   };
@@ -40,22 +40,21 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-card text-card-foreground border border-border rounded-lg shadow-xl max-w-md w-full">
-        {/* 標題 */}
-        <div className="px-6 py-4 border-b border-border">
-          <h3 className="text-lg font-semibold text-foreground">選擇編輯類型</h3>
-          <p className="text-sm text-muted-foreground mt-1">請選擇您要編輯的內容</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+      <div className="app-panel w-full max-w-md p-0">
+        <div className="border-b border-slate-200 px-6 py-4">
+          <h3 className="text-lg font-semibold text-slate-950">選擇編輯類型</h3>
+          <p className="mt-1 text-sm text-slate-500">選擇要調整的內容。</p>
         </div>
 
         {/* 選項按鈕 */}
         <div className="p-6 space-y-4">
           <button
             onClick={handleEditBasicInfo}
-            className="w-full p-4 border border-border rounded-lg hover:bg-secondary transition-all duration-200 group"
+            className="group w-full rounded-[16px] border border-slate-200 bg-white p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/70"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#06C755]">
                 <svg
                   className="w-5 h-5 text-white"
                   fill="none"
@@ -71,11 +70,11 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
                 </svg>
               </div>
               <div className="text-left">
-                <h4 className="font-medium text-foreground group-hover:text-[hsl(var(--primary))]">
+                <h4 className="font-medium text-slate-950 group-hover:text-[#166534]">
                   編輯基本資料
                 </h4>
-                <p className="text-sm text-muted-foreground">
-                  修改Bot名稱、Token、Secret等設定
+                <p className="text-sm text-slate-500">
+                  修改 Bot 名稱、Token、Secret 等設定
                 </p>
               </div>
             </div>
@@ -83,10 +82,10 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
 
           <button
             onClick={handleEditFunction}
-            className="w-full p-4 border border-border rounded-lg hover:bg-secondary transition-all duration-200 group"
+            className="group w-full rounded-[16px] border border-slate-200 bg-white p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/70"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#06C755]">
                 <svg
                   className="w-5 h-5 text-white"
                   fill="none"
@@ -102,11 +101,11 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
                 </svg>
               </div>
               <div className="text-left">
-                <h4 className="font-medium text-foreground group-hover:text-[hsl(var(--primary))]">
-                  編輯功能
+                <h4 className="font-medium text-slate-950 group-hover:text-[#166534]">
+                  設計回覆
                 </h4>
-                <p className="text-sm text-muted-foreground">
-                  設計Bot的回應邏輯和功能流程
+                <p className="text-sm text-slate-500">
+                  設計 Bot 的回覆邏輯和流程
                 </p>
               </div>
             </div>
@@ -114,10 +113,10 @@ const EditOptionModal: React.FC<EditOptionModalProps> = ({
         </div>
 
         {/* 底部按鈕 */}
-        <div className="px-6 py-4 border-t border-border flex justify-end">
+        <div className="flex justify-end border-t border-slate-200 px-6 py-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] rounded-md font-bold hover:opacity-90 transition-all duration-200"
+            className="rounded-[12px] border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
           >
             取消
           </button>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Lightbulb } from 'lucide-react';
 import LineBotCodeGenerator from '@/features/visual-editor/utils/codeGenerator';
 import { useCodeDisplay } from './CodeDisplayContext';
 
@@ -61,8 +62,9 @@ const CodePreview: React.FC<CodePreviewProps> = ({ blocks }) => {
         </pre>
       </div>
       
-      <div className="mt-4 text-sm text-gray-500">
-        <p>💡 提示：請記得將 YOUR_CHANNEL_ACCESS_TOKEN 和 YOUR_CHANNEL_SECRET 替換為您的 LINE Bot 憑證</p>
+      <div className="mt-4 flex items-start gap-2 text-sm text-gray-500">
+        <Lightbulb className="mt-0.5 h-4 w-4 flex-none text-amber-600" />
+        <p>提示：請記得將 YOUR_CHANNEL_ACCESS_TOKEN 和 YOUR_CHANNEL_SECRET 替換為你的 LINE Bot 憑證</p>
       </div>
     </div>
   );

@@ -16,10 +16,10 @@ const AddBotPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
-        <div className="web3-glass-card p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-destructive mb-4">載入錯誤</h1>
-          <p className="text-muted-foreground">{error}</p>
+      <div className="app-page-surface flex min-h-screen items-center justify-center">
+        <div className="app-panel max-w-md p-8 text-center">
+          <h1 className="mb-4 text-2xl font-semibold text-rose-700">載入錯誤</h1>
+          <p className="text-sm leading-6 text-slate-600">{error}</p>
         </div>
       </div>
     );
@@ -29,7 +29,7 @@ const AddBotPage = () => {
     <AppShell
       user={user}
       activeNav="create"
-      headerKicker="Create Bot"
+      headerKicker="建立 Bot"
       innerClassName="max-w-5xl"
     >
       <div className="py-8">
