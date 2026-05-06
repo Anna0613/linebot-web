@@ -126,7 +126,7 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
       const res = await RichMenuApi.publish(selectedBotId, menu.id);
       toast({
         title: '已發佈到 LINE 並設為預設',
-        description: `選單「${res.name}」已發佈並設為所有用戶的預設功能選單`
+        description: `選單「${res.name}」已發佈並設為所有好友的預設功能選單`
       });
       await loadMenus();
     } catch (e: unknown) {
@@ -233,7 +233,7 @@ const RichMenuPanel: React.FC<Props> = ({ selectedBotId }) => {
                 {!creating && !editing && (
                   <div className="space-y-3">
                     {loading ? (
-                      <div className="flex justify-center py-10"><Loader fullPage={false} web3Style /></div>
+                      <div className="flex justify-center py-10"><Loader fullPage={false} /></div>
                     ) : (
                       <RichMenuList
                         menus={menus}

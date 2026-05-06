@@ -157,7 +157,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
       toast({
         variant: "destructive",
         title: "錯誤",
-        description: "無法載入Bot列表",
+        description: "無法載入 Bot 列表",
       });
       setBotList([]);
     } finally {
@@ -184,17 +184,17 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
   );
 
   return (
-    <div className="w-full max-w-4xl mx-auto h-[400px] sm:h-[450px] md:h-[520px] rounded-[15px] sm:rounded-[20px] md:rounded-[25px] bg-card text-card-foreground border border-border shadow-[-8px_8px_0_hsl(var(--line-green))] sm:shadow-[-12px_12px_0_hsl(var(--line-green))] md:shadow-[-15px_15px_0_hsl(var(--line-green))] p-3 sm:p-4 md:p-5 flex-shrink-0 flex flex-col transition-all duration-300 dark:shadow-neon">
-      <h2 className="text-center text-lg sm:text-xl md:text-[26px] font-bold text-foreground mb-3 sm:mb-4">
-        我的LINE Bot
+    <div className="app-panel mx-auto flex h-[400px] w-full max-w-4xl flex-shrink-0 flex-col p-3 transition-all duration-200 sm:h-[450px] sm:p-4 md:h-[520px] md:p-5">
+      <h2 className="mb-3 text-center text-lg font-semibold text-slate-950 sm:mb-4 sm:text-xl md:text-[26px]">
+        我的 LINE Bot
       </h2>
 
       <input
         type="text"
-        placeholder="搜尋Bot名稱..."
+        placeholder="搜尋 Bot 名稱..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full p-2 sm:p-3 border border-border rounded-lg mb-3 sm:mb-4 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition text-sm sm:text-base bg-background text-foreground"
+        className="app-input mb-3 w-full sm:mb-4"
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
@@ -205,7 +205,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
         ) : filteredBots.length === 0 ? (
           <div className="flex items-center justify-center h-32">
             <div className="text-muted-foreground text-center text-sm sm:text-base">
-              {botList.length === 0 ? "尚無Bot資料" : "沒有找到符合的Bot"}
+              {botList.length === 0 ? "尚無 Bot 資料" : "沒有找到符合的 Bot"}
             </div>
           </div>
         ) : (
@@ -213,13 +213,13 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
             {filteredBots.map((bot, index) => (
               <div
                 key={bot.id}
-                className="border border-border rounded-lg overflow-hidden bg-gradient-to-r from-card to-[hsl(var(--line-green-soft))] hover:shadow-md transition-all duration-200"
+                className="overflow-hidden rounded-[16px] border border-slate-200 bg-white transition-all duration-200 hover:border-emerald-200"
               >
                 {/* Bot 基本資訊 */}
                 <div className="p-3 sm:p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[hsl(var(--primary))] rounded-full flex items-center justify-center font-bold text-white text-sm sm:text-base flex-shrink-0">
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[12px] bg-[#06C755] text-sm font-semibold text-white sm:h-10 sm:w-10 sm:text-base">
                         {index + 1}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -236,7 +236,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                     <div className="hidden lg:flex items-center space-x-2">
                       <button
                         onClick={() => handleEditClick(bot.id)}
-                        className="px-4 py-2 bg-[#82C29B] text-white rounded-lg hover:bg-[#6BAF88] transition-all duration-200 shadow-md text-sm font-bold"
+                        className="rounded-[12px] bg-[#06C755] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#05b04a]"
                         title="編輯Bot"
                       >
                         編輯
@@ -244,7 +244,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
 
                       <button
                         onClick={() => toggleExpanded(bot.id)}
-                        className="px-3 py-2 bg-[#F0F0F0] text-[#383A45] rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-md text-sm font-bold"
+                        className="rounded-[12px] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                         title="更多選項"
                       >
                         {expandedBot === bot.id ? "收起" : "更多"}
@@ -255,7 +255,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                     <div className="lg:hidden">
                       <button
                         onClick={() => toggleExpanded(bot.id)}
-                        className="px-3 py-2 bg-[#F0F0F0] text-[#383A45] rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-md text-xs sm:text-sm font-bold"
+                        className="rounded-[12px] border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 sm:text-sm"
                         title="更多選項"
                       >
                         {expandedBot === bot.id ? "收起" : "選項"}
@@ -266,22 +266,22 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
 
                 {/* 展開的詳細操作區域 */}
                 {expandedBot === bot.id && (
-                  <div className="border-t border-border bg-card p-3 sm:p-4 animate-slide-down">
+                  <div className="animate-slide-down border-t border-slate-200 bg-slate-50/70 p-3 sm:p-4">
                     {/* 手機版按鈕組 */}
                     <div className="lg:hidden mb-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                         <button
                           onClick={() => handleEditClick(bot.id)}
-                          className="w-full px-3 py-2 bg-[hsl(var(--primary))] text-white rounded-lg hover:brightness-95 transition-all duration-200 shadow-md text-sm font-bold"
+                          className="w-full rounded-[12px] bg-[#06C755] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#05b04a]"
                         >
                           編輯
                         </button>
 
                         <button
                           onClick={() => handleDeleteClick(bot.id, bot.name)}
-                          className="w-full px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 shadow-md text-sm font-bold"
+                          className="w-full rounded-[12px] bg-red-500 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-600"
                         >
-                          刪除Bot
+                          刪除 Bot
                         </button>
                       </div>
                     </div>
@@ -295,17 +295,17 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                               onClick={() =>
                                 handleDeleteClick(bot.id, bot.name)
                               }
-                              className="px-4 py-2 bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] rounded-lg hover:opacity-90 transition-all duration-200 shadow-sm text-sm font-bold"
+                              className="rounded-[12px] bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-600"
                             >
-                              刪除Bot
+                              刪除 Bot
                             </button>
                           </div>
 
-                          <div className="p-4 bg-secondary rounded-lg">
+                          <div className="rounded-[14px] border border-slate-200 bg-white p-4">
                             <h5 className="font-medium text-foreground text-sm mb-3 text-center">
                               Bot 資訊
                             </h5>
-                            <div className="text-sm text-muted-foreground space-y-2">
+                            <div className="space-y-2 text-sm text-slate-500">
                               <div className="flex justify-between">
                                 <span className="font-medium">Bot ID:</span>
                                 <span className="text-xs font-mono">
@@ -313,7 +313,7 @@ const Mybot = forwardRef<MybotRef, MybotProps>(({ onEdit }, ref) => {
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="font-medium">使用者ID:</span>
+                                <span className="font-medium">帳號 ID:</span>
                                 <span className="text-xs font-mono">
                                   {bot.user_id}
                                 </span>

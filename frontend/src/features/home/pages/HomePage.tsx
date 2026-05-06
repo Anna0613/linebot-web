@@ -4,38 +4,35 @@ import {
   ArrowRight,
   BarChart3,
   Bot,
-  CheckCircle2,
-  LayoutTemplate,
-  MessageSquareText,
   Workflow,
+  Sparkles
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { AppRobotIllustration } from "@/components/layout/AppShell";
 import { authManager } from "@/services/UnifiedAuthManager";
 import { PageContentWrapper } from "@/components/common/PageContentWrapper";
 
 const featureCards = [
   {
-    title: "建立 Bot",
-    description: "填入 LINE Channel 資訊，集中管理多個 Bot。",
-    icon: Bot,
-  },
-  {
-    title: "設計流程",
-    description: "用視覺化積木整理回覆邏輯與 Flex 訊息。",
+    title: "視覺化設計",
+    description: "用拖拉方式整理回覆流程，文字、圖片與卡片都能清楚配置。",
     icon: Workflow,
   },
   {
-    title: "追蹤狀態",
-    description: "在同一個看板查看訊息、用戶與互動表現。",
+    title: "清楚管理",
+    description: "把 Bot、訊息與好友互動放在同一個地方，不需要來回切換。",
+    icon: Bot,
+  },
+  {
+    title: "查看互動",
+    description: "最近的訊息、好友變化與連線狀態，都用簡單的方式呈現。",
     icon: BarChart3,
   },
 ];
 
-const setupSteps = ["註冊帳號", "建立 Bot", "編輯流程", "查看成效"];
+const setupSteps = ["建立帳號", "連接 LINE", "設計回覆", "查看互動"];
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -47,134 +44,84 @@ const HomePage = () => {
   }, [navigate]);
 
   return (
-    <div className="app-page-surface flex flex-col">
+    <div className="app-page-surface flex min-h-screen flex-col text-slate-950">
       <Navbar />
       <PageContentWrapper>
-        <main className="pt-24 sm:pt-28">
-          <section className="app-section pb-12 pt-8 text-center sm:pb-16">
-            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/70 px-3 py-1 text-sm font-semibold text-[#166534] shadow-sm">
-              <img
-                src="/assets/images/line-logo.svg"
-                alt=""
-                className="h-5 w-5 rounded-full"
-              />
-              LINE Bot 工作台
-            </div>
-
-            <h1 className="mx-auto mt-5 max-w-4xl text-4xl font-semibold leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
-              LINE Bot 製作輔助系統
-            </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              建立、編輯與管理 LINE Bot 的單一工作區。保留必要工具，減少不必要的操作噪音。
-            </p>
-
-            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button asChild className="app-primary-button h-12 px-5">
-                <Link to="/register">
-                  開始使用
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="app-secondary-button h-12 px-5">
-                <Link to="/how-to-establish">查看建立教學</Link>
-              </Button>
-            </div>
-
-            <div className="app-panel-strong mx-auto mt-10 grid max-w-5xl gap-0 overflow-hidden text-left lg:grid-cols-[1fr_0.9fr]">
-              <div className="p-5 sm:p-7">
-                <div className="flex items-center gap-3">
-                  <span className="app-soft-icon">
-                    <LayoutTemplate className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="app-kicker">Dashboard style</p>
-                    <h2 className="app-card-title mt-1">清楚的 Bot 管理入口</h2>
-                  </div>
-                </div>
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  {[
-                    ["Bot", "12"],
-                    ["Messages", "8.4k"],
-                    ["Users", "1.2k"],
-                  ].map(([label, value]) => (
-                    <div key={label} className="app-muted-panel">
-                      <p className="text-xs text-slate-500">{label}</p>
-                      <p className="mt-1 text-2xl font-semibold text-slate-950">
-                        {value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 rounded-[14px] bg-white/70 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-950">
-                      建立流程
-                    </span>
-                    <MessageSquareText className="h-4 w-4 text-[#16a34a]" />
-                  </div>
-                  <div className="space-y-2">
-                    {setupSteps.map((step) => (
-                      <div
-                        key={step}
-                        className="flex items-center gap-2 rounded-[12px] bg-slate-50/80 px-3 py-2 text-sm text-slate-600"
-                      >
-                        <CheckCircle2 className="h-4 w-4 text-[#16a34a]" />
-                        {step}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        <main>
+          <section className="pt-32 pb-24 text-center px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+            <div className="relative z-10 max-w-[1200px] mx-auto">
+              <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-sm font-medium text-[#166534] shadow-sm">
+                <Sparkles className="h-4 w-4" />
+                <span>你的 LINE Bot 工作台</span>
               </div>
-              <div className="flex items-end justify-center bg-gradient-to-br from-emerald-100/70 via-white/50 to-stone-100/80 p-5">
-                <AppRobotIllustration />
+
+              <h1 className="mx-auto max-w-4xl text-4xl font-semibold leading-[1.1] tracking-normal text-slate-950 sm:text-5xl lg:text-[64px]">
+                把 LINE Bot 做成<br className="hidden sm:block" />你會用的樣子
+              </h1>
+
+              <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
+                不用寫程式，也能整理自動回覆、卡片訊息與好友互動。從建立到調整，都放在一個乾淨好懂的工作台。
+              </p>
+
+              <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row sm:items-center">
+                <Button asChild className="app-primary-button px-8">
+                  <Link to="/register">
+                    開始建立
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="app-secondary-button px-8">
+                  <Link to="/how-to-establish">查看建立教學</Link>
+                </Button>
               </div>
             </div>
+
+            <div className="absolute inset-x-0 bottom-0 z-0 h-px bg-emerald-100" />
           </section>
 
-          <section id="features" className="app-section py-10">
-            <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+          <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 max-w-[1200px] mx-auto relative z-10">
+            <div className="mb-12 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
-                <p className="app-kicker">核心功能</p>
-                <h2 className="app-page-title mt-2">只留下常用工作流</h2>
+                <p className="app-kicker mb-2">功能</p>
+                <h2 className="text-3xl font-semibold tracking-normal text-slate-950 sm:text-4xl">
+                  做 Bot 需要的事，都放在眼前
+                </h2>
               </div>
-              <p className="app-subtitle">
-                從建立到分析，頁面都以同一套工作台語彙呈現。
+              <p className="text-slate-600 max-w-md text-base leading-relaxed">
+                保留最常用的建立、設計與查看功能，讓第一次使用的人也能很快知道下一步。
               </p>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+
+            <div className="grid gap-6 md:grid-cols-3">
               {featureCards.map((feature) => {
                 const Icon = feature.icon;
                 return (
-                  <div key={feature.title} className="app-panel p-5">
-                    <span className="app-soft-icon">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <h3 className="app-card-title mt-5">{feature.title}</h3>
-                    <p className="app-card-copy mt-2">{feature.description}</p>
+                  <div key={feature.title} className="app-card p-8 transition-transform duration-200 hover:-translate-y-0.5">
+                    <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-[14px] bg-emerald-100 text-emerald-700">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-slate-950 mb-3">{feature.title}</h3>
+                    <p className="text-slate-600 leading-relaxed">{feature.description}</p>
                   </div>
                 );
               })}
             </div>
           </section>
 
-          <section id="how-it-works" className="app-section py-10">
-            <div className="app-panel p-5 sm:p-7">
-              <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-                <div>
-                  <p className="app-kicker">使用方式</p>
-                  <h2 className="app-page-title mt-2">四步完成設定</h2>
-                </div>
-                <Button asChild variant="outline" className="app-secondary-button">
-                  <Link to="/how-to-establish">完整教學</Link>
-                </Button>
+          <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="app-panel mx-auto max-w-[1200px] p-10 sm:p-14">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-semibold tracking-normal text-slate-950 sm:text-4xl">
+                  四步開始你的第一個 Bot
+                </h2>
               </div>
-              <div className="grid gap-3 md:grid-cols-4">
+              <div className="grid gap-6 md:grid-cols-4">
                 {setupSteps.map((step, index) => (
-                  <div key={step} className="rounded-[14px] bg-slate-50/80 p-4">
-                    <span className="text-sm font-semibold text-[#166534]">
-                      0{index + 1}
-                    </span>
-                    <p className="mt-3 text-sm font-semibold text-slate-950">
+                  <div key={step} className="rounded-[16px] border border-emerald-100 bg-white p-6 text-center shadow-sm">
+                    <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-[12px] bg-emerald-100 text-sm font-semibold text-emerald-700">
+                      {index + 1}
+                    </div>
+                    <p className="text-lg font-semibold text-slate-950">
                       {step}
                     </p>
                   </div>
@@ -183,19 +130,22 @@ const HomePage = () => {
             </div>
           </section>
 
-          <section id="demo" className="app-section pb-16 pt-10">
-            <div className="flex flex-col items-center justify-between gap-4 rounded-[16px] bg-[#16a34a] p-6 text-center text-white shadow-lg shadow-emerald-700/20 sm:flex-row sm:text-left">
-              <div>
-                <h2 className="text-xl font-semibold">準備開始建立 LINE Bot？</h2>
-                <p className="mt-1 text-sm text-white/80">
-                  直接進入工作台，或先看 LINE Developers 設定教學。
+          <section id="demo" className="py-24 px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <div className="relative mx-auto flex max-w-[800px] flex-col items-center overflow-hidden rounded-[22px] bg-[#06C755] p-10 text-white shadow-[0_22px_56px_rgba(6,199,85,0.22)] sm:p-14">
+              <div className="relative z-10">
+                <h2 className="mb-4 text-3xl font-semibold tracking-normal sm:text-4xl">
+                  準備好開始做第一個 Bot？
+                </h2>
+                <p className="mb-8 text-lg text-white/90">
+                  建立帳號後，就能連接 LINE 官方帳號並開始設計回覆。
                 </p>
+                <Button asChild className="h-14 rounded-[16px] bg-white px-10 text-base font-semibold text-[#166534] hover:bg-emerald-50">
+                  <Link to="/register">開始建立</Link>
+                </Button>
               </div>
-              <Button asChild className="h-11 rounded-[14px] bg-white px-4 text-sm font-semibold text-[#166534] hover:bg-emerald-50">
-                <Link to="/login">登入工作台</Link>
-              </Button>
             </div>
           </section>
+
         </main>
       </PageContentWrapper>
       <Footer />

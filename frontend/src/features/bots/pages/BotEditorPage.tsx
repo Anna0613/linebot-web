@@ -20,8 +20,8 @@ const BotEditorPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
-        <div className="web3-glass-card p-8">
+      <div className="app-page-surface flex min-h-screen items-center justify-center">
+        <div className="app-panel p-8">
           <Loader text="載入中..." />
         </div>
       </div>
@@ -30,9 +30,9 @@ const BotEditorPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
-        <div className="web3-glass-card p-8">
-          <div className="text-web3-red text-lg">{error}</div>
+      <div className="app-page-surface flex min-h-screen items-center justify-center">
+        <div className="app-panel p-8">
+          <div className="text-lg font-medium text-rose-700">{error}</div>
         </div>
       </div>
     );
@@ -67,7 +67,7 @@ const BotEditorPage = () => {
     <AppShell
       user={user}
       activeNav="editor"
-      headerKicker="My Bots"
+      headerKicker="我的 Bot"
       innerClassName="max-w-5xl"
     >
       <div className="flex w-full justify-center py-8">

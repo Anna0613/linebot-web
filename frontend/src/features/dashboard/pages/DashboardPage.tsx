@@ -32,10 +32,10 @@ const DashboardPage = memo(() => {
   // 處理錯誤狀態顯示
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-transparent dark:bg-background">
-        <div className="web3-glass-card p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-web3-red mb-4">認證錯誤</h1>
-          <p className="text-muted-foreground">{error}</p>
+      <div className="app-page-surface flex min-h-screen items-center justify-center">
+        <div className="app-panel max-w-md p-8 text-center">
+          <h1 className="mb-4 text-2xl font-semibold text-rose-700">認證錯誤</h1>
+          <p className="text-sm leading-6 text-slate-600">{error}</p>
         </div>
       </div>
     );
@@ -47,7 +47,7 @@ const DashboardPage = memo(() => {
   }
 
   return (
-    <div className="min-h-screen bg-[#eefdf4] dark:bg-background">
+    <div className="app-page-surface min-h-screen">
       <PageContentWrapper>
         <main id="main" role="main">
           <HomeBotfly user={user} />

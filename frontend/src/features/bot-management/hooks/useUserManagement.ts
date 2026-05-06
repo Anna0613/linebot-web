@@ -107,11 +107,11 @@ export const useUserManagement = (selectedBotId: string) => {
           );
         }
       } catch (error) {
-        console.error("獲取用戶列表失敗:", error);
+        console.error("獲取好友列表失敗:", error);
         toast({
           variant: "destructive",
           title: "載入失敗",
-          description: "無法載入用戶列表",
+          description: "無法載入好友列表",
         });
       } finally {
         setUsersLoading(false);
@@ -139,7 +139,7 @@ export const useUserManagement = (selectedBotId: string) => {
           );
         }
       } catch (error) {
-        console.error("靜默更新用戶列表失敗:", error);
+        console.error("靜默更新好友列表失敗:", error);
       }
     },
     [applyUsersResponse, selectedBotId]
@@ -163,11 +163,11 @@ export const useUserManagement = (selectedBotId: string) => {
           );
         }
       } catch (error) {
-        console.error("獲取用戶互動失敗:", error);
+        console.error("獲取好友互動失敗:", error);
         toast({
           variant: "destructive",
           title: "載入失敗",
-          description: "無法載入用戶互動歷史",
+          description: "無法載入好友互動歷史",
         });
       } finally {
         _setInteractionsLoading(false);
@@ -193,7 +193,7 @@ export const useUserManagement = (selectedBotId: string) => {
           );
         }
       } catch (error) {
-        console.error("靜默更新用戶互動記錄失敗:", error);
+        console.error("靜默更新好友互動記錄失敗:", error);
       }
     },
     [selectedBotId]
@@ -242,7 +242,7 @@ export const useUserManagement = (selectedBotId: string) => {
       toast({
         variant: "destructive",
         title: "參數不足",
-        description: "請選擇用戶並填寫廣播訊息內容",
+        description: "請選擇好友並填寫廣播訊息內容",
       });
       return;
     }
@@ -256,7 +256,7 @@ export const useUserManagement = (selectedBotId: string) => {
 
       toast({
         title: "廣播成功",
-        description: `訊息已發送給 ${selectedUserIds.size} 個選中的用戶`,
+        description: `訊息已發送給 ${selectedUserIds.size} 位選中的好友`,
       });
 
       setBroadcastMessage("");

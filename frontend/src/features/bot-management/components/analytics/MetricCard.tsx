@@ -143,13 +143,13 @@ const MetricCard: React.FC<MetricCardProps> = ({
 }) => {
   const variantStyles = {
     default: "border-border bg-card hover:shadow-lg",
-    success: "border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-green-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
-    warning: "border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 hover:shadow-orange-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
-    error: "border-red-200 bg-gradient-to-br from-red-50 to-rose-50 hover:shadow-red-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
-    info: "border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-blue-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border dark:hover:shadow-neon",
-    primary: "border-teal-200 bg-gradient-to-br from-teal-50 to-emerald-50 hover:shadow-teal-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-[#00d4ff]/30 dark:hover:shadow-neon-cyan",
-    purple: "border-purple-200 bg-gradient-to-br from-purple-50 to-violet-50 hover:shadow-purple-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-[#a855f7]/30 dark:hover:shadow-neon-purple",
-    cyan: "border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 hover:shadow-cyan-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-[#00d4ff]/30 dark:hover:shadow-neon-cyan"
+    success: "border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-green-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border",
+    warning: "border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 hover:shadow-orange-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border",
+    error: "border-red-200 bg-gradient-to-br from-red-50 to-rose-50 hover:shadow-red-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border",
+    info: "border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-blue-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border",
+    primary: "border-teal-200 bg-gradient-to-br from-teal-50 to-emerald-50 hover:shadow-teal-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border",
+    purple: "border-purple-200 bg-gradient-to-br from-purple-50 to-violet-50 hover:shadow-purple-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border",
+    cyan: "border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 hover:shadow-cyan-100 hover:shadow-lg dark:bg-card dark:bg-none dark:border-border"
   };
 
   const iconVariantStyles = {

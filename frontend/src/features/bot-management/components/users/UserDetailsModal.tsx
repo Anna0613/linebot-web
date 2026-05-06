@@ -105,10 +105,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
-            用戶詳細資訊
+            好友詳細資訊
           </DialogTitle>
           <DialogDescription>
-            查看本系統資料庫中的用戶資料和活動統計
+            查看這位好友的資料和互動統計
           </DialogDescription>
         </DialogHeader>
 

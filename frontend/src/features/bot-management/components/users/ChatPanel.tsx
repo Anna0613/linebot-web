@@ -227,7 +227,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       if (data && data.success) {
         toast({
           title: "發送成功",
-          description: "訊息已發送給用戶",
+          description: "訊息已發送給好友",
         });
         setMessage("");
         // 交由 WebSocket 推播觸發增量更新（避免整頁重載）
@@ -538,7 +538,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
           id: `ai-welcome-${now}`,
           event_type: "message",
           message_type: "text",
-          message_content: { text: "AI 分析模式已啟用。請直接用繁體中文提問，例如：「請總結該用戶的常見問題與情緒傾向」或「過去 30 天，此用戶在什麼主題上互動最多？」" },
+          message_content: { text: "AI 分析模式已啟用。請直接用繁體中文提問，例如：「請總結這位好友常問的問題」或「過去 30 天，這位好友最常互動的主題是什麼？」" },
           sender_type: "bot",
           timestamp: now,
         },
@@ -672,7 +672,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
         <CardContent className="flex items-center justify-center h-full">
           <div className="text-center">
             <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-muted-foreground">請選擇一個用戶開始聊天</p>
+            <p className="text-muted-foreground">請選擇一位好友開始聊天</p>
           </div>
         </CardContent>
       </Card>
@@ -766,9 +766,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                 <AlertDialogHeader>
                   <AlertDialogTitle>確認清除 AI 分析快取</AlertDialogTitle>
                   <AlertDialogDescription>
-                    此操作將清除當前用戶的 AI 分析快取與畫面上的 AI 分析對話。
+                    此操作將清除這位好友的 AI 分析快取與畫面上的 AI 分析對話。
                     <br />
-                    <strong>注意：</strong>此操作不會影響用戶與 LINE Bot 的正常聊天記錄。
+                    <strong>注意：</strong>此操作不會影響好友與 LINE Bot 的正常聊天記錄。
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -812,7 +812,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
               <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-muted-foreground">歡迎使用 AI 分析功能</p>
               <p className="text-sm text-muted-foreground mt-2">
-                請在下方輸入您的問題，AI 將基於用戶的對話歷史進行分析
+                請在下方輸入問題，AI 會根據這位好友的對話紀錄進行分析。
               </p>
             </div>
           ) : (
@@ -835,7 +835,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                       <div className="flex items-start gap-2">
                         <Avatar className="h-8 w-8 mt-1">
                           <AvatarImage src={selectedUser?.picture_url} />
-                          <AvatarFallback className="bg-blue-500 text-white text-xs">用戶</AvatarFallback>
+                          <AvatarFallback className="bg-blue-500 text-white text-xs">好友</AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="bg-secondary text-foreground rounded-2xl rounded-tl-md px-4 py-2 max-w-xs lg:max-w-md">
@@ -919,7 +919,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
       <div className="border-t p-4 flex-shrink-0">
         <div className="flex gap-2">
           <Input
-            placeholder={aiMode ? "向 AI 詢問關於此用戶的問題…" : "輸入訊息..."}
+            placeholder={aiMode ? "向 AI 詢問關於這位好友的問題..." : "輸入訊息..."}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}

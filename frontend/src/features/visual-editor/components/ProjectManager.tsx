@@ -87,7 +87,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
           </Select>
           {isLoadingBots && (
             <div className="scale-50">
-              <Loader fullPage={false} web3Style={true} />
+              <Loader fullPage={false} />
             </div>
           )}
           {!isLoadingBots && bots.length === 0 && (

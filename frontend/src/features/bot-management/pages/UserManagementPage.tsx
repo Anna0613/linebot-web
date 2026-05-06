@@ -24,53 +24,52 @@ import { useUserManagement } from "@/features/bot-management/hooks/useUserManage
 
 const userManagementCopy = {
   en: {
-    sidebarSubtitle: "Management",
-    topbarKicker: "User Management",
+    sidebarSubtitle: "Workspace",
+    topbarKicker: "Friends",
     welcome: "Welcome back",
-    heroBadge: "User operations",
-    title: "User Management",
+    heroBadge: "Friends and messages",
+    title: "Friends",
     subtitle:
-      "Manage LINE Bot users, targeted broadcasts, conversation history, and one-to-one support from one workspace.",
+      "View LINE friends, conversation history, broadcasts, and one-to-one replies from one workspace.",
     channelStatus: "Channel status",
     webSocket: "WebSocket",
-    selectedUsers: "Selected users",
+    selectedUsers: "Selected friends",
     active: "Active",
     inactive: "Inactive",
     connected: "Connected",
     reconnecting: "Reconnecting",
     noBotsTitle: "Create your first LINE Bot",
     noBotsBody:
-      "After creation, user profiles, conversations, broadcasts, and support tools will appear here.",
+      "After creation, friend profiles, conversations, and broadcast tools will appear here.",
     createFirstBot: "Create first Bot",
     viewSetupGuide: "View setup guide",
-    loading: "Loading user management...",
-    botHealthTitle: "User activity is live",
-    botHealthBody:
-      "Monitor inbound messages and keep user operations in sync.",
+    loading: "Loading friends...",
+    botHealthTitle: "Messages are synced",
+    botHealthBody: "Incoming messages and friend activity stay up to date.",
   },
   zh: {
-    sidebarSubtitle: "管理中心",
-    topbarKicker: "用戶管理",
+    sidebarSubtitle: "工作台",
+    topbarKicker: "好友",
     welcome: "歡迎回來",
-    heroBadge: "用戶營運",
-    title: "用戶管理",
+    heroBadge: "好友與訊息",
+    title: "好友",
     subtitle:
-      "集中管理 LINE Bot 用戶、選擇性廣播、對話紀錄與一對一客服操作。",
+      "查看 LINE 好友、對話紀錄、廣播對象與一對一回覆。",
     channelStatus: "Channel 狀態",
     webSocket: "WebSocket",
-    selectedUsers: "已選用戶",
+    selectedUsers: "已選好友",
     active: "啟用",
     inactive: "停用",
     connected: "已連線",
     reconnecting: "重新連線中",
     noBotsTitle: "先建立第一個 LINE Bot",
     noBotsBody:
-      "建立完成後即可在此管理用戶資料、對話紀錄、廣播與客服操作。",
+      "建立完成後，好友資料、對話紀錄與廣播工具會出現在這裡。",
     createFirstBot: "建立第一個 Bot",
     viewSetupGuide: "查看建立教學",
-    loading: "載入用戶管理...",
-    botHealthTitle: "用戶活動即時同步",
-    botHealthBody: "追蹤用戶訊息並讓管理操作保持同步。",
+    loading: "載入好友...",
+    botHealthTitle: "訊息已同步",
+    botHealthBody: "好友訊息與互動會保持更新。",
   },
 };
 
@@ -182,7 +181,7 @@ const UserManagementPage: React.FC = () => {
       if (lastMessage.type === "new_user_message") {
         toast({
           title: "收到新訊息",
-          description: "用戶發送了新訊息",
+          description: "好友傳來新訊息",
           duration: 2000,
         });
       }

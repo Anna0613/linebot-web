@@ -46,13 +46,13 @@ export type AppShellUser = {
 
 const appShellCopy = {
   en: {
-    sidebarSubtitle: "Management",
+    sidebarSubtitle: "Workspace",
     nav: {
       home: "Home",
       create: "Create Bot",
-      editor: "Bot Editor",
-      analytics: "Analytics",
-      users: "User Management",
+      editor: "Design",
+      analytics: "Interactions",
+      users: "Friends",
       settings: "Settings",
     },
     openNavigation: "Open navigation",
@@ -62,20 +62,19 @@ const appShellCopy = {
     logoutSuccessTitle: "Signed out",
     logoutSuccessDescription: "You have signed out successfully.",
     logoutErrorTitle: "Logout failed",
-    defaultKicker: "Dashboard",
+    defaultKicker: "Workspace",
     welcome: "Welcome back",
-    calloutTitle: "Bot health is live",
-    calloutBody:
-      "Track webhook, delivery, and usage quality from the same workspace.",
+    calloutTitle: "Bot is ready",
+    calloutBody: "Check connection, messages, and friends from here.",
   },
   zh: {
-    sidebarSubtitle: "管理中心",
+    sidebarSubtitle: "工作台",
     nav: {
-      home: "首頁",
+      home: "工作台",
       create: "建立 Bot",
-      editor: "Bot 編輯器",
-      analytics: "數據分析",
-      users: "用戶管理",
+      editor: "設計",
+      analytics: "互動紀錄",
+      users: "好友",
       settings: "設定",
     },
     openNavigation: "開啟導覽",
@@ -85,10 +84,10 @@ const appShellCopy = {
     logoutSuccessTitle: "已登出",
     logoutSuccessDescription: "您已成功登出",
     logoutErrorTitle: "登出失敗",
-    defaultKicker: "數據看板",
+    defaultKicker: "工作台",
     welcome: "歡迎回來",
-    calloutTitle: "Bot 狀態即時監控",
-    calloutBody: "在同一個工作區追蹤 Webhook、傳遞與使用品質。",
+    calloutTitle: "Bot 目前正常",
+    calloutBody: "查看連線、訊息與好友互動。",
   },
 };
 
@@ -158,9 +157,6 @@ export const AppRobotIllustration = () => (
     <div className="absolute bottom-3 left-1/2 h-20 w-40 -translate-x-1/2 rounded-[28px] border border-white/80 bg-gradient-to-br from-emerald-100 via-white to-stone-100 shadow-xl">
       <div className="mx-auto mt-6 h-8 w-20 rounded-full bg-[#16a34a]/15" />
     </div>
-    <div className="absolute bottom-1 left-10 h-12 w-16 rounded-full bg-sky-100/80 blur-sm" />
-    <div className="absolute right-6 top-12 h-10 w-10 rounded-[16px] bg-amber-200/80 shadow-md" />
-    <div className="absolute left-3 top-28 h-8 w-8 rounded-full bg-violet-200/80 shadow-md" />
   </div>
 );
 
@@ -445,7 +441,7 @@ const AppShell = ({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,#ecfdf5_0%,#f8fafc_48%,#f6efe5_100%)] text-slate-900">
+    <div className="app-page-surface min-h-screen text-slate-900">
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:block">
         <AppSidebar
           activeNav={activeNav}

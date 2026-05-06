@@ -18,7 +18,7 @@ import { authManager } from "@/services/UnifiedAuthManager";
 
 const SettingsLoadingPanel = () => (
   <div
-    className="rounded-[16px] border border-white/70 bg-white/70 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl"
+    className="app-panel p-10"
     aria-busy="true"
   >
     <Loader text="載入帳號設定..." />
@@ -199,17 +199,17 @@ const Setting: React.FC = () => {
     <AppShell
       user={shellUser}
       activeNav="settings"
-      headerKicker="Settings"
+      headerKicker="設定"
       innerClassName="max-w-5xl"
     >
       <div className="py-8">
-        {/* 頁面標題 */}
-        <div className="mb-8 rounded-[16px] border border-white/70 bg-white/70 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
-          <h1 className="text-3xl font-semibold tracking-[-0.01em] text-slate-950">
+        <div className="app-panel mb-8 p-6">
+          <p className="app-kicker mb-2">帳號</p>
+          <h1 className="text-3xl font-semibold tracking-normal text-slate-950">
             帳號設定
           </h1>
           <p className="mt-2 text-sm text-slate-500">
-            管理您的個人資料、安全設定和帳號偏好
+            管理個人資料、安全設定與帳號偏好。
           </p>
         </div>
 
@@ -267,21 +267,21 @@ const Setting: React.FC = () => {
 
       {/* 帳號刪除確認對話框 */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-card text-card-foreground border border-border rounded-lg p-6 max-w-md mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
+          <div className="app-panel mx-4 max-w-md p-6">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="w-6 h-6 text-red-600" />
-              <h3 className="text-lg font-bold text-red-600">確認刪除帳號</h3>
+              <h3 className="text-lg font-semibold text-red-600">確認刪除帳號</h3>
             </div>
 
-            <p className="text-muted-foreground mb-6">
-              您確定要刪除帳號嗎？此操作將永久刪除您的所有資料，包括：
+            <p className="mb-6 text-sm leading-6 text-slate-600">
+              確定要刪除帳號嗎？此操作會永久刪除你的資料，包括：
             </p>
 
-            <ul className="text-sm text-muted-foreground mb-6 space-y-1">
+            <ul className="mb-6 space-y-1 text-sm leading-6 text-slate-600">
               <li>• 個人資料和設定</li>
-              <li>• 創建的所有機器人</li>
-              <li>• 對話紀錄和數據</li>
+              <li>• 建立的所有 Bot</li>
+              <li>• 對話紀錄和互動資料</li>
               <li>• 無法復原的永久刪除</li>
             </ul>
 

@@ -18,6 +18,18 @@
       "sourceType": "github",
       "skillPath": "research-writing/SKILL.md",
       "computedHash": "b70fe60dccc68339f200d1e9c62afe333708727f47467f66ba09e1641517c3cf"
+    },
+    "ui-ux-designer": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ui-ux-designer/SKILL.md",
+      "computedHash": "2f0bcb6b7a81fbd31575b78a3d777d4b43fc8a2f602db46ad027dbbb6adc9a0f"
+    },
+    "ui-ux-pro-max": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "703dda85be57e33ee32212488e017be0863bc796dfbe41bfad273e457648d42a"
     }
   }
 }

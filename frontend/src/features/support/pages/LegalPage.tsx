@@ -59,14 +59,14 @@ const LegalPage = () => {
 
   const title = isTerms ? "服務條款" : "隱私政策";
   const description = isTerms
-    ? "使用 LINE Bot 製作輔助系統前，請先了解平台使用範圍與帳號責任。"
-    : "了解平台如何使用資料支援 LINE Bot 建立、管理與互動分析。";
+    ? "使用 LineBot Web 前，請先了解平台使用範圍與帳號責任。"
+    : "了解平台如何使用資料支援 LINE Bot 建立、設定與互動查看。";
   const sections = isTerms ? termsSections : privacySections;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-transparent dark:bg-background flex items-center justify-center">
-        <div className="web3-glass-card p-8">
+      <div className="app-page-surface flex min-h-screen items-center justify-center">
+        <div className="app-panel p-8">
           <Loader text="載入中..." />
         </div>
       </div>
@@ -79,7 +79,7 @@ const LegalPage = () => {
         {children}
       </AppShell>
     ) : (
-      <div className="min-h-screen bg-transparent dark:bg-background flex flex-col">
+      <div className="app-page-surface flex min-h-screen flex-col">
         <Navbar />
         {children}
         <Footer />
@@ -93,27 +93,27 @@ const LegalPage = () => {
           <div className="pt-32 pb-16 px-4 sm:px-6">
             <div className="max-w-4xl mx-auto">
               <div className="mb-8 text-center">
-                <h1 className="web3-section-title mb-3">{title}</h1>
-                <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
+                <h1 className="app-page-title mb-3">{title}</h1>
+                <p className="text-base leading-relaxed text-slate-600 sm:text-lg">
                   {description}
                 </p>
               </div>
 
-              <div className="web3-glass-card p-6 sm:p-8 space-y-6">
-                <div className="rounded-lg border border-border bg-secondary/40 p-4 text-sm text-muted-foreground">
-                  本頁為平台目前的使用與資料處理摘要，後續可依營運單位正式政策更新。
+              <div className="app-panel space-y-6 p-6 sm:p-8">
+                <div className="app-muted-panel p-4 text-sm text-slate-600">
+                  本頁為平台目前的使用與資料處理摘要，後續可依正式政策更新。
                 </div>
 
                 <div className="grid gap-4">
                   {sections.map((section) => (
                     <section
                       key={section.title}
-                      className="rounded-lg border border-border bg-background/60 p-5"
+                      className="rounded-[16px] border border-slate-200 bg-white p-5"
                     >
-                      <h2 className="text-lg font-semibold text-foreground mb-2">
+                      <h2 className="mb-2 text-lg font-semibold text-slate-950">
                         {section.title}
                       </h2>
-                      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                      <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
                         {section.body}
                       </p>
                     </section>
@@ -121,12 +121,12 @@ const LegalPage = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-                  <Button asChild className="web3-primary-button">
+                  <Button asChild className="app-primary-button">
                     <Link to={isAuthenticated ? "/dashboard" : "/register"}>
-                      {isAuthenticated ? "返回 Dashboard" : "回到註冊"}
+                      {isAuthenticated ? "返回工作台" : "回到建立帳號"}
                     </Link>
                   </Button>
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="app-secondary-button">
                     <Link to={isTerms ? "/privacy" : "/terms"}>
                       查看{isTerms ? "隱私政策" : "服務條款"}
                     </Link>

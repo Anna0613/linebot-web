@@ -190,7 +190,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
   }, [disabled, onAvatarChange, onAvatarDelete, toast]);
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="mx-auto w-full max-w-md rounded-[16px] border border-slate-200 bg-white shadow-none">
       <CardContent className="p-6">
         <div className="flex flex-col items-center space-y-4">
           {/* 頭像顯示區域 */}
@@ -223,8 +223,8 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
           {!disabled && (
             <div
               className={`
-                relative w-full border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
-                ${dragOver ? "border-primary bg-primary/5" : "border-border hover:border-foreground/40"}
+                relative w-full cursor-pointer rounded-[16px] border border-dashed p-6 text-center transition-colors
+                ${dragOver ? "border-emerald-300 bg-emerald-50" : "border-slate-200 hover:border-emerald-200"}
                 ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
               `}
               onDragOver={handleDragOver}
@@ -232,11 +232,11 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
               onDrop={handleDrop}
               onClick={openFileSelector}
             >
-              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-1">
-                點擊或拖拽圖片到此處上傳
+              <Upload className="mx-auto mb-2 h-8 w-8 text-slate-400" />
+              <p className="mb-1 text-sm text-slate-500">
+                點擊或拖曳圖片到此處上傳
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-slate-500">
                 支援 JPG、PNG、GIF，最大 {maxSize}KB
               </p>
 

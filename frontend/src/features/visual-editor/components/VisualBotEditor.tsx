@@ -44,7 +44,7 @@ export const VisualBotEditor: React.FC = () => {
   const routeSelectedBotIdRef = useRef(initialRouteState?.selectedBotId || '');
   const routeSelectionAppliedRef = useRef(false);
   const returnTo = initialRouteState?.returnTo || '/bots/management';
-  const returnLabel = initialRouteState?.returnLabel || '返回管理中心';
+  const returnLabel = initialRouteState?.returnLabel || '返回互動紀錄';
   const [logicBlocks, setLogicBlocks] = useState<UnifiedBlock[]>([]);
   const [flexBlocks, setFlexBlocks] = useState<UnifiedBlock[]>([]);
   const [projectVersion, _setProjectVersion] = useState<string>('2.0'); // 新版本使用統一積木系統

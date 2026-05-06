@@ -140,10 +140,10 @@ const Register = () => {
   };
 
   return (
-    <AuthFormLayout title="註冊" description="建立您的 LINE Bot 建立平台帳號">
+    <AuthFormLayout title="建立帳號" description="先建立帳號，再開始做你的第一個 Bot。">
       <form ref={formRef} onSubmit={noopSubmit} className="space-y-4" noValidate>
         <div className="space-y-2">
-          <Label htmlFor="username">使用者名稱<span className="text-red-500">*</span></Label>
+          <Label htmlFor="username" className="text-slate-700">使用者名稱<span className="text-red-500">*</span></Label>
           <Input
             id="username"
             name="username"
@@ -151,13 +151,14 @@ const Register = () => {
             autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="請輸入使用者名稱（3-50個字元）"
+            placeholder="3 到 50 個字元"
             disabled={loading}
+            className="app-input"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email">電子郵件<span className="text-red-500">*</span></Label>
+          <Label htmlFor="email" className="text-slate-700">電子郵件<span className="text-red-500">*</span></Label>
           <Input
             id="email"
             name="email"
@@ -165,13 +166,14 @@ const Register = () => {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="請輸入您的電子郵件"
+            placeholder="your@email.com"
             disabled={loading}
+            className="app-input"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">密碼<span className="text-red-500">*</span></Label>
+          <Label htmlFor="password" className="text-slate-700">密碼<span className="text-red-500">*</span></Label>
           <div className="relative">
             <Input
               id="password"
@@ -182,25 +184,26 @@ const Register = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="請輸入密碼（至少 8 個字元）"
               disabled={loading}
-              className="pr-10"
+              className="app-input pr-10"
             />
-            <span
-              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer select-none text-muted-foreground"
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 select-none text-slate-400 transition-colors hover:text-slate-700"
               onMouseDown={() => setShowPassword(true)}
               onMouseUp={() => setShowPassword(false)}
               onMouseLeave={() => setShowPassword(false)}
               onTouchStart={() => setShowPassword(true)}
               onTouchEnd={() => setShowPassword(false)}
               onTouchCancel={() => setShowPassword(false)}
-              role="img"
+              aria-label="長按以暫時顯示密碼"
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </span>
+            </button>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword">確認密碼<span className="text-red-500">*</span></Label>
+          <Label htmlFor="confirmPassword" className="text-slate-700">確認密碼<span className="text-red-500">*</span></Label>
           <div className="relative">
             <Input
               id="confirmPassword"
@@ -211,20 +214,21 @@ const Register = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="請再次輸入密碼"
               disabled={loading}
-              className="pr-10"
+              className="app-input pr-10"
             />
-            <span
-              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer select-none text-muted-foreground"
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 select-none text-slate-400 transition-colors hover:text-slate-700"
               onMouseDown={() => setShowConfirmPassword(true)}
               onMouseUp={() => setShowConfirmPassword(false)}
               onMouseLeave={() => setShowConfirmPassword(false)}
               onTouchStart={() => setShowConfirmPassword(true)}
               onTouchEnd={() => setShowConfirmPassword(false)}
               onTouchCancel={() => setShowConfirmPassword(false)}
-              role="img"
+              aria-label="長按以暫時顯示密碼"
             >
               {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </span>
+            </button>
           </div>
         </div>
 
@@ -236,13 +240,13 @@ const Register = () => {
             onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
             disabled={loading}
           />
-          <Label htmlFor="terms" className="text-sm">
+          <Label htmlFor="terms" className="text-sm text-slate-600">
             我同意{" "}
-            <Link to="/terms" className="text-[hsl(var(--danger))] hover:underline">
+            <Link to="/terms" className="font-medium text-[#16a34a] hover:text-[#15803d] hover:underline">
               服務條款
             </Link>{" "}
             和{" "}
-            <Link to="/privacy" className="text-[hsl(var(--danger))] hover:underline">
+            <Link to="/privacy" className="font-medium text-[#16a34a] hover:text-[#15803d] hover:underline">
               隱私政策
             </Link>
           </Label>
@@ -250,16 +254,16 @@ const Register = () => {
 
         <Button
           type="submit"
-          className="web3-primary-button w-full"
+          className="app-primary-button w-full"
           disabled={loading}
         >
-          {loading ? <Loader size="sm" /> : "註冊"}
+          {loading ? <Loader size="sm" /> : "建立帳號"}
         </Button>
       </form>
 
       <div className="flex items-center my-4">
         <Separator className="flex-1" />
-        <span className="px-3 text-sm text-muted-foreground">或</span>
+        <span className="px-3 text-sm text-slate-500">或</span>
         <Separator className="flex-1" />
       </div>
 
@@ -267,10 +271,10 @@ const Register = () => {
         <LINELoginButton />
       </div>
 
-      <p className="text-center text-sm text-muted-foreground mt-4">
+      <p className="text-center text-sm text-slate-500 mt-4">
         已經有帳號了？{" "}
-        <Link to="/login" className="text-[hsl(var(--danger))] hover:underline">
-          立即登入
+        <Link to="/login" className="font-medium text-[#16a34a] hover:text-[#15803d] hover:underline">
+          登入
         </Link>
       </p>
     </AuthFormLayout>

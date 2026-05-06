@@ -96,30 +96,30 @@ export const convertBackendDataToActivityItem = (
     switch (item.interaction_type) {
       case "message":
         type = "message";
-        title = "用戶發送訊息";
+        title = "好友發送訊息";
         description = item.message_content || "無內容";
         break;
       case "join":
       case "user_join":
         type = "user_join";
-        title = "新用戶加入";
-        description = `用戶 ${item.display_name || item.username || "匿名用戶"} 加入對話`;
+        title = "新好友加入";
+        description = `好友 ${item.display_name || item.username || "匿名好友"} 加入對話`;
         break;
       case "leave":
       case "user_leave":
         type = "user_leave";
-        title = "用戶離開";
-        description = `用戶 ${item.display_name || item.username || "匿名用戶"} 離開對話`;
+        title = "好友離開";
+        description = `好友 ${item.display_name || item.username || "匿名好友"} 離開對話`;
         break;
       case "follow":
         type = "success";
-        title = "用戶追蹤";
-        description = `用戶 ${item.display_name || item.username || "匿名用戶"} 開始追蹤機器人`;
+        title = "好友追蹤";
+        description = `好友 ${item.display_name || item.username || "匿名好友"} 開始追蹤 Bot`;
         break;
       case "unfollow":
         type = "user_leave";
-        title = "用戶取消追蹤";
-        description = `用戶 ${item.display_name || item.username || "匿名用戶"} 取消追蹤機器人`;
+        title = "好友取消追蹤";
+        description = `好友 ${item.display_name || item.username || "匿名好友"} 取消追蹤 Bot`;
         break;
       default:
         type = "info";

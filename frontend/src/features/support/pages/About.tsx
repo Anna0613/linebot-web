@@ -13,7 +13,7 @@ import { PageContentWrapper } from "@/components/common/PageContentWrapper";
 const highlights = [
   {
     title: "快速建立",
-    description: "用 LINE Channel 憑證建立 Bot，集中到同一個管理中心。",
+    description: "貼上 LINE Channel 憑證，就能把 Bot 加到工作台。",
     icon: Bot,
   },
   {
@@ -22,8 +22,8 @@ const highlights = [
     icon: Workflow,
   },
   {
-    title: "營運追蹤",
-    description: "從 dashboard 觀察用戶、訊息與互動數據。",
+    title: "查看互動",
+    description: "從工作台查看好友、訊息與最近互動。",
     icon: BarChart3,
   },
 ];
@@ -50,7 +50,7 @@ const About = () => {
         {children}
       </AppShell>
     ) : (
-      <div className="app-page-surface flex min-h-screen flex-col">
+      <div className="app-page-surface flex min-h-screen flex-col text-slate-950">
         <Navbar />
         {children}
         <Footer />
@@ -60,20 +60,20 @@ const About = () => {
   return (
     <PageShell>
       <PageContentWrapper>
-        <main className={isAuthenticated ? "py-6" : "pt-28"}>
-          <section className="app-section pb-12">
-            <div className="app-panel-strong grid overflow-hidden lg:grid-cols-[1fr_0.82fr]">
-              <div className="p-6 sm:p-8 lg:p-10">
-                <p className="app-kicker">About</p>
-                <h1 className="app-title mt-3">關於本網站</h1>
-                <p className="app-subtitle mt-4">
-                  LineBot Web 是一個給非工程使用者與團隊操作的 LINE Bot 工作台。重點是把建立、編輯與追蹤放在同一個清楚的流程裡。
+        <main className={isAuthenticated ? "py-6" : "pt-32"}>
+          <section className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 pb-12 relative z-10">
+            <div className="app-panel grid overflow-hidden p-0 lg:grid-cols-[1fr_0.82fr]">
+              <div className="p-8 sm:p-10 lg:p-12">
+                <p className="app-kicker mb-2">關於</p>
+                <h1 className="text-3xl font-semibold leading-tight tracking-normal text-slate-950 sm:text-4xl lg:text-5xl">關於 LineBot Web</h1>
+                <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
+                  LineBot Web 是一個給一般使用者操作的 LINE Bot 工作台。重點是把建立、設計與查看互動放在同一個清楚流程裡。
                 </p>
-                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                   <Button
                     type="button"
                     onClick={() => navigate("/how-to-establish")}
-                    className="app-primary-button"
+                    className="app-primary-button px-8"
                   >
                     查看建立教學
                   </Button>
@@ -81,55 +81,55 @@ const About = () => {
                     type="button"
                     variant="outline"
                     onClick={() => navigate("/bots/create")}
-                    className="app-secondary-button"
+                    className="app-secondary-button px-8"
                   >
                     開始建立 Bot
                   </Button>
                 </div>
               </div>
-              <div className="flex items-end justify-center bg-gradient-to-br from-emerald-100/70 via-white/50 to-stone-100/80 p-6">
+              <div className="flex items-end justify-center bg-gradient-to-br from-emerald-100/70 via-white/50 to-emerald-50/80 p-6">
                 <AppRobotIllustration />
               </div>
             </div>
           </section>
 
-          <section className="app-section py-8">
-            <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+          <section className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 py-16 relative z-10">
+            <div className="mb-12 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
-                <p className="app-kicker">Focus</p>
-                <h2 className="app-page-title mt-2">平台做三件事</h2>
+                <p className="app-kicker mb-2">重點</p>
+                <h2 className="text-3xl font-semibold tracking-normal text-slate-950 sm:text-4xl">平台做三件事</h2>
               </div>
-              <p className="app-subtitle">
-                減少跳轉、減少設定負擔，讓 Bot 從設定到營運更容易追蹤。
+              <p className="text-slate-600 max-w-md text-base leading-relaxed">
+                減少跳轉、減少設定負擔，讓 Bot 從建立到日常調整都更容易。
               </p>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-3">
               {highlights.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.title} className="app-panel p-5">
-                    <span className="app-soft-icon">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <h3 className="app-card-title mt-5">{item.title}</h3>
-                    <p className="app-card-copy mt-2">{item.description}</p>
+                  <div key={item.title} className="app-card p-8 transition-transform duration-200 hover:-translate-y-0.5">
+                    <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-[14px] bg-emerald-100 text-emerald-700">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-slate-950 mb-3">{item.title}</h3>
+                    <p className="text-slate-600 leading-relaxed">{item.description}</p>
                   </div>
                 );
               })}
             </div>
           </section>
 
-          <section className="app-section pb-16 pt-8">
-            <div className="app-panel p-5 sm:p-7">
-              <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-start gap-3">
-                  <span className="app-soft-icon shrink-0">
-                    <ShieldCheck className="h-5 w-5" />
-                  </span>
+          <section className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 pb-24 pt-8 relative z-10">
+            <div className="app-panel p-10 sm:p-12">
+              <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-start gap-6">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-emerald-100 text-emerald-700">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
                   <div>
-                    <h2 className="app-card-title">適合需要穩定管理 LINE Bot 的場景</h2>
-                    <p className="app-card-copy mt-2 max-w-2xl">
-                      客服、活動通知、教育助理與行銷互動都能用同一套流程管理，不需要在多個工具之間來回切換。
+                    <h2 className="text-2xl font-semibold tracking-normal text-slate-950">適合需要固定維護 LINE Bot 的情境</h2>
+                    <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600">
+                      客服、活動通知、教育助理與社群互動都能用同一套流程處理，不需要在多個工具之間來回切換。
                     </p>
                   </div>
                 </div>
@@ -137,9 +137,9 @@ const About = () => {
                   type="button"
                   variant="outline"
                   onClick={() => navigate("/dashboard")}
-                  className="app-secondary-button shrink-0"
+                  className="app-secondary-button shrink-0 px-8"
                 >
-                  前往 Dashboard
+                  前往工作台
                 </Button>
               </div>
             </div>

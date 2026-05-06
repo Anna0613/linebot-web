@@ -81,7 +81,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
       <Card>
         <CardContent className="text-center py-8">
           <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-muted-foreground">請先選擇一個 Bot 來管理用戶</p>
+          <p className="text-muted-foreground">請先選擇一個 Bot 來查看好友</p>
         </CardContent>
       </Card>
     );
@@ -119,7 +119,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
                 ) : (
                   <>
                     <Send className="h-4 w-4 mr-2" />
-                    {`全部用戶 (${totalCount})`}
+                    {`全部好友 (${totalCount})`}
                   </>
                 )}
               </Button>
@@ -140,7 +140,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
                 ) : (
                   <>
                     <UserCheck className="h-4 w-4 mr-2" />
-                    {`選中用戶 (${selectedUserIds.size})`}
+                    {`選中好友 (${selectedUserIds.size})`}
                   </>
                 )}
               </Button>
@@ -154,7 +154,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  系統用戶列表 ({totalCount})
+                  好友列表 ({totalCount})
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -182,7 +182,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="搜尋用戶名稱或 ID..."
+                placeholder="搜尋好友名稱或 ID..."
                 autoComplete="off"
                 value={searchTerm}
                 onChange={(e) => onSearchTermChange(e.target.value)}
@@ -199,7 +199,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">
-                    尚無系統用戶
+                    尚無好友
                   </p>
                 </div>
               ) : (

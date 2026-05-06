@@ -55,11 +55,11 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin, disabled }) 
       console.error("Error occurred:", error);
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "LINE 登入失敗",
         description:
           error instanceof Error
             ? error.message
-            : "Failed to initiate LINE login. Please try again.",
+            : "無法開啟 LINE 登入，請稍後再試。",
       });
     } finally {
       // 若已成功導向至 LINE，這段不會影響體驗；若失敗則解除 loading
@@ -71,7 +71,7 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin, disabled }) 
     <Button
       onClick={handleLogin}
       disabled={disabled || loading}
-      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-transparent bg-[#06C755] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#05b04a] disabled:pointer-events-none disabled:opacity-50"
+      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-transparent bg-[#06C755] px-4 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(6,199,85,0.18)] transition-colors hover:bg-[#05b04a] disabled:pointer-events-none disabled:opacity-50"
     >
       {loading ? (
         <>
@@ -79,7 +79,12 @@ const LINELoginButton: React.FC<LINELoginButtonProps> = ({ onLogin, disabled }) 
           登入中...
         </>
       ) : (
-        "使用 LINE 登入"
+        <>
+          <span className="rounded-[6px] bg-white px-1.5 py-0.5 text-[10px] font-bold leading-none text-[#06C755]">
+            LINE
+          </span>
+          使用 LINE 登入
+        </>
       )}
     </Button>
   );
