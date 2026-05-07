@@ -298,22 +298,24 @@ const Workspace: React.FC<WorkspaceProps> = ({
     const prevFlexErrors = prevValidationRef.current.flex.errors;
     const prevFlexWarnings = prevValidationRef.current.flex.warnings;
 
-    // 檢查邏輯編輯器驗證結果
-    if (logicValidation.errors.length > 0 && 
-        JSON.stringify(logicValidation.errors) !== JSON.stringify(prevLogicErrors)) {
-      toast({
-        variant: 'destructive',
-        title: '邏輯編輯器錯誤',
-        description: logicValidation.errors.join('; ')
-      });
-    }
+    // 只有在已選擇邏輯模板時才顯示驗證錯誤（避免未選擇時出現無意義的錯誤提示）
+    if (selectedLogicTemplateId) {
+      if (logicValidation.errors.length > 0 &&
+          JSON.stringify(logicValidation.errors) !== JSON.stringify(prevLogicErrors)) {
+        toast({
+          variant: 'destructive',
+          title: '邏輯編輯器錯誤',
+          description: logicValidation.errors.join('; ')
+        });
+      }
 
-    if (logicValidation.warnings.length > 0 && 
-        JSON.stringify(logicValidation.warnings) !== JSON.stringify(prevLogicWarnings)) {
-      toast({
-        title: '邏輯編輯器建議',
-        description: logicValidation.warnings.join('; ')
-      });
+      if (logicValidation.warnings.length > 0 &&
+          JSON.stringify(logicValidation.warnings) !== JSON.stringify(prevLogicWarnings)) {
+        toast({
+          title: '邏輯編輯器建議',
+          description: logicValidation.warnings.join('; ')
+        });
+      }
     }
 
     // 檢查 Flex Message 編輯驗證結果
@@ -345,7 +347,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
       logic: logicValidation,
       flex: flexValidation
     });
-  }, [logicGraph, flexBlocks, normalizeBlocks, toast]);
+  }, [logicGraph, flexBlocks, normalizeBlocks, toast, selectedLogicTemplateId]);
 
   // 智能防抖驗證函數 - 優化版本
   const debouncedValidation = useMemo(
