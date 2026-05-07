@@ -431,6 +431,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
                 }}
                 onConnectOutput={(handleId) => setPendingConnection({ nodeId: node.id, handleId })}
                 onConnectInput={() => connectToNode(node)}
+                onDelete={() => deleteNode(node.id)}
               />
             ))}
           </div>
@@ -509,6 +510,7 @@ const WorkflowNodeCard: React.FC<{
   onStartConnection: (handleId: string, event: React.PointerEvent<HTMLButtonElement>) => void;
   onConnectOutput: (handleId: string) => void;
   onConnectInput: () => void;
+  onDelete: () => void;
 }> = ({
   node,
   selected,
@@ -519,6 +521,7 @@ const WorkflowNodeCard: React.FC<{
   onStartConnection,
   onConnectOutput,
   onConnectInput,
+  onDelete,
 }) => {
   const definition = getWorkflowNodeDefinition(node.type);
   const Icon = iconByType[node.type];
@@ -529,7 +532,7 @@ const WorkflowNodeCard: React.FC<{
     <div
       data-workflow-node="true"
       className={[
-        'absolute rounded-lg border bg-white shadow-[0_18px_46px_rgba(15,23,42,0.12)] transition',
+        'group/node absolute rounded-lg border bg-white shadow-[0_18px_46px_rgba(15,23,42,0.12)] transition',
         selected ? 'border-emerald-400 ring-2 ring-emerald-200' : 'border-slate-200',
       ].join(' ')}
       style={{ left: node.position.x, top: node.position.y, width: NODE_WIDTH }}
@@ -566,10 +569,22 @@ const WorkflowNodeCard: React.FC<{
           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${definition.accentClass}`}>
             <Icon className="h-4 w-4" />
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold text-slate-950">{String(node.data.label || definition.label)}</div>
             <div className="truncate text-xs text-slate-500">{definition.group}</div>
           </div>
+          <button
+            data-workflow-node="true"
+            className="ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-300 opacity-0 transition-all duration-150 hover:bg-rose-50 hover:text-rose-500 group-hover/node:opacity-100"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete();
+            }}
+            title="刪除節點"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 
@@ -636,6 +651,7 @@ const WorkflowEdges: React.FC<{
   onDeleteEdge: (edgeId: string) => void;
 }> = ({ edges, nodes, connectionDrag, onDeleteEdge }) => {
   const nodeMap = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
+  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
 
   return (
     <svg className="absolute inset-0 overflow-visible" width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
@@ -662,35 +678,64 @@ const WorkflowEdges: React.FC<{
         const labelY = (startY + endY) / 2;
         const isFalsePath = edge.sourceHandle === 'false';
         const stroke = isFalsePath ? '#ef4444' : '#10b981';
+        const isHovered = hoveredEdgeId === edge.id;
 
         return (
-          <g key={edge.id}>
+          <g
+            key={edge.id}
+            onMouseEnter={() => setHoveredEdgeId(edge.id)}
+            onMouseLeave={() => setHoveredEdgeId(null)}
+          >
             <path
               id={pathId}
               d={path}
               fill="none"
               stroke={stroke}
-              strokeWidth="1.6"
+              strokeWidth={isHovered ? '2.4' : '1.6'}
               strokeLinecap="round"
               markerEnd={`url(#${isFalsePath ? 'workflow-arrow-false' : 'workflow-arrow-true'})`}
+              style={{ transition: 'stroke-width 0.15s ease, opacity 0.15s ease' }}
+              opacity={isHovered ? 1 : 0.75}
+            />
+            {/* 透明寬路徑，放大 hover 觸發區域 */}
+            <path
+              d={path}
+              fill="none"
+              stroke="transparent"
+              strokeWidth="16"
+              style={{ cursor: 'pointer' }}
             />
             <AnimatedFlowDots pathId={pathId} color={stroke} />
             {edge.sourceHandle !== 'out' && (
-              <text x={labelX} y={labelY - 8} textAnchor="middle" className="fill-slate-600 text-[11px] font-semibold">
+              <text x={labelX} y={labelY - 10} textAnchor="middle" className="fill-slate-600 text-[11px] font-semibold">
                 {edge.sourceHandle === 'true' ? '符合' : '不符合'}
               </text>
             )}
-            <foreignObject x={labelX - 11} y={labelY + 2} width="22" height="22">
+            <foreignObject
+              x={labelX - 13}
+              y={labelY + 2}
+              width="26"
+              height="26"
+              style={{
+                opacity: isHovered ? 1 : 0,
+                transform: isHovered ? 'scale(1)' : 'scale(0.7)',
+                transformOrigin: `${labelX}px ${labelY + 15}px`,
+                transition: 'opacity 0.15s ease, transform 0.15s ease',
+                pointerEvents: isHovered ? 'auto' : 'none',
+              }}
+            >
               <button
                 data-edge-delete="true"
-                className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm hover:text-rose-500"
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-400 shadow-md transition-colors duration-100 hover:border-rose-400 hover:bg-rose-500 hover:text-white"
+                onMouseEnter={() => setHoveredEdgeId(edge.id)}
+                onMouseLeave={() => setHoveredEdgeId(null)}
                 onClick={(event) => {
                   event.stopPropagation();
                   onDeleteEdge(edge.id);
                 }}
                 title="刪除連線"
               >
-                ×
+                <Trash2 style={{ width: '11px', height: '11px' }} />
               </button>
             </foreignObject>
           </g>
@@ -828,15 +873,6 @@ const WorkflowInspector: React.FC<{
           </InspectorField>
 
           <NodeDataEditor node={node} flexMessages={flexMessages} onUpdateNode={onUpdateNode} />
-
-          <Button
-            variant="outline"
-            className="w-full justify-center border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-            onClick={() => onDeleteNode(node.id)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            刪除節點
-          </Button>
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
@@ -889,6 +925,19 @@ const WorkflowInspector: React.FC<{
           ))}
         </div>
       </div>
+
+      {node && (
+        <div className="mt-6 border-t border-slate-200 pt-5">
+          <Button
+            variant="outline"
+            className="w-full justify-center border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+            onClick={() => onDeleteNode(node.id)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            刪除節點
+          </Button>
+        </div>
+      )}
     </ScrollArea>
   </aside>
   );
