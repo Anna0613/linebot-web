@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# LineBot Web 應用狀態檢查腳本
+# BotCraft 應用狀態檢查腳本
 
 # 顏色定義
 RED='\033[0;31m'
@@ -9,17 +9,17 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}=== LineBot Web 應用狀態檢查 ===${NC}"
+echo -e "${BLUE}=== BotCraft 應用狀態檢查 ===${NC}"
 echo "檢查時間: $(date)"
 echo
 
 # 檢查 Docker 容器狀態
 echo -e "${BLUE}=== 容器狀態 ===${NC}"
-if docker ps --filter "name=linebot-web" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -q "linebot-web"; then
-    docker ps --filter "name=linebot-web" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+if docker ps --filter "name=botcraft" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -q "botcraft"; then
+    docker ps --filter "name=botcraft" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     echo
 else
-    echo -e "${RED}未發現 linebot-web 容器${NC}"
+    echo -e "${RED}未發現 botcraft 容器${NC}"
     echo
 fi
 
@@ -49,35 +49,35 @@ echo
 
 # 檢查資源使用情況
 echo -e "${BLUE}=== 資源使用情況 ===${NC}"
-if docker ps --filter "name=linebot-web" -q | grep -q .; then
-    # 獲取 linebot-web 容器的 ID
-    container_ids=$(docker ps --filter "name=linebot-web" -q | tr '\n' ' ')
+if docker ps --filter "name=botcraft" -q | grep -q .; then
+    # 獲取 botcraft 容器的 ID
+    container_ids=$(docker ps --filter "name=botcraft" -q | tr '\n' ' ')
     if [ ! -z "$container_ids" ]; then
         docker stats --no-stream $container_ids --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
     fi
 else
-    echo -e "${YELLOW}無運行中的 linebot-web 容器${NC}"
+    echo -e "${YELLOW}無運行中的 botcraft 容器${NC}"
 fi
 
 echo
 
 # 檢查最近的日誌
 echo -e "${BLUE}=== 最近日誌 (最後 5 行) ===${NC}"
-if docker ps --filter "name=linebot-web-backend" -q | grep -q .; then
+if docker ps --filter "name=botcraft-backend" -q | grep -q .; then
     echo -e "${YELLOW}後端日誌:${NC}"
-    docker logs linebot-web-backend --tail 5 2>/dev/null || echo "無法獲取後端日誌"
+    docker logs botcraft-backend --tail 5 2>/dev/null || echo "無法獲取後端日誌"
     echo
 fi
 
-if docker ps --filter "name=linebot-web-frontend" -q | grep -q .; then
+if docker ps --filter "name=botcraft-frontend" -q | grep -q .; then
     echo -e "${YELLOW}前端日誌:${NC}"
-    docker logs linebot-web-frontend --tail 5 2>/dev/null || echo "無法獲取前端日誌"
+    docker logs botcraft-frontend --tail 5 2>/dev/null || echo "無法獲取前端日誌"
     echo
 fi
 
 # 檢查 Docker 映像
 echo -e "${BLUE}=== Docker 映像 ===${NC}"
-docker images --filter "reference=linebot-web*" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+docker images --filter "reference=botcraft*" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
 
 echo
 echo -e "${GREEN}狀態檢查完成！${NC}"

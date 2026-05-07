@@ -1,6 +1,6 @@
 {
-  "name": "LineBot-Web | LINE Bot 管理平台",
-  "short_name": "LineBot-Web",
+  "name": "BotCraft | LINE Bot 管理平台",
+  "short_name": "BotCraft",
   "description": "現代化的 LINE Bot 管理平台，提供完整的 Bot 創建、管理和配置功能",
   "start_url": "/",
   "display": "standalone",

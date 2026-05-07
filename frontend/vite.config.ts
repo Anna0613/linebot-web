@@ -171,8 +171,8 @@ export default defineConfig(({ mode }) => {
       configureServer(server: ViteDevServer) {
         server.middlewares.use('/manifest.json', (_req: IncomingMessage, res: ServerResponse) => {
           const manifest = {
-            name: 'LineBot-Web',
-            short_name: 'LineBotWeb',
+            name: 'BotCraft',
+            short_name: 'BotCraft',
             start_url: '/',
             display: 'standalone',
             background_color: '#ffffff',
@@ -192,8 +192,8 @@ export default defineConfig(({ mode }) => {
       configurePreviewServer(server: ViteDevServer) {
         server.middlewares.use('/manifest.json', (_req: IncomingMessage, res: ServerResponse) => {
           const manifest = {
-            name: 'LineBot-Web',
-            short_name: 'LineBotWeb',
+            name: 'BotCraft',
+            short_name: 'BotCraft',
             start_url: '/',
             display: 'standalone',
             background_color: '#ffffff',

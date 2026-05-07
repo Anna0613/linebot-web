@@ -20,7 +20,7 @@ async def query_mongodb():
         
         # 連接 MongoDB
         client = AsyncIOMotorClient("mongodb://localhost:27017")
-        db = client.linebot_web
+        db = client.botcraft_conversations
         
         print("✅ MongoDB 連接成功")
         

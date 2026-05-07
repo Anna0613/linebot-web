@@ -1,12 +1,12 @@
-# 🎉 LineBot-Web 部署完成
+# 🎉 BotCraft 部署完成
 
-感謝您選擇部署 LineBot-Web！本指南將幫助您快速開始。
+感謝您選擇部署 BotCraft！本指南將幫助您快速開始。
 
 ## 📍 您的位置
 
 ```
 /mnt/user/appdata/
-├── linebot-web/                    應用源碼
+├── botcraft/                    應用源碼
 │   ├── QUICK_START.md             從這裡開始！
 │   ├── DEPLOYMENT_GUIDE.md
 │   ├── MAINTENANCE.md
@@ -28,7 +28,7 @@
 
 ### 步驟 1: 運行自動化部署腳本
 ```bash
-cd /mnt/user/appdata/linebot-web
+cd /mnt/user/appdata/botcraft
 ./setup-production.sh
 ```
 
@@ -58,7 +58,7 @@ docker-compose up -d
 | SERVER_REQUIREMENTS.md | 伺服器要求 |
 | MAINTENANCE.md | 維護和故障排查 |
 
-位置: `/mnt/user/appdata/linebot-web/`
+位置: `/mnt/user/appdata/botcraft/`
 
 ## ⚠️ 重要提醒
 
@@ -95,7 +95,7 @@ curl http://localhost:8001/api/v1/health
 
 ```bash
 # 進入應用目錄
-cd /mnt/user/appdata/linebot-web
+cd /mnt/user/appdata/botcraft
 
 # 啟動應用
 docker-compose up -d
@@ -118,7 +118,7 @@ docker-compose restart
 **準備好了？開始部署！**
 
 ```bash
-cd /mnt/user/appdata/linebot-web
+cd /mnt/user/appdata/botcraft
 ./setup-production.sh
 ```
 

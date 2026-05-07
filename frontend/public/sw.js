@@ -1,7 +1,7 @@
 // Service Worker for caching optimization
-const CACHE_NAME = 'linebot-web-v1';
-const STATIC_CACHE_NAME = 'linebot-web-static-v1';
-const DYNAMIC_CACHE_NAME = 'linebot-web-dynamic-v1';
+const CACHE_NAME = 'botcraft-v1';
+const STATIC_CACHE_NAME = 'botcraft-static-v1';
+const DYNAMIC_CACHE_NAME = 'botcraft-dynamic-v1';
 
 // 靜態資源列表
 const STATIC_ASSETS = [

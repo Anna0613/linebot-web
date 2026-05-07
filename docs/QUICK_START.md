@@ -1,15 +1,15 @@
-# 🚀 LineBot-Web 快速部署指南
+# 🚀 BotCraft 快速部署指南
 
 ## 📍 當前位置
 ```
-/mnt/user/appdata/linebot-web
+/mnt/user/appdata/botcraft
 ```
 
 ## ⚡ 3 步快速部署
 
 ### Step 1: 初始化環境 (5 分鐘)
 ```bash
-cd /mnt/user/appdata/linebot-web
+cd /mnt/user/appdata/botcraft
 ./setup-production.sh
 ```
 此腳本將：
@@ -26,7 +26,7 @@ nano backend/.env
 **必填項:**
 ```
 DB_HOST=postgresql15
-DB_NAME=linebot_web
+DB_NAME=botcraft
 DB_USER=your_username
 DB_PASSWORD=your_secure_password
 JWT_SECRET=your_random_secret_min_32_chars
@@ -44,7 +44,7 @@ VITE_ALLOWED_HOSTS=your-domain,localhost
 
 ### Step 3: 部署 (5-15 分鐘)
 ```bash
-cd /mnt/user/appdata/linebot-web
+cd /mnt/user/appdata/botcraft
 docker-compose up -d
 ```
 

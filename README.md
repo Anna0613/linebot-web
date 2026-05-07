@@ -1,9 +1,9 @@
-# LineBot-Web 管理平台
+# BotCraft 管理平台
 
 [![License: All Rights Reserved](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)](#-授權)
 ![Status](https://img.shields.io/badge/Status-Active-green)
 
-LineBot-Web 是一個現代化的 LINE Bot 管理平台，採用前後端分離架構，提供完整的 Web 介面來建立、管理與分析 LINE Bot。
+BotCraft 是一個現代化的 LINE Bot 管理平台，採用前後端分離架構，提供完整的 Web 介面來建立、管理與分析 LINE Bot。
 
 ## 📋 目錄
 
@@ -83,7 +83,7 @@ LineBot-Web 是一個現代化的 LINE Bot 管理平台，採用前後端分離�
 ### 前端啟動
 
 ```bash
-cd linebot-web/frontend
+cd botcraft/frontend
 pnpm install
 pnpm dev
 ```
@@ -93,7 +93,7 @@ pnpm dev
 ### 後端啟動
 
 ```bash
-cd linebot-web/backend
+cd botcraft/backend
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
@@ -180,7 +180,7 @@ MONGODB_HOST=localhost
 MONGODB_PORT=27017
 MONGODB_USERNAME=
 MONGODB_PASSWORD=
-MONGODB_DATABASE=linebot_conversations
+MONGODB_DATABASE=botcraft_conversations
 MONGODB_AUTH_DATABASE=admin
 MONGODB_SSL=False
 ```
@@ -239,7 +239,7 @@ SECRET_KEY=your-secret-key-here
 1. **準備環境變數**
    ```powershell
    # 確保已設定 backend/.env 和 frontend/.env
-   cd linebot-web
+   cd botcraft
    Copy-Item backend\env.example backend\.env
    Copy-Item frontend\env.example frontend\.env
 
@@ -250,7 +250,7 @@ SECRET_KEY=your-secret-key-here
 
 2. **建置映像檔**
    ```powershell
-   cd linebot-web
+   cd botcraft
    docker-compose build
    ```
 
@@ -321,7 +321,7 @@ services:
 ### 專案結構
 
 ```
-linebot-web/
+botcraft/
 ├── backend/              # FastAPI 後端
 │   ├── app/             # 主要應用程式
 │   │   ├── api/         # API 路由
@@ -350,13 +350,13 @@ linebot-web/
 
 ```powershell
 # 後端依賴
-cd linebot-web/backend
+cd botcraft/backend
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 
 # 前端依賴
-cd linebot-web/frontend
+cd botcraft/frontend
 pnpm install
 ```
 
@@ -364,7 +364,7 @@ pnpm install
 
 ```powershell
 # 複製環境變數範例檔案
-cd linebot-web
+cd botcraft
 
 # 後端環境變數
 Copy-Item backend\env.example backend\.env
@@ -379,12 +379,12 @@ Copy-Item frontend\env.example frontend\.env.local
 
 ```powershell
 # 後端（在第一個終端）
-cd linebot-web/backend
+cd botcraft/backend
 venv\Scripts\activate
 python .\scripts\development\start.py
 
 # 前端（在第二個終端）
-cd linebot-web/frontend
+cd botcraft/frontend
 pnpm dev
 ```
 
@@ -392,16 +392,16 @@ pnpm dev
 
 ```powershell
 # 後端測試
-cd linebot-web/backend
+cd botcraft/backend
 venv\Scripts\activate
 pytest
 
 # 前端測試
-cd linebot-web/frontend
+cd botcraft/frontend
 pnpm test
 
 # 整合測試
-cd linebot-web/tests/integration
+cd botcraft/tests/integration
 pytest
 ```
 
@@ -409,7 +409,7 @@ pytest
 
 ```powershell
 # 後端 Lint
-cd linebot-web/backend
+cd botcraft/backend
 venv\Scripts\activate
 flake8 .
 mypy .
@@ -419,7 +419,7 @@ black .
 isort .
 
 # 前端 Lint
-cd linebot-web/frontend
+cd botcraft/frontend
 pnpm lint
 
 # 前端格式化
@@ -430,7 +430,7 @@ pnpm format
 
 ```powershell
 # 執行遷移
-cd linebot-web/backend
+cd botcraft/backend
 venv\Scripts\activate
 alembic upgrade head
 
@@ -442,7 +442,7 @@ alembic revision --autogenerate -m "描述"
 
 ```powershell
 # 建置映像檔
-cd linebot-web
+cd botcraft
 docker-compose build
 
 # 啟動容器
@@ -462,11 +462,11 @@ docker-compose logs -f
 
 ```powershell
 # 清理前端建置檔案
-cd linebot-web/frontend
+cd botcraft/frontend
 Remove-Item -Recurse -Force dist, node_modules\.vite
 
 # 清理後端快取
-cd linebot-web/backend
+cd botcraft/backend
 Remove-Item -Recurse -Force __pycache__, .pytest_cache, .mypy_cache
 
 # 清理 Docker 資源
@@ -492,16 +492,16 @@ docker system prune -f
 
 ```powershell
 # 後端測試（pytest）
-cd linebot-web/backend
+cd botcraft/backend
 venv\Scripts\activate
 pytest
 
 # 前端測試
-cd linebot-web/frontend
+cd botcraft/frontend
 pnpm test
 
 # 整合測試
-cd linebot-web/tests/integration
+cd botcraft/tests/integration
 pytest
 ```
 

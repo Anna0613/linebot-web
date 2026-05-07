@@ -1,10 +1,10 @@
-# 📋 LineBot-Web 維護指南
+# 📋 BotCraft 維護指南
 
 ## 🔧 日常維護命令
 
 ### 檢查應用狀態
 ```bash
-cd /mnt/user/appdata/linebot-web
+cd /mnt/user/appdata/botcraft
 
 # 查看所有容器狀態
 docker-compose ps
@@ -74,7 +74,7 @@ cat frontend/.env
 curl http://localhost:8001/api/v1/health
 
 # 檢查容器網絡
-docker network inspect linebot-web_linebot-network
+docker network inspect botcraft_botcraft-network
 ```
 
 ### 3. 容器自動重啟
@@ -138,8 +138,8 @@ cat backend/.env | grep -E 'SECRET|PASSWORD|KEY|API'
 watch -n 1 'docker stats --no-stream'
 
 # 查看歷史資源使用
-docker stats --no-stream linebot-web-backend
-docker stats --no-stream linebot-web-frontend
+docker stats --no-stream botcraft-backend
+docker stats --no-stream botcraft-frontend
 ```
 
 ### 日誌大小管理
@@ -156,7 +156,7 @@ docker-compose logs --truncate backend
 
 ### 更新應用代碼
 ```bash
-cd /mnt/user/appdata/linebot-web
+cd /mnt/user/appdata/botcraft
 
 # 拉取最新代碼
 git pull origin main

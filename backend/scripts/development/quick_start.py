@@ -47,7 +47,7 @@ def check_dependencies():
 
 def main():
     """主函數"""
-    print("🚀 LineBot-Web Backend 啟動檢查")
+    print("🚀 BotCraft Backend 啟動檢查")
     print("=" * 40)
     
     # 檢查依賴

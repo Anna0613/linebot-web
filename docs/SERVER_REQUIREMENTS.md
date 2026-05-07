@@ -1,4 +1,4 @@
-# 🖥️ LineBot-Web 伺服器基礎設施要求
+# 🖥️ BotCraft 伺服器基礎設施要求
 
 ## 📋 系統要求
 
@@ -137,7 +137,7 @@ chmod 600 backend/.env frontend/.env
 ### 定期備份
 ```bash
 # 每天自動備份資料庫
-0 2 * * * docker-compose -f /mnt/user/appdata/linebot-web/docker-compose.yml \
+0 2 * * * docker-compose -f /mnt/user/appdata/botcraft/docker-compose.yml \
     exec postgres pg_dump -U user db > /backups/linebot_$(date +%Y%m%d).sql
 ```
 

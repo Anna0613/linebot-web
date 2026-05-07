@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import BotcraftBrand from "@/components/brand/BotcraftBrand";
+import BotCraftBrand from "@/components/brand/BotCraftIdentity";
 import LanguageToggle from "../LanguageToggle/LanguageToggle";
 
 const Footer = () => {
@@ -12,7 +12,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[2fr_1fr_1fr]">
           <div className="space-y-3 text-center md:text-left">
             <div className="flex justify-center md:justify-start">
-              <BotcraftBrand inverted />
+              <BotCraftBrand inverted />
             </div>
             <p className="max-w-md text-sm leading-6 text-[oklch(0.7_0.012_270)] md:max-w-lg">
               視覺化的對話機器人建構平台。建立、設計、查看互動，一個工作台完成。
@@ -95,7 +95,7 @@ const Footer = () => {
         <div className="mt-8 border-t border-[oklch(0.28_0.01_270)] pt-6">
           <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
             <p className="text-center font-mono text-xs text-[oklch(0.6_0.012_270)] sm:text-sm md:text-left">
-              © {new Date().getFullYear()} Botcraft Studio
+              © {new Date().getFullYear()} BotCraft Studio
             </p>
 
             <div className="flex justify-center md:justify-end space-x-4 sm:space-x-6 items-center">

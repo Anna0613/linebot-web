@@ -59,17 +59,17 @@ async function optimizeImage(inputPath) {
   try {
     const filename = path.basename(inputPath, path.extname(inputPath));
     const ext = path.extname(inputPath).toLowerCase();
-    
+
     console.log(`處理圖片: ${inputPath}`);
-    
+
     // 獲取圖片資訊
     const metadata = await sharp(inputPath).metadata();
     console.log(`  原始尺寸: ${metadata.width}x${metadata.height}`);
     console.log(`  原始格式: ${metadata.format}`);
-    
+
     const originalSize = fs.statSync(inputPath).size;
     console.log(`  原始大小: ${(originalSize / 1024).toFixed(2)} KB`);
-    
+
     // 確保輸出目錄存在
     if (!fs.existsSync(CONFIG.webpOutputDir)) {
       fs.mkdirSync(CONFIG.webpOutputDir, { recursive: true });
@@ -77,16 +77,16 @@ async function optimizeImage(inputPath) {
     if (!fs.existsSync(CONFIG.originOutputDir)) {
       fs.mkdirSync(CONFIG.originOutputDir, { recursive: true });
     }
-    
+
     let totalWebpSize = 0;
-    
+
     // 生成響應式 WebP 圖片
     for (const size of CONFIG.responsiveSizes) {
       const webpFilename = `${filename}${size.suffix}.webp`;
       const webpPath = path.join(CONFIG.webpOutputDir, webpFilename);
-      
+
       let sharpInstance = sharp(inputPath);
-      
+
       // 如果指定了寬度，進行縮放
       if (size.width && metadata.width > size.width) {
         sharpInstance = sharpInstance.resize(size.width, null, {
@@ -94,26 +94,26 @@ async function optimizeImage(inputPath) {
           fit: 'inside'
         });
       }
-      
+
       await sharpInstance
-        .webp({ 
+        .webp({
           quality: size.quality,
           effort: 6
         })
         .toFile(webpPath);
-      
+
       const webpSize = fs.statSync(webpPath).size;
       totalWebpSize += webpSize;
       console.log(`  生成 WebP: ${webpFilename} (${(webpSize / 1024).toFixed(2)} KB)`);
     }
-    
+
     // 複製優化的原始圖片到 origin 目錄
     const originPath = path.join(CONFIG.originOutputDir, `${filename}${ext}`);
-    
+
     if (ext === '.png') {
       // 優化 PNG
       await sharp(inputPath)
-        .png({ 
+        .png({
           compressionLevel: CONFIG.pngCompressionLevel,
           adaptiveFiltering: true,
           palette: true
@@ -122,27 +122,27 @@ async function optimizeImage(inputPath) {
     } else {
       // 對於 JPG，進行質量優化
       await sharp(inputPath)
-        .jpeg({ 
+        .jpeg({
           quality: 90,
           progressive: true
         })
         .toFile(originPath);
     }
-    
+
     const optimizedSize = fs.statSync(originPath).size;
     const totalSavings = ((originalSize - totalWebpSize) / originalSize * 100).toFixed(1);
-    
+
     console.log(`  優化原圖: ${filename}${ext} (${(optimizedSize / 1024).toFixed(2)} KB)`);
     console.log(`  總節省: ${totalSavings}%`);
     console.log(`  ✅ 完成處理: ${filename}`);
-    
+
     return {
       original: originalSize,
       webp: totalWebpSize,
       optimized: optimizedSize,
       savings: totalSavings
     };
-    
+
   } catch (error) {
     console.error(`處理 ${inputPath} 時發生錯誤:`, error.message);
     return null;
@@ -155,14 +155,14 @@ async function optimizeImage(inputPath) {
 async function processDirectory(dir) {
   console.log(`\n處理目錄: ${dir}`);
   const imageFiles = getImageFiles(dir);
-  
+
   if (imageFiles.length === 0) {
     console.log('  沒有找到圖片檔案');
     return [];
   }
-  
+
   console.log(`找到 ${imageFiles.length} 個圖片檔案\n`);
-  
+
   const results = [];
   for (const imagePath of imageFiles) {
     const result = await optimizeImage(imagePath);
@@ -170,7 +170,7 @@ async function processDirectory(dir) {
       results.push(result);
     }
   }
-  
+
   return results;
 }
 
@@ -213,27 +213,27 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
 }) => {
   return (
     <picture className={className}>
-      <source 
-        media="(min-width: 1200px)" 
-        srcSet={\`/assets/images/webp/\${src}-lg.webp\`} 
+      <source
+        media="(min-width: 1200px)"
+        srcSet={\`/assets/images/webp/\${src}-lg.webp\`}
         type="image/webp"
       />
-      <source 
-        media="(min-width: 768px)" 
-        srcSet={\`/assets/images/webp/\${src}-md.webp\`} 
+      <source
+        media="(min-width: 768px)"
+        srcSet={\`/assets/images/webp/\${src}-md.webp\`}
         type="image/webp"
       />
-      <source 
-        media="(max-width: 767px)" 
-        srcSet={\`/assets/images/webp/\${src}-sm.webp\`} 
+      <source
+        media="(max-width: 767px)"
+        srcSet={\`/assets/images/webp/\${src}-sm.webp\`}
         type="image/webp"
       />
-      <source 
-        srcSet={\`/assets/images/webp/\${src}.webp\`} 
+      <source
+        srcSet={\`/assets/images/webp/\${src}.webp\`}
         type="image/webp"
       />
-      <img 
-        src={\`/assets/images/origin/\${src}.png\`} 
+      <img
+        src={\`/assets/images/origin/\${src}.png\`}
         alt={alt}
         loading={loading}
         decoding="async"
@@ -248,16 +248,16 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
 
 \`\`\`jsx
 // 使用響應式圖片組件
-<ResponsiveImage 
-  src="LOGO" 
-  alt="LineBot-Web Logo" 
+<ResponsiveImage
+  src="LOGO"
+  alt="BotCraft Logo"
   className="w-32 h-32"
 />
 
 // 直接使用 WebP（推薦）
-<img 
-  src="/assets/images/webp/LOGO.webp" 
-  alt="Logo" 
+<img
+  src="/assets/images/webp/LOGO.webp"
+  alt="Logo"
   loading="lazy"
 />
 \`\`\`
@@ -280,35 +280,35 @@ npm run optimize-images
  */
 async function main() {
   console.log('🚀 開始圖片優化...');
-  
+
   const startTime = Date.now();
   let totalResults = [];
-  
+
   // 處理所有輸入目錄
   for (const inputDir of CONFIG.inputDirs) {
     const results = await processDirectory(inputDir);
     totalResults = totalResults.concat(results);
   }
-  
+
   // 生成統計報告
   if (totalResults.length > 0) {
     const totalOriginal = totalResults.reduce((sum, r) => sum + r.original, 0);
     const totalWebp = totalResults.reduce((sum, r) => sum + r.webp, 0);
     const totalSavings = ((totalOriginal - totalWebp) / totalOriginal * 100).toFixed(1);
-    
+
     console.log('\n📊 優化總結:');
     console.log(`處理檔案數: ${totalResults.length}`);
     console.log(`原始總大小: ${(totalOriginal / 1024).toFixed(2)} KB`);
     console.log(`WebP 總大小: ${(totalWebp / 1024).toFixed(2)} KB`);
     console.log(`總節省空間: ${totalSavings}%`);
   }
-  
+
   // 生成使用指南
   generateUsageGuide();
-  
+
   const endTime = Date.now();
   const duration = ((endTime - startTime) / 1000).toFixed(2);
-  
+
   console.log(`\n✅ 圖片優化完成！耗時: ${duration} 秒`);
 }
 

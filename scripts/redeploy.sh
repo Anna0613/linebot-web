@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# LineBot Web 應用重新部署腳本
+# BotCraft 應用重新部署腳本
 # 版本: 2.0
 # 更新日期: 2025-09-09
 
@@ -51,14 +51,14 @@ check_docker_compose() {
 # 備份當前運行的容器（可選）
 backup_containers() {
     log_info "檢查現有容器..."
-    if docker ps -q --filter "name=linebot-web" | grep -q .; then
-        log_warning "發現現有的 linebot-web 容器"
+    if docker ps -q --filter "name=botcraft" | grep -q .; then
+        log_warning "發現現有的 botcraft 容器"
         read -p "是否要備份現有容器的日誌？(y/n): " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             mkdir -p ./backup/logs/$(date +%Y%m%d_%H%M%S)
-            docker logs linebot-web-backend > ./backup/logs/$(date +%Y%m%d_%H%M%S)/backend.log 2>&1 || true
-            docker logs linebot-web-frontend > ./backup/logs/$(date +%Y%m%d_%H%M%S)/frontend.log 2>&1 || true
+            docker logs botcraft-backend > ./backup/logs/$(date +%Y%m%d_%H%M%S)/backend.log 2>&1 || true
+            docker logs botcraft-frontend > ./backup/logs/$(date +%Y%m%d_%H%M%S)/frontend.log 2>&1 || true
             log_success "日誌備份完成"
         fi
     fi
@@ -72,7 +72,7 @@ cleanup_old_resources() {
     docker-compose down 2>/dev/null || true
     
     # 移除舊的映像
-    docker rmi linebot-web-frontend linebot-web-backend 2>/dev/null || true
+    docker rmi botcraft-frontend botcraft-backend 2>/dev/null || true
     
     # 清理未使用的映像
     docker image prune -f
@@ -117,7 +117,7 @@ health_check() {
         log_success "後端服務健康檢查通過"
     else
         log_error "後端服務健康檢查失敗"
-        docker logs linebot-web-backend --tail 20
+        docker logs botcraft-backend --tail 20
         exit 1
     fi
     
@@ -126,7 +126,7 @@ health_check() {
         log_success "前端服務健康檢查通過"
     else
         log_error "前端服務健康檢查失敗"
-        docker logs linebot-web-frontend --tail 20
+        docker logs botcraft-frontend --tail 20
         exit 1
     fi
 }
@@ -141,15 +141,15 @@ show_deployment_info() {
     echo "健康檢查: http://localhost:8001/health"
     echo
     echo "=== 容器狀態 ==="
-    docker ps --filter "name=linebot-web" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    docker ps --filter "name=botcraft" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     echo
     echo "=== 資源使用 ==="
-    docker stats --no-stream --filter "name=linebot-web" --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}"
+    docker stats --no-stream --filter "name=botcraft" --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}"
 }
 
 # 主函數
 main() {
-    log_info "開始重新部署 LineBot Web 應用..."
+    log_info "開始重新部署 BotCraft 應用..."
     echo "部署時間: $(date)"
     echo
     

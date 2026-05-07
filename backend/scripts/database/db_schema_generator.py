@@ -230,7 +230,7 @@ def format_schema_report(schema_info: Dict[str, Any]) -> str:
     
     report.append("---")
     report.append("")
-    report.append("*此報告由 LineBot-Web 資料庫架構生成器自動產生*")
+    report.append("*此報告由 BotCraft 資料庫架構生成器自動產生*")
     
     return "\n".join(report)
 

@@ -32,27 +32,27 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
 }) => {
   return (
     <picture className={className}>
-      <source 
-        media="(min-width: 1200px)" 
-        srcSet={`/assets/images/webp/${src}-lg.webp`} 
+      <source
+        media="(min-width: 1200px)"
+        srcSet={`/assets/images/webp/${src}-lg.webp`}
         type="image/webp"
       />
-      <source 
-        media="(min-width: 768px)" 
-        srcSet={`/assets/images/webp/${src}-md.webp`} 
+      <source
+        media="(min-width: 768px)"
+        srcSet={`/assets/images/webp/${src}-md.webp`}
         type="image/webp"
       />
-      <source 
-        media="(max-width: 767px)" 
-        srcSet={`/assets/images/webp/${src}-sm.webp`} 
+      <source
+        media="(max-width: 767px)"
+        srcSet={`/assets/images/webp/${src}-sm.webp`}
         type="image/webp"
       />
-      <source 
-        srcSet={`/assets/images/webp/${src}.webp`} 
+      <source
+        srcSet={`/assets/images/webp/${src}.webp`}
         type="image/webp"
       />
-      <img 
-        src={`/assets/images/origin/${src}.png`} 
+      <img
+        src={`/assets/images/origin/${src}.png`}
         alt={alt}
         loading={loading}
         decoding="async"
@@ -67,16 +67,16 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
 
 ```jsx
 // 使用響應式圖片組件
-<ResponsiveImage 
-  src="LOGO" 
-  alt="LineBot-Web Logo" 
+<ResponsiveImage
+  src="LOGO"
+  alt="BotCraft Logo"
   className="w-32 h-32"
 />
 
 // 直接使用 WebP（推薦）
-<img 
-  src="/assets/images/webp/LOGO.webp" 
-  alt="Logo" 
+<img
+  src="/assets/images/webp/LOGO.webp"
+  alt="Logo"
   loading="lazy"
 />
 ```

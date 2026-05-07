@@ -28,7 +28,7 @@ interface ResponsiveImageProps {
  * @example
  * ```tsx
  * // 基本使用
- * <ResponsiveImage src="LOGO" alt="LineBot-Web Logo" />
+ * <ResponsiveImage src="LOGO" alt="BotCraft Logo" />
  * 
  * // 響應式圖片
  * <ResponsiveImage 

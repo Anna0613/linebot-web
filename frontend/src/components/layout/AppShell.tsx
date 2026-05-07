@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 
-import BotcraftBrand, { BotcraftMark } from "@/components/brand/BotcraftBrand";
+import BotCraftBrand, { BotCraftMark } from "@/components/brand/BotCraftIdentity";
 import LanguageToggle from "@/components/LanguageToggle/LanguageToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -184,7 +184,7 @@ const AppSidebar = ({
       )}
     >
       <div className="mb-5 px-2">
-        <BotcraftBrand to="/dashboard" />
+        <BotCraftBrand to="/dashboard" />
         <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--bc-ink-3)]">
           {copy.sidebarSubtitle}
         </p>
@@ -221,7 +221,7 @@ const AppSidebar = ({
 
       <div className="mt-auto rounded-[14px] border border-[var(--bc-line-2)] bg-gradient-to-br from-[var(--bc-accent-soft)] via-white to-[var(--bc-hi-soft)] p-4">
         <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-white shadow-sm">
-          <BotcraftMark className="h-6 w-6" />
+          <BotCraftMark className="h-6 w-6" />
         </div>
         <p className="mt-3 text-sm font-semibold text-[var(--bc-ink)]">
           {calloutTitle || copy.calloutTitle}

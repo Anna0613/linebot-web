@@ -1,10 +1,10 @@
 ================================================================================
-  LineBot-Web 部署準備 - 新增檔案清單
+  BotCraft 部署準備 - 新增檔案清單
 ================================================================================
 
 部署時間: 2026-05-03
-專案位置: /mnt/user/appdata/linebot-web
-專案來源: https://github.com/Anna0613/linebot-web.git
+專案位置: /mnt/user/appdata/botcraft
+專案來源: https://github.com/Anna0613/botcraft.git
 
 ================================================================================
   📋 新增部署文檔
@@ -14,13 +14,13 @@
    - 快速 3 步部署指南
    - 環境驗證方式
    - 常見問題和訪問方式
-   位置: /mnt/user/appdata/linebot-web/QUICK_START.md
+   位置: /mnt/user/appdata/botcraft/QUICK_START.md
 
 2. DEPLOYMENT_GUIDE.md
    - 完整的部署步驟
    - 環境配置詳細說明
    - 重要配置項提示
-   位置: /mnt/user/appdata/linebot-web/DEPLOYMENT_GUIDE.md
+   位置: /mnt/user/appdata/botcraft/DEPLOYMENT_GUIDE.md
 
 3. SERVER_REQUIREMENTS.md
    - 系統最小/推薦配置
@@ -28,7 +28,7 @@
    - 網絡和防火牆要求
    - 安全要求
    - 資源配置參考
-   位置: /mnt/user/appdata/linebot-web/SERVER_REQUIREMENTS.md
+   位置: /mnt/user/appdata/botcraft/SERVER_REQUIREMENTS.md
 
 4. MAINTENANCE.md
    - 日常維護命令
@@ -36,7 +36,7 @@
    - 性能監控方式
    - 更新和升級流程
    - 故障排查檢查清單
-   位置: /mnt/user/appdata/linebot-web/MAINTENANCE.md
+   位置: /mnt/user/appdata/botcraft/MAINTENANCE.md
 
 5. LINEBOT_DEPLOYMENT_SUMMARY.md (在上層目錄)
    - 部署總結
@@ -55,14 +55,14 @@
    - 包含詳細的配置說明
    
    複製方式: cp backend/.env.template backend/.env
-   位置: /mnt/user/appdata/linebot-web/backend/.env.template
+   位置: /mnt/user/appdata/botcraft/backend/.env.template
 
 2. frontend/.env.template
    - 前端環境變數完整範本
    - 包含開發/測試/生產環境配置範例
    
    複製方式: cp frontend/.env.template frontend/.env
-   位置: /mnt/user/appdata/linebot-web/frontend/.env.template
+   位置: /mnt/user/appdata/botcraft/frontend/.env.template
 
 ================================================================================
   🔧 自動化部署腳本
@@ -75,7 +75,7 @@
    - 可選自動構建和啟動
    
    使用方式: ./setup-production.sh
-   位置: /mnt/user/appdata/linebot-web/setup-production.sh
+   位置: /mnt/user/appdata/botcraft/setup-production.sh
    狀態: 已設置為可執行 (rwxr-xr-x)
 
 ================================================================================
@@ -93,7 +93,7 @@
 ================================================================================
 
 第一步：進入專案目錄
-  cd /mnt/user/appdata/linebot-web
+  cd /mnt/user/appdata/botcraft
 
 第二步：運行初始化腳本
   ./setup-production.sh

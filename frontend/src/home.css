@@ -1533,7 +1533,7 @@ body {
   }
 }
 
-/* Botcraft CIS redesign: source of truth follows /design.md and Landing Page.html. */
+/* BotCraft CIS redesign: source of truth follows /design.md and Landing Page.html. */
 @layer base {
   :root {
     --bc-bg: oklch(0.98 0.006 85);

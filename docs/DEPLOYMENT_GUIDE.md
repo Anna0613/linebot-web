@@ -1,6 +1,6 @@
-# LineBot-Web 伺服器部署指南
+# BotCraft 伺服器部署指南
 
-此指南說明如何在 `/mnt/user/appdata` 伺服器上部署 LineBot-Web 應用。
+此指南說明如何在 `/mnt/user/appdata` 伺服器上部署 BotCraft 應用。
 
 ## 📋 前置要求
 
@@ -20,7 +20,7 @@
 # 資料庫連線
 DB_HOST=postgresql15           # 使用現有的 PostgreSQL
 DB_PORT=5432
-DB_NAME=linebot_web
+DB_NAME=botcraft
 DB_USER=your_username
 DB_PASSWORD=your_password
 
@@ -61,7 +61,7 @@ VITE_PROXY_CHANGE_ORIGIN=true
 ### 2. 啟動容器
 
 ```bash
-cd /mnt/user/appdata/linebot-web
+cd /mnt/user/appdata/botcraft
 docker-compose up -d
 ```
 

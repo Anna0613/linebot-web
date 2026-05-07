@@ -1,4 +1,4 @@
-# LineBot-Web 後端
+# BotCraft 後端
 
 > FastAPI 統一 API 架構 - 現代化的 LINE Bot 管理平台後端服務
 
@@ -232,7 +232,7 @@ backend/
 
 1. **進入後端目錄**
    ```powershell
-   cd linebot-web/backend
+   cd botcraft/backend
    ```
 
 2. **建立虛擬環境**
@@ -321,10 +321,10 @@ GROQ_MODEL=llama-3.3-70b-versatile
 **單獨建置後端容器**
 ```powershell
 # 建置映像檔
-docker build -t linebot-web-backend .
+docker build -t botcraft-backend .
 
 # 啟動容器
-docker run --env-file .env -p 8001:8005 linebot-web-backend
+docker run --env-file .env -p 8001:8005 botcraft-backend
 ```
 
 **使用 Docker Compose（推薦）**
@@ -526,5 +526,5 @@ A: 調整 `ai_threshold` 和 `ai_top_k` 參數，或增加更多知識庫內容
 
 ---
 
-*本文件由 LineBot-Web 專案團隊維護*
+*本文件由 BotCraft 專案團隊維護*
 *最後更新: 2025-10-24*

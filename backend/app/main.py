@@ -1,5 +1,5 @@
 """
-LineBot-Web 統一 API 主應用程式
+BotCraft 統一 API 主應用程式
 """
 import logging
 from contextlib import asynccontextmanager
@@ -47,7 +47,7 @@ except ImportError:
 async def lifespan(app: FastAPI):
     """應用程式生命週期管理 - 整合效能優化服務"""
     # 啟動時
-    logger.info("啟動 LineBot-Web 統一 API")
+    logger.info("啟動 BotCraft 統一 API")
     try:
         # 使用增強的資料庫初始化系統
         # __file__ = app/main.py, 所以 backend 目錄是上兩級
@@ -117,7 +117,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # 關閉時
-    logger.info("關閉 LineBot-Web 統一 API")
+    logger.info("關閉 BotCraft 統一 API")
     try:
         # 停止背景任務管理器
         task_manager = get_task_manager()

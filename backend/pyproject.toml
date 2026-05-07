@@ -1,7 +1,7 @@
 [project]
-name = "linebot-web-backend"
+name = "botcraft-backend"
 version = "1.0.0"
-description = "LineBot-Web Backend API using FastAPI"
+description = "BotCraft Backend API using FastAPI"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

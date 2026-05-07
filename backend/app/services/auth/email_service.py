@@ -227,7 +227,7 @@ class EmailService:
                     </div>
                     <div class="content">
                         <p>您好，</p>
-                        <p>感謝您註冊 LineBot-Web。請先完成信箱驗證，帳號啟用後即可登入 LINE Bot 工作台。</p>
+                        <p>感謝您註冊 BotCraft。請先完成信箱驗證，帳號啟用後即可登入 LINE Bot 工作台。</p>
 
                         <div style="margin: 28px 0;">
                             <a href="{verify_url}" class="verify-button" style="display:inline-block;background:#16a34a;color:#ffffff !important;padding:13px 22px;text-decoration:none !important;border-radius:8px;font-size:14px;font-weight:700;box-shadow:0 12px 24px rgba(22, 163, 74, 0.22);">
@@ -240,7 +240,7 @@ class EmailService:
                             <ul>
                                 <li>驗證連結將在 1 小時後失效。</li>
                                 <li>完成驗證前，帳號無法登入工作台。</li>
-                                <li>如果您沒有註冊 LineBot-Web，請忽略此郵件。</li>
+                                <li>如果您沒有註冊 BotCraft，請忽略此郵件。</li>
                             </ul>
                         </div>
 
@@ -248,7 +248,7 @@ class EmailService:
                         <div class="link-box">{verify_url}</div>
                     </div>
                     <div class="footer">
-                        此郵件由 LineBot-Web 系統自動發送，請勿回覆。為了保護帳號安全，請勿將驗證連結轉寄給他人。
+                        此郵件由 BotCraft 系統自動發送，請勿回覆。為了保護帳號安全，請勿將驗證連結轉寄給他人。
                     </div>
                 </div>
             </div>
@@ -259,7 +259,7 @@ class EmailService:
         # 發送郵件
         try:
             email_service = EmailService._get_email_service()
-            email_service._send_email_sync(email, "【LineBot-Web】完成信箱驗證", email_template)
+            email_service._send_email_sync(email, "【BotCraft】完成信箱驗證", email_template)
             logging.getLogger(__name__).info("驗證郵件發送成功", extra={"email": email})
         except Exception as e:
             logging.getLogger(__name__).warning("驗證郵件發送失敗", extra={"email": email, "error": str(e)})
@@ -343,7 +343,7 @@ class EmailService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🔒 LineBot-Web 密碼重設</h1>
+                    <h1>🔒 BotCraft 密碼重設</h1>
                 </div>
                 
                 <div class="content">
@@ -371,7 +371,7 @@ class EmailService:
                 </div>
                 
                 <div class="footer">
-                    <p>此郵件由 LineBot-Web 系統自動發送，請勿回覆。</p>
+                    <p>此郵件由 BotCraft 系統自動發送，請勿回覆。</p>
                     <p>如有任何問題，請聯繫我們的客服團隊。</p>
                 </div>
             </div>
@@ -382,7 +382,7 @@ class EmailService:
         # 發送郵件
         try:
             email_service = EmailService._get_email_service()
-            email_service._send_email_sync(email, "【LineBot-Web】密碼重設", email_template)
+            email_service._send_email_sync(email, "【BotCraft】密碼重設", email_template)
             logging.getLogger(__name__).info("密碼重設郵件發送成功", extra={"email": email})
         except Exception as e:
             logging.getLogger(__name__).error("密碼重設郵件發送失敗", extra={"email": email, "error": str(e)})
