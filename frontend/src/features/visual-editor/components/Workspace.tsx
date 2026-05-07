@@ -7,6 +7,7 @@ import FlexMessagePreview from './FlexMessagePreview';
 import { BlockPalette } from './BlockPalette';
 import FlexMessageSelector from './FlexMessageSelector';
 import LogicEditorWithCode from './LogicEditorWithCode';
+import LogicTemplateSelector from './LogicTemplateSelector';
 // 已移除舊的預覽控制台（PreviewControlPanel）與增強模擬器（EnhancedLineBotSimulator）在 AI 知識庫頁面
 import RichMenuPanel from './RichMenuPanel';
 import BotBasicInfoPanel from './BotBasicInfoPanel';
@@ -17,6 +18,7 @@ import {
   UnifiedDropItem,
   WorkspaceContext
 } from '@/features/visual-editor/types/block';
+import { WorkflowGraph, validateWorkflowGraph } from '@/features/visual-editor/types/workflow';
 import { validateWorkspace } from '@/features/visual-editor/utils/blockCompatibility';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, Bot, LayoutDashboard, Plus } from 'lucide-react';
@@ -113,23 +115,24 @@ interface Block {
 }
 
 interface WorkspaceProps {
-  logicBlocks: UnifiedBlock[];
+  logicGraph: WorkflowGraph | null;
   flexBlocks: UnifiedBlock[];
-  onLogicBlocksChange: (blocks: UnifiedBlock[] | ((prev: UnifiedBlock[]) => UnifiedBlock[])) => void;
+  onLogicGraphChange: (graph: WorkflowGraph) => void;
   onFlexBlocksChange: (blocks: UnifiedBlock[] | ((prev: UnifiedBlock[]) => UnifiedBlock[])) => void;
   currentLogicTemplateName?: string;
   currentFlexMessageName?: string;
+  isUnsupportedLogicTemplate?: boolean;
   // 新增邏輯模板相關 props
   selectedBotId?: string;
   selectedLogicTemplateId?: string;
   onLogicTemplateSelect?: (templateId: string) => void;
-  onLogicTemplateCreate?: (name: string) => void;
-  onLogicTemplateSave?: (templateId: string, data: { logicBlocks: Block[], generatedCode: string }) => void;
+  onLogicTemplateCreate?: (name: string) => Promise<unknown> | unknown;
+  onLogicTemplateSave?: (templateId: string, data: { workflowGraph: WorkflowGraph, generatedCode: string }) => Promise<unknown> | unknown;
   // 新增 FlexMessage 相關 props
   selectedFlexMessageId?: string;
   onFlexMessageSelect?: (messageId: string) => void;
-  onFlexMessageCreate?: (name: string) => void;
-  onFlexMessageSave?: (messageId: string, data: { flexBlocks: Block[] }) => void;
+  onFlexMessageCreate?: (name: string) => Promise<unknown> | unknown;
+  onFlexMessageSave?: (messageId: string, data: { flexBlocks: Block[] }) => Promise<unknown> | unknown;
   onBotUpdated?: () => Promise<unknown> | void;
   // 初始活動標籤
   initialActiveTab?: string;
@@ -140,16 +143,21 @@ const getPaletteContextForTab = (tab: string): WorkspaceContext => (
 );
 
 const tabUsesBlockPalette = (tab: string): boolean => (
+  tab === 'flex'
+);
+
+const tabUsesTemplatePanel = (tab: string): boolean => (
   tab === 'logic' || tab === 'flex'
 );
 
 const Workspace: React.FC<WorkspaceProps> = ({
-  logicBlocks,
+  logicGraph,
   flexBlocks,
-  onLogicBlocksChange,
+  onLogicGraphChange,
   onFlexBlocksChange,
   currentLogicTemplateName,
   currentFlexMessageName,
+  isUnsupportedLogicTemplate = false,
   selectedBotId,
   selectedLogicTemplateId,
   onLogicTemplateSelect,
@@ -165,10 +173,15 @@ const Workspace: React.FC<WorkspaceProps> = ({
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialActiveTab);
   const shouldShowLeftPanel = Boolean(selectedBotId && tabUsesBlockPalette(activeTab));
+  const shouldShowTemplatePanel = Boolean(selectedBotId && tabUsesTemplatePanel(activeTab));
   const [lastPaletteContext, setLastPaletteContext] = useState<WorkspaceContext>(
     getPaletteContextForTab(initialActiveTab)
   );
+  const [lastTemplateTab, setLastTemplateTab] = useState(
+    tabUsesTemplatePanel(initialActiveTab) ? initialActiveTab : 'logic'
+  );
   const [isLeftPanelMounted, setIsLeftPanelMounted] = useState(shouldShowLeftPanel);
+  const [isTemplatePanelMounted, setIsTemplatePanelMounted] = useState(shouldShowTemplatePanel);
   // 已移除舊的預覽模擬器控制狀態（useEnhancedSimulator / showDebugInfo）
 
   // 測試動作處理
@@ -230,10 +243,24 @@ const Workspace: React.FC<WorkspaceProps> = ({
     return () => window.clearTimeout(timeoutId);
   }, [activeTab, shouldShowLeftPanel]);
 
-  // 調試：監視 logicBlocks 的變化
+  useEffect(() => {
+    if (shouldShowTemplatePanel) {
+      setLastTemplateTab(activeTab);
+      setIsTemplatePanelMounted(true);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsTemplatePanelMounted(false);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeTab, shouldShowTemplatePanel]);
+
+  // 調試：監視 logic graph 的變化
   React.useEffect(() => {
-    console.log(`📱 Workspace 接收到 ${logicBlocks?.length || 0} 個邏輯積木`);
-  }, [logicBlocks]);
+    console.log(`📱 Workspace 接收到 ${logicGraph?.nodes.length || 0} 個邏輯節點`);
+  }, [logicGraph]);
 
   // 處理測試動作
   const _handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
@@ -260,10 +287,9 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   // 驗證工作區 - 優化版本，避免無限循環
   const validateCurrentWorkspace = useCallback(() => {
-    const normalizedLogicBlocks = normalizeBlocks(logicBlocks);
     const normalizedFlexBlocks = normalizeBlocks(flexBlocks);
 
-    const logicValidation = validateWorkspace(normalizedLogicBlocks, WorkspaceContext.LOGIC);
+    const logicValidation = validateWorkflowGraph(logicGraph);
     const flexValidation = validateWorkspace(normalizedFlexBlocks, WorkspaceContext.FLEX);
 
     // 使用 ref 來比較上一次的驗證結果
@@ -319,7 +345,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
       logic: logicValidation,
       flex: flexValidation
     });
-  }, [logicBlocks, flexBlocks, normalizeBlocks, toast]);
+  }, [logicGraph, flexBlocks, normalizeBlocks, toast]);
 
   // 智能防抖驗證函數 - 優化版本
   const debouncedValidation = useMemo(
@@ -338,17 +364,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   // 在積木變更時驗證工作區 - 使用智能防抖機制
   React.useEffect(() => {
     debouncedValidation();
-  }, [logicBlocks, flexBlocks, debouncedValidation]);
-
-  const handleLogicDrop = useCallback((item: UnifiedDropItem) => {
-    const blockToAdd: UnifiedBlock = {
-      ...item,
-      id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      children: []
-    };
-    
-    onLogicBlocksChange(prev => [...prev, blockToAdd]);
-  }, [onLogicBlocksChange]);
+  }, [logicGraph, flexBlocks, debouncedValidation]);
 
   const handleFlexDrop = useCallback((item: UnifiedDropItem) => {
     console.log('🎨 Flex Message 編輯積木放置:', {
@@ -372,36 +388,15 @@ const Workspace: React.FC<WorkspaceProps> = ({
     }
   }, [onFlexBlocksChange, activeTab]);
 
-  const removeLogicBlock = useCallback((index: number) => {
-    onLogicBlocksChange(prev => prev.filter((_, i) => i !== index));
-  }, [onLogicBlocksChange]);
-
   const removeFlexBlock = useCallback((index: number) => {
     onFlexBlocksChange(prev => prev.filter((_, i) => i !== index));
   }, [onFlexBlocksChange]);
-
-  const updateLogicBlock = useCallback((index: number, newData: BlockData) => {
-    onLogicBlocksChange(prev => prev.map((block, i) => 
-      i === index ? { ...block, blockData: { ...block.blockData, ...newData } } : block
-    ));
-  }, [onLogicBlocksChange]);
 
   const updateFlexBlock = useCallback((index: number, newData: BlockData) => {
     onFlexBlocksChange(prev => prev.map((block, i) => 
       i === index ? { ...block, blockData: { ...block.blockData, ...newData } } : block
     ));
   }, [onFlexBlocksChange]);
-
-  // 新增：移動積木功能
-  const moveLogicBlock = useCallback((dragIndex: number, hoverIndex: number) => {
-    onLogicBlocksChange(prev => {
-      const newBlocks = [...prev];
-      const draggedBlock = newBlocks[dragIndex];
-      newBlocks.splice(dragIndex, 1);
-      newBlocks.splice(hoverIndex, 0, draggedBlock);
-      return newBlocks;
-    });
-  }, [onLogicBlocksChange]);
 
   const moveFlexBlock = useCallback((dragIndex: number, hoverIndex: number) => {
     onFlexBlocksChange(prev => {
@@ -412,21 +407,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
       return newBlocks;
     });
   }, [onFlexBlocksChange]);
-
-  // 新增：插入積木功能
-  const insertLogicBlock = useCallback((index: number, item: UnifiedDropItem) => {
-    const blockToAdd: UnifiedBlock = {
-      ...item,
-      id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      children: []
-    };
-    
-    onLogicBlocksChange(prev => {
-      const newBlocks = [...prev];
-      newBlocks.splice(index, 0, blockToAdd);
-      return newBlocks;
-    });
-  }, [onLogicBlocksChange]);
 
   const insertFlexBlock = useCallback((index: number, item: UnifiedDropItem) => {
     console.log('🎨 Flex Message 編輯積木插入:', {
@@ -491,6 +471,43 @@ const Workspace: React.FC<WorkspaceProps> = ({
   const displayedPaletteContext = shouldShowLeftPanel
     ? getPaletteContextForTab(activeTab)
     : lastPaletteContext;
+  const shouldRenderTemplatePanel = isTemplatePanelMounted || shouldShowTemplatePanel;
+  const displayedTemplateTab = shouldShowTemplatePanel ? activeTab : lastTemplateTab;
+
+  const renderTemplateToolbar = (tab: string) => {
+    if (!selectedBotId) {
+      return null;
+    }
+
+    if (tab === 'logic') {
+      return (
+        <LogicTemplateSelector
+          selectedBotId={selectedBotId}
+          selectedLogicTemplateId={selectedLogicTemplateId}
+          onLogicTemplateSelect={onLogicTemplateSelect}
+          onLogicTemplateCreate={onLogicTemplateCreate}
+          onLogicTemplateSave={onLogicTemplateSave}
+          workflowGraph={logicGraph}
+          variant="toolbar"
+        />
+      );
+    }
+
+    if (tab === 'flex') {
+      return (
+        <FlexMessageSelector
+          selectedFlexMessageId={selectedFlexMessageId}
+          onFlexMessageSelect={onFlexMessageSelect}
+          onFlexMessageCreate={onFlexMessageCreate}
+          onFlexMessageSave={onFlexMessageSave}
+          flexBlocks={flexBlocks as Block[]}
+          variant="toolbar"
+        />
+      );
+    }
+
+    return null;
+  };
 
   return (
     <CodeDisplayProvider>
@@ -514,89 +531,78 @@ const Workspace: React.FC<WorkspaceProps> = ({
         </aside>
 
         {/* 主工作區 */}
-        <div className="flex flex-1 flex-col bg-transparent">
+        <div className="flex min-w-0 flex-1 flex-col bg-transparent">
         <Tabs
           value={activeTab}
           onValueChange={(value) => {
             console.log('切換標籤:', value);
             setActiveTab(value);
           }}
-          className="h-full flex flex-col relative"
+          className="flex h-full min-h-0 flex-col"
         >
-          <TabsList className="app-panel m-4 h-auto flex-shrink-0 justify-start gap-1 overflow-x-auto p-1">
-            <TabsTrigger value="basic" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
-              基本資料
-            </TabsTrigger>
-            <TabsTrigger value="logic" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
-              邏輯編輯器
-              {currentLogicTemplateName && (
-                <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 text-xs text-[#166534]">
-                  {currentLogicTemplateName}
-                </span>
-              )}
-              {!workspaceValidation.logic.isValid && (
-                <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="flex" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
-              Flex Message 編輯
-              {currentFlexMessageName && (
-                <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 text-xs text-[#166534]">
-                  {currentFlexMessageName}
-                </span>
-              )}
-              {!workspaceValidation.flex.isValid && (
-                <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="preview" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">AI 知識庫管理</TabsTrigger>
-            <TabsTrigger value="richmenu" className="rounded-md px-3 py-2 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">功能選單</TabsTrigger>
-          </TabsList>
+          <div className="mx-3 mb-2 mt-2 flex shrink-0 items-stretch overflow-visible rounded-lg border border-white/70 bg-white/65 shadow-sm backdrop-blur-xl">
+            <TabsList
+              className={[
+                'h-auto min-h-11 min-w-0 flex-1 self-stretch justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-1',
+                shouldShowTemplatePanel ? 'border-r border-white/70' : ''
+              ].join(' ')}
+            >
+              <TabsTrigger value="basic" className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
+                基本資料
+              </TabsTrigger>
+              <TabsTrigger value="logic" className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
+                邏輯編輯器
+                {!workspaceValidation.logic.isValid && (
+                  <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="flex" className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">
+                Flex Message 編輯
+                {!workspaceValidation.flex.isValid && (
+                  <AlertTriangle className="w-3 h-3 ml-1 text-red-500" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="preview" className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">AI 知識庫管理</TabsTrigger>
+              <TabsTrigger value="richmenu" className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]">功能選單</TabsTrigger>
+            </TabsList>
+            <div
+              aria-hidden={!shouldShowTemplatePanel}
+              className={[
+                'shrink-0 transition-[width,opacity,transform] duration-300 ease-in-out',
+                shouldShowTemplatePanel
+                  ? 'w-1/2 translate-x-0 overflow-visible opacity-100'
+                  : 'pointer-events-none w-0 translate-x-2 overflow-hidden opacity-0'
+              ].join(' ')}
+            >
+              <div className="w-full min-w-[420px]">
+                {shouldRenderTemplatePanel && renderTemplateToolbar(displayedTemplateTab)}
+              </div>
+            </div>
+          </div>
           {!selectedBotId ? (
             <div className="min-h-0 flex-1">
               {renderNoBotSelectedState()}
             </div>
           ) : (
-            <>
-              <TabsContent value="basic" className="absolute inset-0 top-[60px] overflow-hidden data-[state=inactive]:hidden">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <TabsContent value="basic" className="m-0 h-full min-h-0 overflow-hidden data-[state=inactive]:hidden">
                 <BotBasicInfoPanel
                   selectedBotId={selectedBotId}
                   onBotUpdated={onBotUpdated}
                 />
               </TabsContent>
 
-              <TabsContent value="logic" className="absolute inset-0 top-[60px] overflow-hidden data-[state=inactive]:hidden">
+              <TabsContent value="logic" className="m-0 h-full min-h-0 overflow-hidden data-[state=inactive]:hidden">
                 <LogicEditorWithCode
-                  selectedBotId={selectedBotId}
                   selectedLogicTemplateId={selectedLogicTemplateId || ''}
                   currentLogicTemplateName={currentLogicTemplateName || ''}
-                  logicBlocks={logicBlocks}
-                  flexBlocks={flexBlocks}
-                  currentTestAction={currentTestAction}
-                  onLogicTemplateSelect={onLogicTemplateSelect || (() => {})}
-                  onLogicTemplateCreate={onLogicTemplateCreate || (async () => '')}
-                  onLogicTemplateSave={onLogicTemplateSave || (async (_templateId, _data) => {})}
-                  onLogicBlocksChange={onLogicBlocksChange}
-                  onRemoveBlock={removeLogicBlock}
-                  onUpdateBlock={updateLogicBlock}
-                  onMoveBlock={moveLogicBlock}
-                  onInsertBlock={insertLogicBlock}
-                  onDrop={handleLogicDrop}
+                  workflowGraph={logicGraph}
+                  isUnsupportedTemplate={isUnsupportedLogicTemplate}
+                  onWorkflowGraphChange={onLogicGraphChange}
                 />
               </TabsContent>
 
-              <TabsContent value="flex" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
-                <div className="flex-shrink-0">
-                  {/* FlexMessage 選擇器 */}
-                  <FlexMessageSelector
-                    selectedFlexMessageId={selectedFlexMessageId}
-                    onFlexMessageSelect={onFlexMessageSelect}
-                    onFlexMessageCreate={onFlexMessageCreate}
-                    onFlexMessageSave={onFlexMessageSave}
-                    flexBlocks={flexBlocks as Block[]}
-                  />
-                </div>
-
+              <TabsContent value="flex" className="m-0 h-full min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden">
                 <div className="flex flex-1 flex-col overflow-hidden p-4">
                   <div className="grid h-full w-full gap-4 lg:grid-cols-2">
                     <div className="flex flex-col h-full overflow-hidden">
@@ -622,16 +628,16 @@ const Workspace: React.FC<WorkspaceProps> = ({
                 </div>
               </TabsContent>
 
-              <TabsContent value="preview" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
+              <TabsContent value="preview" className="m-0 h-full min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden">
                 <div className="h-full flex flex-col">
                   <AIKnowledgeBaseManager botId={selectedBotId} />
                 </div>
               </TabsContent>
 
-              <TabsContent value="richmenu" className="absolute inset-0 top-[60px] overflow-hidden flex flex-col data-[state=inactive]:hidden">
+              <TabsContent value="richmenu" className="m-0 h-full min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden">
                 <RichMenuPanel selectedBotId={selectedBotId} />
               </TabsContent>
-            </>
+            </div>
           )}
         </Tabs>
         </div>

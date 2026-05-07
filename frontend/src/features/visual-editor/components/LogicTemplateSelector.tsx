@@ -6,17 +6,19 @@ import { Loader } from '@/components/ui/loader';
 import { Plus, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import VisualEditorApi, { LogicTemplateSummary } from '@/features/visual-editor/api/visualEditorApi';
-import { generateUnifiedCode } from '@/features/visual-editor/utils/unifiedCodeGenerator';
-import { UnifiedBlock } from '@/features/visual-editor/types/block';
+import { generateWorkflowCode } from '@/features/visual-editor/utils/workflowCodeGenerator';
+import { WorkflowGraph } from '@/features/visual-editor/types/workflow';
 
 interface LogicTemplateSelectorProps {
   selectedBotId: string;
   selectedLogicTemplateId?: string;
   onLogicTemplateSelect?: (templateId: string) => void;
-  onLogicTemplateCreate?: (name: string) => void;
-  onLogicTemplateSave?: (templateId: string, data: { logicBlocks: UnifiedBlock[], generatedCode: string }) => void;
-  logicBlocks: UnifiedBlock[];
+  onLogicTemplateCreate?: (name: string) => Promise<unknown> | unknown;
+  onLogicTemplateSave?: (templateId: string, data: { workflowGraph: WorkflowGraph, generatedCode: string }) => Promise<unknown> | unknown;
+  workflowGraph: WorkflowGraph | null;
   disabled?: boolean;
+  variant?: 'panel' | 'toolbar';
+  className?: string;
 }
 
 const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
@@ -25,8 +27,10 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
   onLogicTemplateSelect,
   onLogicTemplateCreate,
   onLogicTemplateSave,
-  logicBlocks,
-  disabled = false
+  workflowGraph,
+  disabled = false,
+  variant = 'panel',
+  className = ''
 }) => {
   const [logicTemplates, setLogicTemplates] = useState<LogicTemplateSummary[]>([]);
   const [isLoadingLogicTemplates, setIsLoadingLogicTemplates] = useState(false);
@@ -108,10 +112,14 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
 
     setIsSaving(true);
     try {
-      const generatedCode = generateUnifiedCode(logicBlocks, []);
+      if (!workflowGraph) {
+        throw new Error('目前模板不是新版節點流程格式，無法儲存');
+      }
+
+      const generatedCode = generateWorkflowCode(workflowGraph);
       if (onLogicTemplateSave) {
         await onLogicTemplateSave(selectedLogicTemplateId, {
-          logicBlocks,
+          workflowGraph,
           generatedCode
         });
       }
@@ -132,16 +140,29 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
 
   if (!selectedBotId) {
     return (
-      <div className="p-4 text-center text-sm text-slate-500">
+      <div className={variant === 'toolbar' ? 'text-sm text-slate-500' : 'p-4 text-center text-sm text-slate-500'}>
         請先選擇一個 Bot
       </div>
     );
   }
 
+  const containerClassName = variant === 'toolbar'
+    ? `flex min-h-11 min-w-0 items-center overflow-x-auto overflow-y-visible bg-transparent px-2 py-1 ${className}`
+    : `space-y-3 border-b border-white/60 bg-white/55 p-3 backdrop-blur-xl ${className}`;
+  const rowClassName = variant === 'toolbar'
+    ? 'flex min-w-max flex-1 flex-nowrap items-center justify-end gap-2'
+    : 'flex flex-wrap items-center gap-2';
+  const selectClassName = variant === 'toolbar'
+    ? 'app-input h-8 w-52 shrink-0'
+    : 'app-input w-52';
+  const buttonClassName = variant === 'toolbar'
+    ? 'h-8 shrink-0'
+    : 'h-10';
+
   return (
-    <div className="space-y-3 border-b border-white/60 bg-white/55 p-3 backdrop-blur-xl">
+    <div className={containerClassName}>
       {/* 邏輯模板管理 */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={rowClassName}>
         <span className="whitespace-nowrap text-sm font-medium text-slate-600">邏輯模板</span>
         <Select 
           value={selectedLogicTemplateId} 
@@ -152,7 +173,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
           }}
           disabled={isLoadingLogicTemplates || disabled}
         >
-          <SelectTrigger className="app-input w-52">
+          <SelectTrigger className={selectClassName}>
             <SelectValue placeholder={isLoadingLogicTemplates ? "載入中..." : "選擇邏輯模板"} />
           </SelectTrigger>
           <SelectContent>
@@ -181,7 +202,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
             size="sm" 
             onClick={() => setShowCreateLogicTemplate(true)}
             disabled={disabled}
-            className="app-secondary-button h-10"
+            className={`app-secondary-button ${buttonClassName}`}
           >
             <Plus className="w-4 h-4 mr-1" />
             新增
@@ -191,7 +212,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
             <Input
               value={newLogicTemplateName}
               onChange={(e) => setNewLogicTemplateName(e.target.value)}
-              className="app-input w-40"
+              className="app-input h-8 w-40"
               placeholder="模板名稱"
               onKeyPress={(e) => e.key === 'Enter' && handleCreateLogicTemplate()}
               disabled={disabled}
@@ -201,7 +222,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
               size="sm" 
               onClick={handleCreateLogicTemplate}
               disabled={!newLogicTemplateName.trim() || disabled}
-              className="app-primary-button h-10"
+              className={`app-primary-button ${buttonClassName}`}
             >
               確認
             </Button>
@@ -213,7 +234,7 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
                 setNewLogicTemplateName('');
               }}
               disabled={disabled}
-              className="app-secondary-button h-10"
+              className={`app-secondary-button ${buttonClassName}`}
             >
               取消
             </Button>
@@ -225,8 +246,8 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
           variant="default" 
           size="sm" 
           onClick={saveLogicTemplate}
-          disabled={!selectedLogicTemplateId || isSaving || disabled}
-          className="app-primary-button h-10"
+          disabled={!selectedLogicTemplateId || !workflowGraph || isSaving || disabled}
+          className={`app-primary-button ${buttonClassName}`}
         >
           {isSaving ? (
             <div className="scale-50 mr-1">
