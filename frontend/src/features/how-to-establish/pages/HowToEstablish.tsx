@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import type { UnifiedUser } from "@/services/UnifiedAuthManager";
 import {
   ArrowLeft,
   ArrowRight,
@@ -48,6 +49,25 @@ const guideSteps = [
   },
 ];
 
+interface PageShellProps {
+  isAuthenticated: boolean;
+  user: UnifiedUser | null;
+  children: ReactNode;
+}
+
+const PageShell = ({ isAuthenticated, user, children }: PageShellProps) =>
+  isAuthenticated ? (
+    <AppShell user={user} activeNav="create" headerKicker="建立教學">
+      {children}
+    </AppShell>
+  ) : (
+    <div className="app-page-surface flex min-h-screen flex-col text-slate-950">
+      <Navbar />
+      {children}
+      <Footer />
+    </div>
+  );
+
 const HowToEstablish = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
@@ -72,21 +92,8 @@ const HowToEstablish = () => {
     );
   }
 
-  const PageShell = ({ children }: { children: ReactNode }) =>
-    isAuthenticated ? (
-      <AppShell user={user} activeNav="create" headerKicker="建立教學">
-        {children}
-      </AppShell>
-    ) : (
-      <div className="app-page-surface flex min-h-screen flex-col text-slate-950">
-        <Navbar />
-        {children}
-        <Footer />
-      </div>
-    );
-
   return (
-    <PageShell>
+    <PageShell isAuthenticated={isAuthenticated} user={user}>
       <PageContentWrapper>
         <main className={isAuthenticated ? "py-6" : "pt-32"}>
           <section className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 pb-16 relative z-10">
@@ -139,7 +146,7 @@ const HowToEstablish = () => {
                 </div>
               </aside>
 
-              <article className="app-panel p-8 sm:p-10">
+              <article className="app-panel p-8 sm:p-10 flex flex-col">
                 <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
                   <div>
                     <p className="app-kicker mb-2">Step {activeStep.id}</p>
@@ -155,7 +162,7 @@ const HowToEstablish = () => {
                   </div>
                 </div>
 
-                <div className="mt-8 grid gap-4">
+                <div className="mt-8 grid gap-4 flex-1 content-start">
                   {activeStep.checklist.map((item) => (
                     <div
                       key={item}
@@ -167,7 +174,7 @@ const HowToEstablish = () => {
                   ))}
                 </div>
 
-                <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-auto pt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex gap-3">
                     <Button
                       type="button"
