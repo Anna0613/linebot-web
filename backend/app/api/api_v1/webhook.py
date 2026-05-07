@@ -668,6 +668,10 @@ async def process_single_event(
 
                     # AI 接管：若無符合的積木回覆、AI 接管啟用、且為文字訊息
                     ai_takeover_enabled = bool(getattr(bot, 'ai_takeover_enabled', False))
+                    workflow_requested_ai_takeover = any(
+                        isinstance(item, dict) and item.get('type') == 'ai_takeover'
+                        for item in (results or [])
+                    )
                     is_text_message = event_type == 'message' and event.get('message', {}).get('type') == 'text'
                     user_query = event.get('message', {}).get('text') or '' if is_text_message else ''
 
@@ -680,12 +684,13 @@ async def process_single_event(
                     logger.info(f"🔍 AI 接管檢查:")
                     logger.info(f"  - 邏輯模板結果: {len(results) if results else 0} 個")
                     logger.info(f"  - AI 接管啟用: {ai_takeover_enabled}")
+                    logger.info(f"  - Workflow 指定 AI 接管: {workflow_requested_ai_takeover}")
                     logger.info(f"  - 事件類型: {event_type}")
                     logger.info(f"  - 是文字訊息: {is_text_message}")
                     logger.info(f"  - 用戶訊息: '{user_query}'")
 
                     if (
-                        (not results)
+                        (workflow_requested_ai_takeover or (not results))
                         and ai_takeover_enabled
                         and is_text_message
                     ):

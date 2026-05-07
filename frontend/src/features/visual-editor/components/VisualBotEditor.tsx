@@ -9,6 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Loader } from '@/components/ui/loader';
 import { useSelectedBot } from '@/features/bots/context/SelectedBotContext';
 import { UnifiedBlock } from '@/features/visual-editor/types/block';
+import {
+  WorkflowGraph,
+  createStarterWorkflowGraph,
+  isWorkflowGraph,
+  normalizeWorkflowGraph,
+} from '@/features/visual-editor/types/workflow';
 import VisualEditorApi, { FlexMessage } from '@/features/visual-editor/api/visualEditorApi';
 import { VisualEditorProvider } from '@/features/visual-editor/context/VisualEditorContext';
 import {
@@ -45,7 +51,7 @@ export const VisualBotEditor: React.FC = () => {
   const routeSelectionAppliedRef = useRef(false);
   const returnTo = initialRouteState?.returnTo || '/bots/management';
   const returnLabel = initialRouteState?.returnLabel || '返回互動紀錄';
-  const [logicBlocks, setLogicBlocks] = useState<UnifiedBlock[]>([]);
+  const [logicGraph, setLogicGraph] = useState<WorkflowGraph | null>(null);
   const [flexBlocks, setFlexBlocks] = useState<UnifiedBlock[]>([]);
   const [projectVersion, _setProjectVersion] = useState<string>('2.0'); // 新版本使用統一積木系統
   const [selectedBotId, setSelectedBotId] = useState<string>(initialSelectedBotId);
@@ -54,6 +60,7 @@ export const VisualBotEditor: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [currentLogicTemplateName, setCurrentLogicTemplateName] = useState<string>('');
   const [currentFlexMessageName, setCurrentFlexMessageName] = useState<string>('');
+  const [isUnsupportedLogicTemplate, setIsUnsupportedLogicTemplate] = useState(false);
 
   // 延遲儲存相關狀態
   const [saveStatus, setSaveStatus] = useState<SaveStatus>(SaveStatus.SAVED);
@@ -103,7 +110,7 @@ export const VisualBotEditor: React.FC = () => {
 
   // 監聽積木變更，標記為未儲存
   const isInitialLoadRef = useRef(true);
-  const previousBlocksRef = useRef({ logicBlocks: [], flexBlocks: [] });
+  const previousBlocksRef = useRef<{ logicGraph: WorkflowGraph | null; flexBlocks: UnifiedBlock[] }>({ logicGraph: null, flexBlocks: [] });
   const isSavingRef = useRef(false);
   const confirmingUnsavedActionRef = useRef(false);
 
@@ -114,6 +121,7 @@ export const VisualBotEditor: React.FC = () => {
     setSelectedFlexMessageId('');
     setCurrentLogicTemplateName('');
     setCurrentFlexMessageName('');
+    setIsUnsupportedLogicTemplate(false);
     setSaveStatus(SaveStatus.SAVED);
     setLastSavedTime(undefined);
     setSaveError('');
@@ -121,11 +129,11 @@ export const VisualBotEditor: React.FC = () => {
     
     if (botId && VisualEditorApi.isValidBotId(botId)) {
       // 清空當前積木，等待用戶選擇邏輯模板和 FlexMessage
-      setLogicBlocks([]);
+      setLogicGraph(null);
       setFlexBlocks([]);
     } else {
       // 清空積木
-      setLogicBlocks([]);
+      setLogicGraph(null);
       setFlexBlocks([]);
     }
   }, []);
@@ -172,13 +180,18 @@ export const VisualBotEditor: React.FC = () => {
       try {
         const template = await VisualEditorApi.getLogicTemplate(templateId, false); // 強制跳過快取
 
-        // 後端已修復雙重序列化問題，直接使用 logic_blocks  
-        const blocks = template.logic_blocks || [];
-        setLogicBlocks(blocks);
+        const rawLogic = template.logic_blocks;
+        const isSupportedGraph = isWorkflowGraph(rawLogic);
+        const graph = isSupportedGraph ? normalizeWorkflowGraph(rawLogic) : null;
+
+        setLogicGraph(graph);
+        setIsUnsupportedLogicTemplate(!isSupportedGraph);
         setCurrentLogicTemplateName(template.name);
         
-        console.log(`📦 載入邏輯模板 "${template.name}" - 積木數量: ${blocks.length}`, {
-          blocks: blocks,
+        console.log(`📦 載入邏輯模板 "${template.name}"`, {
+          supported: isSupportedGraph,
+          nodes: graph?.nodes.length || 0,
+          edges: graph?.edges.length || 0,
           templateId: templateId
         });
         
@@ -190,14 +203,15 @@ export const VisualBotEditor: React.FC = () => {
         
         // 同步更新參考值，避免載入後被誤判為變更
         previousBlocksRef.current = {
-          logicBlocks: blocks,
+          logicGraph: graph,
           flexBlocks: memoizedFlexBlocks
         };
         
         console.log(`已載入邏輯模板 ${template.name} 的數據`);
       } catch (error) {
         console.error("Error occurred:", error);
-        setLogicBlocks([]);
+        setLogicGraph(null);
+        setIsUnsupportedLogicTemplate(false);
         setCurrentLogicTemplateName('');
         setSaveStatus(SaveStatus.ERROR);
         setSaveError('載入邏輯模板失敗');
@@ -205,7 +219,8 @@ export const VisualBotEditor: React.FC = () => {
         setIsLoadingData(false);
       }
     } else {
-      setLogicBlocks([]);
+      setLogicGraph(null);
+      setIsUnsupportedLogicTemplate(false);
       setCurrentLogicTemplateName('');
       setSaveStatus(SaveStatus.SAVED);
       setHasUnsavedChanges(false);
@@ -286,7 +301,7 @@ export const VisualBotEditor: React.FC = () => {
           
           // 同步更新參考值，避免載入後被誤判為變更
           previousBlocksRef.current = { 
-            logicBlocks: memoizedLogicBlocks, 
+            logicGraph: memoizedLogicGraph, 
             flexBlocks: blocks 
           };
         } else {
@@ -323,7 +338,7 @@ export const VisualBotEditor: React.FC = () => {
       const template = await VisualEditorApi.createLogicTemplate(selectedBotId, {
         name,
         description: `由視覺化編輯器創建的邏輯模板`,
-        logic_blocks: [],
+        logic_blocks: createStarterWorkflowGraph(),
         is_active: 'false'
       });
       
@@ -356,7 +371,7 @@ export const VisualBotEditor: React.FC = () => {
   };
 
   // 儲存邏輯模板
-  const handleLogicTemplateSave = async (templateId: string, data: { logicBlocks: UnifiedBlock[], generatedCode: string }) => {
+  const handleLogicTemplateSave = async (templateId: string, data: { workflowGraph: WorkflowGraph, generatedCode: string }) => {
     try {
       // 設置儲存中狀態，並鎖定儲存操作
       isSavingRef.current = true;
@@ -364,7 +379,7 @@ export const VisualBotEditor: React.FC = () => {
       setSaveError('');
 
       await VisualEditorApi.updateLogicTemplate(templateId, {
-        logic_blocks: data.logicBlocks,
+        logic_blocks: data.workflowGraph,
         generated_code: data.generatedCode
       });
       
@@ -375,7 +390,7 @@ export const VisualBotEditor: React.FC = () => {
       
       // 更新參考值，避免後續誤判
       previousBlocksRef.current = { 
-        logicBlocks: data.logicBlocks, 
+        logicGraph: data.workflowGraph, 
         flexBlocks: memoizedFlexBlocks 
       };
       
@@ -412,7 +427,7 @@ export const VisualBotEditor: React.FC = () => {
       
       // 更新參考值，避免後續誤判
       previousBlocksRef.current = { 
-        logicBlocks: memoizedLogicBlocks, 
+        logicGraph: memoizedLogicGraph, 
         flexBlocks: data.flexBlocks 
       };
       
@@ -431,7 +446,7 @@ export const VisualBotEditor: React.FC = () => {
   // （移除未使用的函式：handleSaveToBot、handleImportProject）
 
   // 記憶化積木數據以減少不必要的重新渲染
-  const memoizedLogicBlocks = useMemo(() => logicBlocks, [logicBlocks]);
+  const memoizedLogicGraph = useMemo(() => logicGraph, [logicGraph]);
   const memoizedFlexBlocks = useMemo(() => flexBlocks, [flexBlocks]);
 
   // 監聽積木變更的 useEffect（增強版本，精確檢測變更）
@@ -440,7 +455,7 @@ export const VisualBotEditor: React.FC = () => {
     if (isInitialLoadRef.current) {
       isInitialLoadRef.current = false;
       previousBlocksRef.current = { 
-        logicBlocks: memoizedLogicBlocks, 
+        logicGraph: memoizedLogicGraph, 
         flexBlocks: memoizedFlexBlocks 
       };
       return;
@@ -452,20 +467,20 @@ export const VisualBotEditor: React.FC = () => {
     }
     
     // 比較實際的積木內容是否有變化
-    const logicBlocksChanged = JSON.stringify(memoizedLogicBlocks) !== JSON.stringify(previousBlocksRef.current.logicBlocks);
+    const logicBlocksChanged = JSON.stringify(memoizedLogicGraph) !== JSON.stringify(previousBlocksRef.current.logicGraph);
     const flexBlocksChanged = JSON.stringify(memoizedFlexBlocks) !== JSON.stringify(previousBlocksRef.current.flexBlocks);
     
     // 只有當積木實際發生變更時才標記
     if (logicBlocksChanged || flexBlocksChanged) {
       // 更新參考值
       previousBlocksRef.current = { 
-        logicBlocks: memoizedLogicBlocks, 
+        logicGraph: memoizedLogicGraph, 
         flexBlocks: memoizedFlexBlocks 
       };
       
       debouncedMarkAsChanged();
     }
-  }, [memoizedLogicBlocks, memoizedFlexBlocks, isLoadingData, debouncedMarkAsChanged, saveStatus]);
+  }, [memoizedLogicGraph, memoizedFlexBlocks, isLoadingData, debouncedMarkAsChanged, saveStatus]);
 
   // 初始化組件
   useEffect(() => {
@@ -561,12 +576,13 @@ export const VisualBotEditor: React.FC = () => {
           )}
           
           <Workspace
-            logicBlocks={logicBlocks}
+            logicGraph={logicGraph}
             flexBlocks={flexBlocks}
-            onLogicBlocksChange={setLogicBlocks}
+            onLogicGraphChange={setLogicGraph}
             onFlexBlocksChange={setFlexBlocks}
             currentLogicTemplateName={currentLogicTemplateName}
             currentFlexMessageName={currentFlexMessageName}
+            isUnsupportedLogicTemplate={isUnsupportedLogicTemplate}
             selectedBotId={selectedBotId}
             selectedLogicTemplateId={selectedLogicTemplateId}
             onLogicTemplateSelect={handleLogicTemplateSelect}

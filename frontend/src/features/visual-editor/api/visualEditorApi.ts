@@ -6,6 +6,7 @@
 
 import { UnifiedApiClient } from '@/services/UnifiedApiClient';
 import { UnifiedBlock } from '../types/block';
+import { WorkflowGraph } from '../types/workflow';
 import { API_CONFIG } from '@/config/apiConfig';
 import LocalStorageCacheService from '@/services/LocalStorageCacheService';
 import { CACHE_KEYS, CACHE_EXPIRY } from '@/config/cacheConfig';
@@ -22,7 +23,7 @@ export interface LogicTemplate {
   id: string;
   name: string;
   description?: string;
-  logic_blocks: UnifiedBlock[];
+  logic_blocks: WorkflowGraph | UnifiedBlock[] | Record<string, unknown>;
   is_active: string;
   bot_id: string;
   user_id: string;
@@ -43,14 +44,14 @@ export interface LogicTemplateCreate {
   bot_id: string;
   name: string;
   description?: string;
-  logic_blocks: UnifiedBlock[];
+  logic_blocks: WorkflowGraph | UnifiedBlock[] | Record<string, unknown>;
   is_active?: string;
 }
 
 export interface LogicTemplateUpdate {
   name?: string;
   description?: string;
-  logic_blocks?: UnifiedBlock[];
+  logic_blocks?: WorkflowGraph | UnifiedBlock[] | Record<string, unknown>;
   is_active?: string;
   generated_code?: string;
 }

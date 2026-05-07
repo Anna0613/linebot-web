@@ -19,10 +19,12 @@ interface Block {
 interface FlexMessageSelectorProps {
   selectedFlexMessageId?: string;
   onFlexMessageSelect?: (messageId: string) => void;
-  onFlexMessageCreate?: (name: string) => void;
-  onFlexMessageSave?: (messageId: string, data: { flexBlocks: Block[] }) => void;
+  onFlexMessageCreate?: (name: string) => Promise<unknown> | unknown;
+  onFlexMessageSave?: (messageId: string, data: { flexBlocks: Block[] }) => Promise<unknown> | unknown;
   flexBlocks: Block[];
   disabled?: boolean;
+  variant?: 'panel' | 'toolbar';
+  className?: string;
 }
 
 const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
@@ -31,7 +33,9 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
   onFlexMessageCreate,
   onFlexMessageSave,
   flexBlocks,
-  disabled = false
+  disabled = false,
+  variant = 'panel',
+  className = ''
 }) => {
   const [flexMessages, setFlexMessages] = useState<FlexMessageSummary[]>([]);
   const [isLoadingFlexMessages, setIsLoadingFlexMessages] = useState(false);
@@ -123,10 +127,23 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
     }
   };
 
+  const containerClassName = variant === 'toolbar'
+    ? `flex min-h-11 min-w-0 items-center overflow-x-auto overflow-y-visible bg-transparent px-2 py-1 ${className}`
+    : `space-y-3 border-b border-white/60 bg-white/55 p-3 backdrop-blur-xl ${className}`;
+  const rowClassName = variant === 'toolbar'
+    ? 'flex min-w-max flex-1 flex-nowrap items-center justify-end gap-2'
+    : 'flex flex-wrap items-center gap-2';
+  const selectClassName = variant === 'toolbar'
+    ? 'app-input h-8 w-52 shrink-0'
+    : 'app-input w-52';
+  const buttonClassName = variant === 'toolbar'
+    ? 'h-8 shrink-0'
+    : 'h-10';
+
   return (
-    <div className="space-y-3 border-b border-white/60 bg-white/55 p-3 backdrop-blur-xl">
+    <div className={containerClassName}>
       {/* FlexMessage 管理 */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={rowClassName}>
         <span className="whitespace-nowrap text-sm font-medium text-slate-600">FlexMessage</span>
         <Select 
           value={selectedFlexMessageId} 
@@ -137,7 +154,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
           }}
           disabled={isLoadingFlexMessages || disabled}
         >
-          <SelectTrigger className="app-input w-52">
+          <SelectTrigger className={selectClassName}>
             <SelectValue placeholder={isLoadingFlexMessages ? "載入中..." : "選擇 FlexMessage"} />
           </SelectTrigger>
           <SelectContent>
@@ -166,7 +183,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
             size="sm" 
             onClick={() => setShowCreateFlexMessage(true)}
             disabled={disabled}
-            className="app-secondary-button h-10"
+            className={`app-secondary-button ${buttonClassName}`}
           >
             <Plus className="w-4 h-4 mr-1" />
             新增
@@ -176,7 +193,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
             <Input
               value={newFlexMessageName}
               onChange={(e) => setNewFlexMessageName(e.target.value)}
-              className="app-input w-40"
+              className="app-input h-8 w-40"
               placeholder="訊息名稱"
               onKeyPress={(e) => e.key === 'Enter' && handleCreateFlexMessage()}
               disabled={disabled}
@@ -186,7 +203,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
               size="sm" 
               onClick={handleCreateFlexMessage}
               disabled={!newFlexMessageName.trim() || disabled}
-              className="app-primary-button h-10"
+              className={`app-primary-button ${buttonClassName}`}
             >
               確認
             </Button>
@@ -198,7 +215,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
                 setNewFlexMessageName('');
               }}
               disabled={disabled}
-              className="app-secondary-button h-10"
+              className={`app-secondary-button ${buttonClassName}`}
             >
               取消
             </Button>
@@ -211,7 +228,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
           size="sm" 
           onClick={saveFlexMessage}
           disabled={!selectedFlexMessageId || isSaving || disabled}
-          className="app-primary-button h-10"
+          className={`app-primary-button ${buttonClassName}`}
         >
           {isSaving ? (
             <div className="scale-50 mr-1">

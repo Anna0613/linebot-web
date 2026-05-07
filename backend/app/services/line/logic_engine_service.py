@@ -18,6 +18,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 import asyncio
+import json
+import re
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -40,6 +42,356 @@ class LogicEngineService:
             return [b for b in blocks if isinstance(b, dict)]
         # 有時可能是字串 JSON，這裡不嘗試解析（schema 已驗證），直接忽略
         return []
+
+    @staticmethod
+    def _is_workflow_graph(value: Any) -> bool:
+        return (
+            isinstance(value, dict)
+            and value.get("schemaVersion") == "workflow-graph/v1"
+            and isinstance(value.get("nodes"), list)
+            and isinstance(value.get("edges"), list)
+        )
+
+    @staticmethod
+    def _workflow_text_match(user_message: str, pattern_text: str, mode: str = "contains", case_sensitive: bool = False) -> bool:
+        patterns = [p.strip() for p in str(pattern_text or "").split(",") if p.strip()]
+        if not patterns:
+            return True
+
+        target = user_message if case_sensitive else user_message.lower()
+        for pattern in patterns:
+            probe = pattern if case_sensitive else pattern.lower()
+            if mode == "exact" and target == probe:
+                return True
+            if mode == "startsWith" and target.startswith(probe):
+                return True
+            if mode == "endsWith" and target.endswith(probe):
+                return True
+            if mode == "regex":
+                try:
+                    flags = 0 if case_sensitive else re.IGNORECASE
+                    if re.search(pattern, user_message, flags):
+                        return True
+                except re.error:
+                    continue
+            if mode not in ("exact", "startsWith", "endsWith", "regex") and probe in target:
+                return True
+        return False
+
+    @staticmethod
+    def _match_workflow_trigger(node: Dict[str, Any], event: Dict[str, Any]) -> bool:
+        node_type = node.get("type")
+        data = node.get("data") or {}
+        event_type = event.get("type")
+        message = event.get("message") or {}
+
+        if node_type == "trigger.message":
+            if event_type != "message" or message.get("type") != "text":
+                return False
+            mode = str(data.get("matchMode") or "any")
+            pattern = str(data.get("pattern") or "")
+            if mode == "any" or not pattern:
+                return True
+            return LogicEngineService._workflow_text_match(
+                str(message.get("text") or ""),
+                pattern,
+                mode,
+                bool(data.get("caseSensitive")),
+            )
+
+        if node_type == "trigger.image":
+            return event_type == "message" and message.get("type") == "image"
+
+        if node_type == "trigger.follow":
+            return event_type == "follow"
+
+        if node_type == "trigger.postback":
+            if event_type != "postback":
+                return False
+            expected = str(data.get("data") or "").strip()
+            if not expected:
+                return True
+            return str((event.get("postback") or {}).get("data") or "") == expected
+
+        return False
+
+    @staticmethod
+    def _workflow_outgoing_edges(graph: Dict[str, Any], node_id: str, handle: Optional[str]) -> List[Dict[str, Any]]:
+        if handle is None:
+            return []
+        edges = [
+            edge for edge in graph.get("edges", [])
+            if isinstance(edge, dict)
+            and edge.get("source") == node_id
+            and str(edge.get("sourceHandle") or "out") == handle
+        ]
+        return sorted(edges, key=lambda edge: int(edge.get("order") or 0))
+
+    @staticmethod
+    def _parse_workflow_headers(headers_text: Any) -> Dict[str, str]:
+        headers: Dict[str, str] = {}
+        for line in str(headers_text or "").splitlines():
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            key = key.strip()
+            value = value.strip()
+            if key:
+                headers[key] = value
+        return headers
+
+    @staticmethod
+    def _render_workflow_value(value: Any, state: Dict[str, Any]) -> str:
+        text = str(value or "")
+        text = text.replace("{{message.text}}", str(state.get("user_text") or ""))
+        for key, stored in (state.get("variables") or {}).items():
+            text = text.replace(f"{{{{variables.{key}}}}}", str(stored))
+        return text
+
+    @staticmethod
+    async def _record_workflow_message(
+        bot: Bot,
+        user_id: str,
+        message_content: Dict[str, Any],
+        message_type: str,
+        media_url: Optional[str] = None,
+    ) -> None:
+        try:
+            added_message = await ConversationService.add_bot_message(
+                bot_id=str(bot.id),
+                line_user_id=user_id,
+                message_content=message_content,
+                message_type=message_type,
+                media_url=media_url,
+            )
+            try:
+                await websocket_manager.broadcast_to_bot(str(bot.id), {
+                    'type': 'chat_message',
+                    'bot_id': str(bot.id),
+                    'line_user_id': user_id,
+                    'data': {
+                        'line_user_id': user_id,
+                        'message': {
+                            'id': added_message.id,
+                            'event_type': added_message.event_type,
+                            'message_type': added_message.message_type,
+                            'message_content': added_message.content,
+                            'sender_type': added_message.sender_type,
+                            'timestamp': added_message.timestamp.isoformat() if hasattr(added_message.timestamp, 'isoformat') else added_message.timestamp,
+                            'media_url': added_message.media_url,
+                            'media_path': added_message.media_path,
+                            'admin_user': None,
+                        },
+                    },
+                })
+            except Exception as ws_err:
+                logger.warning(f"推送 workflow 回覆 WebSocket 訊息失敗: {ws_err}")
+        except Exception as log_err:
+            logger.warning(f"寫入 workflow bot 訊息至 Mongo 失敗: {log_err}")
+
+    @staticmethod
+    async def _execute_workflow_node(
+        db: AsyncSession,
+        bot: Bot,
+        line_bot_service,
+        user_id: str,
+        node: Dict[str, Any],
+        state: Dict[str, Any],
+        results: List[Dict[str, Any]],
+    ) -> Optional[str]:
+        node_type = str(node.get("type") or "")
+        data = node.get("data") or {}
+
+        if node_type == "condition.keyword":
+            matched = LogicEngineService._workflow_text_match(
+                str(state.get("user_text") or ""),
+                str(data.get("keywords") or ""),
+                str(data.get("matchMode") or "contains"),
+                bool(data.get("caseSensitive")),
+            )
+            return "true" if matched else "false"
+
+        if node_type == "action.replyText":
+            text = LogicEngineService._render_workflow_value(data.get("text") or "我還不知道如何回應您的訊息", state)
+            reply_token = state.get("reply_token") if not state.get("used_reply") else None
+            send_result = await asyncio.to_thread(line_bot_service.send_text_or_reply, user_id, text, reply_token)
+            if reply_token:
+                state["used_reply"] = True
+            await LogicEngineService._record_workflow_message(bot, user_id, {"text": text}, "text")
+            results.append({"type": "text", "text": text, "result": send_result})
+            return "out"
+
+        if node_type == "action.replyFlex":
+            alt_text = str(data.get("altText") or "Flex 訊息")
+            contents: Optional[Dict[str, Any]] = None
+            flex_id = data.get("flexMessageId")
+            if flex_id:
+                result_fm = await db.execute(
+                    select(FlexMessage).where(FlexMessage.id == flex_id, FlexMessage.user_id == bot.user_id)
+                )
+                fm: Optional[FlexMessage] = result_fm.scalars().first()
+                if fm:
+                    contents = LogicEngineService._to_flex_contents(fm.content)
+            if not contents:
+                contents = {"type": "bubble", "body": {"type": "box", "layout": "vertical", "contents": [{"type": "text", "text": "Flex 無內容"}]}}
+            contents = LogicEngineService._normalize_flex_structure(contents)
+            send_result = await asyncio.to_thread(line_bot_service.send_flex_message, user_id, alt_text, contents)
+            await LogicEngineService._record_workflow_message(
+                bot,
+                user_id,
+                {"altText": alt_text, "contents": contents},
+                "flex",
+            )
+            results.append({"type": "flex", "altText": alt_text, "contents": contents, "result": send_result})
+            return "out"
+
+        if node_type == "action.replyImage":
+            image_url = LogicEngineService._render_workflow_value(data.get("originalContentUrl") or data.get("url"), state)
+            preview_url = LogicEngineService._render_workflow_value(data.get("previewImageUrl") or image_url, state)
+            if image_url:
+                send_result = await asyncio.to_thread(line_bot_service.send_image_message, user_id, image_url, preview_url)
+                await LogicEngineService._record_workflow_message(
+                    bot,
+                    user_id,
+                    {"originalContentUrl": image_url, "previewImageUrl": preview_url},
+                    "image",
+                    media_url=image_url,
+                )
+                results.append({"type": "image", "url": image_url, "result": send_result})
+            return "out"
+
+        if node_type == "action.replySticker":
+            package_id = str(data.get("packageId") or "").strip()
+            sticker_id = str(data.get("stickerId") or "").strip()
+            if package_id and sticker_id:
+                send_result = await asyncio.to_thread(line_bot_service.send_sticker_message, user_id, package_id, sticker_id)
+                await LogicEngineService._record_workflow_message(
+                    bot,
+                    user_id,
+                    {"packageId": package_id, "stickerId": sticker_id},
+                    "sticker",
+                )
+                results.append({"type": "sticker", "packageId": package_id, "stickerId": sticker_id, "result": send_result})
+            return "out"
+
+        if node_type == "action.aiTakeover":
+            results.append({"type": "ai_takeover", "reason": "workflow_node"})
+            return None
+
+        if node_type == "action.setVariable":
+            variable_name = str(data.get("variableName") or "").strip()
+            if variable_name:
+                state.setdefault("variables", {})[variable_name] = LogicEngineService._render_workflow_value(data.get("variableValue"), state)
+                results.append({"type": "set_variable", "name": variable_name})
+            return "out"
+
+        if node_type == "action.wait":
+            duration = float(data.get("duration") or 1)
+            unit = str(data.get("unit") or "seconds")
+            seconds = duration / 1000 if unit == "milliseconds" else duration * 60 if unit == "minutes" else duration
+            await asyncio.sleep(min(max(seconds, 0), 5))
+            results.append({"type": "wait", "seconds": seconds})
+            return "out"
+
+        if node_type == "action.webhook":
+            url = LogicEngineService._render_workflow_value(data.get("url"), state).strip()
+            method = str(data.get("method") or "POST").upper()
+            if not url or not (url.startswith("http://") or url.startswith("https://")):
+                results.append({"type": "webhook", "success": False, "message": "Webhook URL 無效"})
+                return "out"
+
+            try:
+                import aiohttp
+                timeout = aiohttp.ClientTimeout(total=10)
+                headers = LogicEngineService._parse_workflow_headers(data.get("headersText"))
+                body = LogicEngineService._render_workflow_value(data.get("body"), state)
+                request_kwargs: Dict[str, Any] = {"headers": headers, "timeout": timeout}
+                if method not in ("GET", "DELETE") and body:
+                    try:
+                        request_kwargs["json"] = json.loads(body)
+                    except json.JSONDecodeError:
+                        request_kwargs["data"] = body
+                async with aiohttp.ClientSession() as session:
+                    async with session.request(method, url, **request_kwargs) as response:
+                        response_text = await response.text()
+                        results.append({
+                            "type": "webhook",
+                            "success": 200 <= response.status < 300,
+                            "status": response.status,
+                            "body": response_text[:1000],
+                        })
+            except Exception as webhook_err:
+                logger.warning(f"Workflow webhook 呼叫失敗: {webhook_err}")
+                results.append({"type": "webhook", "success": False, "message": str(webhook_err)})
+            return "out"
+
+        return "out"
+
+    @staticmethod
+    async def _evaluate_workflow_graph(
+        db: AsyncSession,
+        bot: Bot,
+        line_bot_service,
+        user_id: str,
+        event: Dict[str, Any],
+        graph: Dict[str, Any],
+    ) -> List[Dict[str, Any]]:
+        nodes = [node for node in graph.get("nodes", []) if isinstance(node, dict)]
+        node_map = {node.get("id"): node for node in nodes if node.get("id")}
+        trigger_nodes = [
+            node for node in nodes
+            if str(node.get("type") or "").startswith("trigger.")
+            and LogicEngineService._match_workflow_trigger(node, event)
+        ]
+        if not trigger_nodes:
+            return []
+
+        message = event.get("message") or {}
+        state: Dict[str, Any] = {
+            "reply_token": event.get("replyToken"),
+            "used_reply": False,
+            "user_text": message.get("text") if message.get("type") == "text" else "",
+            "variables": {},
+        }
+        results: List[Dict[str, Any]] = []
+        queue: List[str] = []
+
+        trigger = trigger_nodes[0]
+        for edge in LogicEngineService._workflow_outgoing_edges(graph, trigger.get("id"), "out"):
+            if edge.get("target"):
+                queue.append(edge["target"])
+
+        visited: set[str] = set()
+        steps = 0
+        max_steps = 50
+        while queue and steps < max_steps:
+            steps += 1
+            node_id = queue.pop(0)
+            if node_id in visited:
+                continue
+            visited.add(node_id)
+            node = node_map.get(node_id)
+            if not node:
+                continue
+
+            next_handle = await LogicEngineService._execute_workflow_node(
+                db=db,
+                bot=bot,
+                line_bot_service=line_bot_service,
+                user_id=user_id,
+                node=node,
+                state=state,
+                results=results,
+            )
+            for edge in LogicEngineService._workflow_outgoing_edges(graph, node_id, next_handle):
+                target = edge.get("target")
+                if target:
+                    queue.append(target)
+
+        if steps >= max_steps:
+            logger.warning("Workflow graph 達到最大執行步數，已停止遍歷")
+
+        return results
 
     @staticmethod
     def _extract_event_blocks(blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -439,6 +791,25 @@ class LogicEngineService:
             # 預設策略：命中一個模板即停止
             for i, tpl in enumerate(templates):
                 logger.info(f"🔍 檢查邏輯模板 {i+1}/{len(templates)}: {tpl.name}")
+                if LogicEngineService._is_workflow_graph(tpl.logic_blocks):
+                    graph_results = await LogicEngineService._evaluate_workflow_graph(
+                        db=db,
+                        bot=bot,
+                        line_bot_service=line_bot_service,
+                        user_id=user_id,
+                        event=event,
+                        graph=tpl.logic_blocks,
+                    )
+                    if graph_results:
+                        logger.info(f"✅ 新版 workflow graph 模板 {tpl.name} 命中，結果數: {len(graph_results)}")
+                        results.extend(graph_results)
+                        break
+                    logger.info(f"❌ 新版 workflow graph 模板 {tpl.name} 未命中")
+                    continue
+
+                logger.info(f"⚠️ 邏輯模板 {tpl.name} 是舊版積木格式，已依新版策略跳過")
+                continue
+
                 blocks = LogicEngineService._normalize_blocks(tpl.logic_blocks)
                 logger.info(f"📦 邏輯模板 {tpl.name} 共有 {len(blocks)} 個 blocks")
 

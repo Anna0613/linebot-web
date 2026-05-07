@@ -1,90 +1,69 @@
 import React from 'react';
-import DropZone from './DropZone';
-import LineBotSimulator from './LineBotSimulator';
-import LogicTemplateSelector from './LogicTemplateSelector';
-import { WorkspaceContext, UnifiedBlock } from '@/features/visual-editor/types/block';
+import { AlertTriangle, Plus } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import WorkflowBuilder from './workflow/WorkflowBuilder';
+import { WorkflowGraph } from '@/features/visual-editor/types/workflow';
 
 interface LogicEditorWithCodeProps {
-  selectedBotId: string;
   selectedLogicTemplateId: string;
   currentLogicTemplateName: string;
-  logicBlocks: UnifiedBlock[];
-  flexBlocks: UnifiedBlock[];
-  currentTestAction?: string;
-  onLogicTemplateSelect: (templateId: string) => void;
-  onLogicTemplateCreate: (name: string) => Promise<string>;
-  onLogicTemplateSave: (templateId: string, data: { logicBlocks: UnifiedBlock[], generatedCode: string }) => Promise<void>;
-  onLogicBlocksChange: (blocks: UnifiedBlock[] | ((prev: UnifiedBlock[]) => UnifiedBlock[])) => void;
-  onRemoveBlock: (index: number) => void;
-  onUpdateBlock: (index: number, data: Record<string, unknown>) => void;
-  onMoveBlock: (dragIndex: number, hoverIndex: number) => void;
-  onInsertBlock: (index: number, item: unknown) => void;
-  onDrop: (item: unknown) => void;
+  workflowGraph: WorkflowGraph | null;
+  isUnsupportedTemplate?: boolean;
+  onWorkflowGraphChange: (graph: WorkflowGraph) => void;
 }
 
 const LogicEditorWithCode: React.FC<LogicEditorWithCodeProps> = ({
-  selectedBotId,
   selectedLogicTemplateId,
   currentLogicTemplateName,
-  logicBlocks,
-  flexBlocks,
-  currentTestAction,
-  onLogicTemplateSelect,
-  onLogicTemplateCreate,
-  onLogicTemplateSave,
-  onLogicBlocksChange: _onLogicBlocksChange,
-  onRemoveBlock,
-  onUpdateBlock,
-  onMoveBlock,
-  onInsertBlock,
-  onDrop,
+  workflowGraph,
+  isUnsupportedTemplate = false,
+  onWorkflowGraphChange,
 }) => {
+  const hasSelectedTemplate = Boolean(selectedLogicTemplateId);
+
   return (
-    <div className="h-full flex flex-col">
-      {/* 邏輯模板選擇器 */}
-      <div className="flex-shrink-0">
-        {selectedBotId && (
-          <LogicTemplateSelector
-            selectedBotId={selectedBotId}
-            selectedLogicTemplateId={selectedLogicTemplateId}
-            onLogicTemplateSelect={onLogicTemplateSelect}
-            onLogicTemplateCreate={onLogicTemplateCreate}
-            onLogicTemplateSave={onLogicTemplateSave}
-            logicBlocks={logicBlocks}
-          />
+    <div className="h-full min-h-0 overflow-hidden">
+        {!hasSelectedTemplate ? (
+          <EmptyLogicState onCreate={() => undefined} />
+        ) : isUnsupportedTemplate || !workflowGraph ? (
+          <UnsupportedTemplateState templateName={currentLogicTemplateName} />
+        ) : (
+          <WorkflowBuilder graph={workflowGraph} onChange={onWorkflowGraphChange} />
         )}
-      </div>
-
-      {/* 邏輯編輯器主體 */}
-      <div className="flex flex-1 overflow-hidden p-4">
-        <div className="grid h-full w-full gap-4 lg:grid-cols-2">
-          <div className="flex flex-col h-full overflow-hidden">
-            <DropZone
-              title={currentLogicTemplateName ?
-                `邏輯編輯器 - ${currentLogicTemplateName}` :
-                "邏輯編輯器 - 請選擇邏輯模板"
-              }
-              context={WorkspaceContext.LOGIC}
-              onDrop={onDrop}
-              blocks={logicBlocks}
-              onRemove={onRemoveBlock}
-              onUpdate={onUpdateBlock}
-              onMove={onMoveBlock}
-              onInsert={onInsertBlock}
-            />
-          </div>
-
-          <div className="flex flex-col h-full overflow-hidden">
-            <LineBotSimulator
-              blocks={logicBlocks.map((b) => ({ blockType: b.blockType, blockData: b.blockData, id: b.id, parentId: b.parentId }))}
-              flexBlocks={flexBlocks.map((b) => ({ blockType: b.blockType, blockData: b.blockData, id: b.id, parentId: b.parentId }))}
-              testAction={currentTestAction}
-            />
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
+
+const EmptyLogicState: React.FC<{ onCreate: () => void }> = () => (
+  <div className="flex h-full items-center justify-center p-6">
+    <div className="app-panel-strong max-w-lg p-8 text-center">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+        <Plus className="h-6 w-6" />
+      </div>
+      <h2 className="text-xl font-semibold text-slate-950">選擇或新增邏輯模板</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        新版邏輯編輯器使用節點與連線建立流程。請先在右上方選擇模板，或新增一個新版模板。
+      </p>
+    </div>
+  </div>
+);
+
+const UnsupportedTemplateState: React.FC<{ templateName?: string }> = ({ templateName }) => (
+  <div className="flex h-full items-center justify-center p-6">
+    <div className="app-panel-strong max-w-xl p-8">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+        <AlertTriangle className="h-6 w-6" />
+      </div>
+      <h2 className="text-xl font-semibold text-slate-950">不支援的舊版模板</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        {templateName ? `「${templateName}」` : '目前模板'}不是新版節點流程格式。依照目前策略，舊模板不會自動轉換，請新增一個新版邏輯模板重新建立流程。
+      </p>
+      <Button className="app-secondary-button mt-5" disabled>
+        舊模板已停用編輯與儲存
+      </Button>
+    </div>
+  </div>
+);
 
 export default LogicEditorWithCode;
