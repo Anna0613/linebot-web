@@ -57,7 +57,7 @@ class DatabaseConnectionManager:
             "pool_timeout": settings.POOL_TIMEOUT,
             "echo": settings.SQL_ECHO,
             "connect_args": {
-                "application_name": "linebot-web-api",
+                "application_name": "botcraft-api",
                 "keepalives_idle": "600",
                 "keepalives_interval": "30",
                 "keepalives_count": "3",

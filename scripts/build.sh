@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# LineBot-Web 構建腳本
+# BotCraft 構建腳本
 
 set -e
 
-echo "=== LineBot-Web 構建腳本 ==="
+echo "=== BotCraft 構建腳本 ==="
 
 # 檢查參數
 if [ $# -eq 0 ]; then

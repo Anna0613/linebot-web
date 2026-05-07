@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     """應用程式設定類別"""
 
     # 基本設定
-    PROJECT_NAME: str = "LineBot-Web Unified API"
+    PROJECT_NAME: str = "BotCraft Unified API"
     VERSION: str = "2.0.0"
     DESCRIPTION: str = "統一的 LINE Bot 管理 API"
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
@@ -155,7 +155,7 @@ class Settings(BaseSettings):
     MONGODB_PORT: int = int(os.getenv("MONGODB_PORT", "27017"))
     MONGODB_USERNAME: Optional[str] = os.getenv("MONGODB_USERNAME")
     MONGODB_PASSWORD: Optional[str] = os.getenv("MONGODB_PASSWORD")
-    MONGODB_DATABASE: str = os.getenv("MONGODB_DATABASE", "linebot_conversations")
+    MONGODB_DATABASE: str = os.getenv("MONGODB_DATABASE", "botcraft_conversations")
     MONGODB_AUTH_DATABASE: str = os.getenv("MONGODB_AUTH_DATABASE", "admin")
     MONGODB_SSL: bool = os.getenv("MONGODB_SSL", "False").lower() == "true"
 

@@ -1,6 +1,6 @@
-# LineBot-Web 系統流程圖
+# BotCraft 系統流程圖
 
-本文件說明 LineBot-Web 專案的主要業務流程，包含使用者登入、Bot 建立、Webhook 處理、AI 知識庫等核心功能流程。
+本文件說明 BotCraft 專案的主要業務流程，包含使用者登入、Bot 建立、Webhook 處理、AI 知識庫等核心功能流程。
 
 ## 目錄
 
@@ -434,6 +434,6 @@ sequenceDiagram
 
 ---
 
-*本文件由 LineBot-Web 專案團隊維護*
+*本文件由 BotCraft 專案團隊維護*
 *最後更新: 2025-10-24*
 

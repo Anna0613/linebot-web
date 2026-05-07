@@ -65,9 +65,9 @@ const About = () => {
             <div className="app-panel grid overflow-hidden p-0 lg:grid-cols-[1fr_0.82fr]">
               <div className="p-8 sm:p-10 lg:p-12">
                 <p className="app-kicker mb-2">關於</p>
-                <h1 className="text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl lg:text-5xl">關於 Botcraft</h1>
+                <h1 className="text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl lg:text-5xl">關於 BotCraft</h1>
                 <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--bc-ink-2)]">
-                  Botcraft 是一個視覺化的對話機器人工作台。重點是把建立、設計、AI 接管與查看互動放在同一個清楚流程裡。
+                  BotCraft 是一個視覺化的對話機器人工作台。重點是把建立、設計、AI 接管與查看互動放在同一個清楚流程裡。
                 </p>
                 <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                   <Button

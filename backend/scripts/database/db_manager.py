@@ -214,7 +214,7 @@ def cmd_clean(args):
 def main():
     """主函數"""
     parser = argparse.ArgumentParser(
-        description="LineBot-Web 資料庫管理工具",
+        description="BotCraft 資料庫管理工具",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用範例:

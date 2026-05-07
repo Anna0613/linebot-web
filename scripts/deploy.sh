@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# LineBot-Web 部署腳本
+# BotCraft 部署腳本
 
 set -e
 
-echo "=== LineBot-Web 部署腳本 ==="
+echo "=== BotCraft 部署腳本 ==="
 
 # 檢查參數
 if [ $# -eq 0 ]; then
@@ -25,7 +25,7 @@ case $ENV in
         docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
         
         echo "測試環境部署完成"
-        echo "URL: https://staging.linebot-web.com"
+        echo "URL: https://staging.botcraft.com"
         ;;
         
     "production")
@@ -45,7 +45,7 @@ case $ENV in
         docker-compose -f docker-compose.yml -f docker-compose.production.yml up -d
         
         echo "生產環境部署完成"
-        echo "URL: https://linebot-web.com"
+        echo "URL: https://botcraft.com"
         ;;
         
     *)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LineBot-Web Backend v1 啟動腳本
+BotCraft Backend v1 啟動腳本
 """
 import uvicorn
 import os

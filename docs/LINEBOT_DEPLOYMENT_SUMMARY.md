@@ -1,14 +1,14 @@
-# 🎉 LineBot-Web 部署完成總結
+# 🎉 BotCraft 部署完成總結
 
 **部署時間**: 2026-05-03
-**位置**: `/mnt/user/appdata/linebot-web`
-**專案**: https://github.com/Anna0613/linebot-web.git
+**位置**: `/mnt/user/appdata/botcraft`
+**專案**: https://github.com/Anna0613/botcraft.git
 
 ## ✅ 已完成的任務
 
 ### 1. ✓ 專案克隆
-- 從 GitHub 克隆完整的 LineBot-Web 專案
-- 位置: `/mnt/user/appdata/linebot-web`
+- 從 GitHub 克隆完整的 BotCraft 專案
+- 位置: `/mnt/user/appdata/botcraft`
 
 ### 2. ✓ 部署文檔創建
 已為您生成以下文檔：
@@ -25,7 +25,7 @@
 
 ### 3. ✓ 專案結構
 ```
-linebot-web/
+botcraft/
 ├── backend/              # Python FastAPI 後端
 │   ├── app/             # 應用主目錄
 │   ├── migrations/      # 資料庫遷移腳本
@@ -47,7 +47,7 @@ linebot-web/
 
 ### 第一步：運行初始化腳本
 ```bash
-cd /mnt/user/appdata/linebot-web
+cd /mnt/user/appdata/botcraft
 ./setup-production.sh
 ```
 
@@ -72,7 +72,7 @@ docker-compose up -d
 ### 後端 (backend/.env)
 ```
 DB_HOST=postgresql15           # PostgreSQL 主機
-DB_NAME=linebot_web
+DB_NAME=botcraft
 DB_USER=your_username
 DB_PASSWORD=your_secure_password
 JWT_SECRET=min_32_chars_random_string
@@ -106,7 +106,7 @@ VITE_ALLOWED_HOSTS=your-domain,localhost
 ### Docker Compose 服務
 - `backend` - FastAPI 後端 API
 - `frontend` - React 前端應用
-- `linebot-network` - 內部網絡
+- `botcraft-network` - 內部網絡
 
 ## 📚 文檔索引
 
@@ -153,7 +153,7 @@ VITE_ALLOWED_HOSTS=your-domain,localhost
 
 ## 📞 後續支持
 
-所有文檔都位於 `/mnt/user/appdata/linebot-web/`，包含：
+所有文檔都位於 `/mnt/user/appdata/botcraft/`，包含：
 - 詳細的部署指南
 - 故障排查步驟
 - 維護最佳實踐

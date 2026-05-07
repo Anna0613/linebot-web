@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LineBot-Web Backend 快速啟動腳本
+BotCraft Backend 快速啟動腳本
 簡化的啟動器，用於開發和生產環境
 """
 import os
@@ -9,7 +9,7 @@ import sys
 
 def main():
     """主啟動函數"""
-    print("🚀 啟動 LineBot-Web Backend...")
+    print("🚀 啟動 BotCraft Backend...")
     
     # 檢查環境文件
     if not os.path.exists('.env'):

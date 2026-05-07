@@ -37,7 +37,7 @@ class MongoDBManager:
                 socketTimeoutMS=20000,   # 增加 Socket 超時到 20 秒
                 retryWrites=True,        # 啟用寫入重試
                 heartbeatFrequencyMS=10000,  # 心跳頻率 10 秒
-                appName="linebot-web-api"  # 應用程式名稱
+                appName="botcraft-api"  # 應用程式名稱
             )
 
             # 獲取資料庫實例

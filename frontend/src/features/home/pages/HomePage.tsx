@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import BotcraftBrand from "@/components/brand/BotcraftBrand";
+import BotCraftBrand from "@/components/brand/BotCraftIdentity";
 import { authManager } from "@/services/UnifiedAuthManager";
 
 const integrations = [
@@ -304,7 +304,7 @@ const HomePage = () => {
     <div className="bc-landing">
       <nav className="bc-nav" data-screen-label="01 Nav">
         <div className="bc-nav-inner">
-          <BotcraftBrand />
+          <BotCraftBrand />
           <div className="bc-nav-links">
             <a href="#features">功能</a>
             <a href="#builder">編輯器</a>
@@ -332,7 +332,7 @@ const HomePage = () => {
               做成<span className="bc-ital">你想要的</span><span className="bc-hi-mark">樣子</span>。
             </h1>
             <p className="bc-lead">
-              Botcraft 是一個視覺化的對話流程編輯平台。把訊息積木拖一拖，串起來，就能在 LINE、Web、各種通訊管道上跑起來，不用寫一行程式碼。
+              BotCraft 是一個視覺化的對話流程編輯平台。把訊息積木拖一拖，串起來，就能在 LINE、Web、各種通訊管道上跑起來，不用寫一行程式碼。
             </p>
             <div className="bc-hero-cta">
               <Link className="bc-btn bc-btn-primary" to="/register">
@@ -567,9 +567,9 @@ const HomePage = () => {
         <div className="bc-foot-inner">
           <div className="bc-foot-grid">
             <div className="bc-foot-brand">
-              <BotcraftBrand inverted />
+              <BotCraftBrand inverted />
               <p>視覺化的對話機器人建構平台。把想法畫出來，就讓它跑起來。</p>
-              <p className="bc-mono">© 2026 Botcraft Studio</p>
+              <p className="bc-mono">© 2026 BotCraft Studio</p>
             </div>
             <div className="bc-foot-col">
               <h4>產品</h4>

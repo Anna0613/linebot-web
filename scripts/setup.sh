@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# LineBot-Web 專案初始化腳本
+# BotCraft 專案初始化腳本
 
 set -e
 
-echo "=== LineBot-Web 專案初始化 ==="
+echo "=== BotCraft 專案初始化 ==="
 
 # 檢查 Python 版本
 echo "檢查 Python 版本..."

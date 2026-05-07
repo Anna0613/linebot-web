@@ -1,4 +1,4 @@
-# LineBot-Web 前端
+# BotCraft 前端
 
 > Vite + React + TypeScript - 現代化的 LINE Bot 管理介面
 
@@ -240,7 +240,7 @@ frontend/
 
 1. **進入前端目錄**
    ```powershell
-   cd linebot-web/frontend
+   cd botcraft/frontend
    ```
 
 2. **安裝依賴**
@@ -507,13 +507,13 @@ pnpm build
 
 **單獨建置前端容器**
 ```powershell
-docker build -t linebot-web-frontend . `
+docker build -t botcraft-frontend . `
   --build-arg VITE_UNIFIED_API_URL=http://backend:8005
 ```
 
 **啟動容器**
 ```powershell
-docker run -p 3000:3000 linebot-web-frontend
+docker run -p 3000:3000 botcraft-frontend
 ```
 
 **使用 Docker Compose（推薦）**
@@ -582,5 +582,5 @@ A: 安裝 pnpm：`npm install -g pnpm`，然後使用 `pnpm install` 安裝依�
 
 ---
 
-*本文件由 LineBot-Web 專案團隊維護*
+*本文件由 BotCraft 專案團隊維護*
 *最後更新: 2025-10-24*

@@ -10,8 +10,8 @@ import React, {
 import { apiClient } from "@/services/UnifiedApiClient";
 import { Bot } from "@/types/bot";
 
-const SELECTED_BOT_STORAGE_KEY = "linebot-web-selected-bot-id";
-const SELECTED_BOT_CHANGE_EVENT = "linebot-web-selected-bot-change";
+const SELECTED_BOT_STORAGE_KEY = "botcraft-selected-bot-id";
+const SELECTED_BOT_CHANGE_EVENT = "botcraft-selected-bot-change";
 
 type SelectedBotContextValue = {
   bots: Bot[];

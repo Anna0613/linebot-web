@@ -1,6 +1,6 @@
-# LineBot-Web 使用案例圖
+# BotCraft 使用案例圖
 
-本文件說明 LineBot-Web 專案的主要使用案例，包含不同角色的使用情境與功能。
+本文件說明 BotCraft 專案的主要使用案例，包含不同角色的使用情境與功能。
 
 ## 目錄
 
@@ -26,7 +26,7 @@
 
 ```mermaid
 graph TB
-    subgraph "LineBot-Web 系統"
+    subgraph "BotCraft 系統"
         subgraph "認證與帳號管理"
             UC1[註冊帳號]
             UC2[登入系統]
@@ -524,6 +524,6 @@ graph LR
 
 ---
 
-*本文件由 LineBot-Web 專案團隊維護*
+*本文件由 BotCraft 專案團隊維護*
 *最後更新: 2025-10-24*
 

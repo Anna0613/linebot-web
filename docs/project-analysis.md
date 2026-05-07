@@ -1,10 +1,10 @@
-# LineBot-Web 專案分析報告
+# BotCraft 專案分析報告
 
 ## 摘要
-LineBot-Web 是一個以 FastAPI（後端）與 Vite + React + TypeScript（前端）打造的 LINE Bot 管理平台，提供視覺化 Bot 流程編輯、Rich Menu 與 Flex 訊息管理、AI 知識庫（RAG）與對話接管、即時儀表板與分析、Webhook 與 WebSocket 即時通訊等功能。後端整合 PostgreSQL、Redis、（選用）MongoDB 與 MinIO；AI 供應商預設整合 Groq（亦支援 Gemini）。
+BotCraft 是一個以 FastAPI（後端）與 Vite + React + TypeScript（前端）打造的 LINE Bot 管理平台，提供視覺化 Bot 流程編輯、Rich Menu 與 Flex 訊息管理、AI 知識庫（RAG）與對話接管、即時儀表板與分析、Webhook 與 WebSocket 即時通訊等功能。後端整合 PostgreSQL、Redis、（選用）MongoDB 與 MinIO；AI 供應商預設整合 Groq（亦支援 Gemini）。
 
 ## 專案結構
-- 根目錄：`linebot-web/`
+- 根目錄：`botcraft/`
   - `backend/`：FastAPI 應用及腳本、遷移、測試
   - `frontend/`：Vite + React + TS 前端程式碼、測試
   - `assets/`：共享圖片資源
@@ -32,11 +32,11 @@ LineBot-Web 是一個以 FastAPI（後端）與 Vite + React + TypeScript（前�
 
 ## 建置與執行
 - 前端
-  - 安裝：`cd linebot-web/frontend && pnpm install`
+  - 安裝：`cd botcraft/frontend && pnpm install`
   - 開發：`pnpm dev`（預設 8080）
   - 打包：`pnpm build` 或 `pnpm build:prod`
 - 後端
-  - 進入：`cd linebot-web/backend`
+  - 進入：`cd botcraft/backend`
   - 安裝：建立 venv 並 `pip install -r requirements.txt`
   - 遷移：`alembic upgrade head`
   - 開發：`python ./scripts/development/start.py`（預設 8000）
@@ -47,9 +47,9 @@ LineBot-Web 是一個以 FastAPI（後端）與 Vite + React + TypeScript（前�
 > 備註：本倉庫未提供 `Makefile`，請依 README 的前後端指令與 `scripts/` 腳本操作。
 
 ## 測試現況
-- 後端：`linebot-web/backend/tests/`（基本健康檢查等，測試數量偏少）
-- 前端：`linebot-web/frontend/tests/`（`App.test.tsx` 與 `setup.ts`）
-- 整合：`linebot-web/tests/integration/test_api_integration.py`
+- 後端：`botcraft/backend/tests/`（基本健康檢查等，測試數量偏少）
+- 前端：`botcraft/frontend/tests/`（`App.test.tsx` 與 `setup.ts`）
+- 整合：`botcraft/tests/integration/test_api_integration.py`
 
 ## 後端 API 概覽（節選）
 - 路由前綴：`/api/v1`
@@ -75,39 +75,39 @@ LineBot-Web 是一個以 FastAPI（後端）與 Vite + React + TypeScript（前�
 ## 大型檔案清單（單檔超過 500 行）
 > 統計範圍：程式碼類型（py/ts/tsx/js/jsx/sh/sql/css/scss/html），排除 `node_modules`、`venv`、`__pycache__`、`dist`、`build`。
 
-- 2435 行 — linebot-web/frontend/src/pages/BotManagementPage.tsx
-- 1323 行 — linebot-web/backend/app/services/conversation_service.py
-- 1119 行 — linebot-web/backend/app/services/line_bot_service.py
-- 1064 行 — linebot-web/backend/app/services/bot_service.py
-- 1001 行 — linebot-web/backend/app/api/api_v1/webhook.py
-- 988 行 — linebot-web/frontend/src/components/users/ChatPanel.tsx
-- 987 行 — linebot-web/backend/app/api/api_v1/bot_analytics.py
-- 965 行 — linebot-web/frontend/src/home.css
-- 950 行 — linebot-web/frontend/src/pages/BotUsersPage.tsx
-- 910 行 — linebot-web/frontend/src/services/UnifiedApiClient.ts
-- 887 行 — linebot-web/backend/app/api/api_v1/rich_menu.py
-- 829 行 — linebot-web/frontend/src/components/visual-editor/EnhancedLineBotSimulator.tsx
-- 789 行 — linebot-web/frontend/src/components/ai/AIKnowledgeBaseManager.tsx
-- 782 行 — linebot-web/backend/app/api/api_v1/bot_dashboard.py
-- 769 行 — linebot-web/backend/app/api/api_v1/ai_knowledge.py
-- 762 行 — linebot-web/frontend/src/components/ui/sidebar.tsx
-- 752 行 — linebot-web/backend/app/services/rag_service.py
-- 718 行 — linebot-web/frontend/src/utils/EnhancedFlexMessageGenerator.ts
-- 681 行 — linebot-web/frontend/src/utils/IntelligentValidationSystem.ts
-- 678 行 — linebot-web/frontend/src/services/visualEditorApi.ts
-- 643 行 — linebot-web/frontend/src/components/visual-editor/LineBotSimulator.tsx
-- 608 行 — linebot-web/backend/app/services/groq_service.py
-- 605 行 — linebot-web/frontend/src/components/visual-editor/Workspace.tsx
-- 566 行 — linebot-web/frontend/src/constants/blockConstants.ts
-- 558 行 — linebot-web/backend/app/services/knowledge_processing_service.py
-- 557 行 — linebot-web/frontend/src/components/richmenu/RichMenuForm.tsx
-- 549 行 — linebot-web/backend/app/services/logic_engine_service.py
-- 531 行 — linebot-web/frontend/src/components/layout/DashboardNavbar.tsx
-- 525 行 — linebot-web/frontend/src/utils/codeGenerator.ts
-- 515 行 — linebot-web/backend/app/api/api_v1/bots.py
-- 503 行 — linebot-web/backend/app/services/auth_service.py
-- 502 行 — linebot-web/frontend/src/components/visual-editor/VisualBotEditor.tsx
-- 501 行 — linebot-web/frontend/src/components/forms/BotCreationForm.tsx
+- 2435 行 — botcraft/frontend/src/pages/BotManagementPage.tsx
+- 1323 行 — botcraft/backend/app/services/conversation_service.py
+- 1119 行 — botcraft/backend/app/services/line_bot_service.py
+- 1064 行 — botcraft/backend/app/services/bot_service.py
+- 1001 行 — botcraft/backend/app/api/api_v1/webhook.py
+- 988 行 — botcraft/frontend/src/components/users/ChatPanel.tsx
+- 987 行 — botcraft/backend/app/api/api_v1/bot_analytics.py
+- 965 行 — botcraft/frontend/src/home.css
+- 950 行 — botcraft/frontend/src/pages/BotUsersPage.tsx
+- 910 行 — botcraft/frontend/src/services/UnifiedApiClient.ts
+- 887 行 — botcraft/backend/app/api/api_v1/rich_menu.py
+- 829 行 — botcraft/frontend/src/components/visual-editor/EnhancedLineBotSimulator.tsx
+- 789 行 — botcraft/frontend/src/components/ai/AIKnowledgeBaseManager.tsx
+- 782 行 — botcraft/backend/app/api/api_v1/bot_dashboard.py
+- 769 行 — botcraft/backend/app/api/api_v1/ai_knowledge.py
+- 762 行 — botcraft/frontend/src/components/ui/sidebar.tsx
+- 752 行 — botcraft/backend/app/services/rag_service.py
+- 718 行 — botcraft/frontend/src/utils/EnhancedFlexMessageGenerator.ts
+- 681 行 — botcraft/frontend/src/utils/IntelligentValidationSystem.ts
+- 678 行 — botcraft/frontend/src/services/visualEditorApi.ts
+- 643 行 — botcraft/frontend/src/components/visual-editor/LineBotSimulator.tsx
+- 608 行 — botcraft/backend/app/services/groq_service.py
+- 605 行 — botcraft/frontend/src/components/visual-editor/Workspace.tsx
+- 566 行 — botcraft/frontend/src/constants/blockConstants.ts
+- 558 行 — botcraft/backend/app/services/knowledge_processing_service.py
+- 557 行 — botcraft/frontend/src/components/richmenu/RichMenuForm.tsx
+- 549 行 — botcraft/backend/app/services/logic_engine_service.py
+- 531 行 — botcraft/frontend/src/components/layout/DashboardNavbar.tsx
+- 525 行 — botcraft/frontend/src/utils/codeGenerator.ts
+- 515 行 — botcraft/backend/app/api/api_v1/bots.py
+- 503 行 — botcraft/backend/app/services/auth_service.py
+- 502 行 — botcraft/frontend/src/components/visual-editor/VisualBotEditor.tsx
+- 501 行 — botcraft/frontend/src/components/forms/BotCreationForm.tsx
 
 ## 維護與重構建議（聚焦於大型檔案）
 - 前端
