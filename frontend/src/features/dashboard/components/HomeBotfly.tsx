@@ -18,7 +18,6 @@ import {
   Send,
   Settings2,
   SlidersHorizontal,
-  Sparkles,
   Users,
 } from "lucide-react";
 import {
@@ -31,7 +30,7 @@ import {
   YAxis,
 } from "recharts";
 
-import AppShell, { AppRobotIllustration } from "@/components/layout/AppShell";
+import AppShell from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -622,35 +621,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         innerClassName="max-w-[1480px]"
       >
         <div className="flex w-full flex-col gap-8 py-6">
-          <section className="grid overflow-hidden rounded-[16px] border border-white/70 bg-white/55 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-2xl lg:grid-cols-[1.12fr_0.88fr]">
-            <div className="flex flex-col justify-center px-6 py-8 sm:px-8 lg:py-12">
-              <Badge className="w-fit border-emerald-200 bg-emerald-50 px-3 py-1 text-[#166534] hover:bg-emerald-50">
-                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                {copy.heroBadge}
-              </Badge>
-              <h2 className="mt-5 max-w-2xl text-4xl font-semibold leading-tight text-slate-950 sm:text-5xl">
-                {copy.heroTitle}
-              </h2>
-              <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
-                {copy.heroBody}
-              </p>
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <Button
-                  asChild
-                  className="h-12 rounded-[16px] bg-[#16a34a] px-5 font-semibold text-white shadow-lg shadow-emerald-700/20 hover:bg-[#15803d]"
-                >
-                  <Link to="/bots/create">
-                    <Plus className="mr-2 h-4 w-4" />
-                    {copy.createLineBot}
-                  </Link>
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-end justify-center bg-gradient-to-br from-emerald-100/70 via-white/40 to-stone-100/80 px-6 py-8">
-              <AppRobotIllustration />
-            </div>
-          </section>
-
           <section>
             <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-end">
               <div>

@@ -44,7 +44,7 @@ export const VisualBotEditor: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const initialRouteState = location.state as VisualEditorRouteState | null;
-  const initialActiveTab = initialRouteState?.activeTab || 'logic';
+  const initialActiveTab = initialRouteState?.activeTab || 'basic';
   const { selectedBotId: globalSelectedBotId, selectBot, refreshBots } = useSelectedBot();
   const initialSelectedBotId = initialRouteState?.selectedBotId || globalSelectedBotId || '';
   const routeSelectedBotIdRef = useRef(initialRouteState?.selectedBotId || '');

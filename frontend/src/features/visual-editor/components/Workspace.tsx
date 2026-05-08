@@ -168,7 +168,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   onFlexMessageCreate,
   onFlexMessageSave,
   onBotUpdated,
-  initialActiveTab = 'logic'
+  initialActiveTab = 'basic'
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialActiveTab);

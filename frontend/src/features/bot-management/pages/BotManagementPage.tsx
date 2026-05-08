@@ -6,15 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart3,
   Bot as BotIcon,
-  CalendarDays,
   CheckCircle2,
-  LineChart,
   Radio,
   Wifi,
   Zap,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import AppShell, { AppRobotIllustration } from "@/components/layout/AppShell";
+import AppShell from "@/components/layout/AppShell";
 import { useToast } from "@/hooks/use-toast";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
@@ -762,70 +759,32 @@ const BotManagementPage: React.FC = () => {
       welcomeLabel={copy.welcome}
       sidebarCalloutTitle={copy.botHealthTitle}
       sidebarCalloutBody={copy.botHealthBody}
-    >
-      <section className="mt-8 grid gap-6 rounded-[16px] border border-white/70 bg-white/70 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-2xl lg:grid-cols-[1fr_320px] lg:items-center lg:p-8">
-        <div>
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            <Badge className="border-emerald-100 bg-emerald-50 px-3 py-1 text-emerald-700 hover:bg-emerald-50">
-              <LineChart className="mr-1.5 h-3.5 w-3.5" />
-              {copy.heroBadge}
-            </Badge>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-sm lg:hidden">
-              <CalendarDays className="h-3.5 w-3.5 text-emerald-600" />
-              {copy.dateRange}
+      headerStatus={
+        <>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="text-[var(--bc-ink-3)]">{copy.channelStatus}</span>
+            <span className="font-semibold text-[var(--bc-ink)]">
+              {selectedBot?.is_active === false ? copy.inactive : copy.active}
             </span>
-          </div>
-          <h1 className="text-3xl font-semibold tracking-[-0.01em] text-slate-950 sm:text-4xl">
-            {copy.title}
-          </h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-            {copy.subtitle}
-          </p>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                {copy.channelStatus}
-              </div>
-              <p className="mt-2 text-sm font-semibold text-slate-950">
-                {selectedBot?.is_active === false ? copy.inactive : copy.active}
-              </p>
-            </div>
-            <div className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <Wifi className="h-4 w-4 text-emerald-600" />
-                {copy.webSocket}
-              </div>
-              <p className="mt-2 text-sm font-semibold text-slate-950">
-                {isConnected ? copy.connected : copy.reconnecting}
-              </p>
-            </div>
-            <div className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <Radio className="h-4 w-4 text-emerald-600" />
-                {copy.botHealth}
-              </div>
-              <p className="mt-2 text-sm font-semibold text-slate-950">
-                {botHealth}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="hidden flex-col items-end justify-between gap-5 lg:flex">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 rounded-[14px] border-white/70 bg-white/80 px-4 text-sm font-semibold text-slate-600 shadow-sm hover:bg-white"
-          >
-            <CalendarDays className="mr-2 h-4 w-4 text-emerald-600" />
-            {copy.dateRange}
-          </Button>
-          <AppRobotIllustration />
-        </div>
-      </section>
-
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
+            <Wifi className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="text-[var(--bc-ink-3)]">{copy.webSocket}</span>
+            <span className="font-semibold text-[var(--bc-ink)]">
+              {isConnected ? copy.connected : copy.reconnecting}
+            </span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
+            <Radio className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="text-[var(--bc-ink-3)]">{copy.botHealth}</span>
+            <span className="font-semibold text-[var(--bc-ink)]">
+              {botHealth}
+            </span>
+          </span>
+        </>
+      }
+    >
       <div className="mt-6 space-y-6">
         {isInitialPageLoading && <ManagementLoadingPanel />}
 

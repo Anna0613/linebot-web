@@ -668,8 +668,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
 
   if (!selectedUser) {
     return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full">
+      <Card className="flex flex-col h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-full max-h-[calc(100vh-8rem)] w-full">
+        <CardContent className="flex items-center justify-center flex-1">
           <div className="text-center">
             <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-muted-foreground">請選擇一位好友開始聊天</p>
@@ -680,7 +680,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   }
 
   return (
-    <Card className="flex flex-col self-start h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[75vh] max-h-[calc(100vh-8rem)] w-full">
+    <Card className="flex flex-col h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-full max-h-[calc(100vh-8rem)] w-full">
       {/* 聊天室頭部 */}
       <CardHeader className="pb-3 border-b flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -793,7 +793,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
           className="flex-1 p-4 overflow-y-auto"
           onScroll={(e: React.UIEvent<HTMLDivElement>) => {
             const el = e.currentTarget;
-            if (el.scrollTop < 40 && hasMore && !isFetchingMore) {
+            // 當使用者捲動到頂部附近（100px 內）時，載入更舊的批次訊息
+            if (el.scrollTop < 100 && hasMore && !isFetchingMore && !aiMode) {
               void loadMoreOlder();
             }
           }}
@@ -817,6 +818,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
             </div>
           ) : (
             <div className="space-y-4">
+              {/* 批次載入提示：載入更舊訊息時顯示 */}
+              {!aiMode && isFetchingMore && (
+                <div className="flex justify-center py-2">
+                  <Loader size="sm" text="載入更多..." />
+                </div>
+              )}
+              {/* 已無更多訊息提示 */}
+              {!aiMode && !hasMore && chatHistory.length > 0 && (
+                <div className="flex justify-center py-2">
+                  <span className="text-xs text-muted-foreground px-3 py-1 rounded-full bg-muted">
+                    已顯示全部對話記錄
+                  </span>
+                </div>
+              )}
               {(aiMode ? aiMessages : chatHistory).map((msg, index) => {
                 const isUser = msg.sender_type === 'user';
                 const isAdmin = msg.sender_type === 'admin';
@@ -876,7 +891,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                         // 左側（AI）顯示頭像在左，使用淺底色
                         <div className="flex items-start gap-2">
                           <Avatar className="h-8 w-8 mt-1">
-                            <AvatarFallback className="bg-purple-500 text-white text-xs">AI</AvatarFallback>
+                            <AvatarFallback className="bg-accent text-accent-foreground text-xs">AI</AvatarFallback>
                           </Avatar>
                           <div>
                             <div className="bg-secondary text-foreground rounded-2xl rounded-tl-md px-4 py-2 max-w-xs lg:max-w-md">
@@ -889,10 +904,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                           </div>
                         </div>
                       ) : (
-                        // 右側（一般 bot 訊息）
+                        // 右側（一般 bot 訊息）— 使用設計系統 accent 柔和紫色
                         <div className="flex items-start gap-2">
                           <div>
-                            <div className="bg-purple-500 text-white rounded-2xl rounded-tr-md px-4 py-2 max-w-xs lg:max-w-md">
+                            <div className="bg-accent text-accent-foreground rounded-2xl rounded-tr-md px-4 py-2 max-w-xs lg:max-w-md border border-accent">
                               {renderMessageContent(msg)}
                             </div>
                             <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground justify-end">
@@ -901,7 +916,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                             </div>
                           </div>
                           <Avatar className="h-8 w-8 mt-1">
-                            <AvatarFallback className="bg-purple-500 text-white text-xs">機器</AvatarFallback>
+                            <AvatarFallback className="bg-accent text-accent-foreground text-xs">機器</AvatarFallback>
                           </Avatar>
                         </div>
                       )
