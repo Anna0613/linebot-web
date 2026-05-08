@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Bot,
   CheckSquare,
@@ -10,13 +10,20 @@ import {
   Send,
   Square,
   User,
-  UserCheck,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,14 +39,11 @@ interface UsersTabContentProps {
   usersLoading: boolean;
   selectedUser: LineUser | null;
   pagination: PaginationInfo;
-  broadcastLoading: boolean;
   selectiveBroadcastLoading: boolean;
   searchTerm: string;
-  showChatPanel: boolean;
   currentChatUser: LineUser | null;
   onBroadcastMessageChange: (message: string) => void;
   onSearchTermChange: (searchTerm: string) => void;
-  onBroadcast: () => void;
   onSelectiveBroadcast: () => void;
   onSelectAll: () => void;
   onUserCheck: (userId: string, checked: boolean) => void;
@@ -47,7 +51,6 @@ interface UsersTabContentProps {
   onViewUserDetails: (user: LineUser) => void;
   onStartChat: (user: LineUser) => void;
   onPageChange: (offset: number) => void;
-  onCloseChatPanel: () => void;
 }
 
 const UsersTabContent: React.FC<UsersTabContentProps> = ({
@@ -59,14 +62,11 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
   usersLoading,
   selectedUser,
   pagination,
-  broadcastLoading,
   selectiveBroadcastLoading,
   searchTerm,
-  showChatPanel,
   currentChatUser,
   onBroadcastMessageChange,
   onSearchTermChange,
-  onBroadcast,
   onSelectiveBroadcast,
   onSelectAll,
   onUserCheck,
@@ -74,8 +74,15 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
   onViewUserDetails,
   onStartChat,
   onPageChange,
-  onCloseChatPanel,
 }) => {
+  const [broadcastDialogOpen, setBroadcastDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (selectedUserIds.size === 0) {
+      setBroadcastDialogOpen(false);
+    }
+  }, [selectedUserIds]);
+
   if (!selectedBotId) {
     return (
       <Card>
@@ -88,74 +95,26 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 equal-columns">
-      <div className="space-y-6 flex flex-col h-full min-h-0">
+    <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-1 gap-4 lg:gap-8 equal-columns lg:min-h-[calc(100vh-10rem)]">
+      <div className="flex flex-col h-full min-h-0">
         <Card className="flex-1 flex flex-col">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5" />
-              廣播訊息
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Textarea
-              placeholder="輸入要廣播的訊息..."
-              value={broadcastMessage}
-              onChange={(e) => onBroadcastMessageChange(e.target.value)}
-              rows={3}
-            />
-            <div className="flex gap-2">
-              <Button
-                onClick={onBroadcast}
-                disabled={broadcastLoading || !broadcastMessage.trim()}
-                variant="outline"
-                className="flex-1"
-              >
-                {broadcastLoading ? (
-                  <>
-                    <Loader size="sm" />
-                    發送中...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    {`全部好友 (${totalCount})`}
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={onSelectiveBroadcast}
-                disabled={
-                  selectiveBroadcastLoading ||
-                  !broadcastMessage.trim() ||
-                  selectedUserIds.size === 0
-                }
-                className="flex-1"
-              >
-                {selectiveBroadcastLoading ? (
-                  <>
-                    <Loader size="sm" />
-                    發送中...
-                  </>
-                ) : (
-                  <>
-                    <UserCheck className="h-4 w-4 mr-2" />
-                    {`選中好友 (${selectedUserIds.size})`}
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-2">
                   <Users className="h-5 w-5" />
                   好友列表 ({totalCount})
                 </span>
+                {selectedUserIds.size > 0 && (
+                  <Button
+                    size="sm"
+                    onClick={() => setBroadcastDialogOpen(true)}
+                    className="h-7 px-3"
+                  >
+                    <Send className="h-3.5 w-3.5 mr-1.5" />
+                    廣播 ({selectedUserIds.size})
+                  </Button>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -326,17 +285,63 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
         </Card>
       </div>
 
-      {showChatPanel && currentChatUser && (
-        <div className="space-y-6 flex flex-col h-full min-h-0">
-          <div className="flex-1 flex min-h-0">
-            <ChatPanel
-              botId={selectedBotId}
-              selectedUser={currentChatUser}
-              onClose={onCloseChatPanel}
-            />
-          </div>
+      <div className="flex flex-col h-full min-h-0">
+        <div className="flex-1 flex min-h-0 w-full">
+          <ChatPanel
+            botId={selectedBotId}
+            selectedUser={currentChatUser}
+          />
         </div>
-      )}
+      </div>
+
+      <Dialog open={broadcastDialogOpen} onOpenChange={setBroadcastDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              廣播訊息
+            </DialogTitle>
+            <DialogDescription>
+              此訊息將發送給已勾選的 {selectedUserIds.size} 位好友
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="輸入要廣播的訊息..."
+            value={broadcastMessage}
+            onChange={(e) => onBroadcastMessageChange(e.target.value)}
+            rows={5}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setBroadcastDialogOpen(false)}
+              disabled={selectiveBroadcastLoading}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={onSelectiveBroadcast}
+              disabled={
+                selectiveBroadcastLoading ||
+                !broadcastMessage.trim() ||
+                selectedUserIds.size === 0
+              }
+            >
+              {selectiveBroadcastLoading ? (
+                <>
+                  <Loader size="sm" />
+                  發送中...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  發送
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

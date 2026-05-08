@@ -3,14 +3,10 @@ import { useNavigate } from "react-router-dom";
 import {
   Bot as BotIcon,
   CheckCircle2,
-  MessageSquare,
-  Radio,
-  Users,
   Wifi,
 } from "lucide-react";
 
 import AppShell from "@/components/layout/AppShell";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
@@ -213,60 +209,26 @@ const UserManagementPage: React.FC = () => {
       welcomeLabel={copy.welcome}
       sidebarCalloutTitle={copy.botHealthTitle}
       sidebarCalloutBody={copy.botHealthBody}
+      headerStatus={
+        <>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="text-[var(--bc-ink-3)]">{copy.channelStatus}</span>
+            <span className="font-semibold text-[var(--bc-ink)]">
+              {selectedBot?.is_active === false ? copy.inactive : copy.active}
+            </span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
+            <Wifi className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="text-[var(--bc-ink-3)]">{copy.webSocket}</span>
+            <span className="font-semibold text-[var(--bc-ink)]">
+              {isConnected ? copy.connected : copy.reconnecting}
+            </span>
+          </span>
+        </>
+      }
+      innerClassName="max-w-none px-4 pb-12 sm:px-6 lg:px-8"
     >
-      <section className="mt-8 grid gap-6 rounded-[16px] border border-white/70 bg-white/70 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-2xl lg:grid-cols-[1fr_320px] lg:items-center lg:p-8">
-        <div>
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            <Badge className="border-emerald-100 bg-emerald-50 px-3 py-1 text-emerald-700 hover:bg-emerald-50">
-              <Users className="mr-1.5 h-3.5 w-3.5" />
-              {copy.heroBadge}
-            </Badge>
-          </div>
-          <h1 className="text-3xl font-semibold tracking-[-0.01em] text-slate-950 sm:text-4xl">
-            {copy.title}
-          </h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-            {copy.subtitle}
-          </p>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                {copy.channelStatus}
-              </div>
-              <p className="mt-2 text-sm font-semibold text-slate-950">
-                {selectedBot?.is_active === false ? copy.inactive : copy.active}
-              </p>
-            </div>
-            <div className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <Wifi className="h-4 w-4 text-emerald-600" />
-                {copy.webSocket}
-              </div>
-              <p className="mt-2 text-sm font-semibold text-slate-950">
-                {isConnected ? copy.connected : copy.reconnecting}
-              </p>
-            </div>
-            <div className="rounded-[16px] border border-white/70 bg-white/75 p-4 shadow-sm">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <Radio className="h-4 w-4 text-emerald-600" />
-                {copy.selectedUsers}
-              </div>
-              <p className="mt-2 text-sm font-semibold text-slate-950">
-                {userManagement.selectedUserIds.size}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="hidden justify-end lg:flex">
-          <div className="flex h-56 w-full max-w-[280px] items-center justify-center rounded-[16px] border border-white/70 bg-white/75 text-emerald-700 shadow-sm">
-            <MessageSquare className="h-20 w-20" />
-          </div>
-        </div>
-      </section>
-
       <div className="mt-6 space-y-6">
         {isInitialPageLoading && (
           <UserManagementLoadingPanel text={copy.loading} />
@@ -311,16 +273,13 @@ const UserManagementPage: React.FC = () => {
             usersLoading={userManagement.usersLoading}
             selectedUser={userManagement.selectedUser}
             pagination={userManagement.pagination}
-            broadcastLoading={userManagement.broadcastLoading}
             selectiveBroadcastLoading={
               userManagement.selectiveBroadcastLoading
             }
             searchTerm={userManagement.searchTerm}
-            showChatPanel={userManagement.showChatPanel}
             currentChatUser={userManagement.currentChatUser}
             onBroadcastMessageChange={userManagement.setBroadcastMessage}
             onSearchTermChange={userManagement.setSearchTerm}
-            onBroadcast={userManagement.handleBroadcast}
             onSelectiveBroadcast={userManagement.handleSelectiveBroadcast}
             onSelectAll={userManagement.handleSelectAll}
             onUserCheck={userManagement.handleUserCheck}
@@ -328,7 +287,6 @@ const UserManagementPage: React.FC = () => {
             onViewUserDetails={userManagement.handleViewUserDetails}
             onStartChat={userManagement.handleStartChat}
             onPageChange={userManagement.handlePageChange}
-            onCloseChatPanel={() => userManagement.setShowChatPanel(false)}
           />
         )}
       </div>

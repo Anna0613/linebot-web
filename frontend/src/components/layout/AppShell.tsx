@@ -239,11 +239,13 @@ const AppTopbar = ({
   onOpenSidebar,
   kicker,
   welcomeLabel,
+  headerStatus,
 }: {
   user: AppShellUser;
   onOpenSidebar: () => void;
   kicker?: string;
   welcomeLabel?: string;
+  headerStatus?: React.ReactNode;
 }) => {
   const { language } = useLanguagePreference();
   const copy = appShellCopy[language];
@@ -383,6 +385,11 @@ const AppTopbar = ({
               {welcomeLabel || copy.welcome}, {displayName}!
             </p>
           </div>
+          {headerStatus && (
+            <div className="ml-2 hidden min-w-0 items-center gap-2 lg:flex">
+              {headerStatus}
+            </div>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -426,6 +433,7 @@ interface AppShellProps {
   children: React.ReactNode;
   headerKicker?: string;
   welcomeLabel?: string;
+  headerStatus?: React.ReactNode;
   sidebarCalloutTitle?: string;
   sidebarCalloutBody?: string;
   contentClassName?: string;
@@ -438,6 +446,7 @@ const AppShell = ({
   children,
   headerKicker,
   welcomeLabel,
+  headerStatus,
   sidebarCalloutTitle,
   sidebarCalloutBody,
   contentClassName,
@@ -493,6 +502,7 @@ const AppShell = ({
           onOpenSidebar={() => setSidebarOpen(true)}
           kicker={headerKicker}
           welcomeLabel={welcomeLabel}
+          headerStatus={headerStatus}
         />
         <div
           className={cn(

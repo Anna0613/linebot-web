@@ -203,16 +203,6 @@ const Setting: React.FC = () => {
       innerClassName="max-w-5xl"
     >
       <div className="py-8">
-        <div className="app-panel mb-8 p-6">
-          <p className="app-kicker mb-2">帳號</p>
-          <h1 className="text-3xl font-semibold tracking-normal text-slate-950">
-            帳號設定
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            管理個人資料、安全設定與帳號偏好。
-          </p>
-        </div>
-
         {authError ? (
           <Alert className="rounded-[16px] border-rose-100 bg-white/80 shadow-sm">
             <AlertTriangle className="h-4 w-4" />
