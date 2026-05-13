@@ -117,6 +117,7 @@ export const VisualBotEditor: React.FC = () => {
 
   // Auto-save: 持有最新資料，避免 async callback 中閉包過期
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isCreatingFlexDraftRef = useRef(false);
   const latestAutoSaveDataRef = useRef<{
     logicTemplateId: string;
     flexMessageId: string;
@@ -491,6 +492,51 @@ export const VisualBotEditor: React.FC = () => {
     }
   };
 
+  const handleAutoCreateFlexMessage = async (data: { flexBlocks: UnifiedBlock[] }): Promise<void> => {
+    if (isCreatingFlexDraftRef.current || data.flexBlocks.length === 0) return;
+
+    try {
+      isCreatingFlexDraftRef.current = true;
+      isSavingRef.current = true;
+      setSaveStatus(SaveStatus.SAVING);
+      setSaveError('');
+
+      const timestamp = new Date().toLocaleString('zh-TW', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      const message = await VisualEditorApi.createFlexMessage({
+        name: `未命名 Flex 訊息 ${timestamp}`,
+        content: { blocks: data.flexBlocks },
+        design_blocks: data.flexBlocks,
+      });
+
+      setSelectedFlexMessageId(message.id);
+      setCurrentFlexMessageName(message.name);
+      setSaveStatus(SaveStatus.SAVED);
+      setLastSavedTime(new Date(message.updated_at || Date.now()));
+      setHasUnsavedChanges(false);
+
+      previousBlocksRef.current = {
+        logicGraph: memoizedLogicGraph,
+        flexBlocks: data.flexBlocks,
+      };
+
+      console.log(`FlexMessage 草稿 ${message.id} 自動建立並儲存成功`);
+    } catch (error) {
+      console.error('Auto-create flex message failed:', error);
+      setSaveStatus(SaveStatus.ERROR);
+      setSaveError(error instanceof Error ? error.message : '自動建立 FlexMessage 失敗');
+      throw error;
+    } finally {
+      isCreatingFlexDraftRef.current = false;
+      isSavingRef.current = false;
+    }
+  };
+
   // （移除未使用的函式：handleSaveToBot、handleImportProject）
 
   // 記憶化積木數據以減少不必要的重新渲染
@@ -534,6 +580,12 @@ export const VisualBotEditor: React.FC = () => {
           await handleFlexMessageSave(flexMessageId, { flexBlocks });
         } catch (err) {
           console.error('Auto-save flex message failed:', err);
+        }
+      } else if (flexBlocks.length > 0) {
+        try {
+          await handleAutoCreateFlexMessage({ flexBlocks });
+        } catch (err) {
+          console.error('Auto-create flex message failed:', err);
         }
       }
     }, 1500);

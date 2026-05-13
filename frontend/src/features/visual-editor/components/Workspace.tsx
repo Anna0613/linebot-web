@@ -2,8 +2,8 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import DropZone from './DropZone';
-import FlexMessagePreview from './FlexMessagePreview';
+import FlexMessageCanvas from './FlexMessageCanvas';
+import FlexMessageInspector from './FlexMessageInspector';
 import { BlockPalette } from './BlockPalette';
 import FlexMessageSelector from './FlexMessageSelector';
 import LogicEditorWithCode from './LogicEditorWithCode';
@@ -225,6 +225,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   // Flex 訊息資料
   const [_savedFlexMessages, setSavedFlexMessages] = useState<Map<string, StoredFlexMessage>>(new Map());
+  const [selectedFlexBlockIndex, setSelectedFlexBlockIndex] = useState<number | null>(null);
 
   // Flex 訊息生成器
   const flexMessageGenerator = useMemo(() => new FlexMessageGenerator(), []);
@@ -289,6 +290,19 @@ const Workspace: React.FC<WorkspaceProps> = ({
   React.useEffect(() => {
     console.log(`📱 Workspace 接收到 ${logicGraph?.nodes.length || 0} 個邏輯節點`);
   }, [logicGraph]);
+
+  useEffect(() => {
+    if (flexBlocks.length === 0) {
+      setSelectedFlexBlockIndex(null);
+      return;
+    }
+
+    setSelectedFlexBlockIndex((current) => {
+      if (current === null) return current;
+      if (current >= flexBlocks.length) return flexBlocks.length - 1;
+      return current;
+    });
+  }, [flexBlocks.length]);
 
   // 處理測試動作
   const _handleTestAction = useCallback((action: 'new-user' | 'test-message' | 'preview-dialog') => {
@@ -412,7 +426,10 @@ const Workspace: React.FC<WorkspaceProps> = ({
       };
       
       console.log('✅ 積木成功添加到 Flex Message 編輯:', blockToAdd);
-      onFlexBlocksChange(prev => [...prev, blockToAdd]);
+      onFlexBlocksChange(prev => {
+        setSelectedFlexBlockIndex(prev.length);
+        return [...prev, blockToAdd];
+      });
     } catch (_error) {
       console.error("Error occurred:", _error);
     }
@@ -455,19 +472,30 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
   const updateFlexBlock = useCallback((index: number, newData: BlockData) => {
     onFlexBlocksChange(prev => prev.map((block, i) => 
-      i === index ? { ...block, blockData: { ...block.blockData, ...newData } } : block
+      i === index ? { ...block, blockData: newData } : block
     ));
   }, [onFlexBlocksChange]);
 
   const moveFlexBlock = useCallback((dragIndex: number, hoverIndex: number) => {
+    if (flexBlocks.length === 0) return;
+    const targetIndex = Math.max(0, Math.min(hoverIndex, flexBlocks.length - 1));
+    if (dragIndex === targetIndex) return;
+
     onFlexBlocksChange(prev => {
       const newBlocks = [...prev];
       const draggedBlock = newBlocks[dragIndex];
       newBlocks.splice(dragIndex, 1);
-      newBlocks.splice(hoverIndex, 0, draggedBlock);
+      newBlocks.splice(targetIndex, 0, draggedBlock);
       return newBlocks;
     });
-  }, [onFlexBlocksChange]);
+    setSelectedFlexBlockIndex((current) => {
+      if (current === dragIndex) return targetIndex;
+      if (current === null) return current;
+      if (dragIndex < targetIndex && current > dragIndex && current <= targetIndex) return current - 1;
+      if (dragIndex > targetIndex && current >= targetIndex && current < dragIndex) return current + 1;
+      return current;
+    });
+  }, [onFlexBlocksChange, flexBlocks.length]);
 
   const insertFlexBlock = useCallback((index: number, item: UnifiedDropItem) => {
     console.log('🎨 Flex Message 編輯積木插入:', {
@@ -488,12 +516,25 @@ const Workspace: React.FC<WorkspaceProps> = ({
         const newBlocks = [...prev];
         newBlocks.splice(index, 0, blockToAdd);
         console.log('✅ 積木成功插入到 Flex Message 編輯位置', index, blockToAdd);
+        setSelectedFlexBlockIndex(index);
         return newBlocks;
       });
     } catch (_error) {
       console.error("Error occurred:", _error);
     }
   }, [onFlexBlocksChange, activeTab]);
+
+  const handleRemoveFlexBlock = useCallback(async (index: number) => {
+    await removeFlexBlock(index);
+    setSelectedFlexBlockIndex((current) => {
+      if (current === null) return current;
+      if (current === index) return null;
+      if (current > index) return current - 1;
+      return current;
+    });
+  }, [removeFlexBlock]);
+
+  const selectedFlexBlock = selectedFlexBlockIndex !== null ? flexBlocks[selectedFlexBlockIndex] : undefined;
 
   const renderNoBotSelectedState = () => (
     <div className="flex h-full items-center justify-center p-6">
@@ -558,6 +599,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
       return (
         <FlexMessageSelector
           selectedFlexMessageId={selectedFlexMessageId}
+          selectedFlexMessageName={currentFlexMessageName}
           onFlexMessageSelect={onFlexMessageSelect}
           onFlexMessageCreate={onFlexMessageCreate}
           onFlexMessageDelete={onFlexMessageDelete}
@@ -665,25 +707,33 @@ const Workspace: React.FC<WorkspaceProps> = ({
 
               <TabsContent value="flex" className="m-0 h-full min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden">
                 <div className="flex flex-1 flex-col overflow-hidden p-4">
-                  <div className="grid h-full w-full gap-4 lg:grid-cols-2">
-                    <div className="flex flex-col h-full overflow-hidden">
-                      <DropZone
-                        title={currentFlexMessageName ?
-                          `Flex Message 編輯 - ${currentFlexMessageName}` :
-                          "Flex Message 編輯 - 請選擇 FlexMessage"
-                        }
-                        context={WorkspaceContext.FLEX}
-                        onDrop={handleFlexDrop}
+                  <div className="grid h-full w-full gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+                    <div className="flex min-h-0 flex-col overflow-hidden">
+                      <FlexMessageCanvas
                         blocks={flexBlocks}
-                        onRemove={removeFlexBlock}
-                        onUpdate={updateFlexBlock}
-                        onMove={moveFlexBlock}
+                        selectedIndex={selectedFlexBlockIndex}
+                        onSelect={setSelectedFlexBlockIndex}
+                        onDrop={handleFlexDrop}
                         onInsert={insertFlexBlock}
+                        onUpdate={updateFlexBlock}
+                        onRemove={handleRemoveFlexBlock}
+                        onMove={moveFlexBlock}
                       />
                     </div>
 
-                    <div className="flex flex-col h-full overflow-hidden">
-                      <FlexMessagePreview blocks={flexBlocks} />
+                    <div className="flex min-h-0 flex-col overflow-hidden">
+                      <FlexMessageInspector
+                        blocks={flexBlocks}
+                        selectedIndex={selectedFlexBlockIndex}
+                        selectedBlock={selectedFlexBlock}
+                        context={WorkspaceContext.FLEX}
+                        onDrop={handleFlexDrop}
+                        onRemove={handleRemoveFlexBlock}
+                        onUpdate={updateFlexBlock}
+                        onMove={moveFlexBlock}
+                        onInsert={insertFlexBlock}
+                        onSelectBlock={setSelectedFlexBlockIndex}
+                      />
                     </div>
                   </div>
                 </div>

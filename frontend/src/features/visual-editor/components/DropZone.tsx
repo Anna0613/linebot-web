@@ -17,6 +17,13 @@ interface DropZoneProps {
   onMove?: (dragIndex: number, hoverIndex: number) => void;
   onInsert?: (index: number, item: UnifiedDropItem) => void;
   showCompatibilityInfo?: boolean;
+  showContextHint?: boolean;
+  description?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  selectedIndex?: number | null;
+  onSelectBlock?: (index: number) => void;
+  showReorderFeedback?: boolean;
 }
 
 const DropZone: React.FC<DropZoneProps> = ({ 
@@ -29,6 +36,13 @@ const DropZone: React.FC<DropZoneProps> = ({
   onMove,
   onInsert,
   showCompatibilityInfo = true,
+  showContextHint = true,
+  description,
+  emptyTitle,
+  emptyDescription,
+  selectedIndex = null,
+  onSelectBlock,
+  showReorderFeedback = true,
 }) => {
   const [dragValidation, setDragValidation] = useState<BlockValidationResult | null>(null);
   const [hoveredItem, setHoveredItem] = useState<UnifiedDropItem | null>(null);
@@ -228,6 +242,8 @@ const DropZone: React.FC<DropZoneProps> = ({
       ('index' in hoveredItem && typeof hoveredItem.index === 'number') ||
       ('id' in hoveredItem && typeof hoveredItem.id === 'string' && hoveredItem.id.includes('dropped-'));
 
+    if (isReorderOperation && !showReorderFeedback) return null;
+
     // 為重新排序操作提供特殊的視覺樣式
     const feedbackClass = isReorderOperation 
       ? 'bg-blue-50 border border-blue-200'
@@ -291,26 +307,32 @@ const DropZone: React.FC<DropZoneProps> = ({
       <h3 className="mb-3 flex-shrink-0 text-base font-semibold text-slate-950">{title}</h3>
       
       {/* 上下文提示 */}
-      <div className="mb-4 flex-shrink-0 text-sm text-slate-500">
-        當前模式 <span className="font-medium text-slate-700">
-          {context === WorkspaceContext.LOGIC ? '邏輯編輯器' : 'Flex Message 編輯'}
-        </span>
-        <span className="ml-2 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
-          {context || 'undefined'}
-        </span>
-      </div>
+      {showContextHint ? (
+        <div className="mb-4 flex-shrink-0 text-sm text-slate-500">
+          當前模式 <span className="font-medium text-slate-700">
+            {context === WorkspaceContext.LOGIC ? '邏輯編輯器' : 'Flex Message 編輯'}
+          </span>
+          <span className="ml-2 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">
+            {context || 'undefined'}
+          </span>
+        </div>
+      ) : description ? (
+        <div className="mb-4 flex-shrink-0 text-sm leading-5 text-slate-500">
+          {description}
+        </div>
+      ) : null}
       
       <div className="space-y-4 flex-1 overflow-auto min-h-0">
         {blocks.length === 0 ? (
           <div className="flex h-full min-h-48 flex-col items-center justify-center rounded-lg bg-slate-50/80 px-4 py-8 text-center text-slate-500">
             <div className="mb-2 text-sm font-medium text-slate-600">
-              從左側選擇積木並拖拽到這裡開始建立您的 LINE Bot
+              {emptyTitle || '從左側選擇積木並拖拽到這裡開始建立您的 LINE Bot'}
             </div>
             <div className="text-xs">
-              {context === WorkspaceContext.LOGIC 
+              {emptyDescription || (context === WorkspaceContext.LOGIC 
                 ? '支援邏輯積木、控制積木和相容的 Flex 積木' 
                 : '支援 Flex 積木、佈局積木和相容的邏輯積木'
-              }
+              )}
             </div>
           </div>
         ) : (
@@ -331,6 +353,8 @@ const DropZone: React.FC<DropZoneProps> = ({
                 onUpdate={onUpdate}
                 onMove={onMove}
                 onInsert={onInsert}
+                isSelected={selectedIndex === index}
+                onSelect={onSelectBlock}
               />
             );
           })

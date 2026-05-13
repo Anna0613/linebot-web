@@ -75,6 +75,8 @@ interface LazyDroppedBlockProps {
     blockType: string; 
     blockData: { [key: string]: unknown } 
   }) => void;
+  isSelected?: boolean;
+  onSelect?: (index: number) => void;
 }
 
 /**
