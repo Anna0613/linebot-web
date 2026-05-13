@@ -612,7 +612,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
       ref={drop}
       onClick={() => onSelect(null)}
       className={[
-        'flex h-full min-h-0 overflow-auto rounded-lg bg-[#d9efe3] p-6 transition',
+        'flex h-full min-h-0 overflow-auto bg-[#d9efe3] p-6 transition',
         isOver ? 'ring-2 ring-inset ring-emerald-300' : '',
       ].join(' ')}
     >
