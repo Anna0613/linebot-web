@@ -370,6 +370,44 @@ export const VisualBotEditor: React.FC = () => {
     }
   };
 
+  // 刪除邏輯模板
+  const handleLogicTemplateDelete = async (templateId: string) => {
+    if (!selectedBotId) {
+      throw new Error('請先選擇一個 Bot');
+    }
+    try {
+      await VisualEditorApi.deleteLogicTemplate(templateId, selectedBotId);
+      // 若刪除的是目前選取的模板，清空狀態
+      if (selectedLogicTemplateId === templateId) {
+        setSelectedLogicTemplateId('');
+        setCurrentLogicTemplateName('');
+        setLogicGraph(null);
+        setIsUnsupportedLogicTemplate(false);
+      }
+      console.log('邏輯模板刪除成功:', templateId);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
+      throw _error;
+    }
+  };
+
+  // 刪除 FlexMessage
+  const handleFlexMessageDelete = async (messageId: string) => {
+    try {
+      await VisualEditorApi.deleteFlexMessage(messageId);
+      // 若刪除的是目前選取的訊息，清空狀態
+      if (selectedFlexMessageId === messageId) {
+        setSelectedFlexMessageId('');
+        setCurrentFlexMessageName('');
+        setFlexBlocks([]);
+      }
+      console.log('FlexMessage 刪除成功:', messageId);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
+      throw _error;
+    }
+  };
+
   // 儲存邏輯模板
   const handleLogicTemplateSave = async (templateId: string, data: { workflowGraph: WorkflowGraph, generatedCode: string }) => {
     try {
@@ -588,10 +626,12 @@ export const VisualBotEditor: React.FC = () => {
             onLogicTemplateSelect={handleLogicTemplateSelect}
             onLogicTemplateCreate={handleLogicTemplateCreate}
             onLogicTemplateSave={handleLogicTemplateSave}
+            onLogicTemplateDelete={handleLogicTemplateDelete}
             selectedFlexMessageId={selectedFlexMessageId}
             onFlexMessageSelect={handleFlexMessageSelect}
             onFlexMessageCreate={handleFlexMessageCreate}
             onFlexMessageSave={handleFlexMessageSave}
+            onFlexMessageDelete={handleFlexMessageDelete}
             onBotUpdated={refreshBots}
             initialActiveTab={initialActiveTab}
           />

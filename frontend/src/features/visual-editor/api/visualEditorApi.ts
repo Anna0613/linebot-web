@@ -275,6 +275,31 @@ export class VisualEditorApi {
   }
 
   /**
+   * 刪除邏輯模板
+   */
+  static async deleteLogicTemplate(templateId: string, botId: string): Promise<void> {
+    try {
+      const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/logic-templates/${templateId}`;
+      const response = await this.apiClient.delete<void>(endpoint);
+
+      if (!response.success && response.status >= 400) {
+        throw new Error(response.error || '刪除邏輯模板失敗');
+      }
+
+      // 刪除後清除相關快取
+      this.cacheService.invalidateCache('DELETE', 'logic_template');
+      this.cacheService.remove(`${CACHE_KEYS.LOGIC_TEMPLATES_SUMMARY}_${botId}`);
+      this.cacheService.remove(`${CACHE_KEYS.LOGIC_TEMPLATE}_${templateId}`);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
+      if (_error instanceof Error) {
+        throw _error;
+      }
+      throw new Error('刪除邏輯模板失敗，請稍後再試');
+    }
+  }
+
+  /**
    * 更新邏輯模板
    */
   static async updateLogicTemplate(templateId: string, data: LogicTemplateUpdate): Promise<LogicTemplate> {
@@ -422,6 +447,31 @@ export class VisualEditorApi {
         throw _error;
       }
       throw new Error('創建FLEX訊息失敗，請稍後再試');
+    }
+  }
+
+  /**
+   * 刪除FLEX訊息
+   */
+  static async deleteFlexMessage(messageId: string): Promise<void> {
+    try {
+      const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/messages/${messageId}`;
+      const response = await this.apiClient.delete<void>(endpoint);
+
+      if (!response.success && response.status >= 400) {
+        throw new Error(response.error || '刪除FLEX訊息失敗');
+      }
+
+      // 刪除後清除相關快取
+      this.cacheService.invalidateCache('DELETE', 'flex_message');
+      this.cacheService.remove(CACHE_KEYS.FLEX_MESSAGES_SUMMARY);
+      this.cacheService.remove(CACHE_KEYS.FLEX_MESSAGES);
+    } catch (_error) {
+      console.error("Error occurred:", _error);
+      if (_error instanceof Error) {
+        throw _error;
+      }
+      throw new Error('刪除FLEX訊息失敗，請稍後再試');
     }
   }
 
