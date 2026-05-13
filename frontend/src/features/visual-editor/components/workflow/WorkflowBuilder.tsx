@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import VisualEditorApi, { FlexMessageSummary } from '@/features/visual-editor/api/visualEditorApi';
 import {
@@ -832,6 +833,13 @@ const WorkflowInspector: React.FC<{
   open,
   onToggleOpen,
 }) => {
+  const [activeTab, setActiveTab] = useState('settings');
+  const selectedInspectorNodeId = node?.id;
+
+  useEffect(() => {
+    if (selectedInspectorNodeId) setActiveTab('settings');
+  }, [selectedInspectorNodeId]);
+
   if (!open) {
     return (
       <aside className="flex min-h-0 flex-col items-center border-l border-slate-200/80 bg-white/80 py-3 backdrop-blur-xl">
@@ -859,86 +867,131 @@ const WorkflowInspector: React.FC<{
       </Button>
     </div>
 
-    <ScrollArea className="min-h-0 flex-1 p-4">
-      {node ? (
-        <div className="space-y-5">
-          <InspectorField label="節點名稱">
-            <Input
-              value={String(node.data.label || '')}
-              onChange={(event) => onUpdateNode(node.id, { label: event.target.value })}
-            />
-          </InspectorField>
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
+      <TabsList className="mx-3 mt-3 grid h-10 shrink-0 grid-cols-3 rounded-lg bg-slate-100 p-1">
+        <TabsTrigger value="settings" className="h-8 gap-1.5 rounded-md px-2 text-xs">
+          <Settings className="h-3.5 w-3.5" />
+          屬性
+        </TabsTrigger>
+        <TabsTrigger value="check" className="h-8 gap-1.5 rounded-md px-2 text-xs">
+          <CheckCircleStatus valid={validation.isValid} />
+          檢查
+        </TabsTrigger>
+        <TabsTrigger value="test" className="h-8 gap-1.5 rounded-md px-2 text-xs">
+          <Play className="h-3.5 w-3.5" />
+          測試
+        </TabsTrigger>
+      </TabsList>
 
-          <NodeDataEditor node={node} flexMessages={flexMessages} onUpdateNode={onUpdateNode} />
-        </div>
-      ) : (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-          尚未選擇任何節點。
-        </div>
-      )}
+      <TabsContent value="settings" animationDisabled className="m-0 min-h-0 flex-1 overflow-hidden p-0 data-[state=inactive]:hidden">
+        <ScrollArea className="h-full p-4">
+          {node ? (
+            <div className="space-y-5">
+              <InspectorField label="節點名稱">
+                <Input
+                  value={String(node.data.label || '')}
+                  onChange={(event) => onUpdateNode(node.id, { label: event.target.value })}
+                />
+              </InspectorField>
 
-      <div className="mt-6 space-y-3 border-t border-slate-200 pt-5">
-        <div className="text-sm font-semibold text-slate-950">流程檢查</div>
-        <div className="text-xs text-slate-500">
-          節點 {graph.nodes.length} 個，連線 {graph.edges.length} 條
-        </div>
-        {[...validation.errors, ...validation.warnings].length === 0 ? (
-          <div className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700">目前流程沒有明顯問題。</div>
-        ) : (
-          <div className="space-y-2">
-            {validation.errors.map((error) => (
-              <div key={error} className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{error}</div>
-            ))}
-            {validation.warnings.map((warning) => (
-              <div key={warning} className="rounded-lg bg-amber-50 p-3 text-xs text-amber-700">{warning}</div>
-            ))}
-          </div>
-        )}
-      </div>
+              <NodeDataEditor node={node} flexMessages={flexMessages} onUpdateNode={onUpdateNode} />
 
-      <div className="mt-6 space-y-3 border-t border-slate-200 pt-5">
-        <div className="text-sm font-semibold text-slate-950">快速測試</div>
-        <div className="flex gap-2">
-          <Input value={testMessage} onChange={(event) => onTestMessageChange(event.target.value)} />
-          <Button className="app-primary-button h-10 px-3" onClick={onRunSimulation}>
-            <Play className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="space-y-2 rounded-lg bg-slate-50 p-3">
-          {simMessages.map((message, index) => (
-            <div
-              key={`${message.type}-${index}`}
-              className={[
-                'rounded-md px-3 py-2 text-xs',
-                message.type === 'user'
-                  ? 'ml-6 bg-blue-500 text-white'
-                  : message.type === 'bot'
-                    ? 'mr-6 bg-white text-slate-700 shadow-sm'
-                    : 'bg-slate-100 text-slate-500',
-              ].join(' ')}
-            >
-              {message.content}
+              <div className="border-t border-slate-200 pt-5">
+                <Button
+                  variant="outline"
+                  className="w-full justify-center border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                  onClick={() => onDeleteNode(node.id)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  刪除節點
+                </Button>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+              尚未選擇任何節點。
+            </div>
+          )}
+        </ScrollArea>
+      </TabsContent>
 
-      {node && (
-        <div className="mt-6 border-t border-slate-200 pt-5">
-          <Button
-            variant="outline"
-            className="w-full justify-center border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-            onClick={() => onDeleteNode(node.id)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            刪除節點
-          </Button>
+      <TabsContent value="check" animationDisabled className="m-0 min-h-0 flex-1 overflow-hidden p-0 data-[state=inactive]:hidden">
+        <ScrollArea className="h-full p-4">
+          <div className="space-y-3">
+            <div className="rounded-lg border border-slate-200 bg-white/80 p-3">
+              <div className="text-sm font-semibold text-slate-950">流程檢查</div>
+              <div className="mt-1 text-xs text-slate-500">
+                節點 {graph.nodes.length} 個，連線 {graph.edges.length} 條
+              </div>
+            </div>
+
+            {[...validation.errors, ...validation.warnings].length === 0 ? (
+              <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">目前流程沒有明顯問題。</div>
+            ) : (
+              <div className="space-y-2">
+                {validation.errors.map((error) => (
+                  <div key={error} className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</div>
+                ))}
+                {validation.warnings.map((warning) => (
+                  <div key={warning} className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">{warning}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </TabsContent>
+
+      <TabsContent value="test" animationDisabled className="m-0 min-h-0 flex-1 overflow-hidden p-0 data-[state=inactive]:hidden">
+        <div className="flex h-full min-h-0 flex-col p-4">
+          <div className="shrink-0 space-y-3 rounded-lg border border-slate-200 bg-white/80 p-3">
+            <div>
+              <div className="text-sm font-semibold text-slate-950">快速測試</div>
+              <div className="mt-1 text-xs leading-5 text-slate-500">
+                輸入使用者訊息，查看目前流程會如何回應。
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Input value={testMessage} onChange={(event) => onTestMessageChange(event.target.value)} />
+              <Button className="app-primary-button h-10 px-3" onClick={onRunSimulation} title="執行測試">
+                <Play className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-3 min-h-0 flex-1 overflow-auto rounded-lg bg-slate-50 p-3">
+            <div className="space-y-2">
+              {simMessages.map((message, index) => (
+                <div
+                  key={`${message.type}-${index}`}
+                  className={[
+                    'rounded-md px-3 py-2 text-xs leading-5',
+                    message.type === 'user'
+                      ? 'ml-6 bg-blue-500 text-white'
+                      : message.type === 'bot'
+                        ? 'mr-6 bg-white text-slate-700 shadow-sm'
+                        : 'bg-slate-100 text-slate-500',
+                  ].join(' ')}
+                >
+                  {message.content}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      )}
-    </ScrollArea>
+      </TabsContent>
+    </Tabs>
   </aside>
   );
 };
+
+const CheckCircleStatus: React.FC<{ valid: boolean }> = ({ valid }) => (
+  <span
+    className={[
+      'h-3.5 w-3.5 rounded-full border',
+      valid ? 'border-emerald-500 bg-emerald-100' : 'border-rose-500 bg-rose-100',
+    ].join(' ')}
+  />
+);
 
 const NodeDataEditor: React.FC<{
   node: WorkflowNode;
