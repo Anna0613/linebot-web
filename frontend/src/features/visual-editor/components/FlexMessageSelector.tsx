@@ -35,6 +35,7 @@ interface Block {
 
 interface FlexMessageSelectorProps {
   selectedFlexMessageId?: string;
+  selectedFlexMessageName?: string;
   onFlexMessageSelect?: (messageId: string) => void;
   onFlexMessageCreate?: (name: string) => Promise<unknown> | unknown;
   onFlexMessageDelete?: (messageId: string) => Promise<unknown> | unknown;
@@ -46,6 +47,7 @@ interface FlexMessageSelectorProps {
 
 const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
   selectedFlexMessageId,
+  selectedFlexMessageName,
   onFlexMessageSelect,
   onFlexMessageCreate,
   onFlexMessageDelete,
@@ -158,6 +160,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
     : 'h-10';
 
   const selectedMessageName = flexMessages.find(m => m.id === selectedFlexMessageId)?.name;
+  const displayMessageName = selectedMessageName || selectedFlexMessageName;
 
   return (
     <>
@@ -168,7 +171,10 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
 
           {/* 自訂下拉選單（支援每列刪除 icon） */}
           <Popover open={isDropdownOpen} onOpenChange={(open) => {
-            if (!disabled && !isLoadingFlexMessages) setIsDropdownOpen(open);
+            if (!disabled && !isLoadingFlexMessages) {
+              if (open) void loadFlexMessages();
+              setIsDropdownOpen(open);
+            }
           }}>
             <PopoverTrigger asChild>
               <button
@@ -178,8 +184,8 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
                 <span className="truncate">
                   {isLoadingFlexMessages
                     ? '載入中...'
-                    : selectedMessageName
-                    ? selectedMessageName
+                    : displayMessageName
+                    ? displayMessageName
                     : <span className="text-muted-foreground">選擇 FlexMessage</span>}
                 </span>
                 <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />

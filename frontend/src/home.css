@@ -2880,6 +2880,19 @@ body {
   line-height: 1.4;
 }
 
+.bc-flex-button-input {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+}
+
+.bc-flex-button-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .bc-how {
   border-top: 1px solid var(--bc-line-2);
   border-bottom: 1px solid var(--bc-line-2);

@@ -29,10 +29,12 @@ interface DroppedBlockProps {
   onUpdate?: (index: number, data: BlockData) => void;
   onMove?: (dragIndex: number, hoverIndex: number) => void;
   onInsert?: (index: number, item: Block) => void;
+  isSelected?: boolean;
+  onSelect?: (index: number) => void;
 }
 
 const DroppedBlock: React.FC<DroppedBlockProps> = memo(
-  ({ block, index, onRemove, onUpdate, onMove, onInsert }) => {
+  ({ block, index, onRemove, onUpdate, onMove, onInsert, isSelected = false, onSelect }) => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [blockData, setBlockData] = useState<BlockData>(block.blockData || {});
     const [draftData, setDraftData] = useState<BlockData>(block.blockData || {});
@@ -236,9 +238,12 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
         <div
           ref={ref}
           onMouseLeave={handleMouseLeave}
+          onClick={() => onSelect?.(index)}
           className={`${getBlockColorClass(block.blockType)} rounded-lg border border-l-4 p-3 shadow-sm transition-all duration-200 ${
             isDragging ? 'opacity-50 scale-95 rotate-2' : 'opacity-100 scale-100'
-          } ${isOver ? 'ring-2 ring-emerald-300 ring-opacity-60' : ''}`}
+          } ${isOver ? 'ring-2 ring-emerald-300 ring-opacity-60' : ''} ${
+            isSelected ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-white' : ''
+          }`}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 items-start gap-2">
@@ -338,7 +343,9 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
     prevProps.onRemove === nextProps.onRemove &&
     prevProps.onUpdate === nextProps.onUpdate &&
     prevProps.onMove === nextProps.onMove &&
-    prevProps.onInsert === nextProps.onInsert,
+    prevProps.onInsert === nextProps.onInsert &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.onSelect === nextProps.onSelect,
 );
 
 DroppedBlock.displayName = 'DroppedBlock';

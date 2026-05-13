@@ -30,6 +30,50 @@ interface FlexMessage {
   contents: FlexBubble | FlexCarousel;
 }
 
+const asString = (value: unknown, fallback = ""): string => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return fallback;
+};
+
+const getButtonStyle = (component: FlexComponent): React.CSSProperties => {
+  const buttonStyle = asString(component.style, "link");
+  const color = asString(component.color);
+  const accentColor = color || "#06C755";
+  const height = asString(component.height, "md") === "sm" ? 32 : 40;
+  const baseStyle: React.CSSProperties = {
+    flex: component.flex !== undefined ? Number(component.flex) : undefined,
+    alignSelf: asString(component.align) || undefined,
+    margin: asString(component.margin) || undefined,
+    minHeight: height,
+  };
+
+  if (buttonStyle === "primary") {
+    return {
+      ...baseStyle,
+      color: "#ffffff",
+      backgroundColor: accentColor,
+      border: "none",
+    };
+  }
+
+  if (buttonStyle === "secondary") {
+    return {
+      ...baseStyle,
+      color: "#111827",
+      backgroundColor: color || "#f7f8f9",
+      border: "1px solid rgba(15, 23, 42, 0.08)",
+    };
+  }
+
+  return {
+    ...baseStyle,
+    color: accentColor,
+    backgroundColor: "transparent",
+    border: "none",
+  };
+};
+
 const renderContent = (component: FlexComponent, index: React.Key) => {
   if (!component || !component.type) return null;
 
@@ -201,19 +245,6 @@ const renderContent = (component: FlexComponent, index: React.Key) => {
     }
     case "button": {
       // 支援 style, color, margin, height
-      const style: Record<string, string | number | undefined> = {
-        flex: component.flex !== undefined ? component.flex : undefined,
-        alignSelf: component.align || undefined,
-        margin: component.margin || undefined,
-        height: component.height || undefined,
-        color: component.color || undefined,
-        backgroundColor:
-          component.style === "primary"
-            ? "#82C29B"
-            : component.style === "secondary"
-              ? "#f5f5f5"
-              : undefined,
-      };
       return (
         <button
           key={index}
@@ -223,7 +254,7 @@ const renderContent = (component: FlexComponent, index: React.Key) => {
               window.open(component.action.uri, "_blank");
             }
           }}
-          style={style}
+          style={getButtonStyle(component)}
         >
           {component.action?.label || "按鈕"}
         </button>

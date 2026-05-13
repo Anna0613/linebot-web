@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Image as ImageIcon, Upload } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { API_CONFIG } from '@/config/apiConfig';
 import { useOptionalVisualEditorContext } from '@/features/visual-editor/context/VisualEditorContext';
@@ -35,6 +35,8 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const selectedBotId = useOptionalVisualEditorContext()?.selectedBotId || '';
+  const buttonStyle = ((blockData as any).style || 'primary') as string;
+  const buttonColorLabel = buttonStyle === 'link' ? '連結文字顏色' : '按鈕背景顏色';
 
   const commitBlockData = (data: BlockData) => {
     setBlockData(data);
@@ -129,12 +131,6 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
-
-  const imagePreviewUrl =
-    (blockData as any).previewUrl ||
-    buildMinioProxyUrl((blockData as any).imageObjectPath) ||
-    (blockData as any).url ||
-    '';
 
   return (
     <div>
@@ -247,24 +243,21 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
               <div className={settingPanelClass}>
                 <label className={settingLabelClass}>圖片檔案</label>
                 <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" onChange={handleImageUpload} className="hidden" />
-                <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
-                  <div className="min-h-24 overflow-hidden rounded-md border border-slate-200 bg-slate-50 p-2">
-                    {imagePreviewUrl ? (
-                      <PreviewWithRetry src={imagePreviewUrl as string} label="圖片預覽" />
+                <div className="mt-2 flex flex-col gap-3">
+                  <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="h-10 w-full whitespace-nowrap">
+                    <Upload className="mr-2 h-4 w-4" />
+                    {isUploading ? '上傳中...' : ((blockData as any).imageObjectPath || (blockData as any).url ? '更換圖片' : '上傳圖片')}
+                  </Button>
+                  <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
+                    {(blockData as any).imageFilename ? (
+                      <span>目前圖片：{(blockData as any).imageFilename}</span>
                     ) : (
-                      <div className="flex h-24 items-center justify-center rounded border border-dashed border-slate-200 text-xs text-slate-500">
-                        <ImageIcon className="mr-2 h-4 w-4" />
-                        尚未上傳圖片
-                      </div>
+                      <span>尚未上傳圖片，畫布中會顯示圖片位置。</span>
                     )}
                   </div>
-                  <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="h-10 whitespace-nowrap">
-                    <Upload className="mr-2 h-4 w-4" />
-                    {isUploading ? '上傳中...' : '上傳圖片'}
-                  </Button>
                 </div>
                 <div className="mt-2 text-xs leading-5 text-slate-500">
-                  支援 JPG、PNG、GIF、WebP，最大 10MB。圖片會儲存於 MinIO 的 <span className="font-mono">flex-message-images</span> 位置。
+                  支援 JPG、PNG、GIF、WebP，最大 10MB。
                 </div>
                 {(blockData as any).imageObjectPath && (
                   <div className="mt-2 truncate rounded bg-slate-50 px-2 py-1 text-xs text-slate-500">
@@ -383,6 +376,12 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
                     </SelectContent>
                   </Select>
                 </div>
+                <ColorPicker
+                  value={((blockData as any).color as string | undefined) || ''}
+                  onChange={(color) => setBlockData({ ...blockData, color })}
+                  label={buttonColorLabel}
+                  placeholder="例如：#06C755"
+                />
               </div>
             </div>
           )}
@@ -408,39 +407,3 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
 };
 
 export default FlexContentBlock;
-
-const PreviewWithRetry: React.FC<{ src: string; label?: string }> = ({ src, label }) => {
-  const [attempt, setAttempt] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-
-  const withBuster = (url: string, n: number) => {
-    try {
-      const u = new URL(url, window.location.origin);
-      u.searchParams.set('_t', String(Date.now()));
-      u.searchParams.set('_r', String(n));
-      return u.toString();
-    } catch {
-      return url;
-    }
-  };
-  const actualSrc = attempt === 0 ? src : withBuster(src, attempt);
-
-  return (
-    <div>
-      <div className="mb-1 text-xs text-slate-500">{label || '圖片預覽'}:</div>
-      {!error ? (
-        <img
-          src={actualSrc}
-          alt="圖片預覽"
-          className="max-h-32 max-w-full rounded border border-slate-200 bg-white"
-          onError={() => {
-            if (attempt < 3) setAttempt((a) => a + 1);
-            else setError('圖片載入失敗，請稍後重試或重新上傳');
-          }}
-        />
-      ) : (
-        <div className="text-xs text-red-300">{error}</div>
-      )}
-    </div>
-  );
-};
