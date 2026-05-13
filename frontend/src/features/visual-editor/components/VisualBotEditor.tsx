@@ -16,6 +16,7 @@ import {
   normalizeWorkflowGraph,
 } from '@/features/visual-editor/types/workflow';
 import VisualEditorApi, { FlexMessage } from '@/features/visual-editor/api/visualEditorApi';
+import { generateWorkflowCode } from '@/features/visual-editor/utils/workflowCodeGenerator';
 import { VisualEditorProvider } from '@/features/visual-editor/context/VisualEditorContext';
 import {
   AlertDialog,
@@ -113,6 +114,15 @@ export const VisualBotEditor: React.FC = () => {
   const previousBlocksRef = useRef<{ logicGraph: WorkflowGraph | null; flexBlocks: UnifiedBlock[] }>({ logicGraph: null, flexBlocks: [] });
   const isSavingRef = useRef(false);
   const confirmingUnsavedActionRef = useRef(false);
+
+  // Auto-save: 持有最新資料，避免 async callback 中閉包過期
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const latestAutoSaveDataRef = useRef<{
+    logicTemplateId: string;
+    flexMessageId: string;
+    logicGraph: WorkflowGraph | null;
+    flexBlocks: UnifiedBlock[];
+  }>({ logicTemplateId: '', flexMessageId: '', logicGraph: null, flexBlocks: [] });
 
   const applyBotSelection = useCallback((botId: string) => {
     setSelectedBotId(botId);
@@ -487,6 +497,57 @@ export const VisualBotEditor: React.FC = () => {
   const memoizedLogicGraph = useMemo(() => logicGraph, [logicGraph]);
   const memoizedFlexBlocks = useMemo(() => flexBlocks, [flexBlocks]);
 
+  // 同步最新資料到 ref，供 auto-save 使用（每次 render 後執行，確保 timer callback 拿到最新值）
+  useEffect(() => {
+    latestAutoSaveDataRef.current = {
+      logicTemplateId: selectedLogicTemplateId,
+      flexMessageId: selectedFlexMessageId,
+      logicGraph: memoizedLogicGraph,
+      flexBlocks: memoizedFlexBlocks,
+    };
+  });
+
+  // ─── Auto-save（業界標準 Debounce 策略）──────────────────────────────────
+  // 當 saveStatus 變為 PENDING 時啟動計時器，1.5s 後若無新變更則自動儲存。
+  // 使用 latestAutoSaveDataRef 確保儲存時使用最新資料，避免 stale closure。
+  useEffect(() => {
+    if (saveStatus !== SaveStatus.PENDING) return;
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+
+    autoSaveTimerRef.current = setTimeout(async () => {
+      autoSaveTimerRef.current = null;
+      const { logicTemplateId, flexMessageId, logicGraph, flexBlocks } =
+        latestAutoSaveDataRef.current;
+
+      if (logicTemplateId && logicGraph) {
+        try {
+          const generatedCode = generateWorkflowCode(logicGraph);
+          await handleLogicTemplateSave(logicTemplateId, { workflowGraph: logicGraph, generatedCode });
+        } catch (err) {
+          console.error('Auto-save logic template failed:', err);
+        }
+      }
+
+      if (flexMessageId) {
+        try {
+          await handleFlexMessageSave(flexMessageId, { flexBlocks });
+        } catch (err) {
+          console.error('Auto-save flex message failed:', err);
+        }
+      }
+    }, 1500);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveStatus]);
+  // ─────────────────────────────────────────────────────────────────────────
+
   // 監聽積木變更的 useEffect（增強版本，精確檢測變更）
   useEffect(() => {
     // 初次載入時不觸發變更檢測
@@ -625,12 +686,10 @@ export const VisualBotEditor: React.FC = () => {
             selectedLogicTemplateId={selectedLogicTemplateId}
             onLogicTemplateSelect={handleLogicTemplateSelect}
             onLogicTemplateCreate={handleLogicTemplateCreate}
-            onLogicTemplateSave={handleLogicTemplateSave}
             onLogicTemplateDelete={handleLogicTemplateDelete}
             selectedFlexMessageId={selectedFlexMessageId}
             onFlexMessageSelect={handleFlexMessageSelect}
             onFlexMessageCreate={handleFlexMessageCreate}
-            onFlexMessageSave={handleFlexMessageSave}
             onFlexMessageDelete={handleFlexMessageDelete}
             onBotUpdated={refreshBots}
             initialActiveTab={initialActiveTab}
