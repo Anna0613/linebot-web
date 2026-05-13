@@ -87,9 +87,8 @@ const BlockGroup: React.FC<{
 
 const PaletteScroll: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div
-    className="custom-scrollbar h-full space-y-4 overflow-y-scroll p-4"
+    className="custom-scrollbar h-full space-y-4 overflow-y-scroll p-3"
     style={{
-      maxHeight: 'calc(100vh - 120px)',
       scrollbarWidth: 'thin',
       scrollbarColor: '#cbd5e0 #f7fafc'
     }}
@@ -132,7 +131,7 @@ export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
         }
       `}</style>
       
-      <div className="flex h-full w-80 flex-col bg-transparent">
+      <div className="flex h-full w-full flex-col bg-transparent">
         {currentContext === WorkspaceContext.FLEX ? (
           <PaletteScroll>
             <BlockGroup title="容器" icon={getCategoryIcon('flexContainer')}>

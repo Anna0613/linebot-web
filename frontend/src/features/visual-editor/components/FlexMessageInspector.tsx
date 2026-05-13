@@ -173,11 +173,9 @@ const FlexMessageInspector: React.FC<FlexMessageInspectorProps> = ({
   };
 
   return (
-    <div className="app-panel flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-white/70 px-4 py-3">
-        <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-          右側工具
-        </div>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white/80 backdrop-blur-xl">
+      <div className="shrink-0 border-b border-slate-200/80 p-4">
+        <div className="text-sm font-semibold text-slate-950">右側工具</div>
         <div className="mt-1 truncate text-sm font-semibold text-slate-950">
           {getFlexBlockDisplayName(selectedBlock)}
         </div>

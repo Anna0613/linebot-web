@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import FlexMessageCanvas from './FlexMessageCanvas';
 import FlexMessageInspector from './FlexMessageInspector';
 import { BlockPalette } from './BlockPalette';
@@ -170,8 +171,8 @@ const getPaletteContextForTab = (tab: string): WorkspaceContext => (
   tab === 'flex' ? WorkspaceContext.FLEX : WorkspaceContext.LOGIC
 );
 
-const tabUsesBlockPalette = (tab: string): boolean => (
-  tab === 'flex'
+const tabUsesBlockPalette = (_tab: string): boolean => (
+  false
 );
 
 const tabUsesTemplatePanel = (tab: string): boolean => (
@@ -705,10 +706,32 @@ const Workspace: React.FC<WorkspaceProps> = ({
                 />
               </TabsContent>
 
-              <TabsContent value="flex" className="m-0 h-full min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden">
-                <div className="flex flex-1 flex-col overflow-hidden p-4">
-                  <div className="grid h-full w-full gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
-                    <div className="flex min-h-0 flex-col overflow-hidden">
+              <TabsContent value="flex" className="m-0 h-full min-h-0 overflow-hidden data-[state=inactive]:hidden">
+                <div className="grid h-full min-h-0 overflow-hidden bg-[#f7fbf8] grid-cols-[280px_minmax(0,1fr)_330px]">
+                  <aside className="flex min-h-0 flex-col bg-white/75 backdrop-blur-xl">
+                    <div className="border-b border-slate-200/80 p-4">
+                      <div className="text-sm font-semibold text-slate-950">元件抽屜</div>
+                      <div className="mt-1 text-xs leading-5 text-slate-500">拖到畫布建立 Flex Message</div>
+                    </div>
+                    <div className="min-h-0 flex-1">
+                      <BlockPalette currentContext={WorkspaceContext.FLEX} />
+                    </div>
+                  </aside>
+
+                  <main className="flex min-w-0 flex-col border-x border-slate-200/80 bg-white/45">
+                    <div className="flex min-h-14 items-center justify-between border-b border-slate-200/80 bg-white/70 px-4 backdrop-blur-xl">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-slate-950">Flex Message 畫布</div>
+                        <div className="truncate text-xs text-slate-500">
+                          拖曳左側元件到畫布，點選畫布內容後到右側調整細節
+                        </div>
+                      </div>
+                      <Badge variant={workspaceValidation.flex.isValid ? 'secondary' : 'destructive'} className="shrink-0 rounded-md">
+                        {workspaceValidation.flex.isValid ? '可儲存' : '需修正'}
+                      </Badge>
+                    </div>
+
+                    <div className="min-h-0 flex-1">
                       <FlexMessageCanvas
                         blocks={flexBlocks}
                         selectedIndex={selectedFlexBlockIndex}
@@ -720,22 +743,20 @@ const Workspace: React.FC<WorkspaceProps> = ({
                         onMove={moveFlexBlock}
                       />
                     </div>
+                  </main>
 
-                    <div className="flex min-h-0 flex-col overflow-hidden">
-                      <FlexMessageInspector
-                        blocks={flexBlocks}
-                        selectedIndex={selectedFlexBlockIndex}
-                        selectedBlock={selectedFlexBlock}
-                        context={WorkspaceContext.FLEX}
-                        onDrop={handleFlexDrop}
-                        onRemove={handleRemoveFlexBlock}
-                        onUpdate={updateFlexBlock}
-                        onMove={moveFlexBlock}
-                        onInsert={insertFlexBlock}
-                        onSelectBlock={setSelectedFlexBlockIndex}
-                      />
-                    </div>
-                  </div>
+                  <FlexMessageInspector
+                    blocks={flexBlocks}
+                    selectedIndex={selectedFlexBlockIndex}
+                    selectedBlock={selectedFlexBlock}
+                    context={WorkspaceContext.FLEX}
+                    onDrop={handleFlexDrop}
+                    onRemove={handleRemoveFlexBlock}
+                    onUpdate={updateFlexBlock}
+                    onMove={moveFlexBlock}
+                    onInsert={insertFlexBlock}
+                    onSelectBlock={setSelectedFlexBlockIndex}
+                  />
                 </div>
               </TabsContent>
 
