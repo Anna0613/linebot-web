@@ -7,6 +7,7 @@ import React from 'react';
 import DraggableBlock from './DraggableBlock';
 import { Zap, MessageSquare, ArrowRight, Settings, Square, Type, MousePointer } from 'lucide-react';
 import { WorkspaceContext } from '@/features/visual-editor/types/block';
+import { getBlockColorClass } from '@/features/visual-editor/utils/blockVisualStyles';
 
 // 簡化的積木定義 - 直接在組件中定義以避免複雜的模組依賴
 const blockDefinitions = {
@@ -49,16 +50,6 @@ const blockDefinitions = {
     // 移除 '對齊' 積木，因為它不是標準 LINE Flex 組件
     // 對齊應該通過容器的 align 屬性來設定，而不是單獨的積木
   ]
-};
-
-const blockColors = {
-  'event': 'bg-amber-600',
-  'reply': 'bg-emerald-600',
-  'control': 'bg-slate-700',
-  'setting': 'bg-slate-500',
-  'flex-container': 'bg-sky-600',
-  'flex-content': 'bg-[#16a34a]',
-  'flex-layout': 'bg-teal-600'
 };
 
 const getCategoryIcon = (category: string) => {
@@ -110,13 +101,13 @@ const PaletteScroll: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
   currentContext = WorkspaceContext.LOGIC
 }) => {
-  const renderBlocks = (blocks: Array<{blockType: string; name: string; data: Record<string, unknown>}>, color: string) =>
+  const renderBlocks = (blocks: Array<{blockType: string; name: string; data: Record<string, unknown>}>) =>
     blocks.map((block, index) => (
       <DraggableBlock
         key={`${block.blockType}-${index}`}
         blockType={block.blockType}
         blockData={block.data}
-        color={color}
+        color={getBlockColorClass(block.blockType)}
       >
         {block.name}
       </DraggableBlock>
@@ -145,33 +136,33 @@ export const ModularBlockPalette: React.FC<ModularBlockPaletteProps> = ({
         {currentContext === WorkspaceContext.FLEX ? (
           <PaletteScroll>
             <BlockGroup title="容器" icon={getCategoryIcon('flexContainer')}>
-              {renderBlocks(blockDefinitions.flexContainer, blockColors['flex-container'])}
+              {renderBlocks(blockDefinitions.flexContainer)}
             </BlockGroup>
 
             <BlockGroup title="內容" icon={getCategoryIcon('flexContent')}>
-              {renderBlocks(blockDefinitions.flexContent, blockColors['flex-content'])}
+              {renderBlocks(blockDefinitions.flexContent)}
             </BlockGroup>
 
             <BlockGroup title="佈局" icon={getCategoryIcon('flexLayout')}>
-              {renderBlocks(blockDefinitions.flexLayout, blockColors['flex-layout'])}
+              {renderBlocks(blockDefinitions.flexLayout)}
             </BlockGroup>
           </PaletteScroll>
         ) : (
           <PaletteScroll>
             <BlockGroup title="事件" icon={getCategoryIcon('event')}>
-              {renderBlocks(blockDefinitions.event, blockColors.event)}
+              {renderBlocks(blockDefinitions.event)}
             </BlockGroup>
 
             <BlockGroup title="回覆" icon={getCategoryIcon('reply')}>
-              {renderBlocks(blockDefinitions.reply, blockColors.reply)}
+              {renderBlocks(blockDefinitions.reply)}
             </BlockGroup>
 
             <BlockGroup title="控制" icon={getCategoryIcon('control')}>
-              {renderBlocks(blockDefinitions.control, blockColors.control)}
+              {renderBlocks(blockDefinitions.control)}
             </BlockGroup>
 
             <BlockGroup title="設定" icon={getCategoryIcon('setting')}>
-              {renderBlocks(blockDefinitions.setting, blockColors.setting)}
+              {renderBlocks(blockDefinitions.setting)}
             </BlockGroup>
           </PaletteScroll>
         )}

@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Image as ImageIcon, Upload } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { API_CONFIG } from '@/config/apiConfig';
+import { useOptionalVisualEditorContext } from '@/features/visual-editor/context/VisualEditorContext';
 import {
   ActionEditor,
   ColorPicker,
@@ -12,63 +17,186 @@ import {
   type AlignType,
   type GravityType,
 } from '../editors';
-import type { BlockRendererProps } from './types';
+import type { BlockData, BlockRendererProps } from './types';
 
-const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData, setBlockData }) => {
+const fieldGridClass = 'grid grid-cols-1 gap-3 md:grid-cols-2';
+const fullFieldClass = 'md:col-span-2';
+const settingPanelClass = 'rounded-lg border border-slate-200 bg-white/80 p-3';
+const settingLabelClass = 'text-xs font-medium text-slate-600';
+
+const buildMinioProxyUrl = (objectPath?: unknown): string => {
+  if (!objectPath || typeof objectPath !== 'string') return '';
+  const params = new URLSearchParams({ object_path: objectPath });
+  return `${API_CONFIG.UNIFIED.BASE_URL}/minio/proxy?${params.toString()}`;
+};
+
+const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData, setBlockData, onCommit }) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const selectedBotId = useOptionalVisualEditorContext()?.selectedBotId || '';
+
+  const commitBlockData = (data: BlockData) => {
+    setBlockData(data);
+    onCommit?.(data);
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: '檔案類型不支援',
+        description: '請上傳 JPG、PNG、GIF 或 WebP 格式的圖片',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        title: '檔案過大',
+        description: `圖片大小不能超過 10MB，目前大小: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!selectedBotId) {
+      toast({
+        title: '缺少 Bot 資訊',
+        description: '請先在上方選擇一個 Bot 後再上傳圖片',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${selectedBotId}/upload-flex-message-image`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        let message = `上傳失敗 (HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''})`;
+        try {
+          const errorData = await response.json();
+          const detail = errorData?.detail || errorData?.message;
+          if (detail) message = `${message}: ${detail}`;
+        } catch {
+          const text = await response.text().catch(() => '');
+          if (text) message = `${message}: ${text}`;
+        }
+        throw new Error(message);
+      }
+
+      const result = await response.json();
+      const objectPath = result.data.object_path;
+      const publicUrl = result.data.url || buildMinioProxyUrl(objectPath);
+      const previewUrl = buildMinioProxyUrl(objectPath) || publicUrl;
+      const nextData = {
+        ...blockData,
+        url: publicUrl,
+        previewUrl,
+        imageObjectPath: objectPath,
+        imageFilename: result.data.filename,
+        imageContentType: result.data.content_type,
+        imageSize: result.data.size,
+      };
+
+      commitBlockData(nextData);
+      toast({
+        title: '上傳成功',
+        description: `圖片已儲存至 Flex Message 圖片資料夾 (${(file.size / 1024).toFixed(2)}KB)`,
+      });
+    } catch (error) {
+      console.error('Flex Message 圖片上傳失敗:', error);
+      toast({
+        title: '上傳失敗',
+        description: error instanceof Error ? error.message : '請稍後再試',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const imagePreviewUrl =
+    (blockData as any).previewUrl ||
+    buildMinioProxyUrl((blockData as any).imageObjectPath) ||
+    (blockData as any).url ||
+    '';
+
   return (
     <div>
       <div className="font-medium">{block.blockData.title}</div>
       {isEditing && (
-        <div className="mt-2 space-y-2">
+        <div className="mt-3 space-y-3">
           {block.blockData.contentType === 'text' && (
             <div className="space-y-3">
-              <Textarea
-                placeholder="文字內容"
-                value={(blockData as any).text || ''}
-                onChange={(e) => setBlockData({ ...blockData, text: e.target.value })}
-                className="text-black"
-                rows={2}
-              />
+              <div className={`${settingPanelClass} ${fullFieldClass}`}>
+                <label className={settingLabelClass}>文字內容</label>
+                <Textarea
+                  placeholder="文字內容"
+                  value={(blockData as any).text || ''}
+                  onChange={(e) => setBlockData({ ...blockData, text: e.target.value })}
+                  className="mt-2 text-black"
+                  rows={2}
+                />
+              </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className={fieldGridClass}>
                 <SizeSelector type="text-size" value={(blockData as any).size || 'md'} onChange={(size) => setBlockData({ ...blockData, size })} label="文字大小" />
-                <Select value={(blockData as any).weight || 'regular'} onValueChange={(value) => setBlockData({ ...blockData, weight: value })}>
-                  <SelectTrigger className="text-black">
-                    <SelectValue placeholder="字重" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="regular">一般</SelectItem>
-                    <SelectItem value="bold">粗體</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <ColorPicker value={(blockData as any).color || '#000000'} onChange={(color) => setBlockData({ ...blockData, color })} label="文字顏色" />
-                <Select value={(blockData as any).style || 'normal'} onValueChange={(value) => setBlockData({ ...blockData, style: value })}>
-                  <SelectTrigger className="text-black">
-                    <SelectValue placeholder="文字樣式" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">一般</SelectItem>
-                    <SelectItem value="italic">斜體</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <AlignmentSelector
-                type="both"
-                alignValue={(blockData as any).align as AlignType}
-                gravityValue={(blockData as any).gravity as GravityType}
-                onAlignChange={(align) => setBlockData({ ...blockData, align })}
-                onGravityChange={(gravity) => setBlockData({ ...blockData, gravity })}
-                label="對齊設定"
-                showVisual={true}
-              />
-
-              <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1">
-                  <label className="text-xs text-white/80">最大行數</label>
+                  <label className={settingLabelClass}>字重</label>
+                  <Select value={(blockData as any).weight || 'regular'} onValueChange={(value) => setBlockData({ ...blockData, weight: value })}>
+                    <SelectTrigger className="text-black">
+                      <SelectValue placeholder="字重" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="regular">一般</SelectItem>
+                      <SelectItem value="bold">粗體</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <ColorPicker value={(blockData as any).color || '#000000'} onChange={(color) => setBlockData({ ...blockData, color })} label="文字顏色" />
+                <div className="space-y-1">
+                  <label className={settingLabelClass}>文字樣式</label>
+                  <Select value={(blockData as any).style || 'normal'} onValueChange={(value) => setBlockData({ ...blockData, style: value })}>
+                    <SelectTrigger className="text-black">
+                      <SelectValue placeholder="文字樣式" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">一般</SelectItem>
+                      <SelectItem value="italic">斜體</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className={fullFieldClass}>
+                  <AlignmentSelector
+                    type="both"
+                    alignValue={(blockData as any).align as AlignType}
+                    gravityValue={(blockData as any).gravity as GravityType}
+                    onAlignChange={(align) => setBlockData({ ...blockData, align })}
+                    onGravityChange={(gravity) => setBlockData({ ...blockData, gravity })}
+                    label="對齊設定"
+                    showVisual={true}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className={settingLabelClass}>最大行數</label>
                   <Input
                     type="number"
                     value={(blockData as any).maxLines || '0'}
@@ -80,7 +208,7 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-white/80">自動換行</label>
+                  <label className={settingLabelClass}>自動換行</label>
                   <Select value={(blockData as any).wrap ? 'true' : 'false'} onValueChange={(value) => setBlockData({ ...blockData, wrap: value === 'true' })}>
                     <SelectTrigger className="text-black">
                       <SelectValue />
@@ -92,7 +220,7 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-white/80">彈性比例</label>
+                  <label className={settingLabelClass}>彈性比例</label>
                   <Input
                     type="number"
                     value={(blockData as any).flex || '0'}
@@ -116,48 +244,76 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
 
           {block.blockData.contentType === 'image' && (
             <div className="space-y-3">
-              <div className="space-y-2">
-                <Input placeholder="圖片 URL" value={(blockData as any).url || ''} onChange={(e) => setBlockData({ ...blockData, url: e.target.value })} className="text-black" />
-                {(blockData as any).url && (
-                  <PreviewWithRetry src={(blockData as any).url as string} label="圖片預覽" />
+              <div className={settingPanelClass}>
+                <label className={settingLabelClass}>圖片檔案</label>
+                <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" onChange={handleImageUpload} className="hidden" />
+                <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+                  <div className="min-h-24 overflow-hidden rounded-md border border-slate-200 bg-slate-50 p-2">
+                    {imagePreviewUrl ? (
+                      <PreviewWithRetry src={imagePreviewUrl as string} label="圖片預覽" />
+                    ) : (
+                      <div className="flex h-24 items-center justify-center rounded border border-dashed border-slate-200 text-xs text-slate-500">
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        尚未上傳圖片
+                      </div>
+                    )}
+                  </div>
+                  <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="h-10 whitespace-nowrap">
+                    <Upload className="mr-2 h-4 w-4" />
+                    {isUploading ? '上傳中...' : '上傳圖片'}
+                  </Button>
+                </div>
+                <div className="mt-2 text-xs leading-5 text-slate-500">
+                  支援 JPG、PNG、GIF、WebP，最大 10MB。圖片會儲存於 MinIO 的 <span className="font-mono">flex-message-images</span> 位置。
+                </div>
+                {(blockData as any).imageObjectPath && (
+                  <div className="mt-2 truncate rounded bg-slate-50 px-2 py-1 text-xs text-slate-500">
+                    {(blockData as any).imageObjectPath}
+                  </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className={fieldGridClass}>
                 <SizeSelector type="image-size" value={(blockData as any).size || 'full'} onChange={(size) => setBlockData({ ...blockData, size })} label="圖片尺寸" />
-                <Select value={(blockData as any).aspectRatio || '20:13'} onValueChange={(value) => setBlockData({ ...blockData, aspectRatio: value })}>
-                  <SelectTrigger className="text-black">
-                    <SelectValue placeholder="寬高比" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1:1">正方形 (1:1)</SelectItem>
-                    <SelectItem value="1.51:1">照片 (1.51:1)</SelectItem>
-                    <SelectItem value="20:13">預設 (20:13)</SelectItem>
-                    <SelectItem value="16:9">寬螢幕 (16:9)</SelectItem>
-                    <SelectItem value="4:3">標準 (4:3)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="space-y-1">
+                  <label className={settingLabelClass}>寬高比</label>
+                  <Select value={(blockData as any).aspectRatio || '20:13'} onValueChange={(value) => setBlockData({ ...blockData, aspectRatio: value })}>
+                    <SelectTrigger className="text-black">
+                      <SelectValue placeholder="寬高比" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1:1">正方形 (1:1)</SelectItem>
+                      <SelectItem value="1.51:1">照片 (1.51:1)</SelectItem>
+                      <SelectItem value="20:13">預設 (20:13)</SelectItem>
+                      <SelectItem value="16:9">寬螢幕 (16:9)</SelectItem>
+                      <SelectItem value="4:3">標準 (4:3)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <Select value={(blockData as any).aspectMode || 'cover'} onValueChange={(value) => setBlockData({ ...blockData, aspectMode: value })}>
-                <SelectTrigger className="text-black">
-                  <SelectValue placeholder="顯示模式" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cover">填滿 (可能裁切)</SelectItem>
-                  <SelectItem value="fit">完整顯示 (可能有空白)</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="grid grid-cols-2 gap-2">
-                <AlignmentSelector
-                  type="align"
-                  alignValue={(blockData as any).align as AlignType}
-                  onAlignChange={(align) => setBlockData({ ...blockData, align })}
-                  label="圖片對齊"
-                  showVisual={true}
-                />
+                <div className="space-y-1">
+                  <label className={settingLabelClass}>顯示模式</label>
+                  <Select value={(blockData as any).aspectMode || 'cover'} onValueChange={(value) => setBlockData({ ...blockData, aspectMode: value })}>
+                    <SelectTrigger className="text-black">
+                      <SelectValue placeholder="顯示模式" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cover">填滿 (可能裁切)</SelectItem>
+                      <SelectItem value="fit">完整顯示 (可能有空白)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <ColorPicker value={(blockData as any).backgroundColor || 'transparent'} onChange={(backgroundColor) => setBlockData({ ...blockData, backgroundColor })} label="背景顏色" />
+
+                <div className={fullFieldClass}>
+                  <AlignmentSelector
+                    type="align"
+                    alignValue={(blockData as any).align as AlignType}
+                    onAlignChange={(align) => setBlockData({ ...blockData, align })}
+                    label="圖片對齊"
+                    showVisual={true}
+                  />
+                </div>
               </div>
 
               <MarginPaddingEditor
@@ -168,8 +324,8 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
                 showUnifiedMode={true}
               />
 
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
+              <div className={settingPanelClass}>
+                <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     id="enableImageAction"
@@ -185,45 +341,55 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
                     }}
                     className="rounded border-gray-300"
                   />
-                  <label htmlFor="enableImageAction" className="text-xs text-white/80">
+                  <label htmlFor="enableImageAction" className={settingLabelClass}>
                     設定點擊動作
                   </label>
                 </div>
-                {(blockData as any).action && <ActionEditor value={(blockData as any).action as ActionData} onChange={(action) => setBlockData({ ...blockData, action })} label="點擊動作" showLabel={false} />}
+                {(blockData as any).action && (
+                  <div className="mt-3">
+                    <ActionEditor value={(blockData as any).action as ActionData} onChange={(action) => setBlockData({ ...blockData, action })} label="點擊動作" showLabel={false} />
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {block.blockData.contentType === 'button' && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <ActionEditor value={((blockData as any).action as ActionData) || { type: 'postback', label: '' }} onChange={(action) => setBlockData({ ...blockData, action })} label="按鈕動作設定" showLabel={true} />
-              <div className="grid grid-cols-2 gap-2">
-                <Select value={(blockData as any).height || 'sm'} onValueChange={(value) => setBlockData({ ...blockData, height: value })}>
-                  <SelectTrigger className="text-black">
-                    <SelectValue placeholder="按鈕高度" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sm">小按鈕</SelectItem>
-                    <SelectItem value="md">中按鈕</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={(blockData as any).style || 'primary'} onValueChange={(value) => setBlockData({ ...blockData, style: value })}>
-                  <SelectTrigger className="text-black">
-                    <SelectValue placeholder="按鈕樣式" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="primary">主要按鈕</SelectItem>
-                    <SelectItem value="secondary">次要按鈕</SelectItem>
-                    <SelectItem value="link">連結樣式</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className={fieldGridClass}>
+                <div className="space-y-1">
+                  <label className={settingLabelClass}>按鈕高度</label>
+                  <Select value={(blockData as any).height || 'sm'} onValueChange={(value) => setBlockData({ ...blockData, height: value })}>
+                    <SelectTrigger className="text-black">
+                      <SelectValue placeholder="按鈕高度" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sm">小按鈕</SelectItem>
+                      <SelectItem value="md">中按鈕</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className={settingLabelClass}>按鈕樣式</label>
+                  <Select value={(blockData as any).style || 'primary'} onValueChange={(value) => setBlockData({ ...blockData, style: value })}>
+                    <SelectTrigger className="text-black">
+                      <SelectValue placeholder="按鈕樣式" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primary">主要按鈕</SelectItem>
+                      <SelectItem value="secondary">次要按鈕</SelectItem>
+                      <SelectItem value="link">連結樣式</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           )}
 
           {block.blockData.contentType === 'separator' && (
             <div className="space-y-3">
-              <label className="text-sm font-medium text-white/90">分隔線設定</label>
+              <div className="text-sm font-medium text-slate-800">分隔線設定</div>
               <MarginPaddingEditor
                 type="margin"
                 value={(blockData as any).margin ? (typeof (blockData as any).margin === 'string' ? { all: (blockData as any).margin } : ((blockData as any).margin as any)) : {}}
@@ -232,7 +398,7 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
                 showUnifiedMode={true}
               />
               <ColorPicker label="分隔線顏色" value={(blockData as any).color} onChange={(color) => setBlockData({ ...blockData, color })} showPresets={true} />
-              <div className="text-xs text-white/60 bg-white/5 p-2 rounded">分隔線用於在Flex訊息中創建視覺分割效果</div>
+              <div className="rounded bg-slate-50 p-2 text-xs text-slate-500">分隔線用於在 Flex 訊息中建立視覺分割效果</div>
             </div>
           )}
         </div>
@@ -243,7 +409,6 @@ const FlexContentBlock: React.FC<BlockRendererProps> = ({ block, isEditing, bloc
 
 export default FlexContentBlock;
 
-// 本檔案獨立使用的帶重試預覽元件
 const PreviewWithRetry: React.FC<{ src: string; label?: string }> = ({ src, label }) => {
   const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -261,16 +426,16 @@ const PreviewWithRetry: React.FC<{ src: string; label?: string }> = ({ src, labe
   const actualSrc = attempt === 0 ? src : withBuster(src, attempt);
 
   return (
-    <div className="bg-white/5 p-2 rounded">
-      <div className="text-xs text-white/70 mb-1">{label || '圖片預覽'}:</div>
+    <div>
+      <div className="mb-1 text-xs text-slate-500">{label || '圖片預覽'}:</div>
       {!error ? (
         <img
           src={actualSrc}
           alt="圖片預覽"
-          className="max-w-full max-h-32 rounded border"
+          className="max-h-32 max-w-full rounded border border-slate-200 bg-white"
           onError={() => {
             if (attempt < 3) setAttempt((a) => a + 1);
-            else setError('圖片載入失敗，請稍後重試或更換 URL');
+            else setError('圖片載入失敗，請稍後重試或重新上傳');
           }}
         />
       ) : (

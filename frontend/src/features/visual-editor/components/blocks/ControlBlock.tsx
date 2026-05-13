@@ -48,9 +48,9 @@ const ControlBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockDat
                 <Input placeholder="輸入條件表達式（例如: user_message == 'hello'）" value={(blockData as any).condition || ''} onChange={(e) => setBlockData({ ...blockData, condition: e.target.value })} className="text-black" />
               )}
 
-              <div className="text-xs text-white/60 bg-white/10 p-2 rounded">
+              <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
                 <div className="font-medium mb-1">條件預覽:</div>
-                <code className="text-white/80">
+                <code className="text-slate-600">
                   {(blockData as any).conditionType === 'custom'
                     ? ((blockData as any).condition || '未設定')
                     : `${(blockData as any).conditionType === 'message' ? 'user_message' : (blockData as any).conditionType === 'variable' ? '變數名稱' : 'user_id'} ${(blockData as any).operator || '=='} "${(blockData as any).compareValue || '值'}"`}
@@ -124,7 +124,7 @@ const ControlBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockDat
                 </Select>
               </div>
 
-              <div className="text-xs text-white/60 bg-white/10 p-2 rounded">
+              <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
                 範圍限制:
                 {(blockData as any).unit === 'milliseconds' && ' 100-60000 毫秒'}
                 {((blockData as any).unit === 'seconds' || !(blockData as any).unit) && ' 1-60 秒'}
@@ -136,7 +136,7 @@ const ControlBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockDat
       )}
 
       {!isEditing && (
-        <div className="text-xs text-white/70 mt-1">
+        <div className="text-xs text-slate-500 mt-1">
           {block.blockData.controlType === 'if' && (block.blockData as any).condition && <div>條件: {(block.blockData as any).condition}</div>}
           {block.blockData.controlType === 'loop' && (
             <div>

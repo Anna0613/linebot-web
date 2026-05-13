@@ -62,14 +62,14 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
   ];
 
   return (
-    <div className="space-y-3 p-3 bg-white/5 rounded-lg">
+    <div className="space-y-3 rounded-lg border border-slate-200 bg-white/80 p-3">
       {showLabel && (
-        <div className="text-sm font-medium text-white/90">{label}</div>
+        <div className="text-sm font-medium text-slate-800">{label}</div>
       )}
 
       {/* 動作類型選擇 */}
       <div className="space-y-1">
-        <label className="text-xs text-white/80">動作類型</label>
+        <label className="text-xs text-slate-600">動作類型</label>
         <Select 
           value={value.type} 
           onValueChange={(type: ActionData['type']) => updateAction({ type })}
@@ -89,7 +89,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
 
       {/* 標籤文字 */}
       <div className="space-y-1">
-        <label className="text-xs text-white/80">按鈕標籤</label>
+        <label className="text-xs text-slate-600">按鈕標籤</label>
         <Input
           type="text"
           placeholder="按鈕顯示文字"
@@ -103,7 +103,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
       {value.type === 'postback' && (
         <>
           <div className="space-y-1">
-            <label className="text-xs text-white/80">回傳資料</label>
+            <label className="text-xs text-slate-600">回傳資料</label>
             <Input
               type="text"
               placeholder="傳送給機器人的資料"
@@ -113,7 +113,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-white/80">顯示文字（可選）</label>
+            <label className="text-xs text-slate-600">顯示文字（可選）</label>
             <Input
               type="text"
               placeholder="點擊後顯示在聊天室的文字"
@@ -123,7 +123,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-white/80">輸入選項</label>
+            <label className="text-xs text-slate-600">輸入選項</label>
             <Select
               value={value.inputOption || 'none'}
               onValueChange={(inputOption) => updateAction({ inputOption: inputOption === 'none' ? undefined : inputOption as ActionData['inputOption'] })}
@@ -147,7 +147,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
       {value.type === 'uri' && (
         <>
           <div className="space-y-1">
-            <label className="text-xs text-white/80">網址</label>
+            <label className="text-xs text-slate-600">網址</label>
             <Input
               type="url"
               placeholder="https://example.com"
@@ -157,7 +157,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-white/80">桌面版網址（可選）</label>
+            <label className="text-xs text-slate-600">桌面版網址（可選）</label>
             <Input
               type="url"
               placeholder="https://desktop.example.com"
@@ -174,7 +174,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
       {value.type === 'message' && (
         <>
           <div className="space-y-1">
-            <label className="text-xs text-white/80">發送訊息</label>
+            <label className="text-xs text-slate-600">發送訊息</label>
             <Textarea
               placeholder="點擊後要發送的訊息內容"
               value={value.text || ''}
@@ -189,7 +189,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
       {value.type === 'datetimepicker' && (
         <>
           <div className="space-y-1">
-            <label className="text-xs text-white/80">選擇模式</label>
+            <label className="text-xs text-slate-600">選擇模式</label>
             <Select 
               value={value.mode || 'date'} 
               onValueChange={(mode: ActionData['mode']) => updateAction({ mode })}
@@ -206,7 +206,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
-              <label className="text-xs text-white/80">初始值</label>
+              <label className="text-xs text-slate-600">初始值</label>
               <Input
                 type={value.mode === 'time' ? 'time' : value.mode === 'date' ? 'date' : 'datetime-local'}
                 value={value.initial || ''}
@@ -215,7 +215,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-white/80">最小值</label>
+              <label className="text-xs text-slate-600">最小值</label>
               <Input
                 type={value.mode === 'time' ? 'time' : value.mode === 'date' ? 'date' : 'datetime-local'}
                 value={value.min || ''}
@@ -224,7 +224,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-white/80">最大值</label>
+              <label className="text-xs text-slate-600">最大值</label>
               <Input
                 type={value.mode === 'time' ? 'time' : value.mode === 'date' ? 'date' : 'datetime-local'}
                 value={value.max || ''}
@@ -239,7 +239,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
       {/* 填充文字（適用於部分類型） */}
       {['camera', 'cameraRoll', 'location'].includes(value.type) && (
         <div className="space-y-1">
-          <label className="text-xs text-white/80">填充文字（可選）</label>
+          <label className="text-xs text-slate-600">填充文字（可選）</label>
           <Input
             type="text"
             placeholder="點擊後在輸入框中顯示的文字"

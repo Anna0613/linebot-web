@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState, memo } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { X, Settings, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import type { Block, BlockData } from './blocks';
 import {
@@ -12,6 +20,7 @@ import {
   ControlBlock,
   SettingBlock,
 } from './blocks';
+import { getBlockColorClass } from '@/features/visual-editor/utils/blockVisualStyles';
 
 interface DroppedBlockProps {
   block: Block;
@@ -24,14 +33,18 @@ interface DroppedBlockProps {
 
 const DroppedBlock: React.FC<DroppedBlockProps> = memo(
   ({ block, index, onRemove, onUpdate, onMove, onInsert }) => {
-    const [isEditing, setIsEditing] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [blockData, setBlockData] = useState<BlockData>(block.blockData || {});
+    const [draftData, setDraftData] = useState<BlockData>(block.blockData || {});
     const [showInsertZone, setShowInsertZone] = useState<'above' | 'below' | null>(null);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
       setBlockData(block.blockData || {});
-    }, [block.blockData]);
+      if (!isSettingsOpen) {
+        setDraftData(block.blockData || {});
+      }
+    }, [block.blockData, isSettingsOpen]);
 
     const [{ isDragging }, drag] = useDrag({
       type: 'dropped-block',
@@ -98,23 +111,32 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
     const handleMouseLeave = () => setShowInsertZone(null);
     drag(drop(ref));
 
-    const getBlockColor = (blockType: string): string => {
-      const colorMap: Record<string, string> = {
-        event: 'bg-orange-500',
-        reply: 'bg-green-500',
-        control: 'bg-purple-500',
-        setting: 'bg-gray-500',
-        'flex-container': 'bg-indigo-500',
-        'flex-content': 'bg-blue-500',
-        'flex-layout': 'bg-teal-500',
-      };
-      return colorMap[blockType] || 'bg-blue-500';
+    const openSettings = () => {
+      setDraftData(blockData);
+      setIsSettingsOpen(true);
     };
 
-    const renderBlockContent = () => {
+    const saveSettings = () => {
+      setBlockData(draftData);
+      if (onUpdate) onUpdate(index, draftData);
+      setIsSettingsOpen(false);
+    };
+
+    const commitFromEditor = (data: BlockData) => {
+      setDraftData(data);
+      setBlockData(data);
+      if (onUpdate) onUpdate(index, data);
+    };
+
+    const renderBlockContent = (
+      editing: boolean,
+      data: BlockData,
+      setData: React.Dispatch<React.SetStateAction<BlockData>>,
+      onEditorCommit?: (data: BlockData) => void,
+    ) => {
       const commit = (data: BlockData) => {
-        setBlockData(data);
-        if (onUpdate) onUpdate(index, data);
+        setData(data);
+        onEditorCommit?.(data);
       };
       switch (block.blockType) {
         case 'event':
@@ -122,9 +144,9 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
             <EventBlock
               block={block}
               index={index}
-              isEditing={isEditing}
-              blockData={blockData}
-              setBlockData={setBlockData}
+              isEditing={editing}
+              blockData={data}
+              setBlockData={setData}
               onCommit={commit}
             />
           );
@@ -133,9 +155,9 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
             <ReplyBlock
               block={block}
               index={index}
-              isEditing={isEditing}
-              blockData={blockData}
-              setBlockData={setBlockData}
+              isEditing={editing}
+              blockData={data}
+              setBlockData={setData}
               onCommit={commit}
             />
           );
@@ -144,9 +166,9 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
             <FlexContentBlock
               block={block}
               index={index}
-              isEditing={isEditing}
-              blockData={blockData}
-              setBlockData={setBlockData}
+              isEditing={editing}
+              blockData={data}
+              setBlockData={setData}
               onCommit={commit}
             />
           );
@@ -155,9 +177,9 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
             <FlexContainerBlock
               block={block}
               index={index}
-              isEditing={isEditing}
-              blockData={blockData}
-              setBlockData={setBlockData}
+              isEditing={editing}
+              blockData={data}
+              setBlockData={setData}
               onCommit={commit}
             />
           );
@@ -166,9 +188,9 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
             <FlexLayoutBlock
               block={block}
               index={index}
-              isEditing={isEditing}
-              blockData={blockData}
-              setBlockData={setBlockData}
+              isEditing={editing}
+              blockData={data}
+              setBlockData={setData}
               onCommit={commit}
             />
           );
@@ -177,9 +199,9 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
             <ControlBlock
               block={block}
               index={index}
-              isEditing={isEditing}
-              blockData={blockData}
-              setBlockData={setBlockData}
+              isEditing={editing}
+              blockData={data}
+              setBlockData={setData}
               onCommit={commit}
             />
           );
@@ -188,9 +210,9 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
             <SettingBlock
               block={block}
               index={index}
-              isEditing={isEditing}
-              blockData={blockData}
-              setBlockData={setBlockData}
+              isEditing={editing}
+              blockData={data}
+              setBlockData={setData}
               onCommit={commit}
             />
           );
@@ -214,23 +236,23 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
         <div
           ref={ref}
           onMouseLeave={handleMouseLeave}
-          className={`${getBlockColor(block.blockType)} rounded-lg p-3 text-white shadow-sm transition-all duration-200 ${
+          className={`${getBlockColorClass(block.blockType)} rounded-lg border border-l-4 p-3 shadow-sm transition-all duration-200 ${
             isDragging ? 'opacity-50 scale-95 rotate-2' : 'opacity-100 scale-100'
-          } ${isOver ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}`}
+          } ${isOver ? 'ring-2 ring-emerald-300 ring-opacity-60' : ''}`}
         >
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-2 flex-1">
-              <div className="cursor-move rounded-sm p-1 pt-1 hover:bg-white/20">
-                <GripVertical className="h-4 w-4 text-white/70" />
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-start gap-2">
+              <div className="shrink-0 cursor-move rounded-sm p-1 pt-1 hover:bg-black/5">
+                <GripVertical className="h-4 w-4 text-current opacity-60" />
               </div>
-              <div className="flex-1">{renderBlockContent()}</div>
+              <div className="min-w-0 flex-1">{renderBlockContent(false, blockData, setBlockData)}</div>
             </div>
-            <div className="flex items-center space-x-1 ml-2">
+            <div className="ml-2 flex shrink-0 items-center space-x-1">
               {index > 0 && (
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 w-6 p-0 text-white hover:bg-white/20"
+                  className="h-6 w-6 p-0 text-current opacity-75 hover:bg-black/5 hover:opacity-100"
                   onClick={() => onMove && onMove(index, index - 1)}
                   title="向上移動"
                 >
@@ -240,7 +262,7 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 p-0 text-white hover:bg-white/20"
+                className="h-6 w-6 p-0 text-current opacity-75 hover:bg-black/5 hover:opacity-100"
                 onClick={() => onMove && onMove(index, index + 1)}
                 title="向下移動"
               >
@@ -249,8 +271,8 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 p-0 text-white hover:bg-white/20"
-                onClick={() => setIsEditing(!isEditing)}
+                className="h-6 w-6 p-0 text-current opacity-75 hover:bg-black/5 hover:opacity-100"
+                onClick={openSettings}
                 title="編輯設定"
               >
                 <Settings className="h-3 w-3" />
@@ -258,7 +280,7 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 p-0 text-white hover:bg-white/20"
+                className="h-6 w-6 p-0 text-current opacity-75 hover:bg-black/5 hover:opacity-100"
                 onClick={() => onRemove && onRemove(index)}
                 title="刪除積木"
               >
@@ -266,22 +288,41 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
               </Button>
             </div>
           </div>
+        </div>
 
-          {isEditing && (
-            <div className="mt-3 pt-3 border-t border-white/20">
+        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+          <DialogContent className="app-panel-strong flex max-h-[86vh] max-w-3xl flex-col overflow-hidden p-0 text-[color:var(--bc-ink)] sm:rounded-lg">
+            <DialogHeader className="border-b border-[color:var(--bc-line-2)] px-5 py-4">
+              <DialogTitle className="text-base text-[color:var(--bc-ink)]">
+                {String(block.blockData.title || '積木設定')}
+              </DialogTitle>
+              <DialogDescription className="text-[color:var(--bc-ink-2)]">
+                調整設定不會改變畫布中積木高度，儲存後才套用到流程。
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="min-h-0 overflow-y-auto bg-[color:var(--bc-bg-2)] px-5 py-4">
+              {renderBlockContent(true, draftData, setDraftData, commitFromEditor)}
+            </div>
+
+            <DialogFooter className="border-t border-[color:var(--bc-line-2)] px-5 py-4">
               <Button
-                size="sm"
-                variant="secondary"
+                type="button"
+                variant="ghost"
+                className="app-secondary-button h-10 min-h-10 px-4"
                 onClick={() => {
-                  if (onUpdate) onUpdate(index, blockData);
-                  setIsEditing(false);
+                  setDraftData(blockData);
+                  setIsSettingsOpen(false);
                 }}
               >
+                取消
+              </Button>
+              <Button type="button" className="app-primary-button h-10 min-h-10 px-4" onClick={saveSettings}>
                 儲存設定
               </Button>
-            </div>
-          )}
-        </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {showInsertZone === 'below' && (
           <div className="absolute -bottom-2 left-0 right-0 h-1 bg-blue-400 rounded-full z-10 shadow-lg">

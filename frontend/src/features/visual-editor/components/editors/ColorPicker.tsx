@@ -47,7 +47,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   return (
     <div className="space-y-2">
       {label && (
-        <label className="text-xs text-white/80 font-medium">{label}</label>
+        <label className="text-xs font-medium text-slate-600">{label}</label>
       )}
       
       <div className="flex items-center space-x-2">

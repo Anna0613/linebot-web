@@ -13,9 +13,9 @@ const UNIFIED_API_URL = (() => {
     // 生產環境：使用當前域名的 API 子域名或相同域名
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    // 如果是 linebot.jkl921102.org，則使用 api.jkl921102.org
-    if (hostname.includes('linebot.')) {
-      return `${protocol}//api.${hostname.replace('linebot.', '')}`;
+    // 如果是 linebot.jkl921102.org，則使用 linebot-api.jkl921102.org
+    if (hostname.startsWith('linebot.')) {
+      return `${protocol}//linebot-api.${hostname.replace(/^linebot\./, '')}`;
     }
     // 否則使用當前域名
     return `${protocol}//${hostname}`;

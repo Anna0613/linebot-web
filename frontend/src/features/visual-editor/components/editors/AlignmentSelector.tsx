@@ -46,17 +46,17 @@ export const AlignmentSelector: React.FC<AlignmentSelectorProps> = ({
   return (
     <div className="space-y-3">
       {label && (
-        <label className="text-sm font-medium text-white/90">{label}</label>
+        <label className="text-sm font-medium text-[color:var(--bc-ink)]">{label}</label>
       )}
 
       {/* 水平對齊 */}
       {(type === 'align' || type === 'both') && (
         <div className="space-y-2">
-          <label className="text-xs text-white/80">水平對齊</label>
+          <label className="text-xs text-[color:var(--bc-ink-2)]">水平對齊</label>
           
           {showVisual ? (
             /* 視覺化按鈕組 */
-            <div className="flex space-x-1 bg-white/10 rounded p-1">
+            <div className="flex space-x-1 rounded border border-[color:var(--bc-line-2)] bg-[color:var(--bc-bg-2)] p-1">
               {ALIGN_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const isSelected = alignValue === option.value;
@@ -69,8 +69,8 @@ export const AlignmentSelector: React.FC<AlignmentSelectorProps> = ({
                     onClick={() => onAlignChange?.(option.value as AlignType)}
                     className={`flex-1 h-8 ${
                       isSelected 
-                        ? 'bg-white text-black hover:bg-white/90' 
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                        ? 'bg-[color:var(--bc-accent)] text-white hover:bg-[color:var(--bc-accent)]'
+                        : 'text-[color:var(--bc-ink-2)] hover:bg-white hover:text-[color:var(--bc-ink)]'
                     }`}
                     title={option.label}
                   >
@@ -85,7 +85,7 @@ export const AlignmentSelector: React.FC<AlignmentSelectorProps> = ({
               value={alignValue || 'start'} 
               onValueChange={(value: AlignType) => onAlignChange?.(value)}
             >
-              <SelectTrigger className="text-black">
+              <SelectTrigger className="text-[color:var(--bc-ink)]">
                 <SelectValue placeholder="選擇水平對齊" />
               </SelectTrigger>
               <SelectContent>
@@ -106,13 +106,13 @@ export const AlignmentSelector: React.FC<AlignmentSelectorProps> = ({
       {/* 垂直對齊 */}
       {(type === 'gravity' || type === 'both') && (
         <div className="space-y-2">
-          <label className="text-xs text-white/80">垂直對齊</label>
+          <label className="text-xs text-[color:var(--bc-ink-2)]">垂直對齊</label>
           
           <Select 
             value={gravityValue || 'top'} 
             onValueChange={(value: GravityType) => onGravityChange?.(value)}
           >
-            <SelectTrigger className="text-black">
+            <SelectTrigger className="text-[color:var(--bc-ink)]">
               <SelectValue placeholder="選擇垂直對齊" />
             </SelectTrigger>
             <SelectContent>
@@ -128,21 +128,21 @@ export const AlignmentSelector: React.FC<AlignmentSelectorProps> = ({
 
       {/* 對齊預覽 */}
       {showVisual && type === 'both' && (
-        <div className="bg-white/5 p-3 rounded-lg">
-          <div className="text-xs text-white/60 mb-2">對齊預覽:</div>
+        <div className="rounded-lg border border-[color:var(--bc-line-2)] bg-white/80 p-3">
+          <div className="mb-2 text-xs text-[color:var(--bc-ink-2)]">對齊預覽:</div>
           <div 
             className={`
-              border-2 border-dashed border-white/30 h-16 w-full rounded flex items-${gravityValue || 'top'} 
+              border-2 border-dashed border-[color:var(--bc-line-2)] h-16 w-full rounded flex items-${gravityValue || 'top'} 
               ${alignValue === 'start' ? 'justify-start' : 
                 alignValue === 'center' ? 'justify-center' : 
                 alignValue === 'end' ? 'justify-end' : 'justify-between'}
             `}
           >
-            <div className="bg-white/20 px-2 py-1 rounded text-xs text-white">
+            <div className="rounded bg-[color:var(--bc-accent-soft)] px-2 py-1 text-xs text-[color:var(--bc-accent-ink)]">
               內容
             </div>
           </div>
-          <div className="text-xs text-white/50 mt-1">
+          <div className="mt-1 text-xs text-[color:var(--bc-ink-2)]">
             水平: {ALIGN_OPTIONS.find(opt => opt.value === alignValue)?.label} | 
             垂直: {GRAVITY_OPTIONS.find(opt => opt.value === gravityValue)?.label}
           </div>

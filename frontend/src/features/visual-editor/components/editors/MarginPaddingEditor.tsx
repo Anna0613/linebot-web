@@ -92,16 +92,16 @@ export const MarginPaddingEditor: React.FC<MarginPaddingEditorProps> = ({
   };
 
   return (
-    <div className="space-y-3 p-3 bg-white/5 rounded-lg">
+    <div className="space-y-3 rounded-lg border border-slate-200 bg-white/80 p-3">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-white/90">{displayLabel}</label>
+        <label className="text-sm font-medium text-slate-800">{displayLabel}</label>
         {showUnifiedMode && (
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={toggleUnifiedMode}
-            className="h-6 px-2 text-white/70 hover:text-white"
+            className="h-6 px-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
             title={isUnified ? "分別設定各邊" : "統一設定所有邊"}
           >
             {isUnified ? <Unlink className="w-3 h-3" /> : <Link className="w-3 h-3" />}
@@ -115,7 +115,7 @@ export const MarginPaddingEditor: React.FC<MarginPaddingEditorProps> = ({
       {isUnified ? (
         /* 統一設定模式 */
         <div className="space-y-1">
-          <label className="text-xs text-white/80">所有邊距</label>
+          <label className="text-xs text-slate-600">所有邊距</label>
           <Select 
             value={value.all || 'none'} 
             onValueChange={handleUnifiedChange}
@@ -134,16 +134,20 @@ export const MarginPaddingEditor: React.FC<MarginPaddingEditorProps> = ({
         </div>
       ) : (
         /* 分別設定模式 */
-        <div className="space-y-2">
-          {/* 上方 */}
-          <div className="flex justify-center">
-            <div className="w-20">
-              <label className="text-xs text-white/80 block text-center mb-1">上</label>
+        <div className="grid grid-cols-2 gap-3">
+          {([
+            ['top', '上'],
+            ['right', '右'],
+            ['bottom', '下'],
+            ['left', '左'],
+          ] as Array<[keyof MarginPaddingData, string]>).map(([direction, directionLabel]) => (
+            <div key={direction} className="space-y-1">
+              <label className="block text-xs font-medium text-slate-600">{directionLabel}</label>
               <Select 
-                value={value.top || 'none'} 
-                onValueChange={(val) => handleIndividualChange('top', val)}
+                value={value[direction] || 'none'} 
+                onValueChange={(val) => handleIndividualChange(direction, val)}
               >
-                <SelectTrigger className="text-black text-xs">
+                <SelectTrigger className="text-black">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,82 +159,12 @@ export const MarginPaddingEditor: React.FC<MarginPaddingEditorProps> = ({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          {/* 左右 */}
-          <div className="flex justify-between items-center">
-            <div className="w-20">
-              <label className="text-xs text-white/80 block text-center mb-1">左</label>
-              <Select 
-                value={value.left || 'none'} 
-                onValueChange={(val) => handleIndividualChange('left', val)}
-              >
-                <SelectTrigger className="text-black text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SIZE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 中間顯示區域 */}
-            <div className="flex-1 flex justify-center items-center py-4">
-              <div className="w-16 h-12 border-2 border-dashed border-white/30 rounded flex items-center justify-center">
-                <span className="text-xs text-white/50">元素</span>
-              </div>
-            </div>
-
-            <div className="w-20">
-              <label className="text-xs text-white/80 block text-center mb-1">右</label>
-              <Select 
-                value={value.right || 'none'} 
-                onValueChange={(val) => handleIndividualChange('right', val)}
-              >
-                <SelectTrigger className="text-black text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SIZE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* 下方 */}
-          <div className="flex justify-center">
-            <div className="w-20">
-              <label className="text-xs text-white/80 block text-center mb-1">下</label>
-              <Select 
-                value={value.bottom || 'none'} 
-                onValueChange={(val) => handleIndividualChange('bottom', val)}
-              >
-                <SelectTrigger className="text-black text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SIZE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
       {/* 預覽說明 */}
-      <div className="text-xs text-white/60 bg-white/5 p-2 rounded">
+      <div className="rounded bg-slate-50 p-2 text-xs text-slate-500">
         {isUnified ? (
           <span>所有邊都設定為: {SIZE_OPTIONS.find(opt => opt.value === (value.all || 'none'))?.label}</span>
         ) : (

@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Bot,
   Brain,
   ChevronLeft,
   ChevronRight,
@@ -8,11 +7,9 @@ import {
   GitBranch,
   GripVertical,
   Image,
-  Link,
   MessageSquare,
   MousePointer2,
   Play,
-  Plus,
   RotateCcw,
   Settings,
   Sparkles,
@@ -126,7 +123,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
     { type: 'system', content: '輸入測試訊息後，這裡會顯示節點流程的模擬結果。' },
   ]);
 
-  const viewport = graph.viewport || { x: 40, y: 30, zoom: 1 };
+  const viewport = useMemo(() => graph.viewport || { x: 40, y: 30, zoom: 1 }, [graph.viewport]);
   const validation = useMemo(() => validateWorkflowGraph(graph), [graph]);
   const selectedNode = useMemo(
     () => graph.nodes.find((node) => node.id === selectedNodeId) || null,

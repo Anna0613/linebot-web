@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Copy, Download, Eye } from 'lucide-react';
+import { API_CONFIG } from '@/config/apiConfig';
 
 interface BlockData {
   [key: string]: unknown;
@@ -14,6 +15,30 @@ interface Block {
 interface FlexMessagePreviewProps {
   blocks: Block[];
 }
+
+const buildMinioProxyUrl = (objectPath?: unknown): string => {
+  if (!objectPath || typeof objectPath !== 'string') return '';
+  const params = new URLSearchParams({ object_path: objectPath });
+  return `${API_CONFIG.UNIFIED.BASE_URL}/minio/proxy?${params.toString()}`;
+};
+
+const getImagePreviewUrl = (blockData: BlockData): string => {
+  return (
+    (typeof blockData.previewUrl === 'string' && blockData.previewUrl) ||
+    buildMinioProxyUrl(blockData.imageObjectPath) ||
+    (typeof blockData.url === 'string' ? blockData.url : '') ||
+    'https://via.placeholder.com/300x200'
+  );
+};
+
+const escapeHtml = (value: unknown): string => {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
 
 // 簡化的 Flex Message 生成器
 class FlexMessageGenerator {
@@ -42,7 +67,15 @@ class FlexMessageGenerator {
           case 'image':
             bubble.body.contents.push({
               type: "image",
-              url: block.blockData.url || "https://via.placeholder.com/300x200"
+              url: block.blockData.url || "https://via.placeholder.com/300x200",
+              size: block.blockData.size || "full",
+              aspectMode: block.blockData.aspectMode || "cover",
+              aspectRatio: block.blockData.aspectRatio || "20:13",
+              ...(block.blockData.align ? { align: block.blockData.align } : {}),
+              ...(block.blockData.backgroundColor && block.blockData.backgroundColor !== 'transparent'
+                ? { backgroundColor: block.blockData.backgroundColor }
+                : {}),
+              ...(block.blockData.action ? { action: block.blockData.action } : {})
             });
             break;
           case 'button':
@@ -68,24 +101,36 @@ class FlexMessageGenerator {
     return bubble;
   }
 
-  generatePreviewHTML(flexMessage: Record<string, unknown>): string {
-    if (!flexMessage || !flexMessage.body) {
+  generatePreviewHTML(blocks: Block[]): string {
+    if (!blocks || blocks.length === 0) {
       return '<div class="text-gray-500 text-center py-8">請加入 Flex 組件來設計您的訊息</div>';
     }
 
     let html = '<div class="bg-white border border-emerald-100 rounded-lg p-4 shadow-sm" style="max-width: 300px;">';
-    
-    flexMessage.body.contents.forEach((content: Record<string, unknown>) => {
-      switch (content.type) {
-        case 'text':
-          html += `<div class="mb-2" style="color: ${content.color}; font-size: ${this.getSizeInPx(content.size)}; font-weight: ${content.weight}">${content.text}</div>`;
+
+    blocks.forEach((block) => {
+      if (block.blockType !== 'flex-content') return;
+
+      switch (block.blockData.contentType) {
+        case 'text': {
+          const color = escapeHtml(block.blockData.color || '#000000');
+          const size = this.getSizeInPx(String(block.blockData.size || 'md'));
+          const weight = escapeHtml(block.blockData.weight || 'regular');
+          const text = escapeHtml(block.blockData.text || '示例文字');
+          html += `<div class="mb-2" style="color: ${color}; font-size: ${size}; font-weight: ${weight}">${text}</div>`;
           break;
-        case 'image':
-          html += `<img src="${content.url}" class="w-full rounded-sm mb-2" style="max-height: 200px; object-fit: cover;" />`;
+        }
+        case 'image': {
+          const previewUrl = escapeHtml(getImagePreviewUrl(block.blockData));
+          html += `<img src="${previewUrl}" class="w-full rounded-sm mb-2" style="max-height: 200px; object-fit: cover;" />`;
           break;
-        case 'button':
-          html += `<button class="w-full bg-emerald-600 text-white py-2 px-4 rounded-sm mb-2">${content.action.label}</button>`;
+        }
+        case 'button': {
+          const action = block.blockData.action as Record<string, unknown> | undefined;
+          const label = escapeHtml(action?.label || block.blockData.text || '按鈕');
+          html += `<button class="w-full bg-emerald-600 text-white py-2 px-4 rounded-sm mb-2">${label}</button>`;
           break;
+        }
         case 'separator':
           html += '<hr class="my-2 border-gray-300" />';
           break;
@@ -117,7 +162,7 @@ const FlexMessagePreview: React.FC<FlexMessagePreviewProps> = ({ blocks }) => {
     if (blocks && blocks.length > 0) {
       const generated = generator.generateFlexMessage(blocks);
       setFlexMessage(generated);
-      setPreviewHTML(generator.generatePreviewHTML(generated));
+      setPreviewHTML(generator.generatePreviewHTML(blocks));
     } else {
       setFlexMessage(null);
       setPreviewHTML('<div class="text-gray-500 text-center py-8">請加入 Flex 組件來設計您的訊息</div>');

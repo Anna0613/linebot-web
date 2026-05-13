@@ -251,38 +251,12 @@ class MinIOService:
             # 對 object_path 進行 URL 編碼
             encoded_path = quote(object_path, safe='/')
 
-            # 生成代理 URL
-            if settings.MINIO_PUBLIC_URL:
-                # 使用外部域名的 API 代理
-                # 注意：在生產環境中，MINIO_PUBLIC_URL 可能是 https://minio.jkl921102.org
-                # 但我們需要通過 API 代理訪問，所以應該使用 API 域名
-                # 優先使用 ALLOWED_ORIGINS 中的 API 域名，或者從 MINIO_PUBLIC_URL 推導
+            base_url = (settings.API_PUBLIC_URL or settings.WEBHOOK_DOMAIN or "http://localhost:8000").strip().rstrip("/")
+            if not base_url.startswith(("http://", "https://")):
+                base_url = f"https://{base_url}"
 
-                # 方案 1: 直接使用 API 域名（推薦用於 Cloudflare Tunnel）
-                # 從 MINIO_PUBLIC_URL 提取協議和域名，然後替換為 API 域名
-                from urllib.parse import urlparse
-                parsed = urlparse(settings.MINIO_PUBLIC_URL)
-                protocol = parsed.scheme  # https 或 http
-
-                # 嘗試從 MINIO_PUBLIC_URL 推導 API 域名
-                # 例如：https://minio.jkl921102.org -> https://api.jkl921102.org
-                hostname = parsed.hostname or parsed.netloc
-                if hostname.startswith('minio-api.'):
-                    api_hostname = hostname.replace('minio-api.', 'api.', 1)
-                elif hostname.startswith('minio.'):
-                    api_hostname = hostname.replace('minio.', 'api.', 1)
-                else:
-                    # 如果不是 minio 開頭，直接使用 hostname
-                    api_hostname = hostname
-
-                base_url = f"{protocol}://{api_hostname}"
-                proxy_url = f"{base_url}/api/v1/minio/proxy?object_path={encoded_path}"
-
-                logger.debug(f"生成代理 URL: {object_path} -> {proxy_url} (from MINIO_PUBLIC_URL: {settings.MINIO_PUBLIC_URL})")
-            else:
-                # 回退到內部地址
-                proxy_url = f"http://localhost:8005/api/v1/minio/proxy?object_path={encoded_path}"
-                logger.debug(f"生成代理 URL (本地): {object_path} -> {proxy_url}")
+            proxy_url = f"{base_url}/api/v1/minio/proxy?object_path={encoded_path}"
+            logger.debug(f"生成代理 URL: {object_path} -> {proxy_url} (from API_PUBLIC_URL: {settings.API_PUBLIC_URL})")
 
             return proxy_url
 
@@ -396,6 +370,57 @@ class MinIOService:
 
         except Exception as e:
             logger.error(f"上傳邏輯模板圖片失敗: {e}")
+            import traceback
+            logger.error(f"詳細錯誤: {traceback.format_exc()}")
+            return None, None
+
+    async def upload_flex_message_image(
+        self,
+        bot_id: str,
+        file_data: bytes,
+        filename: str,
+        content_type: str = 'image/jpeg'
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """
+        上傳 Flex Message 圖片到 MinIO
+
+        儲存路徑使用 {bot_id}/flex-message-images/{timestamp}_{uuid}.{ext}，
+        與邏輯模板圖片分開，方便後續管理與清理。
+        """
+        try:
+            import time
+
+            timestamp = int(time.time() * 1000)
+            file_ext = Path(filename).suffix or '.jpg'
+            unique_filename = f"{timestamp}_{uuid.uuid4().hex[:8]}{file_ext}"
+            object_path = f"{bot_id}/flex-message-images/{unique_filename}"
+
+            logger.info(
+                "開始上傳 Flex Message 圖片: bot_id=%s, filename=%s, size=%s bytes",
+                bot_id,
+                filename,
+                len(file_data),
+            )
+
+            file_stream = BytesIO(file_data)
+            file_size = len(file_data)
+
+            await asyncio.to_thread(
+                self.client.put_object,
+                self.bucket_name,
+                object_path,
+                file_stream,
+                file_size,
+                content_type=content_type,
+            )
+
+            proxy_url = self.get_presigned_url(object_path)
+
+            logger.info("Flex Message 圖片上傳成功: path=%s, url=%s", object_path, proxy_url)
+            return object_path, proxy_url
+
+        except Exception as e:
+            logger.error(f"上傳 Flex Message 圖片失敗: {e}")
             import traceback
             logger.error(f"詳細錯誤: {traceback.format_exc()}")
             return None, None
