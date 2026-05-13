@@ -668,7 +668,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
 
   if (!selectedUser) {
     return (
-      <Card className="flex flex-col h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-full max-h-[calc(100vh-8rem)] w-full">
+      <Card className="flex flex-col h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[calc(100vh-10rem)] w-full">
         <CardContent className="flex items-center justify-center flex-1">
           <div className="text-center">
             <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -680,7 +680,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   }
 
   return (
-    <Card className="flex flex-col h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-full max-h-[calc(100vh-8rem)] w-full">
+    <Card className="flex flex-col h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[calc(100vh-10rem)] w-full">
       {/* 聊天室頭部 */}
       <CardHeader className="pb-3 border-b flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -729,12 +729,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
 
       {/* AI 分析固定策略 */}
       {aiMode && (
-        <div className="px-4 pb-4 border-b flex-shrink-0">
-          <div className="flex items-center gap-2 mb-2">
+        <div className="px-4 py-4 border-b flex-shrink-0">
+          <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 text-sm">
                 <Badge variant="secondary">Groq GPT-OSS 120B</Badge>
-                <span className="text-muted-foreground truncate">自動控制上下文與 token 預算</span>
               </div>
               {aiContextMetadata && (
                 <div className="mt-1 text-xs text-muted-foreground">
@@ -759,7 +758,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
                   className="h-10 flex items-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
-                  清除快取
+                  清除對話紀錄
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
