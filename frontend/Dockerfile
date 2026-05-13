@@ -11,8 +11,8 @@ RUN npm install -g pnpm
 COPY frontend/package*.json ./
 COPY frontend/pnpm-lock.yaml* ./
 
-# 安裝依賴
-RUN pnpm install --no-frozen-lockfile
+# 建立 pnpm store 並安裝依賴 (跳過構建腳本)
+RUN pnpm install --no-frozen-lockfile --ignore-scripts
 
 # 複製前端源代碼（排除 node_modules）
 COPY frontend/src ./src/
