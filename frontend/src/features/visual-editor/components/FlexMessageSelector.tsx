@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader } from '@/components/ui/loader';
-import { ChevronDown, Plus, Save, Trash2 } from 'lucide-react';
+import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -37,7 +37,6 @@ interface FlexMessageSelectorProps {
   selectedFlexMessageId?: string;
   onFlexMessageSelect?: (messageId: string) => void;
   onFlexMessageCreate?: (name: string) => Promise<unknown> | unknown;
-  onFlexMessageSave?: (messageId: string, data: { flexBlocks: Block[] }) => Promise<unknown> | unknown;
   onFlexMessageDelete?: (messageId: string) => Promise<unknown> | unknown;
   flexBlocks: Block[];
   disabled?: boolean;
@@ -49,7 +48,6 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
   selectedFlexMessageId,
   onFlexMessageSelect,
   onFlexMessageCreate,
-  onFlexMessageSave,
   onFlexMessageDelete,
   flexBlocks,
   disabled = false,
@@ -64,7 +62,6 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
   const [messageToDelete, setMessageToDelete] = useState<FlexMessageSummary | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -144,39 +141,6 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
       });
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  // 儲存 FlexMessage
-  const saveFlexMessage = async () => {
-    if (!selectedFlexMessageId) {
-      toast({
-        variant: 'destructive',
-        title: '儲存失敗',
-        description: '請先選擇一個 FlexMessage'
-      });
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      if (onFlexMessageSave) {
-        await onFlexMessageSave(selectedFlexMessageId, {
-          flexBlocks
-        });
-      }
-      toast({
-        title: '儲存成功',
-        description: 'FlexMessage 儲存成功'
-      });
-    } catch (err) {
-      toast({
-        variant: 'destructive',
-        title: '儲存失敗',
-        description: err instanceof Error ? err.message : '儲存 FlexMessage 失敗'
-      });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -281,23 +245,6 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
             新增
           </Button>
 
-          {/* 儲存 FlexMessage 按鈕 */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={saveFlexMessage}
-            disabled={!selectedFlexMessageId || isSaving || disabled}
-            className={`app-primary-button ${buttonClassName}`}
-          >
-            {isSaving ? (
-              <div className="scale-50 mr-1">
-                <Loader fullPage={false} />
-              </div>
-            ) : (
-              <Save className="w-4 h-4 mr-1" />
-            )}
-            {isSaving ? '儲存中...' : '儲存訊息'}
-          </Button>
         </div>
       </div>
 

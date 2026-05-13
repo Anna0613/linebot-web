@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader } from '@/components/ui/loader';
-import { ChevronDown, Plus, Save, Trash2 } from 'lucide-react';
+import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -23,7 +23,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import VisualEditorApi, { LogicTemplateSummary } from '@/features/visual-editor/api/visualEditorApi';
-import { generateWorkflowCode } from '@/features/visual-editor/utils/workflowCodeGenerator';
 import { WorkflowGraph } from '@/features/visual-editor/types/workflow';
 
 interface LogicTemplateSelectorProps {
@@ -31,7 +30,6 @@ interface LogicTemplateSelectorProps {
   selectedLogicTemplateId?: string;
   onLogicTemplateSelect?: (templateId: string) => void;
   onLogicTemplateCreate?: (name: string) => Promise<unknown> | unknown;
-  onLogicTemplateSave?: (templateId: string, data: { workflowGraph: WorkflowGraph, generatedCode: string }) => Promise<unknown> | unknown;
   onLogicTemplateDelete?: (templateId: string) => Promise<unknown> | unknown;
   workflowGraph: WorkflowGraph | null;
   disabled?: boolean;
@@ -44,7 +42,6 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
   selectedLogicTemplateId,
   onLogicTemplateSelect,
   onLogicTemplateCreate,
-  onLogicTemplateSave,
   onLogicTemplateDelete,
   workflowGraph,
   disabled = false,
@@ -59,7 +56,6 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
   const [templateToDelete, setTemplateToDelete] = useState<LogicTemplateSummary | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -149,45 +145,6 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
       });
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  // 儲存邏輯模板
-  const saveLogicTemplate = async () => {
-    if (!selectedLogicTemplateId) {
-      toast({
-        variant: 'destructive',
-        title: '儲存失敗',
-        description: '請先選擇一個邏輯模板'
-      });
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      if (!workflowGraph) {
-        throw new Error('目前模板不是新版節點流程格式，無法儲存');
-      }
-
-      const generatedCode = generateWorkflowCode(workflowGraph);
-      if (onLogicTemplateSave) {
-        await onLogicTemplateSave(selectedLogicTemplateId, {
-          workflowGraph,
-          generatedCode
-        });
-      }
-      toast({
-        title: '儲存成功',
-        description: '邏輯模板儲存成功'
-      });
-    } catch (err) {
-      toast({
-        variant: 'destructive',
-        title: '儲存失敗',
-        description: err instanceof Error ? err.message : '儲存邏輯模板失敗'
-      });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -303,23 +260,6 @@ const LogicTemplateSelector: React.FC<LogicTemplateSelectorProps> = ({
             新增
           </Button>
 
-          {/* 儲存邏輯模板按鈕 */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={saveLogicTemplate}
-            disabled={!selectedLogicTemplateId || !workflowGraph || isSaving || disabled}
-            className={`app-primary-button ${buttonClassName}`}
-          >
-            {isSaving ? (
-              <div className="scale-50 mr-1">
-                <Loader fullPage={false} />
-              </div>
-            ) : (
-              <Save className="w-4 h-4 mr-1" />
-            )}
-            {isSaving ? '儲存中...' : '儲存邏輯'}
-          </Button>
         </div>
       </div>
 

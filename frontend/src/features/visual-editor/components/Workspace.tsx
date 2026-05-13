@@ -127,13 +127,11 @@ interface WorkspaceProps {
   selectedLogicTemplateId?: string;
   onLogicTemplateSelect?: (templateId: string) => void;
   onLogicTemplateCreate?: (name: string) => Promise<unknown> | unknown;
-  onLogicTemplateSave?: (templateId: string, data: { workflowGraph: WorkflowGraph, generatedCode: string }) => Promise<unknown> | unknown;
   onLogicTemplateDelete?: (templateId: string) => Promise<unknown> | unknown;
   // 新增 FlexMessage 相關 props
   selectedFlexMessageId?: string;
   onFlexMessageSelect?: (messageId: string) => void;
   onFlexMessageCreate?: (name: string) => Promise<unknown> | unknown;
-  onFlexMessageSave?: (messageId: string, data: { flexBlocks: Block[] }) => Promise<unknown> | unknown;
   onFlexMessageDelete?: (messageId: string) => Promise<unknown> | unknown;
   onBotUpdated?: () => Promise<unknown> | void;
   // 初始活動標籤
@@ -164,12 +162,10 @@ const Workspace: React.FC<WorkspaceProps> = ({
   selectedLogicTemplateId,
   onLogicTemplateSelect,
   onLogicTemplateCreate,
-  onLogicTemplateSave,
   onLogicTemplateDelete,
   selectedFlexMessageId,
   onFlexMessageSelect,
   onFlexMessageCreate,
-  onFlexMessageSave,
   onFlexMessageDelete,
   onBotUpdated,
   initialActiveTab = 'basic'
@@ -492,7 +488,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
           selectedLogicTemplateId={selectedLogicTemplateId}
           onLogicTemplateSelect={onLogicTemplateSelect}
           onLogicTemplateCreate={onLogicTemplateCreate}
-          onLogicTemplateSave={onLogicTemplateSave}
           onLogicTemplateDelete={onLogicTemplateDelete}
           workflowGraph={logicGraph}
           variant="toolbar"
@@ -506,7 +501,6 @@ const Workspace: React.FC<WorkspaceProps> = ({
           selectedFlexMessageId={selectedFlexMessageId}
           onFlexMessageSelect={onFlexMessageSelect}
           onFlexMessageCreate={onFlexMessageCreate}
-          onFlexMessageSave={onFlexMessageSave}
           onFlexMessageDelete={onFlexMessageDelete}
           flexBlocks={flexBlocks as Block[]}
           variant="toolbar"
