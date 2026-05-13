@@ -129,7 +129,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
   return (
     <div 
       ref={drag}
-      className={`relative ${color} cursor-move rounded-lg px-3 py-2 text-sm text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+      className={`relative ${color} cursor-move rounded-lg border border-l-4 px-3 py-2 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
         isDragging ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
       }`}
     >
@@ -142,7 +142,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
         {showCompatibilityBadge && (
           <Badge 
             variant="secondary" 
-            className="ml-2 text-xs bg-white/20 text-white border-white/30 hover:bg-white/30"
+            className="ml-2 border-current/15 bg-white/70 text-current hover:bg-white"
           >
             {getCompatibilityText(compatibility)}
           </Badge>
@@ -151,7 +151,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
       
       {/* 拖拽時的額外視覺提示 */}
       {isDragging && (
-        <div className="pointer-events-none absolute inset-0 rounded-lg border-2 border-dashed border-white/50 bg-white/10" />
+        <div className="pointer-events-none absolute inset-0 rounded-lg border-2 border-dashed border-current/40 bg-white/30" />
       )}
     </div>
   );

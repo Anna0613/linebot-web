@@ -23,6 +23,7 @@ import { validateWorkspace } from '@/features/visual-editor/utils/blockCompatibi
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, Bot, LayoutDashboard, Plus } from 'lucide-react';
 import VisualEditorApi, { FlexMessage as StoredFlexMessage } from '@/features/visual-editor/api/visualEditorApi';
+import { API_CONFIG } from '@/config/apiConfig';
 
 // 簡化的 Flex Message 生成器
 class FlexMessageGenerator {
@@ -67,8 +68,14 @@ class FlexMessageGenerator {
             bubble.body.contents.push({
               type: "image",
               url: block.blockData.url || "https://via.placeholder.com/300x200",
-              aspectMode: "cover",
-              aspectRatio: "20:13"
+              size: block.blockData.size || "full",
+              aspectMode: block.blockData.aspectMode || "cover",
+              aspectRatio: block.blockData.aspectRatio || "20:13",
+              ...(block.blockData.align ? { align: block.blockData.align } : {}),
+              ...(block.blockData.backgroundColor && block.blockData.backgroundColor !== 'transparent'
+                ? { backgroundColor: block.blockData.backgroundColor }
+                : {}),
+              ...(block.blockData.action ? { action: block.blockData.action } : {})
             });
             break;
           case 'button':
@@ -113,6 +120,27 @@ interface Block {
   blockType: string;
   blockData: BlockData;
 }
+
+const deleteFlexMessageImage = async (botId: string, objectPath: string): Promise<void> => {
+  const params = new URLSearchParams({ object_path: objectPath });
+  const response = await fetch(`${API_CONFIG.UNIFIED.BASE_URL}/bots/${botId}/flex-message-image?${params.toString()}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    let message = `刪除圖片失敗 (HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''})`;
+    try {
+      const errorData = await response.json();
+      const detail = errorData?.detail || errorData?.message;
+      if (detail) message = `${message}: ${detail}`;
+    } catch {
+      const text = await response.text().catch(() => '');
+      if (text) message = `${message}: ${text}`;
+    }
+    throw new Error(message);
+  }
+};
 
 interface WorkspaceProps {
   logicGraph: WorkflowGraph | null;
@@ -185,7 +213,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   // 已移除舊的預覽模擬器控制狀態（useEnhancedSimulator / showDebugInfo）
 
   // 測試動作處理
-  const [currentTestAction, setCurrentTestAction] = useState<'new-user' | 'test-message' | 'preview-dialog' | null>(null);
+  const [_currentTestAction, setCurrentTestAction] = useState<'new-user' | 'test-message' | 'preview-dialog' | null>(null);
   const [workspaceValidation, setWorkspaceValidation] = useState<{
     logic: { isValid: boolean; errors: string[]; warnings: string[] };
     flex: { isValid: boolean; errors: string[]; warnings: string[] };
@@ -390,9 +418,40 @@ const Workspace: React.FC<WorkspaceProps> = ({
     }
   }, [onFlexBlocksChange, activeTab]);
 
-  const removeFlexBlock = useCallback((index: number) => {
+  const removeFlexBlock = useCallback(async (index: number) => {
+    const blockToRemove = flexBlocks[index];
+    const imageObjectPath = blockToRemove?.blockData?.imageObjectPath;
+    const shouldDeleteImage =
+      blockToRemove?.blockType === 'flex-content' &&
+      blockToRemove.blockData?.contentType === 'image' &&
+      typeof imageObjectPath === 'string' &&
+      imageObjectPath.length > 0;
+
+    if (shouldDeleteImage) {
+      if (!selectedBotId) {
+        toast({
+          title: '無法刪除圖片',
+          description: '缺少 Bot 資訊，請重新選擇 Bot 後再刪除圖片積木',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      try {
+        await deleteFlexMessageImage(selectedBotId, imageObjectPath);
+      } catch (error) {
+        console.error('刪除 Flex Message 圖片失敗:', error);
+        toast({
+          title: '刪除圖片失敗',
+          description: error instanceof Error ? error.message : 'MinIO 圖片刪除失敗，積木已保留',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     onFlexBlocksChange(prev => prev.filter((_, i) => i !== index));
-  }, [onFlexBlocksChange]);
+  }, [flexBlocks, onFlexBlocksChange, selectedBotId, toast]);
 
   const updateFlexBlock = useCallback((index: number, newData: BlockData) => {
     onFlexBlocksChange(prev => prev.map((block, i) => 

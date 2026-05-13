@@ -2,7 +2,7 @@
 Bot 管理 API 路由
 Updated: 2025-10-24
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 import logging
@@ -288,3 +288,119 @@ async def upload_logic_template_image(
         import traceback
         logger.error(f"詳細錯誤: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"上傳失敗: {str(e)}")
+
+@router.post("/{bot_id}/upload-flex-message-image")
+async def upload_flex_message_image(
+    bot_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async),
+):
+    """
+    上傳 Flex Message 圖片到 MinIO
+
+    圖片會存放在 {bot_id}/flex-message-images/，並回傳可供 LINE Flex
+    Message 使用的代理 URL。
+    """
+    try:
+        bot = await BotService.get_bot(db, bot_id, current_user.id)
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot 不存在或無權訪問")
+
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=400,
+                detail=f"不支援的檔案類型: {file.content_type}。支援的類型: {', '.join(allowed_types)}"
+            )
+
+        max_size = 10 * 1024 * 1024
+        file_data = await file.read()
+        if len(file_data) > max_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"檔案過大: {len(file_data)} bytes。最大允許: {max_size} bytes (10MB)"
+            )
+
+        minio_service = get_minio_service()
+        if not minio_service:
+            last_err = get_minio_last_error() or "MinIO 未初始化"
+            raise HTTPException(status_code=500, detail=f"MinIO 服務未初始化：{last_err}")
+
+        object_path, _ = await minio_service.upload_flex_message_image(
+            bot_id=bot_id,
+            file_data=file_data,
+            filename=file.filename or 'image.jpg',
+            content_type=file.content_type or 'image/jpeg'
+        )
+
+        if not object_path:
+            raise HTTPException(status_code=500, detail="圖片上傳失敗")
+
+        from urllib.parse import quote
+        encoded = quote(object_path, safe='/')
+        proxy_url = minio_service.get_presigned_url(object_path)
+
+        if not proxy_url:
+            proxy_url = f"/api/v1/minio/proxy?object_path={encoded}"
+            logger.warning(f"MinIO 服務無法生成代理 URL，使用相對路徑: {proxy_url}")
+
+        logger.info(f"Flex Message 圖片上傳成功: bot_id={bot_id}, path={object_path}, url={proxy_url}")
+
+        return {
+            "success": True,
+            "message": "圖片上傳成功",
+            "data": {
+                "object_path": object_path,
+                "url": proxy_url,
+                "filename": file.filename,
+                "size": len(file_data),
+                "content_type": file.content_type
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"上傳 Flex Message 圖片時發生錯誤: {e}")
+        import traceback
+        logger.error(f"詳細錯誤: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"上傳失敗: {str(e)}")
+
+@router.delete("/{bot_id}/flex-message-image")
+async def delete_flex_message_image(
+    bot_id: str,
+    object_path: str = Query(..., description="MinIO 物件路徑"),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user_async),
+):
+    """
+    刪除 Flex Message 圖片積木對應的 MinIO 圖片。
+
+    僅允許刪除目前 Bot 底下 flex-message-images 目錄內的物件，避免誤刪其他資源。
+    """
+    bot = await BotService.get_bot(db, bot_id, current_user.id)
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot 不存在或無權訪問")
+
+    expected_prefix = f"{bot_id}/flex-message-images/"
+    if not object_path.startswith(expected_prefix):
+        raise HTTPException(status_code=400, detail="無效的 Flex Message 圖片路徑")
+
+    minio_service = get_minio_service()
+    if not minio_service:
+        last_err = get_minio_last_error() or "MinIO 未初始化"
+        raise HTTPException(status_code=500, detail=f"MinIO 服務未初始化：{last_err}")
+
+    deleted = minio_service.delete_object(object_path)
+    if not deleted:
+        raise HTTPException(status_code=500, detail="刪除 MinIO 圖片失敗")
+
+    logger.info("Flex Message 圖片刪除成功: bot_id=%s, path=%s", bot_id, object_path)
+    return {
+        "success": True,
+        "message": "圖片已刪除",
+        "data": {
+            "object_path": object_path,
+        },
+    }

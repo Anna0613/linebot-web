@@ -155,7 +155,7 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
         <div className="mt-2 space-y-2">
           {block.blockData.replyType === 'flex' ? (
             <div className="space-y-2">
-              <div className="text-sm font-medium text-white/80">選擇FLEX訊息模板:</div>
+              <div className="text-sm font-medium text-slate-600">選擇FLEX訊息模板:</div>
               <Select value={(blockData as any).flexMessageId || ''} onValueChange={handleFlexMessageSelect} disabled={loadingFlexMessages}>
                 <SelectTrigger className="text-black">
                   <SelectValue placeholder={loadingFlexMessages ? '載入中...' : '選擇FLEX訊息模板'} />
@@ -174,11 +174,11 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
                   )}
                 </SelectContent>
               </Select>
-              {(blockData as any).flexMessageName && <div className="text-xs text-white/60">已選擇: {(blockData as any).flexMessageName}</div>}
+              {(blockData as any).flexMessageName && <div className="text-xs text-slate-500">已選擇: {(blockData as any).flexMessageName}</div>}
             </div>
           ) : (blockData as any).replyType === 'flex' ? (
             <div className="space-y-2">
-              <label className="text-xs text-white/80">Flex 訊息 JSON 內容：</label>
+              <label className="text-xs text-slate-600">Flex 訊息 JSON 內容：</label>
               <Textarea
                 placeholder={'請輸入 Flex 訊息 JSON，例如：\n{\n  "type": "bubble",\n  "body": {\n    "type": "box",\n    "layout": "vertical",\n    "contents": [\n      {\n        "type": "text",\n        "text": "Hello World",\n        "size": "md",\n        "weight": "regular",\n        "color": "#000000"\n      }\n    ]\n  }\n}'}
                 value={typeof (blockData as any).flexContent === 'string' ? (blockData as any).flexContent : JSON.stringify((blockData as any).flexContent || {}, null, 2)}
@@ -196,7 +196,7 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
             </div>
           ) : block.blockData.replyType === 'image' ? (
             <div className="space-y-3">
-              <label className="text-xs text-white/80 dark:text-white/80">圖片回覆設定：</label>
+              <label className="text-xs text-slate-600">圖片回覆設定：</label>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -226,13 +226,13 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
                   <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
                     {isUploading ? '上傳中...' : '選擇圖片並上傳'}
                   </Button>
-                  <div className="text-xs text-white/60">支援 JPG、PNG、GIF、WebP 格式，最大 10MB</div>
+                  <div className="text-xs text-slate-500">支援 JPG、PNG、GIF、WebP 格式，最大 10MB</div>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <Input placeholder="原始圖片URL (必填)" value={(blockData as any).originalContentUrl || ''} onChange={(e) => setBlockData({ ...blockData, originalContentUrl: e.target.value })} className="text-black" />
                   <Input placeholder="預覽圖片URL (必填)" value={(blockData as any).previewImageUrl || ''} onChange={(e) => setBlockData({ ...blockData, previewImageUrl: e.target.value })} className="text-black" />
-                  <div className="text-xs text-white/60">• 原始圖片: 好友點擊時顯示的高解析度圖片<br/>• 預覽圖片: 聊天室中顯示的縮圖 (建議 240x240px)</div>
+                  <div className="text-xs text-slate-500">• 原始圖片: 好友點擊時顯示的高解析度圖片<br/>• 預覽圖片: 聊天室中顯示的縮圖 (建議 240x240px)</div>
                 </div>
               )}
 
@@ -245,14 +245,14 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
             </div>
           ) : block.blockData.replyType === 'sticker' ? (
             <div className="space-y-2">
-              <label className="text-xs text-white/80">貼圖回覆設定：</label>
+              <label className="text-xs text-slate-600">貼圖回覆設定：</label>
               <div className="grid grid-cols-2 gap-2">
                 <Input placeholder="貼圖包ID" value={(blockData as any).packageId || ''} onChange={(e) => setBlockData({ ...blockData, packageId: e.target.value })} className="text-black" />
                 <Input placeholder="貼圖ID" value={(blockData as any).stickerId || ''} onChange={(e) => setBlockData({ ...blockData, stickerId: e.target.value })} className="text-black" />
               </div>
-              <div className="text-xs text-white/60">常用貼圖包：<br/>• 包ID 1: LINE 官方貼圖 (貼圖ID: 1-17)<br/>• 包ID 2: LINE 表情符號 (貼圖ID: 144-180)<br/>• 包ID 3: 熊大兔兔 (貼圖ID: 180-259)</div>
-              <div className="bg-white/5 p-2 rounded">
-                <div className="text-xs text-white/70 mb-1">快速選擇:</div>
+              <div className="text-xs text-slate-500">常用貼圖包：<br/>• 包ID 1: LINE 官方貼圖 (貼圖ID: 1-17)<br/>• 包ID 2: LINE 表情符號 (貼圖ID: 144-180)<br/>• 包ID 3: 熊大兔兔 (貼圖ID: 180-259)</div>
+              <div className="bg-slate-50 p-2 rounded">
+                <div className="text-xs text-slate-500 mb-1">快速選擇:</div>
                 <div className="flex flex-wrap gap-1">
                   {[
                     { packageId: '1', stickerId: '1', name: '😊' },
@@ -280,7 +280,7 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
             </div>
           ) : (
             <div className="space-y-2">
-              <label className="text-xs text-white/80">回覆文字內容：</label>
+              <label className="text-xs text-slate-600">回覆文字內容：</label>
               <Textarea placeholder="請輸入回覆內容 (例如: 321)" value={String((blockData as any).text || '')} onChange={(e) => setBlockData({ ...blockData, text: e.target.value })} className="text-black" rows={3} />
             </div>
           )}
@@ -288,14 +288,14 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
       )}
 
       {!isEditing && (
-        <div className="text-xs text-white/70 mt-1">
+        <div className="text-xs text-slate-500 mt-1">
           {block.blockData.replyType === 'flex' ? (
             (block.blockData as any).flexMessageName ? (
               <div>FLEX模板: {(block.blockData as any).flexMessageName}</div>
             ) : (block.blockData as any).flexContent && Object.keys((block.blockData as any).flexContent).length > 0 ? (
               <div>
                 <div>自定義 Flex 訊息</div>
-                <div className="text-white/50 truncate">
+                <div className="text-slate-400 truncate">
                   {typeof (block.blockData as any).flexContent === 'string'
                     ? (block.blockData as any).flexContent.substring(0, 50) + '...'
                     : JSON.stringify((block.blockData as any).flexContent).substring(0, 50) + '...'}
@@ -308,7 +308,7 @@ const ReplyBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockData,
             (block.blockData as any).originalContentUrl && (block.blockData as any).previewImageUrl ? (
               <div className="space-y-1">
                 <div>圖片回覆: 已設定圖片</div>
-                <div className="text-white/50 text-xs">預覽: {(block.blockData as any).previewImageUrl.substring(0, 30)}...</div>
+                <div className="text-slate-400 text-xs">預覽: {(block.blockData as any).previewImageUrl.substring(0, 30)}...</div>
               </div>
             ) : (
               <div className="text-orange-300">請設定圖片URL</div>
@@ -350,8 +350,8 @@ const PreviewWithRetry: React.FC<{ src: string; label?: string }> = ({ src, labe
   const actualSrc = attempt === 0 ? src : withBuster(src, attempt);
 
   return (
-    <div className="bg-white/5 p-2 rounded">
-      <div className="text-xs text-white/70 mb-1">{label || '圖片預覽'}:</div>
+    <div className="bg-slate-50 p-2 rounded">
+      <div className="text-xs text-slate-500 mb-1">{label || '圖片預覽'}:</div>
       {!error ? (
         <img
           src={actualSrc}

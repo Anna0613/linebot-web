@@ -49,7 +49,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
   onFlexMessageSelect,
   onFlexMessageCreate,
   onFlexMessageDelete,
-  flexBlocks,
+  flexBlocks: _flexBlocks,
   disabled = false,
   variant = 'panel',
   className = ''
@@ -150,7 +150,7 @@ const FlexMessageSelector: React.FC<FlexMessageSelectorProps> = ({
   const rowClassName = variant === 'toolbar'
     ? 'flex min-w-max flex-1 flex-nowrap items-center justify-end gap-2'
     : 'flex flex-wrap items-center gap-2';
-  const selectClassName = variant === 'toolbar'
+  const _selectClassName = variant === 'toolbar'
     ? 'app-input h-8 w-52 shrink-0'
     : 'app-input w-52';
   const buttonClassName = variant === 'toolbar'

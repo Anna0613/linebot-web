@@ -122,6 +122,16 @@ class Settings(BaseSettings):
         "VITE_WEBHOOK_DOMAIN",
         default="http://localhost:8000",
     )
+    # 對外可被瀏覽器與 LINE 平台讀取的後端 API base URL。
+    # MinIO proxy URL 應該走後端 API 網域，不應從 MINIO_PUBLIC_URL 推導。
+    API_PUBLIC_URL: str = first_env_value(
+        "API_PUBLIC_URL",
+        "PUBLIC_API_URL",
+        "BACKEND_PUBLIC_URL",
+        "WEBHOOK_DOMAIN",
+        "VITE_UNIFIED_API_URL",
+        default="http://localhost:8000",
+    )
 
     # 郵件設定
     MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")

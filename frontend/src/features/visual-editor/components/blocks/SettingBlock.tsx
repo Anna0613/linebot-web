@@ -60,7 +60,7 @@ const SettingBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockDat
                 <Input placeholder="文字值（例如: Hello）" value={String((blockData as any).variableValue || '')} onChange={(e) => setBlockData({ ...blockData, variableValue: e.target.value })} className="text-black" />
               )}
 
-              <div className="text-xs text-white/60 bg-white/10 p-2 rounded">
+              <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
                 {(blockData as any).variableType === 'string' && '文字類型：用於儲存文字內容'}
                 {(blockData as any).variableType === 'number' && '數字類型：用於儲存數值'}
                 {(blockData as any).variableType === 'boolean' && '布林值類型：用於儲存真/假值'}
@@ -114,7 +114,7 @@ const SettingBlock: React.FC<BlockRendererProps> = ({ block, isEditing, blockDat
       )}
 
       {!isEditing && (
-        <div className="text-xs text-white/70 mt-1">
+        <div className="text-xs text-slate-500 mt-1">
           {block.blockData.settingType === 'setVariable' && (
             <div>
               設定變數: {(blockData as any).variableName || '未設定'} = {(blockData as any).variableValue || '未設定'}

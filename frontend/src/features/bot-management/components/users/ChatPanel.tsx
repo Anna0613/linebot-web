@@ -538,7 +538,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
           id: `ai-welcome-${now}`,
           event_type: "message",
           message_type: "text",
-          message_content: { text: "AI 分析模式已啟用。請直接用繁體中文提問，例如：「請總結這位好友常問的問題」或「過去 30 天，這位好友最常互動的主題是什麼？」" },
+          message_content: { text: "AI 分析模式已啟用。請直接提問，例如：「請總結這位好友常問的問題」或「過去 30 天，這位好友最常互動的主題是什麼？」" },
           sender_type: "bot",
           timestamp: now,
         },

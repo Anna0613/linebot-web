@@ -448,6 +448,21 @@ class LogicEngineService:
         body_blocks: List[Dict[str, Any]] = []
         footer_blocks: List[Dict[str, Any]] = []
 
+        def resolve_image_url(data: Dict[str, Any]) -> str:
+            object_path = data.get("imageObjectPath") or data.get("object_path")
+            if object_path:
+                try:
+                    from app.services.storage.minio_service import get_minio_service
+
+                    minio_service = get_minio_service()
+                    if minio_service:
+                        generated_url = minio_service.get_presigned_url(str(object_path))
+                        if generated_url:
+                            return generated_url
+                except Exception as e:
+                    logger.warning(f"Flex 圖片 proxy URL 產生失敗，改用既有 URL: {e}")
+            return str(data.get("url") or "https://via.placeholder.com/300x200")
+
         def push(area_list: List[Dict[str, Any]], item: Dict[str, Any]):
             area_list.append(item)
 
@@ -474,13 +489,19 @@ class LogicEngineService:
                         "wrap": data.get("wrap", True),
                     })
                 elif ctype == "image":
-                    push(target, {
+                    image_obj = {
                         "type": "image",
-                        "url": data.get("url") or "https://via.placeholder.com/300x200",
+                        "url": resolve_image_url(data),
                         "aspectRatio": data.get("aspectRatio") or "20:13",
                         "aspectMode": data.get("aspectMode") or "cover",
                         "size": data.get("size") or "full",
-                    })
+                    }
+                    for optional_key in ("align", "gravity", "backgroundColor", "margin"):
+                        if data.get(optional_key):
+                            image_obj[optional_key] = data.get(optional_key)
+                    if data.get("action"):
+                        image_obj["action"] = data.get("action")
+                    push(target, image_obj)
                 elif ctype == "button":
                     action = data.get("action") or {}
                     action_type = action.get("type") or "message"

@@ -13,7 +13,9 @@ export type SizeType =
   | 'spacing'
   | 'button-height'
   | 'border-width'
-  | 'corner-radius';
+  | 'corner-radius'
+  | 'spacer'
+  | 'flex';
 
 interface SizeOption {
   value: string;
@@ -86,6 +88,22 @@ const SIZE_OPTIONS: Record<SizeType, SizeOption[]> = {
     { value: 'lg', label: '大圓角' },
     { value: 'xl', label: '極大圓角' },
     { value: 'xxl', label: '極極大圓角' }
+  ],
+  'spacer': [
+    { value: 'xs', label: '極小間距' },
+    { value: 'sm', label: '小間距' },
+    { value: 'md', label: '中間距' },
+    { value: 'lg', label: '大間距' },
+    { value: 'xl', label: '極大間距' },
+    { value: 'xxl', label: '極極大間距' }
+  ],
+  'flex': [
+    { value: '0', label: '固定' },
+    { value: '1', label: '1 倍' },
+    { value: '2', label: '2 倍' },
+    { value: '3', label: '3 倍' },
+    { value: '4', label: '4 倍' },
+    { value: '5', label: '5 倍' }
   ]
 };
 
@@ -112,7 +130,7 @@ export const SizeSelector: React.FC<SizeSelectorProps> = ({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="text-xs text-white/80 font-medium">{label}</label>
+        <label className="text-xs font-medium text-slate-600">{label}</label>
       )}
       
       <Select value={value} onValueChange={onChange}>
@@ -135,7 +153,7 @@ export const SizeSelector: React.FC<SizeSelectorProps> = ({
 
       {/* 顯示當前選擇的描述 */}
       {showDescription && selectedOption?.description && (
-        <div className="text-xs text-white/60">
+        <div className="text-xs text-slate-500">
           當前值: {selectedOption.description}
         </div>
       )}

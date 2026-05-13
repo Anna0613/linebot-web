@@ -46,12 +46,12 @@ const EventBlock: React.FC<BlockRendererProps> = ({ block, index, isEditing, blo
                   onChange={(e) => setBlockData({ ...blockData, caseSensitive: e.target.checked })}
                   className="rounded border-gray-300"
                 />
-                <label htmlFor={`caseSensitive-${index}`} className="text-xs text-white/80">
+                <label htmlFor={`caseSensitive-${index}`} className="text-xs text-slate-600">
                   區分大小寫
                 </label>
               </div>
 
-              <div className="text-xs text-white/60 bg-white/10 p-2 rounded">
+              <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
                 <div className="font-medium mb-1">匹配說明:</div>
                 {(blockData as any).matchMode === 'contains' && '訊息中包含關鍵字即觸發'}
                 {(blockData as any).matchMode === 'exact' && '訊息內容完全相同才觸發'}
@@ -81,7 +81,7 @@ const EventBlock: React.FC<BlockRendererProps> = ({ block, index, isEditing, blo
         </div>
       )}
       {!isEditing && (
-        <div className="text-xs text-white/70 mt-1">
+        <div className="text-xs text-slate-500 mt-1">
           {block.blockData.eventType === 'message.text' && (block.blockData as any).pattern && (
             <div>觸發條件: "{String((block.blockData as any).pattern)}"</div>
           )}
