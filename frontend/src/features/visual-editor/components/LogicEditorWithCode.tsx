@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import WorkflowBuilder from './workflow/WorkflowBuilder';
@@ -14,40 +14,21 @@ interface LogicEditorWithCodeProps {
 }
 
 const LogicEditorWithCode: React.FC<LogicEditorWithCodeProps> = ({
-  selectedLogicTemplateId,
   currentLogicTemplateName,
   workflowGraph,
   isUnsupportedTemplate = false,
   onWorkflowGraphChange,
 }) => {
-  const hasSelectedTemplate = Boolean(selectedLogicTemplateId);
-
   return (
     <div className="h-full min-h-0 overflow-hidden">
-        {!hasSelectedTemplate ? (
-          <EmptyLogicState onCreate={() => undefined} />
-        ) : isUnsupportedTemplate || !workflowGraph ? (
-          <UnsupportedTemplateState templateName={currentLogicTemplateName} />
-        ) : (
-          <WorkflowBuilder graph={workflowGraph} onChange={onWorkflowGraphChange} />
-        )}
+      {isUnsupportedTemplate || !workflowGraph ? (
+        <UnsupportedTemplateState templateName={currentLogicTemplateName} />
+      ) : (
+        <WorkflowBuilder graph={workflowGraph} onChange={onWorkflowGraphChange} />
+      )}
     </div>
   );
 };
-
-const EmptyLogicState: React.FC<{ onCreate: () => void }> = () => (
-  <div className="flex h-full items-center justify-center p-6">
-    <div className="app-panel-strong max-w-lg p-8 text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-        <Plus className="h-6 w-6" />
-      </div>
-      <h2 className="text-xl font-semibold text-slate-950">選擇或新增邏輯模板</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-500">
-        新版邏輯編輯器使用節點與連線建立流程。請先在右上方選擇模板，或新增一個新版模板。
-      </p>
-    </div>
-  </div>
-);
 
 const UnsupportedTemplateState: React.FC<{ templateName?: string }> = ({ templateName }) => (
   <div className="flex h-full items-center justify-center p-6">

@@ -2,14 +2,11 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  BarChart3,
   Bot as BotIcon,
   CheckCircle2,
   Radio,
   Wifi,
-  Zap,
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import { useToast } from "@/hooks/use-toast";
@@ -18,10 +15,8 @@ import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
 import { apiClient } from "@/services/UnifiedApiClient";
-import { LogicTemplate } from "@/types/bot";
 
 import AnalyticsTabContent from "@/features/bot-management/components/AnalyticsTabContent";
-import LogicTabContent from "@/features/bot-management/components/LogicTabContent";
 import {
   ActivityItem,
   BotAnalytics,
@@ -79,7 +74,6 @@ const managementCopy = {
     viewSetupGuide: "View setup guide",
     tabs: {
       analytics: "Overview",
-      logic: "Reply settings",
     },
     documentTitle: "Bot Management",
   },
@@ -123,7 +117,6 @@ const managementCopy = {
     viewSetupGuide: "查看建立教學",
     tabs: {
       analytics: "總覽",
-      logic: "回覆設定",
     },
     documentTitle: "互動紀錄",
   },
@@ -156,7 +149,6 @@ const BotManagementPage: React.FC = () => {
   } = useSelectedBot();
 
   // 狀態管理
-  const [logicTemplates, setLogicTemplates] = useState<LogicTemplate[]>([]);
   const [analytics, setAnalytics] = useState<BotAnalytics | null>(null);
   const [messageStats, setMessageStats] = useState<MessageStats[]>([]);
   const [userActivity, setUserActivity] = useState<UserActivity[]>([]);
@@ -164,7 +156,6 @@ const BotManagementPage: React.FC = () => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [logicLoading, setLogicLoading] = useState(false);
   const [timeRange, setTimeRange] = useState("week");
   const [_refreshing, setRefreshing] = useState(false);
   const [botHealth, setBotHealth] = useState<"online" | "offline" | "error">(
@@ -173,8 +164,6 @@ const BotManagementPage: React.FC = () => {
   const [_lastRenderTime, setLastRenderTime] = useState(
     new Date().toISOString()
   );
-
-  const [activeTab, setActiveTab] = useState("analytics");
 
   // WebSocket 即時連接 - 在選擇 Bot 後立即連接，由 useWebSocket 內部處理延遲
   const { isConnected, lastMessage } = useWebSocket({
@@ -189,21 +178,6 @@ const BotManagementPage: React.FC = () => {
     () => isConnected,
     [isConnected]
   );
-
-  // 獲取邏輯模板
-  const fetchLogicTemplates = useCallback(async (botId: string) => {
-    setLogicLoading(true);
-    try {
-      const response = await apiClient.getBotLogicTemplates(botId);
-      if (response.data && Array.isArray(response.data)) {
-        setLogicTemplates(response.data);
-      }
-    } catch (error) {
-      console.error("獲取邏輯模板失敗:", error);
-    } finally {
-      setLogicLoading(false);
-    }
-  }, []);
 
   // 獲取分析數據 - 使用真實API，改善錯誤處理
   const fetchAnalytics = useCallback(
@@ -367,33 +341,6 @@ const BotManagementPage: React.FC = () => {
     [toast, timeRange]
   );
 
-  // 切換邏輯模板狀態
-  const toggleLogicTemplate = async (templateId: string, isActive: boolean) => {
-    try {
-      if (isActive) {
-        await apiClient.activateLogicTemplate(templateId);
-      } else {
-        await apiClient.deactivateLogicTemplate(templateId);
-      }
-
-      if (selectedBotId) {
-        await fetchLogicTemplates(selectedBotId);
-      }
-
-      toast({
-        title: isActive ? "啟用成功" : "停用成功",
-        description: `邏輯模板已${isActive ? "啟用" : "停用"}`,
-      });
-    } catch (error) {
-      console.error("切換邏輯模板狀態失敗:", error);
-      toast({
-        variant: "destructive",
-        title: "操作失敗",
-        description: "無法切換邏輯模板狀態",
-      });
-    }
-  };
-
   // 獲取 Webhook 狀態
   const fetchWebhookStatus = useCallback(async (botId: string) => {
     if (!botId) return;
@@ -524,20 +471,12 @@ const BotManagementPage: React.FC = () => {
 
     const fetchBotData = async () => {
       if (selectedBotId && isMounted) {
-        // 清空前一個 Bot 的所有相關資料
-        setLogicTemplates([]);
-
         try {
-          // 順序載入，避免並發問題
-          // 1. 先載入邏輯模板和 Webhook 狀態（較快的 API）
-          await Promise.all([
-            fetchLogicTemplates(selectedBotId),
-            fetchWebhookStatus(selectedBotId),
-          ]);
+          // 先載入 Webhook 狀態
+          await fetchWebhookStatus(selectedBotId);
 
-          // 2. 檢查是否還在載入中且未被取消
+          // 檢查是否還在載入中且未被取消
           if (isMounted && !abortController.signal.aborted) {
-            // 延遲載入分析數據，給其他 API 更多時間完成
             await new Promise((resolve) => setTimeout(resolve, 100));
             await fetchAnalytics(
               selectedBotId,
@@ -567,7 +506,6 @@ const BotManagementPage: React.FC = () => {
     };
   }, [
     selectedBotId,
-    fetchLogicTemplates,
     fetchAnalytics,
     fetchWebhookStatus,
     toast,
@@ -818,54 +756,22 @@ const BotManagementPage: React.FC = () => {
         )}
 
         {!isInitialPageLoading && bots.length > 0 && (
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="space-y-6"
-          >
-            <TabsList className="flex h-auto w-full justify-start gap-8 overflow-x-auto rounded-none border-b border-white/70 bg-transparent p-0">
-              <TabsTrigger
-                value="analytics"
-                className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-sm font-semibold text-slate-500 shadow-none transition-colors data-[state=active]:border-[#16a34a] data-[state=active]:bg-transparent data-[state=active]:text-[#166534] data-[state=active]:shadow-none"
-              >
-                <BarChart3 className="mr-2 h-4 w-4" />
-                {copy.tabs.analytics}
-              </TabsTrigger>
-              <TabsTrigger
-                value="logic"
-                className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-sm font-semibold text-slate-500 shadow-none transition-colors data-[state=active]:border-[#16a34a] data-[state=active]:bg-transparent data-[state=active]:text-[#166534] data-[state=active]:shadow-none"
-              >
-                <Zap className="mr-2 h-4 w-4" />
-                {copy.tabs.logic}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="analytics" className="space-y-6">
-              <AnalyticsTabContent
-                selectedBotId={selectedBotId}
-                analyticsLoading={analyticsLoading}
-                analytics={analytics}
-                messageStats={messageStats}
-                userActivity={userActivity}
-                activities={activities}
-                usageData={usageData}
-                timeRange={timeRange}
-                onRefreshData={handleRefreshData}
-                onRefreshActivities={handleRefreshActivities}
-                onTimeRangeChange={handleTimeRangeChange}
-                isWebSocketConnected={checkWebSocketConnection}
-              />
-            </TabsContent>
-
-            <TabsContent value="logic" className="space-y-6">
-              <LogicTabContent
-                selectedBotId={selectedBotId}
-                logicLoading={logicLoading}
-                logicTemplates={logicTemplates}
-                onToggleLogicTemplate={toggleLogicTemplate}
-              />
-            </TabsContent>
-          </Tabs>
+          <div className="space-y-6">
+            <AnalyticsTabContent
+              selectedBotId={selectedBotId}
+              analyticsLoading={analyticsLoading}
+              analytics={analytics}
+              messageStats={messageStats}
+              userActivity={userActivity}
+              activities={activities}
+              usageData={usageData}
+              timeRange={timeRange}
+              onRefreshData={handleRefreshData}
+              onRefreshActivities={handleRefreshActivities}
+              onTimeRangeChange={handleTimeRangeChange}
+              isWebSocketConnected={checkWebSocketConnection}
+            />
+          </div>
         )}
       </div>
     </AppShell>

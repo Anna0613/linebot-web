@@ -6,9 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import FlexMessageCanvas from './FlexMessageCanvas';
 import FlexMessageInspector from './FlexMessageInspector';
 import { BlockPalette } from './BlockPalette';
-import FlexMessageSelector from './FlexMessageSelector';
 import LogicEditorWithCode from './LogicEditorWithCode';
-import LogicTemplateSelector from './LogicTemplateSelector';
+import LogicTemplateGrid from './LogicTemplateGrid';
+import FlexMessageGrid from './FlexMessageGrid';
 // 已移除舊的預覽控制台（PreviewControlPanel）與增強模擬器（EnhancedLineBotSimulator）在 AI 知識庫頁面
 import RichMenuPanel from './RichMenuPanel';
 import BotBasicInfoPanel from './BotBasicInfoPanel';
@@ -22,7 +22,7 @@ import {
 import { WorkflowGraph, validateWorkflowGraph } from '@/features/visual-editor/types/workflow';
 import { validateWorkspace } from '@/features/visual-editor/utils/blockCompatibility';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, Bot, LayoutDashboard, Plus } from 'lucide-react';
+import { AlertTriangle, Bot, ChevronLeft, LayoutDashboard, Plus } from 'lucide-react';
 import VisualEditorApi, { FlexMessage as StoredFlexMessage } from '@/features/visual-editor/api/visualEditorApi';
 import { API_CONFIG } from '@/config/apiConfig';
 
@@ -202,7 +202,12 @@ const Workspace: React.FC<WorkspaceProps> = ({
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialActiveTab);
   const shouldShowLeftPanel = Boolean(selectedBotId && tabUsesBlockPalette(activeTab));
-  const shouldShowTemplatePanel = Boolean(selectedBotId && tabUsesTemplatePanel(activeTab));
+  const shouldShowTemplatePanel = Boolean(
+    selectedBotId && (
+      (activeTab === 'logic' && selectedLogicTemplateId) ||
+      (activeTab === 'flex' && selectedFlexMessageId)
+    )
+  );
   const [lastPaletteContext, setLastPaletteContext] = useState<WorkspaceContext>(
     getPaletteContextForTab(initialActiveTab)
   );
@@ -579,35 +584,37 @@ const Workspace: React.FC<WorkspaceProps> = ({
   const displayedTemplateTab = shouldShowTemplatePanel ? activeTab : lastTemplateTab;
 
   const renderTemplateToolbar = (tab: string) => {
-    if (!selectedBotId) {
-      return null;
-    }
+    if (!selectedBotId) return null;
 
-    if (tab === 'logic') {
+    if (tab === 'logic' && selectedLogicTemplateId) {
       return (
-        <LogicTemplateSelector
-          selectedBotId={selectedBotId}
-          selectedLogicTemplateId={selectedLogicTemplateId}
-          onLogicTemplateSelect={onLogicTemplateSelect}
-          onLogicTemplateCreate={onLogicTemplateCreate}
-          onLogicTemplateDelete={onLogicTemplateDelete}
-          workflowGraph={logicGraph}
-          variant="toolbar"
-        />
+        <div className="flex min-h-11 items-center gap-2 px-3">
+          <button
+            onClick={() => onLogicTemplateSelect?.('')}
+            className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm text-slate-600 hover:bg-slate-100"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            模板列表
+          </button>
+          <div className="h-4 w-px shrink-0 bg-slate-200" />
+          <span className="truncate text-sm font-medium text-slate-700">{currentLogicTemplateName}</span>
+        </div>
       );
     }
 
-    if (tab === 'flex') {
+    if (tab === 'flex' && selectedFlexMessageId) {
       return (
-        <FlexMessageSelector
-          selectedFlexMessageId={selectedFlexMessageId}
-          selectedFlexMessageName={currentFlexMessageName}
-          onFlexMessageSelect={onFlexMessageSelect}
-          onFlexMessageCreate={onFlexMessageCreate}
-          onFlexMessageDelete={onFlexMessageDelete}
-          flexBlocks={flexBlocks as Block[]}
-          variant="toolbar"
-        />
+        <div className="flex min-h-11 items-center gap-2 px-3">
+          <button
+            onClick={() => onFlexMessageSelect?.('')}
+            className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm text-slate-600 hover:bg-slate-100"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            模板列表
+          </button>
+          <div className="h-4 w-px shrink-0 bg-slate-200" />
+          <span className="truncate text-sm font-medium text-slate-700">{currentFlexMessageName}</span>
+        </div>
       );
     }
 
@@ -698,28 +705,31 @@ const Workspace: React.FC<WorkspaceProps> = ({
               </TabsContent>
 
               <TabsContent value="logic" className="m-0 h-full min-h-0 overflow-hidden data-[state=inactive]:hidden">
-                <LogicEditorWithCode
-                  selectedLogicTemplateId={selectedLogicTemplateId || ''}
-                  currentLogicTemplateName={currentLogicTemplateName || ''}
-                  workflowGraph={logicGraph}
-                  isUnsupportedTemplate={isUnsupportedLogicTemplate}
-                  onWorkflowGraphChange={onLogicGraphChange}
-                />
+                {!selectedLogicTemplateId ? (
+                  <LogicTemplateGrid
+                    selectedBotId={selectedBotId}
+                    onSelect={(id) => onLogicTemplateSelect?.(id)}
+                    onCreate={async (name) => { if (onLogicTemplateCreate) await onLogicTemplateCreate(name); }}
+                    onDelete={async (id) => { if (onLogicTemplateDelete) await onLogicTemplateDelete(id); }}
+                  />
+                ) : (
+                  <LogicEditorWithCode
+                    selectedLogicTemplateId={selectedLogicTemplateId}
+                    currentLogicTemplateName={currentLogicTemplateName || ''}
+                    workflowGraph={logicGraph}
+                    isUnsupportedTemplate={isUnsupportedLogicTemplate}
+                    onWorkflowGraphChange={onLogicGraphChange}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="flex" className="m-0 h-full min-h-0 overflow-hidden data-[state=inactive]:hidden">
                 {!selectedFlexMessageId ? (
-                  <div className="flex h-full items-center justify-center p-6 bg-[#f7fbf8]">
-                    <div className="app-panel-strong max-w-lg p-8 text-center">
-                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-                        <Plus className="h-6 w-6" />
-                      </div>
-                      <h2 className="text-xl font-semibold text-slate-950">選擇或新增 Flex Message 模板</h2>
-                      <p className="mt-2 text-sm leading-6 text-slate-500">
-                        Flex Message 編輯器可視覺化設計 LINE 訊息卡片。請先在右上方選擇模板，或新增一個新的 Flex Message。
-                      </p>
-                    </div>
-                  </div>
+                  <FlexMessageGrid
+                    onSelect={(id) => onFlexMessageSelect?.(id)}
+                    onCreate={async (name) => { if (onFlexMessageCreate) await onFlexMessageCreate(name); }}
+                    onDelete={async (id) => { if (onFlexMessageDelete) await onFlexMessageDelete(id); }}
+                  />
                 ) : (
                 <div className="grid h-full min-h-0 overflow-hidden bg-[#f7fbf8] grid-cols-[280px_minmax(0,1fr)_330px]">
                   <aside className="flex min-h-0 flex-col bg-white/75 backdrop-blur-xl">
