@@ -707,6 +707,19 @@ const Workspace: React.FC<WorkspaceProps> = ({
               </TabsContent>
 
               <TabsContent value="flex" className="m-0 h-full min-h-0 overflow-hidden data-[state=inactive]:hidden">
+                {!selectedFlexMessageId ? (
+                  <div className="flex h-full items-center justify-center p-6 bg-[#f7fbf8]">
+                    <div className="app-panel-strong max-w-lg p-8 text-center">
+                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                        <Plus className="h-6 w-6" />
+                      </div>
+                      <h2 className="text-xl font-semibold text-slate-950">選擇或新增 Flex Message 模板</h2>
+                      <p className="mt-2 text-sm leading-6 text-slate-500">
+                        Flex Message 編輯器可視覺化設計 LINE 訊息卡片。請先在右上方選擇模板，或新增一個新的 Flex Message。
+                      </p>
+                    </div>
+                  </div>
+                ) : (
                 <div className="grid h-full min-h-0 overflow-hidden bg-[#f7fbf8] grid-cols-[280px_minmax(0,1fr)_330px]">
                   <aside className="flex min-h-0 flex-col bg-white/75 backdrop-blur-xl">
                     <div className="border-b border-slate-200/80 p-4">
@@ -758,6 +771,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
                     onSelectBlock={setSelectedFlexBlockIndex}
                   />
                 </div>
+                )}
               </TabsContent>
 
               <TabsContent value="preview" className="m-0 h-full min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden">
