@@ -77,6 +77,28 @@ services:
         compress: "true"
         labels: "service=botcraft-frontend"
 
+  # PostgreSQL 從庫（讀取）
+  postgresql-replica:
+    image: pgvector/pgvector:pg15
+    container_name: postgresql15-replica1
+    environment:
+      POSTGRES_USER: 11131230
+      POSTGRES_PASSWORD: 11131230
+      POSTGRES_DB: linebot
+      TZ: America/Los_Angeles
+    volumes:
+      - /mnt/cache/appdata/postgresql15-replica1:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    networks:
+      - botcraft-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U 11131230"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   botcraft-network:
     driver: bridge
