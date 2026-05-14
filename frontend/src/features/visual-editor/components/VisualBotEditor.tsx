@@ -618,7 +618,12 @@ export const VisualBotEditor: React.FC = () => {
     }
     
     // 比較實際的積木內容是否有變化
-    const logicBlocksChanged = JSON.stringify(memoizedLogicGraph) !== JSON.stringify(previousBlocksRef.current.logicGraph);
+    // 注意：排除 viewport（畫布平移/縮放）—— 移動畫布不屬於「內容變更」，不應觸發 auto-save
+    const stripViewport = (g: typeof memoizedLogicGraph) =>
+      g ? { schemaVersion: g.schemaVersion, nodes: g.nodes, edges: g.edges } : null;
+    const logicBlocksChanged =
+      JSON.stringify(stripViewport(memoizedLogicGraph)) !==
+      JSON.stringify(stripViewport(previousBlocksRef.current.logicGraph));
     const flexBlocksChanged = JSON.stringify(memoizedFlexBlocks) !== JSON.stringify(previousBlocksRef.current.flexBlocks);
     
     // 只有當積木實際發生變更時才標記
