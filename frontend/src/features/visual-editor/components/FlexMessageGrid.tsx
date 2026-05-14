@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,47 @@ import { useToast } from '@/hooks/use-toast';
 import type { UnifiedBlock } from '@/features/visual-editor/types/block';
 import FlexMessageCanvas from './FlexMessageCanvas';
 
-// Canvas 預覽縮放比例
-const CANVAS_SCALE = 0.4;
-const CANVAS_RENDER_H = Math.ceil(112 / CANVAS_SCALE); // ≈ 280px
+// ── 動態縮放預覽：先測量 canvas 實際高度，再等比縮小填入 h-28 ──────────────
+const PREVIEW_H_PX = 112; // h-28 = 7rem = 112px
+
+const FlexScaledPreview: React.FC<{ blocks: UnifiedBlock[] }> = ({ blocks }) => {
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (!measureRef.current) return;
+    const h = measureRef.current.scrollHeight;
+    if (h > 0) setScale(Math.min(1, PREVIEW_H_PX / h));
+  }, [blocks]);
+
+  return (
+    <div className="relative h-28 overflow-hidden">
+      {/* 隱藏的測量用容器：渲染在 100% 寬度下，取得自然高度 */}
+      <div
+        ref={measureRef}
+        style={{ position: 'absolute', visibility: 'hidden', width: '100%', pointerEvents: 'none' }}
+      >
+        <FlexMessageCanvas blocks={blocks} selectedIndex={null} onSelect={() => {}} />
+      </div>
+      {/* 量測完成後顯示縮放版本 */}
+      {scale !== null && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: `${100 / scale}%`,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            pointerEvents: 'none',
+          }}
+        >
+          <FlexMessageCanvas blocks={blocks} selectedIndex={null} onSelect={() => {}} />
+        </div>
+      )}
+    </div>
+  );
+};
 
 
 interface FlexMessageGridProps {
@@ -162,25 +200,11 @@ const FlexMessageGrid: React.FC<FlexMessageGridProps> = ({ onSelect, onCreate, o
                   </Popover>
                 </div>
                 {/* 預覽圖區 */}
-                <div className="relative h-28 overflow-hidden border-b border-slate-100">
+                <div className="border-b border-slate-100">
                   {blocks && blocks.length > 0 ? (
-                    <div
-                      className="pointer-events-none absolute left-0 top-0"
-                      style={{
-                        width: `${100 / CANVAS_SCALE}%`,
-                        height: CANVAS_RENDER_H,
-                        transform: `scale(${CANVAS_SCALE})`,
-                        transformOrigin: 'top left',
-                      }}
-                    >
-                      <FlexMessageCanvas
-                        blocks={blocks as UnifiedBlock[]}
-                        selectedIndex={null}
-                        onSelect={() => {}}
-                      />
-                    </div>
+                    <FlexScaledPreview blocks={blocks as UnifiedBlock[]} />
                   ) : (
-                    <div className="flex h-full items-center justify-center bg-slate-50">
+                    <div className="flex h-28 items-center justify-center bg-slate-50">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
