@@ -59,13 +59,19 @@ class TokenCounter:
         self.model_name = model_name
         try:
             self.encoding = tiktoken.encoding_for_model(model_name)
-        except KeyError:
-            # 如果模型不存在，使用 cl100k_base 編碼器
-            self.encoding = tiktoken.get_encoding("cl100k_base")
+        except Exception:
+            # 如果模型不存在或 tokenizer 資源無法載入，使用本地估算避免阻塞回覆流程。
+            try:
+                self.encoding = tiktoken.get_encoding("cl100k_base")
+            except Exception as e:
+                logger.warning(f"Token 編碼器載入失敗，將使用字符數估算: {e}")
+                self.encoding = None
     
     def count_tokens(self, text: str) -> int:
         """計算文本的 token 數量"""
         try:
+            if self.encoding is None:
+                return max(1, len(text) // 4)
             return len(self.encoding.encode(text))
         except Exception as e:
             logger.warning(f"Token 計數失敗，使用字符數估算: {e}")

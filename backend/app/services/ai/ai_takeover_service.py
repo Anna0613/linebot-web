@@ -22,6 +22,7 @@ from app.config import settings
 from app.models.knowledge import KnowledgeChunk, KnowledgeDocument
 from app.services.ai.ai_analysis_service import AIAnalysisService
 from app.services.ai.groq_service import GroqService
+from app.services.conversation.context_builder import ConversationContext, ConversationContextBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -164,21 +165,29 @@ autonomous：
         system_prompt: Optional[str] = None,
     ) -> str:
         """Answer by AI route decision: file lookup only when needed."""
-        history = await AITakeoverService._build_history(
-            bot_id,
-            line_user_id,
-            history_messages,
+        conversation_context = await ConversationContextBuilder.build(
+            db,
+            bot_id=bot_id,
+            line_user_id=line_user_id,
+            current_query=query,
+            history_messages=history_messages,
+            model=model,
         )
+        history = conversation_context.prompt_history
+        standalone_query = conversation_context.standalone_query or query
 
         route = await AITakeoverService._decide_route(
             query,
             history=history,
+            standalone_query=standalone_query,
         )
         logger.info(
-            "AI 接管：路由=%s confidence=%s reason=%s",
+            "AI 接管：路由=%s confidence=%s reason=%s standalone_query=%s context=%s",
             route.get("route"),
             route.get("confidence"),
             route.get("reason"),
+            standalone_query,
+            conversation_context.metadata,
         )
 
         if route.get("route") != "document_lookup":
@@ -202,8 +211,10 @@ autonomous：
             )
 
         selected_documents = await AITakeoverService._select_documents_with_ai(
-            query,
+            standalone_query,
             documents,
+            conversation_context=conversation_context,
+            original_query=query,
         )
         if not selected_documents:
             logger.info("AI 接管：AI 未選出相關檔案")
@@ -295,8 +306,9 @@ autonomous：
         query: str,
         *,
         history: Optional[List[dict]],
+        standalone_query: Optional[str] = None,
     ) -> Dict[str, Any]:
-        control_input = AITakeoverService._build_route_input(query, history)
+        control_input = AITakeoverService._build_route_input(query, history, standalone_query)
         try:
             data = await AITakeoverService._ask_control_model(
                 control_input,
@@ -325,30 +337,56 @@ autonomous：
         }
 
     @staticmethod
-    def _build_route_input(query: str, history: Optional[List[dict]]) -> str:
+    def _build_route_input(
+        query: str,
+        history: Optional[List[dict]],
+        standalone_query: Optional[str] = None,
+    ) -> str:
         recent_history = ""
         if history:
             lines = []
-            for item in history[-6:]:
-                role = "用戶" if item.get("role") == "user" else "AI"
+            for item in history[-8:]:
+                role_value = item.get("role")
+                if role_value == "assistant":
+                    role = "AI"
+                elif role_value == "system":
+                    role = "對話摘要"
+                elif role_value == "admin":
+                    role = "管理者"
+                else:
+                    role = "用戶"
                 content = str(item.get("content") or "").strip()
                 if content:
                     lines.append(f"{role}: {content}")
             recent_history = "\n".join(lines)
 
+        rewritten = (standalone_query or "").strip()
+        rewritten_part = ""
+        if rewritten and rewritten != query.strip():
+            rewritten_part = f"\n\n補全後檢索查詢：\n{rewritten}"
+
         if recent_history:
-            return f"最近對話：\n{recent_history}\n\n目前用戶訊息：\n{query.strip()}"
-        return f"目前用戶訊息：\n{query.strip()}"
+            return f"最近對話與摘要：\n{recent_history}\n\n目前用戶訊息：\n{query.strip()}{rewritten_part}"
+        return f"目前用戶訊息：\n{query.strip()}{rewritten_part}"
 
     @staticmethod
     async def _select_documents_with_ai(
         query: str,
         documents: List[KnowledgeDocument],
+        *,
+        conversation_context: Optional[ConversationContext] = None,
+        original_query: Optional[str] = None,
     ) -> List[SelectedDocument]:
         context = AITakeoverService._build_document_summary_context(documents)
+        conversation_context_text = AITakeoverService._format_context_for_control(conversation_context)
+        question_block = f"補全後檢索查詢：\n{query.strip()}"
+        if original_query and original_query.strip() and original_query.strip() != query.strip():
+            question_block = f"目前用戶原始訊息：\n{original_query.strip()}\n\n{question_block}"
+        if conversation_context_text:
+            question_block = f"最近對話與摘要：\n{conversation_context_text}\n\n{question_block}"
         try:
             data = await AITakeoverService._ask_control_model(
-                f"用戶問題：\n{query.strip()}\n\n可用檔案列表與摘要：\n{context}",
+                f"{question_block}\n\n可用檔案列表與摘要：\n{context}",
                 system_prompt=AITakeoverService.SELECTOR_SYSTEM_PROMPT,
                 schema_name="ai_takeover_document_selection",
                 schema=AITakeoverService.SELECTOR_SCHEMA,
@@ -388,6 +426,34 @@ autonomous：
             title = AITakeoverService._document_title(document)
             summary = (document.ai_summary or "").strip() or "（無摘要）"
             lines.append(f"{index}. 檔名：{title}\n摘要：{summary}")
+        return "\n\n".join(lines)
+
+    @staticmethod
+    def _format_context_for_control(context: Optional[ConversationContext]) -> str:
+        if not context:
+            return ""
+
+        lines: List[str] = []
+        if context.rolling_summary:
+            lines.append(f"長期對話摘要：\n{context.rolling_summary.strip()}")
+        if context.retrieved_memory:
+            lines.append(f"語意相關舊對話：\n{context.retrieved_memory.strip()}")
+
+        recent_lines = []
+        for item in context.recent_history[-8:]:
+            role_value = item.get("role")
+            if role_value == "assistant":
+                role = "AI"
+            elif role_value == "admin":
+                role = "管理者"
+            else:
+                role = "用戶"
+            content = str(item.get("content") or "").strip()
+            if content:
+                recent_lines.append(f"{role}: {content}")
+        if recent_lines:
+            lines.append("最近完整對話：\n" + "\n".join(recent_lines))
+
         return "\n\n".join(lines)
 
     @staticmethod

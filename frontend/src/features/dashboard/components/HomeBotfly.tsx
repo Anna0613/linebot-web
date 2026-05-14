@@ -31,6 +31,7 @@ import {
 } from "recharts";
 
 import AppShell from "@/components/layout/AppShell";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -745,9 +746,16 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                       )}
                     >
                       <div className="flex items-start gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-br from-[#16a34a] to-emerald-300 text-lg font-semibold text-white shadow-lg shadow-emerald-700/15">
-                          {getInitial(bot.name)}
-                        </div>
+                        <Avatar className="h-12 w-12 shrink-0 rounded-[16px] shadow-lg shadow-emerald-700/15">
+                          <AvatarImage
+                            src={bot.line_bot_picture_url ?? undefined}
+                            alt={bot.name}
+                            className="rounded-[16px] object-cover"
+                          />
+                          <AvatarFallback className="rounded-[16px] bg-gradient-to-br from-[#16a34a] to-emerald-300 text-lg font-semibold text-white">
+                            {getInitial(bot.name)}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="truncate text-lg font-semibold text-slate-950">

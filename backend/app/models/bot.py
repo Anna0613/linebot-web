@@ -19,13 +19,14 @@ class Bot(Base):
     line_bot_user_id = Column(String(255), nullable=True)
     line_bot_basic_id = Column(String(255), nullable=True)
     line_bot_display_name = Column(String(255), nullable=True)
+    line_bot_picture_url = Column(String(1000), nullable=True)  # 儲存 MinIO 頭像 URL
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     # AI 接管開關（預設關閉），以及 AI 模型設定
     ai_takeover_enabled = Column(Boolean, nullable=False, server_default='false')
     ai_model_provider = Column(String(50), nullable=True, server_default='groq')
     ai_model = Column(String(255), nullable=True)
-    ai_history_messages = Column(Integer, nullable=True)
+    ai_history_messages = Column(Integer, nullable=True, server_default='12')
     ai_system_prompt = Column(Text, nullable=True)
     
     # 關聯關係

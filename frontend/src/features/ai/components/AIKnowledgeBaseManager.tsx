@@ -31,6 +31,7 @@ const pageSize = 10;
 const knowledgeScope: Scope = 'project';
 const defaultProvider = 'groq';
 const defaultModel = 'openai/gpt-oss-120b';
+const defaultHistoryMessages = 12;
 const defaultChunkSize = 800;
 const defaultOverlap = 80;
 const defaultSystemPrompt = '你是一個對話助理。若提供了知識片段，請優先引用並準確回答；若未提供或不足，也可依一般常識與推理能力完整作答。';
@@ -120,11 +121,16 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
       const enabled = Boolean(settings.ai_takeover_enabled);
       setAiEnabled(enabled);
 
-      if (settings.provider !== defaultProvider || settings.model !== defaultModel) {
+      if (
+        settings.provider !== defaultProvider ||
+        settings.model !== defaultModel ||
+        settings.history_messages == null
+      ) {
         const nextSettings = await AIKnowledgeApi.setAIAdvanced(botId, {
           enabled,
           provider: defaultProvider,
           model: defaultModel,
+          history_messages: settings.history_messages ?? defaultHistoryMessages,
           system_prompt: settings.system_prompt || defaultSystemPrompt,
         });
         setAiEnabled(Boolean(nextSettings.ai_takeover_enabled));
@@ -167,7 +173,12 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
 
     try {
       setAiEnabled(value);
-      await AIKnowledgeApi.setAIToggle(botId, value, defaultProvider, defaultModel);
+      await AIKnowledgeApi.setAIAdvanced(botId, {
+        enabled: value,
+        provider: defaultProvider,
+        model: defaultModel,
+        history_messages: defaultHistoryMessages,
+      });
       toast({ title: '已更新', description: `AI 接管已${value ? '啟用' : '停用'}` });
     } catch (e) {
       setAiEnabled(!value);

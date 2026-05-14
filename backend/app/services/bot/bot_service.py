@@ -165,6 +165,27 @@ class BotService:
         bot.line_bot_user_id = BotService._extract_line_bot_user_id(info)
         bot.line_bot_basic_id = info.get("basic_id")
         bot.line_bot_display_name = info.get("display_name")
+        # picture_url 在建立後由 _upload_bot_avatar_to_minio 處理
+
+    @staticmethod
+    async def _upload_bot_avatar_to_minio(db: AsyncSession, bot: Bot, picture_url: Optional[str]) -> None:
+        """下載 LINE Bot 頭像並上傳至 MinIO，成功後更新 bot.line_bot_picture_url"""
+        if not picture_url:
+            return
+        try:
+            from app.services.storage.minio_service import get_minio_service
+            minio = get_minio_service()
+            if not minio:
+                logger.warning("MinIO 服務未初始化，跳過 Bot 頭像上傳: bot_id=%s", bot.id)
+                return
+            _, proxy_url = await minio.upload_bot_avatar(str(bot.id), picture_url)
+            if proxy_url:
+                bot.line_bot_picture_url = proxy_url
+                await db.commit()
+                await db.refresh(bot)
+                logger.info("Bot 頭像已儲存至 MinIO: bot_id=%s url=%s", bot.id, proxy_url)
+        except Exception as e:
+            logger.warning("上傳 Bot 頭像至 MinIO 失敗（不影響建立流程）: bot_id=%s error=%s", bot.id, e)
 
     @staticmethod
     def _bot_response(bot: Bot) -> BotResponse:
@@ -176,6 +197,7 @@ class BotService:
             line_bot_user_id=bot.line_bot_user_id,
             line_bot_basic_id=bot.line_bot_basic_id,
             line_bot_display_name=bot.line_bot_display_name,
+            line_bot_picture_url=bot.line_bot_picture_url,
             user_id=str(bot.user_id),
             created_at=bot.created_at,
             updated_at=bot.updated_at
@@ -258,12 +280,31 @@ class BotService:
             await BotService._auto_bind_line_webhook(db_bot)
         except Exception as e:
             logger.warning("建立 Bot 後自動綁定 LINE Webhook 失敗: bot_id=%s error=%s", db_bot.id, e)
-        
+
+        # 下載並快取 LINE Bot 頭像至 MinIO（不阻塞建立流程）
+        picture_url = line_bot_info.get("picture_url")
+        await BotService._upload_bot_avatar_to_minio(db, db_bot, picture_url)
+
         return BotService._bot_response(db_bot)
     
     @staticmethod
+    async def _backfill_avatar_if_missing(db: AsyncSession, bot: Bot) -> None:
+        """若 Bot 缺少 MinIO 頭像，從 LINE API 重新抓取並存入 MinIO（背景執行）"""
+        if bot.line_bot_picture_url or not bot.channel_token or not bot.channel_secret:
+            return
+        try:
+            line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
+            info = await line_bot_service.async_get_bot_info()
+            if info and not info.get("error"):
+                picture_url = info.get("picture_url")
+                await BotService._upload_bot_avatar_to_minio(db, bot, picture_url)
+        except Exception as e:
+            logger.debug("補抓 Bot 頭像失敗（非嚴重）: bot_id=%s error=%s", bot.id, e)
+
+    @staticmethod
     async def get_user_bots(db: AsyncSession, user_id: UUID) -> List[BotResponse]:
         """取得用戶的所有 Bot (優化查詢：使用 eager loading)"""
+        import asyncio
         # 使用 selectinload 預載入相關資料，避免 N+1 問題
         stmt = (
             select(Bot)
@@ -276,7 +317,15 @@ class BotService:
         )
         result = await db.execute(stmt)
         bots = result.scalars().all()
-            
+
+        # 對缺少頭像的既有 Bot 並行補抓（在 return 前等待完成，確保本次回應即有頭像）
+        bots_missing_avatar = [b for b in bots if not b.line_bot_picture_url and b.channel_token]
+        if bots_missing_avatar:
+            await asyncio.gather(
+                *[BotService._backfill_avatar_if_missing(db, b) for b in bots_missing_avatar],
+                return_exceptions=True,
+            )
+
         return [BotService._bot_response(bot) for bot in bots]
     
     @staticmethod
@@ -386,7 +435,10 @@ class BotService:
                 await BotService._auto_bind_line_webhook(bot)
             except Exception as e:
                 logger.warning("更新 Bot 後自動綁定 LINE Webhook 失敗: bot_id=%s error=%s", bot.id, e)
-        
+            # 憑證更新時重新抓取並快取頭像
+            new_picture_url = line_bot_info.get("picture_url")
+            await BotService._upload_bot_avatar_to_minio(db, bot, new_picture_url)
+
         return BotService._bot_response(bot)
 
     @staticmethod
