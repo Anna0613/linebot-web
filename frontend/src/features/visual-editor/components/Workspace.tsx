@@ -386,8 +386,9 @@ const Workspace: React.FC<WorkspaceProps> = ({
     };
 
     // 更新驗證結果狀態
+    // 未選擇邏輯模板時，不顯示警示 icon（視為正常狀態）
     setWorkspaceValidation({
-      logic: logicValidation,
+      logic: selectedLogicTemplateId ? logicValidation : { ...logicValidation, isValid: true },
       flex: flexValidation
     });
   }, [logicGraph, flexBlocks, normalizeBlocks, toast, selectedLogicTemplateId]);
