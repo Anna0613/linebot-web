@@ -63,11 +63,15 @@ const LogicMiniPreview: React.FC<{ graph: WorkflowGraph }> = ({ graph }) => {
         const src = nodeMap.get(edge.source);
         const tgt = nodeMap.get(edge.target);
         if (!src || !tgt) return null;
+        // 對齊實際編輯器：output = 節點右側中心，input = 節點左側中心
+        const x1 = px(src.position.x) + nw;
+        const y1 = py(src.position.y) + nh / 2;
+        const x2 = px(tgt.position.x);
+        const y2 = py(tgt.position.y) + nh / 2;
+        const dx = Math.max(20, Math.abs(x2 - x1) * 0.45);
+        const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
         return (
-          <line key={edge.id}
-            x1={px(src.position.x) + nw / 2} y1={py(src.position.y) + nh}
-            x2={px(tgt.position.x) + nw / 2} y2={py(tgt.position.y)}
-            stroke="#cbd5e1" strokeWidth={1.2} />
+          <path key={edge.id} d={d} fill="none" stroke="#10b981" strokeWidth={1.2} strokeLinecap="round" />
         );
       })}
       {nodes.map(node => {
