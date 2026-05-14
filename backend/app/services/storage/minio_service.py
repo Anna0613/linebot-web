@@ -425,6 +425,69 @@ class MinIOService:
             logger.error(f"詳細錯誤: {traceback.format_exc()}")
             return None, None
 
+    async def upload_bot_avatar(
+        self,
+        bot_id: str,
+        picture_url: str,
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """
+        從 LINE API 下載 Bot 頭像並上傳到 MinIO。
+
+        儲存路徑: bots/{bot_id}/avatar.jpg
+        每次建立或更新 Bot 時呼叫，確保頭像快取在 MinIO，
+        往後可透過 CDN 直接提供，不需重複打 LINE API。
+
+        Args:
+            bot_id: Bot UUID 字串
+            picture_url: LINE 官方帳號頭像 URL
+
+        Returns:
+            Tuple[object_path, proxy_url]，失敗則回傳 (None, None)
+        """
+        try:
+            logger.info("開始下載 Bot 頭像: bot_id=%s url=%s", bot_id, picture_url)
+            timeout = aiohttp.ClientTimeout(total=15)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(picture_url) as response:
+                    if response.status != 200:
+                        logger.error("下載 Bot 頭像失敗: status=%s", response.status)
+                        return None, None
+                    content_type = response.headers.get("Content-Type", "image/jpeg")
+                    file_data = await response.read()
+
+            if not file_data:
+                logger.error("下載 Bot 頭像資料為空")
+                return None, None
+
+            ext_map = {
+                "image/jpeg": ".jpg",
+                "image/png": ".png",
+                "image/gif": ".gif",
+                "image/webp": ".webp",
+            }
+            ext = ext_map.get(content_type.split(";")[0].strip(), ".jpg")
+            object_path = f"bots/{bot_id}/avatar{ext}"
+
+            file_stream = BytesIO(file_data)
+            file_size = len(file_data)
+
+            await asyncio.to_thread(
+                self.client.put_object,
+                self.bucket_name,
+                object_path,
+                file_stream,
+                file_size,
+                content_type=content_type.split(";")[0].strip() or "image/jpeg",
+            )
+
+            proxy_url = self.get_presigned_url(object_path)
+            logger.info("Bot 頭像上傳成功: bot_id=%s path=%s url=%s", bot_id, object_path, proxy_url)
+            return object_path, proxy_url
+
+        except Exception as e:
+            logger.error("上傳 Bot 頭像失敗: bot_id=%s error=%s", bot_id, e)
+            return None, None
+
     async def _download_media_http(self, channel_token: str, line_message_id: str,
                                  line_user_id: str, message_type: str) -> Tuple[Optional[str], Optional[str]]:
         """使用 HTTP 方式下載媒體檔案（回退方案）"""

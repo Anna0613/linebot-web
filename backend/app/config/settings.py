@@ -203,6 +203,12 @@ class Settings(BaseSettings):
 
     # 通用 AI 設定
     AI_MAX_HISTORY_MESSAGES: int = int(os.getenv("AI_MAX_HISTORY_MESSAGES", "200"))
+    AI_DEFAULT_HISTORY_MESSAGES: int = int(os.getenv("AI_DEFAULT_HISTORY_MESSAGES", "12"))
+    AI_CONTEXT_TOKEN_BUDGET: int = int(os.getenv("AI_CONTEXT_TOKEN_BUDGET", "6000"))
+    AI_SUMMARY_RECENT_MESSAGES: int = int(os.getenv("AI_SUMMARY_RECENT_MESSAGES", "12"))
+    AI_SUMMARY_BATCH_MESSAGES: int = int(os.getenv("AI_SUMMARY_BATCH_MESSAGES", "10"))
+    AI_MEMORY_RETRIEVAL_TOP_K: int = int(os.getenv("AI_MEMORY_RETRIEVAL_TOP_K", "4"))
+    AI_MEMORY_INDEX_RECENT_MESSAGES: int = int(os.getenv("AI_MEMORY_INDEX_RECENT_MESSAGES", "200"))
 
     # CORS 設定 - 預設允許的來源
     @property

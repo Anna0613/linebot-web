@@ -223,7 +223,14 @@ class PromptTemplates:
             role = turn.get("role", "user")
             content = turn.get("content", "")
             if content:
-                role_label = "管理者" if role == "user" else "AI助手"
+                if role == "assistant":
+                    role_label = "AI助手"
+                elif role == "admin":
+                    role_label = "管理者"
+                elif role == "system":
+                    role_label = "對話摘要"
+                else:
+                    role_label = "用戶"
                 history_text.append(f"{role_label}: {content}")
         
         if not history_text:

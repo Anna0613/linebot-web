@@ -47,6 +47,9 @@ class ConversationDocument(Document):
     bot_id: str = Field(..., description="Bot ID (UUID)")
     line_user_id: str = Field(..., description="LINE 用戶 ID")
     messages: List[MessageDocument] = Field(default_factory=list, description="訊息列表")
+    rolling_summary: Optional[str] = Field(None, description="已壓縮的長對話摘要")
+    summary_message_count: int = Field(default=0, description="已納入 rolling_summary 的訊息數")
+    summary_updated_at: Optional[datetime] = Field(None, description="摘要最後更新時間")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="建立時間")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="更新時間")
     

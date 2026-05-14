@@ -59,10 +59,11 @@ class BotResponse(BaseModel):
     line_bot_user_id: Optional[str] = None
     line_bot_basic_id: Optional[str] = None
     line_bot_display_name: Optional[str] = None
+    line_bot_picture_url: Optional[str] = None  # MinIO 快取頭像 URL
     user_id: str
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 

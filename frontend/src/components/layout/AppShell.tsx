@@ -46,11 +46,11 @@ export type AppShellUser = {
 
 const appShellCopy = {
   en: {
-    sidebarSubtitle: "Workspace",
+    sidebarSubtitle: "LineBot 管理",
     nav: {
       home: "Home",
       create: "Create Bot",
-      editor: "Design",
+      editor: "Edit Bot",
       analytics: "Interactions",
       users: "Friends",
       settings: "Settings",
@@ -68,11 +68,11 @@ const appShellCopy = {
     calloutBody: "Check connection, messages, and friends from here.",
   },
   zh: {
-    sidebarSubtitle: "工作台",
+    sidebarSubtitle: "LineBot 管理",
     nav: {
       home: "工作台",
       create: "建立 Bot",
-      editor: "設計",
+      editor: "編輯 Bot",
       analytics: "互動紀錄",
       users: "好友",
       settings: "設定",
