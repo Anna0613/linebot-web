@@ -7,24 +7,11 @@ WORKDIR /app
 # 安裝 pnpm
 RUN npm install -g pnpm
 
-# 複製 package files
-COPY frontend/package*.json ./
-COPY frontend/pnpm-lock.yaml* ./
+# 複製前端文件夾內容
+COPY frontend ./
 
 # 建立 pnpm store 並安裝依賴 (跳過構建腳本)
 RUN pnpm install --no-frozen-lockfile --ignore-scripts
-
-# 複製前端源代碼（排除 node_modules）
-COPY frontend/src ./src/
-COPY frontend/public ./public/
-COPY frontend/*.js ./
-COPY frontend/*.ts ./
-COPY frontend/*.json ./
-COPY frontend/*.html ./
-COPY frontend/*.md ./
-
-# 複製 assets 目錄（從專案根目錄）
-COPY assets/ ./assets/
 
 # 設定構建時環境變數
 ARG VITE_UNIFIED_API_URL
