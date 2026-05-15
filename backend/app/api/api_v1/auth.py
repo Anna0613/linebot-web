@@ -233,10 +233,33 @@ async def check_login(
     db: AsyncSession = Depends(get_async_db)
 ):
     """檢查登入狀態"""
+    import logging
+    logger = logging.getLogger(__name__)
+
     try:
         user = await get_current_user_async(request, db)
-        line_account = user.line_account
+
+        # Safely access line_account relationship
+        line_account = None
+        try:
+            # Check if line_account attribute exists and is loaded
+            if hasattr(user, 'line_account'):
+                line_account = user.line_account
+        except Exception as e:
+            logger.warning(f"Failed to access line_account for user {user.username}: {e}")
+
         is_line_user = line_account is not None
+
+        # Safely get line account details
+        display_name = user.username
+        line_id = None
+        picture_url = None
+
+        if is_line_user and line_account:
+            display_name = line_account.display_name or user.username
+            line_id = line_account.line_id
+            picture_url = line_account.picture_url
+
         return {
             "authenticated": True,
             "user": {
@@ -244,18 +267,18 @@ async def check_login(
                 "username": user.username,
                 "email": user.email,
                 "email_verified": user.email_verified,
-                "display_name": (
-                    line_account.display_name
-                    if is_line_user and line_account.display_name
-                    else user.username
-                ),
+                "display_name": display_name,
                 "login_type": "line" if is_line_user else "traditional",
-                "line_id": line_account.line_id if is_line_user else None,
-                "picture_url": line_account.picture_url if is_line_user else None,
+                "line_id": line_id,
+                "picture_url": picture_url,
                 "isLineUser": is_line_user
             }
         }
     except HTTPException:
+        return {"authenticated": False}
+    except Exception as e:
+        import traceback
+        logger.error(f"Error in check_login: {e}", exc_info=True)
         return {"authenticated": False}
 
 @router.get("/ws-ticket")

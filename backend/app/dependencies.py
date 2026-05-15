@@ -4,7 +4,7 @@ FastAPI 依賴注入模組
 """
 from typing import Optional, Callable, Dict, Any, AsyncGenerator
 from fastapi import Depends, HTTPException, status, Request
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database_async import get_async_db
@@ -116,7 +116,8 @@ async def get_current_user_async(
         # 快取失敗不影響正常流程，繼續從資料庫查詢
 
     # 快取未命中，從資料庫查詢
-    stmt = select(User).options(joinedload(User.line_account)).where(User.username == username)
+    # 使用 selectinload 加載 line_account 關聯，適合 async 場景
+    stmt = select(User).options(selectinload(User.line_account)).where(User.username == username)
     result = await db.execute(stmt)
     user = result.scalars().first()
 
