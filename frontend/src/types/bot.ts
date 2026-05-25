@@ -7,7 +7,7 @@ export interface Bot {
   line_bot_user_id?: string | null;
   line_bot_basic_id?: string | null;
   line_bot_display_name?: string | null;
-  line_bot_picture_url?: string | null;  // MinIO 快取頭像 URL
+  line_bot_picture_url?: string | null; // MinIO 快取頭像 URL
   user_id: string;
   is_active?: boolean;
   created_at: string;
@@ -24,6 +24,7 @@ export interface BotUpdateData {
   name?: string;
   channel_token?: string;
   channel_secret?: string;
+  is_active?: boolean;
 }
 
 export interface LineBotProfile {

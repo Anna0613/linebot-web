@@ -57,7 +57,7 @@ interface PageShellProps {
 
 const PageShell = ({ isAuthenticated, user, children }: PageShellProps) =>
   isAuthenticated ? (
-    <AppShell user={user} activeNav="create" headerKicker="建立教學">
+    <AppShell user={user} activeNav="home" headerKicker="建立教學">
       {children}
     </AppShell>
   ) : (
@@ -78,7 +78,8 @@ const HowToEstablish = () => {
   const steps = useMemo(() => guideSteps, []);
   const activeStep = steps[currentStep - 1];
 
-  const nextStep = () => setCurrentStep((step) => Math.min(step + 1, steps.length));
+  const nextStep = () =>
+    setCurrentStep((step) => Math.min(step + 1, steps.length));
   const prevStep = () => setCurrentStep((step) => Math.max(step - 1, 1));
   const goToStep = (step: number) => setCurrentStep(step);
 
@@ -99,9 +100,12 @@ const HowToEstablish = () => {
           <section className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 pb-16 relative z-10">
             <div className="mb-8">
               <p className="app-kicker mb-2">建立教學</p>
-              <h1 className="mt-2 text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl">BotCraft 建立教學</h1>
+              <h1 className="mt-2 text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl">
+                BotCraft 建立教學
+              </h1>
               <p className="mt-4 max-w-2xl text-lg leading-relaxed text-[var(--bc-ink-2)]">
-                四個步驟取得 LINE Channel 憑證，完成後即可回到 BotCraft 工作台建立 Bot。
+                四個步驟取得 LINE Channel 憑證，完成後即可回到 BotCraft
+                工作台建立 Bot。
               </p>
             </div>
 
@@ -130,7 +134,11 @@ const HowToEstablish = () => {
                               : "bg-slate-100 text-slate-500"
                           }`}
                         >
-                          {isDone ? <CheckCircle2 className="h-4 w-4" /> : step.id}
+                          {isDone ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            step.id
+                          )}
                         </span>
                         <span>
                           <span className="block text-sm font-semibold">
@@ -198,7 +206,7 @@ const HowToEstablish = () => {
                     ) : (
                       <Button
                         type="button"
-                        onClick={() => navigate("/bots/create")}
+                        onClick={() => navigate("/dashboard?createBot=1")}
                         className="app-primary-button px-6"
                       >
                         建立 Bot

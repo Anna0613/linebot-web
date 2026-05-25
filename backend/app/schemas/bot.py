@@ -40,6 +40,7 @@ class BotUpdate(BaseModel):
     name: Optional[str] = None
     channel_token: Optional[str] = None
     channel_secret: Optional[str] = None
+    is_active: Optional[bool] = None
     
     @validator('name')
     def validate_name(cls, v):
@@ -60,6 +61,7 @@ class BotResponse(BaseModel):
     line_bot_basic_id: Optional[str] = None
     line_bot_display_name: Optional[str] = None
     line_bot_picture_url: Optional[str] = None  # MinIO 快取頭像 URL
+    is_active: bool = True
     user_id: str
     created_at: datetime
     updated_at: datetime
@@ -327,6 +329,7 @@ class BotSummary(BaseModel):
     """Bot 摘要信息 schema - 用於下拉選單"""
     id: str
     name: str
+    is_active: bool = True
     created_at: datetime
     
     class Config:

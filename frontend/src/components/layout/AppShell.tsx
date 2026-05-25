@@ -7,13 +7,14 @@ import {
   LogOut,
   Menu,
   PencilRuler,
-  Plus,
   Settings,
   Users,
   X,
 } from "lucide-react";
 
-import BotCraftBrand, { BotCraftMark } from "@/components/brand/BotCraftIdentity";
+import BotCraftBrand, {
+  BotCraftMark,
+} from "@/components/brand/BotCraftIdentity";
 import LanguageToggle from "@/components/LanguageToggle/LanguageToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,6 @@ type IconComponent = React.ComponentType<{ className?: string }>;
 
 export type AppShellNavId =
   | "home"
-  | "create"
   | "editor"
   | "analytics"
   | "users"
@@ -97,7 +97,6 @@ const navItems: Array<{
   icon: IconComponent;
 }> = [
   { id: "home", href: "/dashboard", icon: Home },
-  { id: "create", href: "/bots/create", icon: Plus },
   { id: "editor", href: "/bots/visual-editor", icon: PencilRuler },
   { id: "analytics", href: "/bots/management", icon: BarChart3 },
   { id: "users", href: "/bots/user-management", icon: Users },
@@ -192,7 +191,7 @@ const AppSidebar = ({
 
       <GlobalBotSwitcher
         className="w-full"
-        triggerClassName="border-[var(--bc-line-2)] bg-white text-[var(--bc-ink)] rounded-[14px]"
+        triggerClassName="border-[var(--bc-line-2)] bg-white text-[var(--bc-ink)] rounded-[12px]"
       />
 
       <nav className="mt-7 space-y-1">
@@ -206,7 +205,7 @@ const AppSidebar = ({
               to={item.href}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 rounded-[14px] px-4 py-3 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-[12px] px-4 py-3 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-[var(--bc-accent-soft)] text-[var(--bc-accent-ink)] shadow-sm"
                   : "text-[var(--bc-ink-2)] hover:bg-white/70 hover:text-[var(--bc-ink)]"
@@ -219,7 +218,7 @@ const AppSidebar = ({
         })}
       </nav>
 
-      <div className="mt-auto rounded-[14px] border border-[var(--bc-line-2)] bg-gradient-to-br from-[var(--bc-accent-soft)] via-white to-[var(--bc-hi-soft)] p-4">
+      <div className="mt-auto rounded-[12px] border border-[var(--bc-line-2)] bg-gradient-to-br from-[var(--bc-accent-soft)] via-white to-[var(--bc-hi-soft)] p-4">
         <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-white shadow-sm">
           <BotCraftMark className="h-6 w-6" />
         </div>
@@ -368,7 +367,7 @@ const AppTopbar = ({
             variant="ghost"
             size="icon"
             onClick={onOpenSidebar}
-            className="h-10 w-10 rounded-[14px] text-[var(--bc-ink-2)] hover:bg-white/80 lg:hidden"
+            className="h-10 w-10 rounded-[12px] text-[var(--bc-ink-2)] hover:bg-white/80 lg:hidden"
             aria-label={copy.openNavigation}
           >
             <Menu className="h-5 w-5" />
@@ -397,19 +396,19 @@ const AppTopbar = ({
             type="button"
             variant="outline"
             size="icon"
-            className="h-10 w-10 rounded-[14px] border-[var(--bc-line-2)] bg-white/70 text-[var(--bc-ink-2)] shadow-sm hover:bg-white hover:text-[var(--bc-ink)]"
+            className="h-10 w-10 rounded-[12px] border-[var(--bc-line-2)] bg-white/70 text-[var(--bc-ink-2)] shadow-sm hover:bg-white hover:text-[var(--bc-ink)]"
             aria-label={copy.notifications}
           >
             <Bell className="h-4 w-4" />
           </Button>
-          <div className="flex h-10 items-center rounded-[14px] border border-[var(--bc-line-2)] bg-white/70 px-2 shadow-sm">
+          <div className="flex h-10 items-center rounded-[12px] border border-[var(--bc-line-2)] bg-white/70 px-2 shadow-sm">
             <LanguageToggle className="h-8 min-w-8 text-sm" />
           </div>
           <Button
             type="button"
             variant="outline"
             onClick={handleLogout}
-            className="h-10 rounded-full border-[var(--bc-line)] bg-transparent px-3 text-sm font-medium text-[var(--bc-ink-2)] shadow-none hover:border-[var(--bc-ink)] hover:bg-transparent hover:text-[var(--bc-ink)]"
+            className="h-10 rounded-[12px] border-[var(--bc-line)] bg-transparent px-3 text-sm font-medium text-[var(--bc-ink-2)] shadow-none hover:border-[var(--bc-ink)] hover:bg-transparent hover:text-[var(--bc-ink)]"
             aria-label={copy.logout}
           >
             <LogOut className="h-4 w-4 xl:mr-2" />
@@ -488,7 +487,7 @@ const AppShell = ({
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(false)}
-            className="absolute right-4 top-4 h-10 w-10 rounded-full bg-white/90 text-[var(--bc-ink-2)] shadow-lg"
+            className="absolute right-4 top-4 h-10 w-10 rounded-[12px] bg-white/90 text-[var(--bc-ink-2)] shadow-lg"
             aria-label={copy.closeNavigation}
           >
             <X className="h-5 w-5" />

@@ -2,12 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
-import {
-  Bot as BotIcon,
-  CheckCircle2,
-  Radio,
-  Wifi,
-} from "lucide-react";
+import { Bot as BotIcon, CheckCircle2, Radio, Wifi } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import { useToast } from "@/hooks/use-toast";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
@@ -387,7 +382,7 @@ const BotManagementPage: React.FC = () => {
       await fetchAnalytics(selectedBotId, undefined, false);
       toast({
         title: "刷新完成",
-      description: "互動紀錄已更新",
+        description: "互動紀錄已更新",
       });
     } catch (_error) {
       toast({
@@ -504,12 +499,7 @@ const BotManagementPage: React.FC = () => {
         }
       }, 500);
     };
-  }, [
-    selectedBotId,
-    fetchAnalytics,
-    fetchWebhookStatus,
-    toast,
-  ]);
+  }, [selectedBotId, fetchAnalytics, fetchWebhookStatus, toast]);
 
   // 處理 WebSocket 即時更新消息
   useEffect(() => {
@@ -651,7 +641,6 @@ const BotManagementPage: React.FC = () => {
             .catch((error) => {
               console.error("WebSocket 活動更新錯誤:", error);
             });
-
         }
         break;
       }
@@ -667,13 +656,7 @@ const BotManagementPage: React.FC = () => {
       default:
       // 未處理的消息類型
     }
-  }, [
-    lastMessage,
-    selectedBotId,
-    timeRange,
-    toast,
-    fetchWebhookStatus,
-  ]);
+  }, [lastMessage, selectedBotId, timeRange, toast, fetchWebhookStatus]);
 
   // 更新渲染時間
   useEffect(() => {
@@ -739,7 +722,7 @@ const BotManagementPage: React.FC = () => {
             </p>
             <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
               <Button
-                onClick={() => navigate("/bots/create")}
+                onClick={() => navigate("/dashboard?createBot=1")}
                 className="rounded-[14px] bg-[#16a34a] px-5 font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-[#15803d]"
               >
                 {copy.createFirstBot}

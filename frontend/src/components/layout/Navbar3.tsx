@@ -170,8 +170,20 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
               className="flex items-center space-x-3 z-10 ml-2"
             >
               <picture>
-                <source srcSet="/assets/images/webp/LOGO.webp" type="image/webp" />
-                <img src="/assets/images/origin/LOGO.png" alt="Logo" loading="eager" decoding="async" fetchpriority="high" width="48" height="48" className="h-12 w-auto" />
+                <source
+                  srcSet="/assets/images/webp/LOGO.webp"
+                  type="image/webp"
+                />
+                <img
+                  src="/assets/images/origin/LOGO.png"
+                  alt="Logo"
+                  loading="eager"
+                  decoding="async"
+                  fetchpriority="high"
+                  width="48"
+                  height="48"
+                  className="h-12 w-auto"
+                />
               </picture>
               <h6 className="text-[28px] font-bold pl-4 text-foreground tracking-normal mt-1">
                 LINE Bot 製作輔助系統
@@ -385,7 +397,7 @@ const Navbar3: React.FC<Navbar3Props> = ({ user }) => {
             </li>
             <li>
               <Link
-                to="/bots/create"
+                to="/dashboard?createBot=1"
                 onClick={toggleMobileMenu}
                 className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-secondary"
               >

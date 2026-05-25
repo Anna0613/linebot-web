@@ -59,7 +59,8 @@ const StepTwo = () => {
                 建立 <span className="text-gradient">LINE Bot</span>
               </h2>
               <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                登入後，您可以開始建立您的第一個 LINE Bot，填寫基本資訊和 LINE Channel 金鑰即可完成設定。
+                登入後，您可以開始建立您的第一個 LINE Bot，填寫基本資訊和 LINE
+                Channel 金鑰即可完成設定。
               </p>
             </div>
 
@@ -106,7 +107,9 @@ const StepTwo = () => {
                       小提示
                     </h4>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                      Channel Access Token 和 Channel Secret 可以從 LINE Developers 的 Messaging API 設定頁面取得。如果還沒有 LINE Channel，請先前往 LINE Developers 建立。
+                      Channel Access Token 和 Channel Secret 可以從 LINE
+                      Developers 的 Messaging API 設定頁面取得。如果還沒有 LINE
+                      Channel，請先前往 LINE Developers 建立。
                     </p>
                   </div>
                 </div>
@@ -114,7 +117,7 @@ const StepTwo = () => {
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <a
-                  href="/bots/create"
+                  href="/dashboard?createBot=1"
                   className="inline-flex w-full sm:w-auto"
                 >
                   <Button

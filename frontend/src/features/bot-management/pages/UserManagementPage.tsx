@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Bot as BotIcon,
-  CheckCircle2,
-  Wifi,
-} from "lucide-react";
+import { Bot as BotIcon, CheckCircle2, Wifi } from "lucide-react";
 
 import AppShell from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
@@ -49,8 +45,7 @@ const userManagementCopy = {
     welcome: "歡迎回來",
     heroBadge: "好友與訊息",
     title: "好友",
-    subtitle:
-      "查看 LINE 好友、對話紀錄、廣播對象與一對一回覆。",
+    subtitle: "查看 LINE 好友、對話紀錄、廣播對象與一對一回覆。",
     channelStatus: "Channel 狀態",
     webSocket: "WebSocket",
     selectedUsers: "已選好友",
@@ -59,8 +54,7 @@ const userManagementCopy = {
     connected: "已連線",
     reconnecting: "重新連線中",
     noBotsTitle: "先建立第一個 LINE Bot",
-    noBotsBody:
-      "建立完成後，好友資料、對話紀錄與廣播工具會出現在這裡。",
+    noBotsBody: "建立完成後，好友資料、對話紀錄與廣播工具會出現在這裡。",
     createFirstBot: "建立第一個 Bot",
     viewSetupGuide: "查看建立教學",
     loading: "載入好友...",
@@ -247,7 +241,7 @@ const UserManagementPage: React.FC = () => {
             </p>
             <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
               <Button
-                onClick={() => navigate("/bots/create")}
+                onClick={() => navigate("/dashboard?createBot=1")}
                 className="rounded-[14px] bg-[#16a34a] px-5 font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-[#15803d]"
               >
                 {copy.createFirstBot}
@@ -273,9 +267,7 @@ const UserManagementPage: React.FC = () => {
             usersLoading={userManagement.usersLoading}
             selectedUser={userManagement.selectedUser}
             pagination={userManagement.pagination}
-            selectiveBroadcastLoading={
-              userManagement.selectiveBroadcastLoading
-            }
+            selectiveBroadcastLoading={userManagement.selectiveBroadcastLoading}
             searchTerm={userManagement.searchTerm}
             currentChatUser={userManagement.currentChatUser}
             onBroadcastMessageChange={userManagement.setBroadcastMessage}

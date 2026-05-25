@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
 import { useBotManagement } from "@/features/bot-management/hooks/useBotManagement";
 import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
+import { cn } from "@/lib/utils";
 import { apiClient } from "@/services/UnifiedApiClient";
 
 interface BotData {
@@ -28,12 +29,22 @@ interface BotData {
 type LineProfileStatus = "idle" | "loading" | "success" | "error";
 
 const credentialHints = [
-  "LINE Developers Console",
-  "Messaging API 分頁",
-  "Basic settings 分頁",
+  "進入 LINE Developers Console，選擇 Provider 與 Messaging API Channel。",
+  "在 Messaging API 分頁找到 Channel access token，按 Issue 或 Reissue 後複製。",
+  "在 Basic settings 分頁找到 Channel secret，直接複製貼上。",
 ];
 
-const BotCreationForm = () => {
+interface BotCreationFormProps {
+  variant?: "page" | "dialog";
+  onCreated?: (botId: string | null) => void;
+  onClose?: () => void;
+}
+
+const BotCreationForm = ({
+  variant = "page",
+  onCreated,
+  onClose,
+}: BotCreationFormProps) => {
   const navigate = useNavigate();
   const { createBot, isLoading, error, setError, clearError } =
     useBotManagement();
@@ -49,6 +60,7 @@ const BotCreationForm = () => {
   const [lineProfileStatus, setLineProfileStatus] =
     useState<LineProfileStatus>("idle");
   const [lineProfileError, setLineProfileError] = useState("");
+  const isDialog = variant === "dialog";
 
   useEffect(() => {
     const accessToken = formData.accessToken.trim();
@@ -192,6 +204,7 @@ const BotCreationForm = () => {
           selectBot(nextCreatedBotId);
           void refreshBots();
         }
+        onCreated?.(nextCreatedBotId);
         setSuccess(true);
       }
     } catch (creationError) {
@@ -211,8 +224,18 @@ const BotCreationForm = () => {
 
   if (success) {
     return (
-      <div className="mx-auto max-w-4xl py-6">
-        <div className="app-panel-strong p-6 sm:p-8">
+      <div
+        className={cn(
+          isDialog ? "p-5 pt-0 sm:p-6 sm:pt-0" : "mx-auto max-w-4xl py-6"
+        )}
+      >
+        <div
+          className={cn(
+            isDialog
+              ? "rounded-[16px] border border-emerald-100 bg-emerald-50/70 p-5"
+              : "app-panel-strong p-6 sm:p-8"
+          )}
+        >
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <span className="app-soft-icon">
@@ -221,7 +244,8 @@ const BotCreationForm = () => {
               <p className="app-kicker mt-5">Created</p>
               <h1 className="app-page-title mt-2">Bot 已建立</h1>
               <p className="app-subtitle mt-3">
-                {formData.name} 已加入工作台。接下來可以開始設計回覆，或回到互動紀錄查看狀態。
+                {formData.name}{" "}
+                已加入工作台。接下來可以開始設計回覆，或回到互動紀錄查看狀態。
               </p>
             </div>
             <div className="app-muted-panel min-w-48">
@@ -235,31 +259,44 @@ const BotCreationForm = () => {
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button
-              type="button"
-              onClick={() =>
-                navigate("/bots/visual-editor", {
-                  state: {
-                    selectedBotId: createdBotId,
-                    activeTab: "logic",
-                    returnTo: "/bots/management",
-                    returnLabel: "返回互動紀錄",
-                  },
-                })
-              }
-              className="app-primary-button"
-            >
-              <Workflow className="h-4 w-4" />
-              開始設計流程
-            </Button>
-            <Button
-              type="button"
-              onClick={() => navigate("/bots/management")}
-              variant="outline"
-              className="app-secondary-button"
-            >
-              查看互動紀錄
-            </Button>
+            {!isDialog && (
+              <>
+                <Button
+                  type="button"
+                  onClick={() =>
+                    navigate("/bots/visual-editor", {
+                      state: {
+                        selectedBotId: createdBotId,
+                        activeTab: "logic",
+                        returnTo: "/bots/management",
+                        returnLabel: "返回互動紀錄",
+                      },
+                    })
+                  }
+                  className="app-primary-button"
+                >
+                  <Workflow className="h-4 w-4" />
+                  開始設計流程
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => navigate("/bots/management")}
+                  variant="outline"
+                  className="app-secondary-button"
+                >
+                  查看互動紀錄
+                </Button>
+              </>
+            )}
+            {isDialog && (
+              <Button
+                type="button"
+                onClick={onClose}
+                className="app-primary-button"
+              >
+                完成
+              </Button>
+            )}
             <Button
               type="button"
               onClick={resetForm}
@@ -283,14 +320,21 @@ const BotCreationForm = () => {
     !formData.channelSecret;
 
   return (
-    <div className="mx-auto max-w-5xl py-6">
-      <div className="mb-6">
-        <p className="app-kicker">建立 Bot</p>
-        <h1 className="app-page-title mt-2">連接你的 LINE Bot</h1>
-        <p className="app-subtitle mt-3">
-          貼上 LINE Developers 裡的憑證，我們會自動讀取官方帳號名稱。建立前仍可自行修改。
-        </p>
-      </div>
+    <div
+      className={cn(
+        isDialog ? "p-5 pt-0 sm:p-6 sm:pt-0" : "mx-auto max-w-5xl py-6"
+      )}
+    >
+      {!isDialog && (
+        <div className="mb-6">
+          <p className="app-kicker">建立 Bot</p>
+          <h1 className="app-page-title mt-2">連接你的 LINE Bot</h1>
+          <p className="app-subtitle mt-3">
+            貼上 LINE Developers
+            裡的憑證，我們會自動讀取官方帳號名稱。建立前仍可自行修改。
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 rounded-[16px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -299,8 +343,20 @@ const BotCreationForm = () => {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_0.72fr]">
-        <form onSubmit={handleSubmit} className="app-panel-strong p-5 sm:p-7">
+      <div
+        className={cn(
+          "grid gap-4",
+          isDialog ? "lg:grid-cols-[1fr_0.88fr]" : "lg:grid-cols-[1fr_0.72fr]"
+        )}
+      >
+        <form
+          onSubmit={handleSubmit}
+          className={cn(
+            isDialog
+              ? "rounded-[16px] border border-slate-200/80 bg-white p-4 sm:p-5"
+              : "app-panel-strong p-5 sm:p-7"
+          )}
+        >
           <div className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="access-token" className="text-slate-700">
@@ -414,7 +470,7 @@ const BotCreationForm = () => {
               onClick={() => navigate("/how-to-establish")}
             >
               <ExternalLink className="h-4 w-4" />
-              查看憑證教學
+              完整憑證教學
             </Button>
           </div>
         </form>
@@ -425,11 +481,15 @@ const BotCreationForm = () => {
           </span>
           <h2 className="app-card-title mt-5">先準備這些資料</h2>
           <p className="app-card-copy mt-2">
-            這些資料都在 LINE Developers。確認 Channel 已啟用 Messaging API 後再建立。
+            這些資料都在 LINE Developers。確認 Channel 已啟用 Messaging API
+            後再建立。
           </p>
           <div className="mt-5 space-y-3">
             {credentialHints.map((hint, index) => (
-              <div key={hint} className="flex items-center gap-3 rounded-[14px] bg-slate-50/80 px-3 py-3 text-sm text-slate-600">
+              <div
+                key={hint}
+                className="flex items-center gap-3 rounded-[14px] bg-slate-50/80 px-3 py-3 text-sm text-slate-600"
+              >
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-[#166534]">
                   {index + 1}
                 </span>

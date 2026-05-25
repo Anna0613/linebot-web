@@ -198,6 +198,7 @@ class BotService:
             line_bot_basic_id=bot.line_bot_basic_id,
             line_bot_display_name=bot.line_bot_display_name,
             line_bot_picture_url=bot.line_bot_picture_url,
+            is_active=bool(bot.is_active),
             user_id=str(bot.user_id),
             created_at=bot.created_at,
             updated_at=bot.updated_at
@@ -268,7 +269,8 @@ class BotService:
             user_id=user_id,
             name=bot_data.name,
             channel_token=bot_data.channel_token,
-            channel_secret=bot_data.channel_secret
+            channel_secret=bot_data.channel_secret,
+            is_active=True
         )
         BotService._apply_line_bot_info(db_bot, line_bot_info)
 
@@ -725,6 +727,7 @@ class BotService:
             BotSummary(
                 id=str(bot.id),
                 name=bot.name,
+                is_active=bool(bot.is_active),
                 created_at=bot.created_at
             )
             for bot in bots

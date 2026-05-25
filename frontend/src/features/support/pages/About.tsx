@@ -65,9 +65,13 @@ const About = () => {
             <div className="app-panel grid overflow-hidden p-0 lg:grid-cols-[1fr_0.82fr]">
               <div className="p-8 sm:p-10 lg:p-12">
                 <p className="app-kicker mb-2">關於</p>
-                <h1 className="text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl lg:text-5xl">關於 BotCraft</h1>
+                <h1 className="text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl lg:text-5xl">
+                  關於 BotCraft
+                </h1>
                 <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--bc-ink-2)]">
-                  BotCraft 是一個視覺化的對話機器人工作台。重點是把建立、設計、AI 接管與查看互動放在同一個清楚流程裡。
+                  BotCraft
+                  是一個視覺化的對話機器人工作台。重點是把建立、設計、AI
+                  接管與查看互動放在同一個清楚流程裡。
                 </p>
                 <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                   <Button
@@ -80,7 +84,7 @@ const About = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => navigate("/bots/create")}
+                    onClick={() => navigate("/dashboard?createBot=1")}
                     className="app-secondary-button px-8"
                   >
                     開始建立 Bot
@@ -97,7 +101,9 @@ const About = () => {
             <div className="mb-12 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
                 <p className="app-kicker mb-2">重點</p>
-                <h2 className="text-3xl font-medium tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl">平台做三件事</h2>
+                <h2 className="text-3xl font-medium tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl">
+                  平台做三件事
+                </h2>
               </div>
               <p className="text-[var(--bc-ink-2)] max-w-md text-base leading-relaxed">
                 減少跳轉、減少設定負擔，讓 Bot 從建立到日常調整都更容易。
@@ -107,12 +113,19 @@ const About = () => {
               {highlights.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.title} className="app-card p-8 transition-transform duration-200 hover:-translate-y-0.5">
+                  <div
+                    key={item.title}
+                    className="app-card p-8 transition-transform duration-200 hover:-translate-y-0.5"
+                  >
                     <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-[14px] bg-emerald-100 text-emerald-700">
                       <Icon className="h-6 w-6" />
                     </div>
-                    <h3 className="text-xl font-medium text-[var(--bc-ink)] mb-3">{item.title}</h3>
-                    <p className="text-[var(--bc-ink-2)] leading-relaxed">{item.description}</p>
+                    <h3 className="text-xl font-medium text-[var(--bc-ink)] mb-3">
+                      {item.title}
+                    </h3>
+                    <p className="text-[var(--bc-ink-2)] leading-relaxed">
+                      {item.description}
+                    </p>
                   </div>
                 );
               })}
@@ -127,7 +140,9 @@ const About = () => {
                     <ShieldCheck className="h-6 w-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-medium tracking-[-0.02em] text-[var(--bc-ink)]">適合需要固定維護對話機器人的情境</h2>
+                    <h2 className="text-2xl font-medium tracking-[-0.02em] text-[var(--bc-ink)]">
+                      適合需要固定維護對話機器人的情境
+                    </h2>
                     <p className="mt-3 max-w-2xl text-base leading-relaxed text-[var(--bc-ink-2)]">
                       客服、活動通知、教育助理與社群互動都能用同一套流程處理，不需要在多個工具之間來回切換。
                     </p>

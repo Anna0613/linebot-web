@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { QRCodeSVG } from "qrcode.react";
 import {
   Activity,
@@ -24,7 +30,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
 import { apiClient } from "@/services/UnifiedApiClient";
-import type { Bot as BotRecord, BotUpdateData, LineBotProfile } from "@/types/bot";
+import type {
+  Bot as BotRecord,
+  BotUpdateData,
+  LineBotProfile,
+} from "@/types/bot";
 import type { WebhookStatus } from "@/features/bot-management/types/botManagement";
 import { QuotaStatusCard } from "@/features/bot-management/components/quota/QuotaStatusCard";
 import { useQuotaStatus } from "@/hooks/useQuotaStatus";
@@ -68,8 +78,10 @@ const getBotHealthFromWebhook = (webhookStatus: WebhookStatus | null) => {
 };
 
 const getHealthBadgeClass = (health: "online" | "offline" | "error") => {
-  if (health === "online") return "border-emerald-200 bg-emerald-50 text-[#166534]";
-  if (health === "offline") return "border-amber-200 bg-amber-50 text-amber-700";
+  if (health === "online")
+    return "border-emerald-200 bg-emerald-50 text-[#166534]";
+  if (health === "offline")
+    return "border-amber-200 bg-amber-50 text-amber-700";
   return "border-red-200 bg-red-50 text-red-700";
 };
 
@@ -112,7 +124,9 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncingLine, setIsSyncingLine] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [webhookStatus, setWebhookStatus] = useState<WebhookStatus | null>(null);
+  const [webhookStatus, setWebhookStatus] = useState<WebhookStatus | null>(
+    null
+  );
   const [webhookStatusLoading, setWebhookStatusLoading] = useState(false);
   const [controlLoading, setControlLoading] = useState(false);
   const [copiedQrCode, setCopiedQrCode] = useState(false);
@@ -429,17 +443,29 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
     : webhookStatus?.status === "configuration_error"
       ? "border-red-100 bg-red-50 text-red-700"
       : "border-amber-100 bg-amber-50 text-amber-700";
+  const channelConfigured = Boolean(bot?.channel_token && bot?.channel_secret);
+  const healthTone: StatusTone =
+    botHealth === "online"
+      ? "success"
+      : botHealth === "offline"
+        ? "warning"
+        : "danger";
+  const webhookTone: StatusTone = webhookBound
+    ? "success"
+    : webhookStatus?.status === "configuration_error"
+      ? "danger"
+      : "warning";
 
   return (
     <div className="h-full overflow-y-auto p-4">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 pb-8">
-        <section className="app-panel-strong overflow-hidden p-5 sm:p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="grid w-full gap-4 pb-6">
+        <section className="app-panel-strong overflow-hidden p-5">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="flex min-w-0 items-center gap-4">
-              <Avatar className="h-20 w-20 border border-white/80 bg-white shadow-sm">
+              <Avatar className="h-16 w-16 border border-white/80 bg-white shadow-sm">
                 <AvatarImage src={officialAvatar} alt={officialName} />
                 <AvatarFallback className="bg-emerald-50 text-[#166534]">
-                  <Bot className="h-9 w-9" />
+                  <Bot className="h-8 w-8" />
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
@@ -453,7 +479,9 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
                         : "border-amber-200 bg-amber-50 text-amber-700"
                     }
                   >
-                    {lineProfile?.is_live ? "LINE API 已同步" : "尚未取得真實資料"}
+                    {lineProfile?.is_live
+                      ? "LINE API 已同步"
+                      : "尚未取得真實資料"}
                   </Badge>
                 </div>
                 <h2 className="truncate text-2xl font-semibold text-slate-950">
@@ -465,7 +493,7 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:flex-row xl:justify-end">
               <Button
                 type="button"
                 variant="outline"
@@ -473,345 +501,442 @@ const BotBasicInfoPanel: React.FC<BotBasicInfoPanelProps> = ({
                 onClick={() => void loadLineProfile()}
                 disabled={isSyncingLine}
               >
-                {isSyncingLine ? <Loader size="sm" /> : <RefreshCw className="h-4 w-4" />}
+                {isSyncingLine ? (
+                  <Loader size="sm" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
                 重新同步
               </Button>
-              <Button asChild variant="outline" className="app-secondary-button">
-                <a href={officialAccountManagerUrl} target="_blank" rel="noreferrer">
+              <Button
+                asChild
+                variant="outline"
+                className="app-secondary-button"
+              >
+                <a
+                  href={officialAccountManagerUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   <ExternalLink className="h-4 w-4" />
                   編輯 LINE 官方資料
                 </a>
               </Button>
             </div>
           </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/70 pt-4">
+            <StatusPill
+              label="健康狀態"
+              value={getHealthLabel(botHealth)}
+              icon={Activity}
+              tone={healthTone}
+            />
+            <StatusPill
+              label="Webhook"
+              value={webhookBound ? "已綁定" : "待確認"}
+              icon={webhookBound ? CheckCircle2 : AlertCircle}
+              tone={webhookTone}
+            />
+            <StatusPill
+              label="即時連接"
+              value={isConnected ? "已連線" : "離線"}
+              icon={Wifi}
+              tone={isConnected ? "success" : "danger"}
+            />
+          </div>
         </section>
 
         {(error || lineProfile?.error) && (
-          <Alert variant="destructive" className="border-red-200 bg-red-50/80 text-red-700">
+          <Alert
+            variant="destructive"
+            className="border-red-200 bg-red-50/80 text-red-700"
+          >
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>LINE API 同步失敗</AlertTitle>
             <AlertDescription>{error || lineProfile?.error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
-          <section className="app-panel p-5 sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <p className="app-kicker">Control</p>
-                <h3 className="mt-1 text-lg font-semibold text-slate-950">Bot 資訊與狀態</h3>
-              </div>
-              <Badge variant="outline" className={getHealthBadgeClass(botHealth)}>
-                <Activity className="mr-1.5 h-3.5 w-3.5" />
-                {getHealthLabel(botHealth)}
-              </Badge>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <InfoItem label="Bot 名稱" value={displayValue(bot?.name)} />
-              <InfoItem
-                label="頻道設定"
-                value={bot?.channel_token && bot?.channel_secret ? "已設定" : "未設定"}
-              />
-              <InfoItem label="建立時間" value={formatDateTime(bot?.created_at)} />
-              <InfoItem label="最後更新" value={formatDateTime(bot?.updated_at)} />
-              <div className="rounded-lg border border-white/70 bg-white/60 p-4 sm:col-span-2">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500">即時連接</p>
-                    <p
-                      className={`mt-2 text-sm font-semibold ${
-                        isConnected ? "text-[#166534]" : "text-red-700"
-                      }`}
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
+          <main className="grid min-w-0 gap-4">
+            <div className="grid gap-4 2xl:grid-cols-[0.8fr_1.2fr]">
+              <section className="app-panel p-5">
+                <PanelHeader
+                  kicker="Overview"
+                  title="系統資訊"
+                  badge={
+                    <Badge
+                      variant="outline"
+                      className={getHealthBadgeClass(botHealth)}
                     >
-                      {isConnected ? "WebSocket 已連線" : "離線模式"}
-                    </p>
-                  </div>
-                  <Wifi
-                    className={`h-5 w-5 ${isConnected ? "text-[#16a34a]" : "text-red-500"}`}
+                      <Activity className="mr-1.5 h-3.5 w-3.5" />
+                      {getHealthLabel(botHealth)}
+                    </Badge>
+                  }
+                />
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-1">
+                  <InfoItem label="Bot 名稱" value={displayValue(bot?.name)} />
+                  <InfoItem
+                    label="頻道設定"
+                    value={channelConfigured ? "已設定" : "未設定"}
+                  />
+                  <InfoItem
+                    label="建立時間"
+                    value={formatDateTime(bot?.created_at)}
+                  />
+                  <InfoItem
+                    label="最後更新"
+                    value={formatDateTime(bot?.updated_at)}
                   />
                 </div>
-              </div>
-            </div>
+              </section>
 
-            <div className="mt-4 flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                className="app-secondary-button"
-                onClick={() => void handleCheckBotHealth()}
-                disabled={controlLoading}
-              >
-                {controlLoading ? <Loader size="sm" /> : <Activity className="h-4 w-4" />}
-                {controlLoading ? "檢查中..." : "重新檢查狀態"}
-              </Button>
-            </div>
-          </section>
+              <section className="app-panel p-5">
+                <PanelHeader kicker="Connection" title="連線設定" />
 
-          <section className="app-panel p-5 sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <p className="app-kicker">Webhook</p>
-                <h3 className="mt-1 text-lg font-semibold text-slate-950">綁定狀態</h3>
-              </div>
-              <Badge variant="outline" className={getWebhookBadgeClass(webhookStatus)}>
-                {webhookStatusLoading ? "檢查中..." : webhookStatus?.status_text || "尚未檢查"}
-              </Badge>
-            </div>
-
-            <div className={`mb-4 rounded-lg border px-4 py-3 ${webhookBindingClass}`}>
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                {webhookBound ? (
-                  <CheckCircle2 className="h-4 w-4" />
+                {isLoading ? (
+                  <div className="flex min-h-[220px] items-center justify-center">
+                    <div className="flex items-center gap-3 text-sm font-medium text-slate-500">
+                      <Loader size="sm" />
+                      載入中...
+                    </div>
+                  </div>
                 ) : (
-                  <AlertCircle className="h-4 w-4" />
+                  <form
+                    onSubmit={handleSave}
+                    className="mt-4 grid gap-4 lg:grid-cols-2"
+                  >
+                    <div className="space-y-2 lg:col-span-2">
+                      <Label htmlFor="bot-name" className="text-slate-700">
+                        系統管理名稱
+                      </Label>
+                      <Input
+                        id="bot-name"
+                        value={formData.name}
+                        onChange={(event) =>
+                          setFormData((current) => ({
+                            ...current,
+                            name: event.target.value,
+                          }))
+                        }
+                        className="app-input"
+                        placeholder="Bot 名稱"
+                      />
+                    </div>
+
+                    <SecretInput
+                      id="channel-token"
+                      label="Channel Access Token"
+                      value={formData.channel_token}
+                      visible={showToken}
+                      onToggleVisible={() =>
+                        setShowToken((current) => !current)
+                      }
+                      onChange={(value) =>
+                        setFormData((current) => ({
+                          ...current,
+                          channel_token: value,
+                        }))
+                      }
+                    />
+
+                    <SecretInput
+                      id="channel-secret"
+                      label="Channel Secret"
+                      value={formData.channel_secret}
+                      visible={showSecret}
+                      onToggleVisible={() =>
+                        setShowSecret((current) => !current)
+                      }
+                      onChange={(value) =>
+                        setFormData((current) => ({
+                          ...current,
+                          channel_secret: value,
+                        }))
+                      }
+                    />
+
+                    <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:justify-end lg:col-span-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="app-secondary-button"
+                        onClick={handleReset}
+                        disabled={!hasChanges || isSaving}
+                      >
+                        重置
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="app-primary-button"
+                        disabled={!hasChanges || isSaving}
+                      >
+                        {isSaving ? (
+                          <Loader size="sm" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        {isSaving ? "儲存中..." : "儲存連線設定"}
+                      </Button>
+                    </div>
+                  </form>
                 )}
-                {webhookBindingLabel}
-              </div>
-              <p className="mt-1 text-xs font-medium opacity-80">
-                {webhookBindingDescription}
-              </p>
+              </section>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <StatusItem
-                label="Bot 配置"
-                active={Boolean(webhookStatus?.is_configured)}
-                activeText="已配置"
-                inactiveText="未配置"
-              />
-              <StatusItem
-                label="LINE API"
-                active={Boolean(webhookStatus?.line_api_accessible)}
-                activeText="可連接"
-                inactiveText="連接失敗"
-              />
-              <StatusItem
-                label="Webhook 端點"
-                active={Boolean(webhookStatus?.webhook_endpoint_info?.is_set)}
-                warning={
-                  Boolean(webhookStatus?.webhook_endpoint_info?.is_set) &&
-                  !webhookStatus?.webhook_endpoint_info?.active
+            <section className="app-panel p-5">
+              <PanelHeader
+                kicker="Webhook"
+                title="綁定診斷"
+                badge={
+                  <Badge
+                    variant="outline"
+                    className={getWebhookBadgeClass(webhookStatus)}
+                  >
+                    {webhookStatusLoading
+                      ? "檢查中..."
+                      : webhookStatus?.status_text || "尚未檢查"}
+                  </Badge>
                 }
-                activeText="已啟用"
-                warningText="已設定但未啟用"
-                inactiveText="未設定"
-                className="sm:col-span-2"
-              />
-              <InfoItem
-                label="最後檢查"
-                value={formatDateTime(webhookStatus?.checked_at)}
-                className="sm:col-span-2"
-              />
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                className="app-secondary-button"
-                onClick={() => void fetchWebhookStatus()}
-                disabled={webhookStatusLoading}
-              >
-                {webhookStatusLoading ? <Loader size="sm" /> : <RefreshCw className="h-4 w-4" />}
-                {webhookStatusLoading ? "檢查中..." : "重新檢查"}
-              </Button>
-            </div>
-          </section>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-          <section className="app-panel p-5 sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <p className="app-kicker">Messaging API</p>
-                <h3 className="mt-1 text-lg font-semibold text-slate-950">訊息配額</h3>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="app-icon-button h-9 w-9"
-                onClick={() => void refetchQuota()}
-                disabled={quotaLoading}
-                title="重新整理配額"
-              >
-                {quotaLoading ? <Loader size="sm" /> : <RefreshCw className="h-4 w-4" />}
-              </Button>
-            </div>
-            <QuotaStatusCard
-              quotaStatus={quotaStatus}
-              isLoading={quotaLoading}
-              error={quotaError}
-              onRefresh={refetchQuota}
-              compact
-            />
-          </section>
-
-          <section className="app-panel p-5 sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <p className="app-kicker">LINE OA</p>
-                <h3 className="mt-1 text-lg font-semibold text-slate-950">QR Code</h3>
-              </div>
-              <QrCode className="h-5 w-5 text-[#16a34a]" />
-            </div>
-
-            {qrCodeBasicId ? (
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div
-                  ref={qrCodeRef}
-                  className="w-fit rounded-lg border border-slate-200 bg-white p-3"
-                >
-                  <QRCodeSVG
-                    value={`https://line.me/R/ti/p/${encodeURIComponent(qrCodeBasicId)}`}
-                    size={156}
-                    level="H"
-                    includeMargin
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-950">
-                    {officialName}
-                  </p>
-                  <p className="mt-1 break-all text-sm text-slate-500">
-                    {qrCodeBasicId}
-                  </p>
-                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                action={
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <Button
                       type="button"
                       variant="outline"
                       className="app-secondary-button"
-                      onClick={() => void copyQrCodeImage()}
+                      onClick={() => void handleCheckBotHealth()}
+                      disabled={controlLoading}
                     >
-                      {copiedQrCode ? (
-                        <CheckCircle2 className="h-4 w-4 text-[#16a34a]" />
+                      {controlLoading ? (
+                        <Loader size="sm" />
                       ) : (
-                        <Copy className="h-4 w-4" />
+                        <Activity className="h-4 w-4" />
                       )}
-                      複製圖片
+                      {controlLoading ? "檢查中..." : "檢查狀態"}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       className="app-secondary-button"
-                      onClick={downloadQrCodeImage}
+                      onClick={() => void fetchWebhookStatus()}
+                      disabled={webhookStatusLoading}
                     >
-                      <Download className="h-4 w-4" />
-                      下載圖片
+                      {webhookStatusLoading ? (
+                        <Loader size="sm" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                      {webhookStatusLoading ? "檢查中..." : "重新檢查"}
                     </Button>
                   </div>
+                }
+              />
+
+              <div
+                className={`mt-4 rounded-[14px] border px-4 py-3 ${webhookBindingClass}`}
+              >
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  {webhookBound ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4" />
+                  )}
+                  {webhookBindingLabel}
+                </div>
+                <p className="mt-1 text-xs font-medium opacity-80">
+                  {webhookBindingDescription}
+                </p>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+                <StatusItem
+                  label="Bot 配置"
+                  active={Boolean(webhookStatus?.is_configured)}
+                  activeText="已配置"
+                  inactiveText="未配置"
+                />
+                <StatusItem
+                  label="LINE API"
+                  active={Boolean(webhookStatus?.line_api_accessible)}
+                  activeText="可連接"
+                  inactiveText="連接失敗"
+                />
+                <StatusItem
+                  label="Webhook 端點"
+                  active={Boolean(webhookStatus?.webhook_endpoint_info?.is_set)}
+                  warning={
+                    Boolean(webhookStatus?.webhook_endpoint_info?.is_set) &&
+                    !webhookStatus?.webhook_endpoint_info?.active
+                  }
+                  activeText="已啟用"
+                  warningText="已設定但未啟用"
+                  inactiveText="未設定"
+                />
+                <InfoItem
+                  label="最後檢查"
+                  value={formatDateTime(webhookStatus?.checked_at)}
+                />
+              </div>
+            </section>
+          </main>
+
+          <aside className="grid min-w-0 content-start gap-4">
+            <section className="app-panel p-5">
+              <PanelHeader
+                kicker="LINE API"
+                title="官方帳號"
+                badge={
+                  lineProfile?.is_live ? (
+                    <Badge
+                      variant="outline"
+                      className="border-emerald-100 bg-emerald-50 text-[#166534]"
+                    >
+                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                      Live
+                    </Badge>
+                  ) : undefined
+                }
+              />
+
+              <div className="mt-4 flex items-center gap-3 rounded-[14px] border border-white/70 bg-white/60 p-3">
+                <Avatar className="h-12 w-12 border border-white bg-white">
+                  <AvatarImage src={officialAvatar} alt={officialName} />
+                  <AvatarFallback className="bg-emerald-50 text-[#166534]">
+                    <Bot className="h-6 w-6" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-950">
+                    {displayValue(lineProfile?.display_name)}
+                  </p>
+                  <p className="mt-1 truncate text-xs font-medium text-slate-500">
+                    {displayValue(lineProfile?.basic_id)}
+                  </p>
                 </div>
               </div>
-            ) : (
-              <div className="flex min-h-[170px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/50 text-sm text-slate-500">
-                尚未取得 Basic ID
-              </div>
-            )}
-          </section>
-        </div>
 
-        <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
-          <section className="app-panel p-5 sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <p className="app-kicker">LINE API</p>
-                <h3 className="mt-1 text-lg font-semibold text-slate-950">真實官方資料</h3>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                <InfoItem
+                  label="Premium ID"
+                  value={displayValue(lineProfile?.premium_id)}
+                />
+                <InfoItem
+                  label="Channel/User ID"
+                  value={displayValue(
+                    lineProfile?.channel_id || lineProfile?.user_id
+                  )}
+                />
+                <InfoItem
+                  label="聊天模式"
+                  value={displayValue(lineProfile?.chat_mode)}
+                />
+                <InfoItem
+                  label="已讀模式"
+                  value={displayValue(lineProfile?.mark_as_read_mode)}
+                />
+                <InfoItem
+                  label="同步時間"
+                  value={formatDateTime(lineProfile?.fetched_at)}
+                  className="sm:col-span-2 xl:col-span-1 2xl:col-span-2"
+                />
               </div>
-              {lineProfile?.is_live && (
-                <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold text-[#166534]">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Live
+            </section>
+
+            <section className="app-panel p-5">
+              <PanelHeader
+                kicker="LINE OA"
+                title="QR Code"
+                badge={<QrCode className="h-5 w-5 text-[#16a34a]" />}
+              />
+
+              {qrCodeBasicId ? (
+                <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center xl:flex-col xl:items-start 2xl:flex-row 2xl:items-center">
+                  <div
+                    ref={qrCodeRef}
+                    className="w-fit rounded-[14px] border border-slate-200 bg-white p-3"
+                  >
+                    <QRCodeSVG
+                      value={`https://line.me/R/ti/p/${encodeURIComponent(qrCodeBasicId)}`}
+                      size={148}
+                      level="H"
+                      includeMargin
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-950">
+                      {officialName}
+                    </p>
+                    <p className="mt-1 break-all text-sm text-slate-500">
+                      {qrCodeBasicId}
+                    </p>
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row xl:flex-col 2xl:flex-row">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="app-secondary-button"
+                        onClick={() => void copyQrCodeImage()}
+                      >
+                        {copiedQrCode ? (
+                          <CheckCircle2 className="h-4 w-4 text-[#16a34a]" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                        複製圖片
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="app-secondary-button"
+                        onClick={downloadQrCodeImage}
+                      >
+                        <Download className="h-4 w-4" />
+                        下載圖片
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 flex min-h-[150px] items-center justify-center rounded-[14px] border border-dashed border-slate-200 bg-white/50 text-sm text-slate-500">
+                  尚未取得 Basic ID
                 </div>
               )}
-            </div>
+            </section>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <InfoItem label="顯示名稱" value={displayValue(lineProfile?.display_name)} />
-              <InfoItem label="Basic ID" value={displayValue(lineProfile?.basic_id)} />
-              <InfoItem label="Premium ID" value={displayValue(lineProfile?.premium_id)} />
-              <InfoItem label="Channel/User ID" value={displayValue(lineProfile?.channel_id || lineProfile?.user_id)} />
-              <InfoItem label="聊天模式" value={displayValue(lineProfile?.chat_mode)} />
-              <InfoItem label="已讀模式" value={displayValue(lineProfile?.mark_as_read_mode)} />
-              <InfoItem label="頭像 URL" value={displayValue(lineProfile?.picture_url)} className="sm:col-span-2" />
-              <InfoItem label="同步時間" value={formatDateTime(lineProfile?.fetched_at)} className="sm:col-span-2" />
-            </div>
-          </section>
-
-          <section className="app-panel p-5 sm:p-6">
-            <div className="mb-5">
-              <p className="app-kicker">Connection</p>
-              <h3 className="mt-1 text-lg font-semibold text-slate-950">連線設定</h3>
-            </div>
-
-            {isLoading ? (
-              <div className="flex min-h-[260px] items-center justify-center">
-                <div className="flex items-center gap-3 text-sm font-medium text-slate-500">
-                  <Loader size="sm" />
-                  載入中...
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleSave} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bot-name" className="text-slate-700">
-                    系統管理名稱
-                  </Label>
-                  <Input
-                    id="bot-name"
-                    value={formData.name}
-                    onChange={(event) =>
-                      setFormData((current) => ({ ...current, name: event.target.value }))
-                    }
-                    className="app-input"
-                    placeholder="Bot 名稱"
-                  />
-                </div>
-
-                <SecretInput
-                  id="channel-token"
-                  label="Channel Access Token"
-                  value={formData.channel_token}
-                  visible={showToken}
-                  onToggleVisible={() => setShowToken((current) => !current)}
-                  onChange={(value) =>
-                    setFormData((current) => ({ ...current, channel_token: value }))
-                  }
-                />
-
-                <SecretInput
-                  id="channel-secret"
-                  label="Channel Secret"
-                  value={formData.channel_secret}
-                  visible={showSecret}
-                  onToggleVisible={() => setShowSecret((current) => !current)}
-                  onChange={(value) =>
-                    setFormData((current) => ({ ...current, channel_secret: value }))
-                  }
-                />
-
-                <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
+            <section className="app-panel p-5">
+              <PanelHeader
+                kicker="Messaging API"
+                title="訊息配額"
+                action={
                   <Button
                     type="button"
                     variant="outline"
-                    className="app-secondary-button"
-                    onClick={handleReset}
-                    disabled={!hasChanges || isSaving}
+                    size="icon"
+                    className="app-icon-button h-9 w-9"
+                    onClick={() => void refetchQuota()}
+                    disabled={quotaLoading}
+                    title="重新整理配額"
                   >
-                    重置
+                    {quotaLoading ? (
+                      <Loader size="sm" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
                   </Button>
-                  <Button
-                    type="submit"
-                    className="app-primary-button"
-                    disabled={!hasChanges || isSaving}
-                  >
-                    {isSaving ? <Loader size="sm" /> : <Save className="h-4 w-4" />}
-                    {isSaving ? "儲存中..." : "儲存連線設定"}
-                  </Button>
-                </div>
-              </form>
-            )}
-          </section>
+                }
+              />
+              <div className="mt-4">
+                <QuotaStatusCard
+                  quotaStatus={quotaStatus}
+                  isLoading={quotaLoading}
+                  error={quotaError}
+                  onRefresh={refetchQuota}
+                  compact
+                />
+              </div>
+            </section>
+          </aside>
         </div>
       </div>
     </div>
@@ -824,8 +949,92 @@ interface InfoItemProps {
   className?: string;
 }
 
+type StatusTone = "success" | "warning" | "danger" | "neutral";
+type IconComponent = React.ComponentType<{ className?: string }>;
+
+const statusToneClasses: Record<
+  StatusTone,
+  { chip: string; icon: string; value: string }
+> = {
+  success: {
+    chip: "border-emerald-200 bg-emerald-50 text-[#166534]",
+    icon: "text-[#166534]",
+    value: "text-[#166534]",
+  },
+  warning: {
+    chip: "border-amber-200 bg-amber-50 text-amber-700",
+    icon: "text-amber-700",
+    value: "text-amber-700",
+  },
+  danger: {
+    chip: "border-red-200 bg-red-50 text-red-700",
+    icon: "text-red-700",
+    value: "text-red-700",
+  },
+  neutral: {
+    chip: "border-slate-200 bg-slate-50 text-slate-600",
+    icon: "text-slate-600",
+    value: "text-slate-900",
+  },
+};
+
+interface StatusPillProps {
+  label: string;
+  value: string;
+  icon: IconComponent;
+  tone: StatusTone;
+}
+
+const StatusPill: React.FC<StatusPillProps> = ({
+  label,
+  value,
+  icon: Icon,
+  tone,
+}) => {
+  const classes = statusToneClasses[tone];
+
+  return (
+    <span
+      className={`inline-flex h-8 items-center gap-1.5 rounded-[10px] border px-2.5 text-xs font-semibold ${classes.chip}`}
+    >
+      <Icon className={`h-3.5 w-3.5 ${classes.icon}`} />
+      <span className="text-slate-500">{label}</span>
+      <span className={classes.value}>{value}</span>
+    </span>
+  );
+};
+
+interface PanelHeaderProps {
+  kicker: string;
+  title: string;
+  badge?: React.ReactNode;
+  action?: React.ReactNode;
+}
+
+const PanelHeader: React.FC<PanelHeaderProps> = ({
+  kicker,
+  title,
+  badge,
+  action,
+}) => (
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="min-w-0">
+      <p className="app-kicker">{kicker}</p>
+      <h3 className="mt-1 text-lg font-semibold text-slate-950">{title}</h3>
+    </div>
+    {(badge || action) && (
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {badge}
+        {action}
+      </div>
+    )}
+  </div>
+);
+
 const InfoItem: React.FC<InfoItemProps> = ({ label, value, className }) => (
-  <div className={`rounded-lg border border-white/70 bg-white/60 p-4 ${className || ""}`}>
+  <div
+    className={`rounded-[12px] border border-white/70 bg-white/60 p-3 ${className || ""}`}
+  >
     <p className="text-xs font-semibold text-slate-500">{label}</p>
     <p className="mt-2 break-all text-sm font-medium text-slate-900">{value}</p>
   </div>
@@ -855,10 +1064,16 @@ const StatusItem: React.FC<StatusItemProps> = ({
     : active
       ? "text-[#166534]"
       : "text-red-700";
-  const value = warning ? warningText || activeText : active ? activeText : inactiveText;
+  const value = warning
+    ? warningText || activeText
+    : active
+      ? activeText
+      : inactiveText;
 
   return (
-    <div className={`rounded-lg border border-white/70 bg-white/60 p-4 ${className || ""}`}>
+    <div
+      className={`rounded-[12px] border border-white/70 bg-white/60 p-3 ${className || ""}`}
+    >
       <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className={`mt-2 text-sm font-semibold ${tone}`}>{value}</p>
     </div>
