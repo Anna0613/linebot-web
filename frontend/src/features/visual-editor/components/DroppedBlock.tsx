@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, memo } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
+import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -48,11 +49,15 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
       }
     }, [block.blockData, isSettingsOpen]);
 
-    const [{ isDragging }, drag] = useDrag({
+    const [{ isDragging }, drag, preview] = useDrag({
       type: 'dropped-block',
       item: () => ({ index, block, id: `dropped-${index}` }),
       collect: (monitor) => ({ isDragging: monitor.isDragging() }),
     });
+
+    useEffect(() => {
+      preview(getEmptyImage(), { captureDraggingState: true });
+    }, [preview]);
 
     const [{ isOver }, drop] = useDrop({
       accept: ['block', 'dropped-block'],
@@ -240,7 +245,7 @@ const DroppedBlock: React.FC<DroppedBlockProps> = memo(
           onMouseLeave={handleMouseLeave}
           onClick={() => onSelect?.(index)}
           className={`${getBlockColorClass(block.blockType)} rounded-lg border border-l-4 p-3 shadow-sm transition-all duration-200 ${
-            isDragging ? 'opacity-50 scale-95 rotate-2' : 'opacity-100 scale-100'
+            isDragging ? 'opacity-60 scale-95' : 'opacity-100 scale-100'
           } ${isOver ? 'ring-2 ring-emerald-300 ring-opacity-60' : ''} ${
             isSelected ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-white' : ''
           }`}

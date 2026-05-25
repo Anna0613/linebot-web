@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Brain,
   ChevronLeft,
@@ -29,9 +29,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import VisualEditorApi, { FlexMessageSummary } from '@/features/visual-editor/api/visualEditorApi';
 import {
   WORKFLOW_NODE_DEFINITIONS,
+  canAddWorkflowNode,
+  canConnectWorkflowNodes,
   createWorkflowEdge,
   createWorkflowNode,
   getWorkflowInputHandles,
@@ -48,6 +51,7 @@ import {
   type WorkflowGraph,
   type WorkflowNode,
   type WorkflowNodeDefinition,
+  type WorkflowOperationResult,
   type WorkflowNodeType,
 } from '@/features/visual-editor/types/workflow';
 
@@ -108,6 +112,7 @@ const groupedDefinitions = WORKFLOW_NODE_DEFINITIONS.reduce<Record<string, Workf
 
 export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChange }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(graph.nodes[0]?.id || null);
   const [pendingConnection, setPendingConnection] = useState<PendingConnection | null>(null);
   const [connectionDrag, setConnectionDrag] = useState<ConnectionDrag | null>(null);
@@ -130,6 +135,28 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
     () => graph.nodes.find((node) => node.id === selectedNodeId) || null,
     [graph.nodes, selectedNodeId]
   );
+
+  const showOperationError = useCallback((title: string, result: WorkflowOperationResult) => {
+    toast({
+      variant: 'destructive',
+      title,
+      description: [result.reason, ...(result.suggestions || [])].filter(Boolean).join('；'),
+    });
+  }, [toast]);
+
+  const connectNodes = useCallback((sourceId: string, sourceHandle: string, targetId: string): boolean => {
+    const connectionCheck = canConnectWorkflowNodes(graph, sourceId, sourceHandle, targetId);
+    if (!connectionCheck.isValid) {
+      showOperationError('無法建立連線', connectionCheck);
+      return false;
+    }
+
+    const edge = createWorkflowEdge(sourceId, sourceHandle, targetId);
+    onChange(upsertWorkflowEdge(graph, edge));
+    setPendingConnection(null);
+    setConnectionDrag(null);
+    return true;
+  }, [graph, onChange, showOperationError]);
 
   useEffect(() => {
     let mounted = true;
@@ -205,9 +232,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
         });
 
         if (targetNode) {
-          const edge = createWorkflowEdge(connectionDrag.nodeId, connectionDrag.handleId, targetNode.id);
-          onChange(upsertWorkflowEdge(graph, edge));
-          setPendingConnection(null);
+          connectNodes(connectionDrag.nodeId, connectionDrag.handleId, targetNode.id);
         }
       }
 
@@ -219,9 +244,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
           const targetPoint = getInputPoint(target);
           const distance = Math.hypot(sourcePoint.x - targetPoint.x, sourcePoint.y - targetPoint.y);
           if (distance < 96) {
-            const edge = createWorkflowEdge(pendingConnection.nodeId, pendingConnection.handleId, draggingNode.nodeId);
-            onChange(upsertWorkflowEdge(graph, edge));
-            setPendingConnection(null);
+            connectNodes(pendingConnection.nodeId, pendingConnection.handleId, draggingNode.nodeId);
           }
         }
       }
@@ -237,15 +260,50 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleUp);
     };
-  }, [canvasPan, connectionDrag, draggingNode, graph, onChange, pendingConnection, viewport]);
+  }, [canvasPan, connectNodes, connectionDrag, draggingNode, graph, onChange, pendingConnection, viewport]);
 
   const setViewport = (nextViewport: typeof viewport) => {
     onChange({ ...graph, viewport: nextViewport });
   };
 
   const addNode = (type: WorkflowNodeType, position: { x: number; y: number }) => {
+    const addCheck = canAddWorkflowNode(graph, type);
+    if (!addCheck.isValid) {
+      showOperationError('無法新增節點', addCheck);
+      return;
+    }
+
     const node = createWorkflowNode(type, position);
-    onChange({ ...graph, nodes: [...graph.nodes, node] });
+    const nextGraph = { ...graph, nodes: [...graph.nodes, node] };
+
+    if (getWorkflowNodeKind(type) !== 'trigger') {
+      const sourceNode = selectedNode;
+      const availableHandle = sourceNode
+        ? getWorkflowOutputHandles(sourceNode.type).find((handle) =>
+            canConnectWorkflowNodes(nextGraph, sourceNode.id, handle.id, node.id).isValid
+          )
+        : undefined;
+
+      if (!sourceNode || !availableHandle) {
+        showOperationError('無法新增節點', {
+          isValid: false,
+          reason: sourceNode
+            ? `${getWorkflowNodeDefinition(sourceNode.type).label} 目前沒有可用的輸出端`
+            : '請先選擇要接續的上一個節點',
+          suggestions: sourceNode
+            ? ['請選擇其他節點，或先刪除既有輸出連線']
+            : ['點選流程中的上一個節點後，再新增下一步'],
+        });
+        return;
+      }
+
+      const edge = createWorkflowEdge(sourceNode.id, availableHandle.id, node.id);
+      onChange(upsertWorkflowEdge(nextGraph, edge));
+      setSelectedNodeId(node.id);
+      return;
+    }
+
+    onChange(nextGraph);
     setSelectedNodeId(node.id);
   };
 
@@ -276,10 +334,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
     const connection = connectionDrag || pendingConnection;
     if (!connection || connection.nodeId === targetNode.id) return;
 
-    const edge = createWorkflowEdge(connection.nodeId, connection.handleId, targetNode.id);
-    onChange(upsertWorkflowEdge(graph, edge));
-    setPendingConnection(null);
-    setConnectionDrag(null);
+    connectNodes(connection.nodeId, connection.handleId, targetNode.id);
   };
 
   const runSimulation = () => {
@@ -300,7 +355,11 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
           : 'grid-cols-[280px_minmax(0,1fr)_48px]',
       ].join(' ')}
     >
-      <NodeDrawer onAddNode={(type) => addNode(type, { x: 120, y: 120 + graph.nodes.length * 24 })} />
+      <NodeDrawer
+        graph={graph}
+        selectedNodeId={selectedNodeId}
+        onAddNode={(type) => addNode(type, { x: 120, y: 120 + graph.nodes.length * 24 })}
+      />
 
       <main className="flex min-w-0 flex-col border-x border-slate-200/80 bg-white/45">
         <div className="flex min-h-14 items-center justify-between border-b border-slate-200/80 bg-white/70 px-4 backdrop-blur-xl">
@@ -455,8 +514,40 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
 };
 
 const NodeDrawer: React.FC<{
+  graph: WorkflowGraph;
+  selectedNodeId: string | null;
   onAddNode: (type: WorkflowNodeType) => void;
-}> = ({ onAddNode }) => (
+}> = ({ graph, selectedNodeId, onAddNode }) => {
+  const selectedSourceNode = graph.nodes.find((node) => node.id === selectedNodeId) || null;
+
+  const getAddAvailability = (type: WorkflowNodeType): WorkflowOperationResult => {
+    const addCheck = canAddWorkflowNode(graph, type);
+    if (!addCheck.isValid || getWorkflowNodeKind(type) === 'trigger') return addCheck;
+
+    if (!selectedSourceNode) {
+      return {
+        isValid: false,
+        reason: '請先選擇要接續的上一個節點',
+      };
+    }
+
+    const hasAvailableOutput = getWorkflowOutputHandles(selectedSourceNode.type).some(
+      (handle) => !graph.edges.some(
+        (edge) => edge.source === selectedSourceNode.id && edge.sourceHandle === handle.id
+      )
+    );
+
+    if (!hasAvailableOutput) {
+      return {
+        isValid: false,
+        reason: `${getWorkflowNodeDefinition(selectedSourceNode.type).label} 目前沒有可用的輸出端`,
+      };
+    }
+
+    return { isValid: true };
+  };
+
+  return (
   <aside className="flex min-h-0 flex-col bg-white/75 backdrop-blur-xl">
     <div className="border-b border-slate-200/80 p-4">
       <div className="text-sm font-semibold text-slate-950">元件抽屜</div>
@@ -469,15 +560,27 @@ const NodeDrawer: React.FC<{
           <div className="space-y-2">
             {definitions.map((definition) => {
               const Icon = iconByType[definition.type];
+              const addCheck = getAddAvailability(definition.type);
               return (
                 <button
                   key={definition.type}
-                  draggable
+                  draggable={addCheck.isValid}
                   onDragStart={(event) => {
+                    if (!addCheck.isValid) {
+                      event.preventDefault();
+                      return;
+                    }
                     event.dataTransfer.setData('application/x-workflow-node', definition.type);
                   }}
                   onClick={() => onAddNode(definition.type)}
-                  className="w-full rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40"
+                  aria-disabled={!addCheck.isValid}
+                  title={addCheck.isValid ? definition.description : addCheck.reason}
+                  className={[
+                    'w-full rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition',
+                    addCheck.isValid
+                      ? 'hover:border-emerald-200 hover:bg-emerald-50/40'
+                      : 'cursor-not-allowed opacity-50',
+                  ].join(' ')}
                 >
                   <div className="flex items-center gap-2">
                     <span className={`flex h-8 w-8 items-center justify-center rounded-md border ${definition.accentClass}`}>
@@ -496,7 +599,8 @@ const NodeDrawer: React.FC<{
       ))}
     </ScrollArea>
   </aside>
-);
+  );
+};
 
 const WorkflowNodeCard: React.FC<{
   node: WorkflowNode;

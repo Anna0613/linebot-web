@@ -12,6 +12,68 @@ import {
   UnifiedDropItem
 } from '../types/block';
 
+const getBlockData = (block: UnifiedBlock | UnifiedDropItem): Record<string, unknown> => (
+  (block.blockData || {}) as Record<string, unknown>
+);
+
+const getContainerType = (block: UnifiedBlock | UnifiedDropItem): string => {
+  const data = getBlockData(block);
+  return typeof data.containerType === 'string' ? data.containerType : '';
+};
+
+const validateFlexContextPlacement = (
+  block: UnifiedBlock | UnifiedDropItem,
+  existingBlocks: UnifiedBlock[],
+  category: BlockCategory
+): BlockValidationResult => {
+  if (![BlockCategory.FLEX_CONTAINER, BlockCategory.FLEX_CONTENT, BlockCategory.FLEX_LAYOUT].includes(category)) {
+    return {
+      isValid: false,
+      reason: '此積木不屬於 Flex Message 結構',
+      suggestions: ['請使用 Flex Message 編輯器左側的容器、內容或佈局積木']
+    };
+  }
+
+  if (category !== BlockCategory.FLEX_CONTAINER) {
+    return { isValid: true };
+  }
+
+  const containerType = getContainerType(block);
+  const blockId = 'id' in block ? block.id : undefined;
+  const isDifferentExistingBlock = (existing: UnifiedBlock) => !blockId || existing.id !== blockId;
+  if (containerType === 'carousel') {
+    if (existingBlocks.some(existing => isDifferentExistingBlock(existing) && getContainerType(existing) === 'carousel')) {
+      return {
+        isValid: false,
+        reason: '一個 Flex Message 只能有一個 Carousel 容器',
+        suggestions: ['請在現有 Carousel 裡新增 Bubble 卡片']
+      };
+    }
+
+    if (existingBlocks.length > 0) {
+      return {
+        isValid: false,
+        reason: 'Carousel 必須是 Flex Message 最外層容器',
+        suggestions: ['請先建立新的 Flex Message，再從 Carousel 容器開始設計']
+      };
+    }
+
+    return { isValid: true };
+  }
+
+  const hasCarousel = existingBlocks.some(existing => getContainerType(existing) === 'carousel');
+
+  if (!hasCarousel && containerType === 'bubble' && existingBlocks.some(existing => isDifferentExistingBlock(existing) && getContainerType(existing) === 'bubble')) {
+    return {
+      isValid: false,
+      reason: '單一卡片 Flex Message 只能有一個 Bubble 容器',
+      suggestions: ['若要建立多張卡片，請先建立 Carousel 容器']
+    };
+  }
+
+  return { isValid: true };
+};
+
 /**
  * 檢查積木是否可以在指定的工作區上下文中使用
  */
@@ -80,6 +142,13 @@ export function isBlockCompatible(
     hasCategory: 'category' in block,
     isValidCategory: Object.values(BlockCategory).includes(category)
   });
+
+  if (context === WorkspaceContext.FLEX) {
+    const flexPlacementValidation = validateFlexContextPlacement(block, existingBlocks, category);
+    if (!flexPlacementValidation.isValid) {
+      return flexPlacementValidation;
+    }
+  }
   
   const rule = BLOCK_COMPATIBILITY_RULES.find(r => r.category === category);
   
