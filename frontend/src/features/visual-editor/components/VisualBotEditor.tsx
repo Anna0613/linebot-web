@@ -14,9 +14,11 @@ import {
   createStarterWorkflowGraph,
   isWorkflowGraph,
   normalizeWorkflowGraph,
+  validateWorkflowGraph,
 } from '@/features/visual-editor/types/workflow';
 import VisualEditorApi, { FlexMessage } from '@/features/visual-editor/api/visualEditorApi';
 import { generateWorkflowCode } from '@/features/visual-editor/utils/workflowCodeGenerator';
+import { validateFlexMessageBlocks } from '@/features/visual-editor/utils/flexMessageBuilder';
 import { VisualEditorProvider } from '@/features/visual-editor/context/VisualEditorContext';
 import {
   AlertDialog,
@@ -422,6 +424,15 @@ export const VisualBotEditor: React.FC = () => {
   // 儲存邏輯模板
   const handleLogicTemplateSave = async (templateId: string, data: { workflowGraph: WorkflowGraph, generatedCode: string }) => {
     try {
+      const validation = validateWorkflowGraph(data.workflowGraph);
+      if (!validation.isValid) {
+        const message = `邏輯結構無法儲存：${validation.errors[0]}`;
+        setSaveStatus(SaveStatus.ERROR);
+        setSaveError(message);
+        setHasUnsavedChanges(true);
+        throw new Error(message);
+      }
+
       // 設置儲存中狀態，並鎖定儲存操作
       isSavingRef.current = true;
       setSaveStatus(SaveStatus.SAVING);
@@ -458,6 +469,15 @@ export const VisualBotEditor: React.FC = () => {
   // 儲存 FlexMessage
   const handleFlexMessageSave = async (messageId: string, data: { flexBlocks: UnifiedBlock[] }) => {
     try {
+      const validation = validateFlexMessageBlocks(data.flexBlocks);
+      if (!validation.isValid) {
+        const message = `Flex Message 結構無法儲存：${validation.errors[0]}`;
+        setSaveStatus(SaveStatus.ERROR);
+        setSaveError(message);
+        setHasUnsavedChanges(true);
+        throw new Error(message);
+      }
+
       // 設置儲存中狀態，並鎖定儲存操作
       isSavingRef.current = true;
       setSaveStatus(SaveStatus.SAVING);
@@ -496,6 +516,15 @@ export const VisualBotEditor: React.FC = () => {
     if (isCreatingFlexDraftRef.current || data.flexBlocks.length === 0) return;
 
     try {
+      const validation = validateFlexMessageBlocks(data.flexBlocks);
+      if (!validation.isValid) {
+        const message = `Flex Message 結構無法儲存：${validation.errors[0]}`;
+        setSaveStatus(SaveStatus.ERROR);
+        setSaveError(message);
+        setHasUnsavedChanges(true);
+        throw new Error(message);
+      }
+
       isCreatingFlexDraftRef.current = true;
       isSavingRef.current = true;
       setSaveStatus(SaveStatus.SAVING);
@@ -565,6 +594,27 @@ export const VisualBotEditor: React.FC = () => {
       autoSaveTimerRef.current = null;
       const { logicTemplateId, flexMessageId, logicGraph, flexBlocks } =
         latestAutoSaveDataRef.current;
+
+      const logicValidation = logicTemplateId && logicGraph
+        ? validateWorkflowGraph(logicGraph)
+        : null;
+      const flexValidation = (flexMessageId || flexBlocks.length > 0)
+        ? validateFlexMessageBlocks(flexBlocks)
+        : null;
+
+      if (logicValidation && !logicValidation.isValid) {
+        setSaveStatus(SaveStatus.ERROR);
+        setSaveError(`邏輯結構無法儲存：${logicValidation.errors[0]}`);
+        setHasUnsavedChanges(true);
+        return;
+      }
+
+      if (flexValidation && !flexValidation.isValid) {
+        setSaveStatus(SaveStatus.ERROR);
+        setSaveError(`Flex Message 結構無法儲存：${flexValidation.errors[0]}`);
+        setHasUnsavedChanges(true);
+        return;
+      }
 
       if (logicTemplateId && logicGraph) {
         try {

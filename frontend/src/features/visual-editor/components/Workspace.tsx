@@ -15,6 +15,7 @@ import BotBasicInfoPanel from "./BotBasicInfoPanel";
 import AIKnowledgeBaseManager from "@/features/ai/components/AIKnowledgeBaseManager";
 import { CodeDisplayProvider } from "./CodeDisplayContext";
 import {
+  BlockCategory,
   UnifiedBlock,
   UnifiedDropItem,
   WorkspaceContext,
@@ -23,7 +24,10 @@ import {
   WorkflowGraph,
   validateWorkflowGraph,
 } from "@/features/visual-editor/types/workflow";
-import { validateWorkspace } from "@/features/visual-editor/utils/blockCompatibility";
+import {
+  validateFlexBlockPlacement,
+  validateFlexMessageBlocks,
+} from "@/features/visual-editor/utils/flexMessageBuilder";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertTriangle,
@@ -137,6 +141,68 @@ interface Block {
   blockType: string;
   blockData: BlockData;
 }
+
+const createFlexBlockId = () =>
+  `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+const createFlexBlockFromDropItem = (
+  item: UnifiedDropItem,
+  blockData: BlockData = item.blockData
+): UnifiedBlock => ({
+  ...item,
+  id: createFlexBlockId(),
+  blockData,
+  children: [],
+});
+
+const createDefaultFlexContainerBlock = (
+  containerType: "bubble" | "box"
+): UnifiedBlock => ({
+  id: createFlexBlockId(),
+  blockType: "flex-container",
+  category: BlockCategory.FLEX_CONTAINER,
+  blockData:
+    containerType === "bubble"
+      ? { title: "Bubble 容器", containerType: "bubble" }
+      : {
+          title: "Box 容器",
+          containerType: "box",
+          layout: "vertical",
+          spacing: "md",
+        },
+  compatibility: [WorkspaceContext.FLEX],
+  children: [],
+});
+
+const createFlexBlocksForDrop = (
+  item: UnifiedDropItem,
+  existingBlocks: UnifiedBlock[]
+): UnifiedBlock[] => {
+  const containerType = item.blockData?.containerType;
+
+  if (item.blockType === "flex-container" && containerType === "carousel") {
+    return [
+      createFlexBlockFromDropItem(item),
+      createDefaultFlexContainerBlock("bubble"),
+      createDefaultFlexContainerBlock("box"),
+    ];
+  }
+
+  const hasCarousel = existingBlocks.some(
+    (block) =>
+      block.blockType === "flex-container" &&
+      block.blockData?.containerType === "carousel"
+  );
+
+  if (item.blockType === "flex-container" && containerType === "bubble" && hasCarousel) {
+    return [
+      createFlexBlockFromDropItem(item),
+      createDefaultFlexContainerBlock("box"),
+    ];
+  }
+
+  return [createFlexBlockFromDropItem(item)];
+};
 
 const deleteFlexMessageImage = async (
   botId: string,
@@ -378,10 +444,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
     const normalizedFlexBlocks = normalizeBlocks(flexBlocks);
 
     const logicValidation = validateWorkflowGraph(logicGraph);
-    const flexValidation = validateWorkspace(
-      normalizedFlexBlocks,
-      WorkspaceContext.FLEX
-    );
+    const flexValidation = validateFlexMessageBlocks(normalizedFlexBlocks);
 
     // 使用 ref 來比較上一次的驗證結果
     const prevLogicErrors = prevValidationRef.current.logic.errors;
@@ -480,22 +543,43 @@ const Workspace: React.FC<WorkspaceProps> = ({
       });
 
       try {
-        const blockToAdd: UnifiedBlock = {
-          ...item,
-          id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          children: [],
-        };
+        const placementValidation = validateFlexBlockPlacement(flexBlocks, item);
+        if (!placementValidation.isValid) {
+          toast({
+            variant: "destructive",
+            title: "無法放置 Flex 元件",
+            description: [
+              placementValidation.reason,
+              ...(placementValidation.suggestions || []),
+            ]
+              .filter(Boolean)
+              .join("；"),
+          });
+          return;
+        }
 
-        console.log("✅ 積木成功添加到 Flex Message 編輯:", blockToAdd);
+        const blocksToAdd = createFlexBlocksForDrop(item, flexBlocks);
+        const candidateBlocks = [...flexBlocks, ...blocksToAdd];
+        const structureValidation = validateFlexMessageBlocks(candidateBlocks);
+        if (!structureValidation.isValid) {
+          toast({
+            variant: "destructive",
+            title: "無法放置 Flex 元件",
+            description: structureValidation.errors.join("；"),
+          });
+          return;
+        }
+
+        console.log("✅ 積木成功添加到 Flex Message 編輯:", blocksToAdd);
         onFlexBlocksChange((prev) => {
           setSelectedFlexBlockIndex(prev.length);
-          return [...prev, blockToAdd];
+          return [...prev, ...blocksToAdd];
         });
       } catch (_error) {
         console.error("Error occurred:", _error);
       }
     },
-    [onFlexBlocksChange, activeTab]
+    [onFlexBlocksChange, activeTab, flexBlocks, toast]
   );
 
   const removeFlexBlock = useCallback(
@@ -550,6 +634,17 @@ const Workspace: React.FC<WorkspaceProps> = ({
     [onFlexBlocksChange]
   );
 
+  const showInvalidFlexStructureToast = useCallback(
+    (title: string, errors: string[]) => {
+      toast({
+        variant: "destructive",
+        title,
+        description: errors.filter(Boolean).join("；"),
+      });
+    },
+    [toast]
+  );
+
   const moveFlexBlock = useCallback(
     (dragIndex: number, hoverIndex: number) => {
       if (flexBlocks.length === 0) return;
@@ -559,13 +654,21 @@ const Workspace: React.FC<WorkspaceProps> = ({
       );
       if (dragIndex === targetIndex) return;
 
-      onFlexBlocksChange((prev) => {
-        const newBlocks = [...prev];
-        const draggedBlock = newBlocks[dragIndex];
-        newBlocks.splice(dragIndex, 1);
-        newBlocks.splice(targetIndex, 0, draggedBlock);
-        return newBlocks;
-      });
+      const newBlocks = [...flexBlocks];
+      const draggedBlock = newBlocks[dragIndex];
+      newBlocks.splice(dragIndex, 1);
+      newBlocks.splice(targetIndex, 0, draggedBlock);
+
+      const validation = validateFlexMessageBlocks(newBlocks);
+      if (!validation.isValid) {
+        showInvalidFlexStructureToast(
+          "無法調整 Flex 結構",
+          validation.errors
+        );
+        return;
+      }
+
+      onFlexBlocksChange(newBlocks);
       setSelectedFlexBlockIndex((current) => {
         if (current === dragIndex) return targetIndex;
         if (current === null) return current;
@@ -584,7 +687,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
         return current;
       });
     },
-    [onFlexBlocksChange, flexBlocks.length]
+    [flexBlocks, onFlexBlocksChange, showInvalidFlexStructureToast]
   );
 
   const insertFlexBlock = useCallback(
@@ -597,19 +700,45 @@ const Workspace: React.FC<WorkspaceProps> = ({
       });
 
       try {
-        const blockToAdd: UnifiedBlock = {
-          ...item,
-          id: `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          children: [],
-        };
+        const placementValidation = validateFlexBlockPlacement(
+          flexBlocks,
+          item,
+          index
+        );
+        if (!placementValidation.isValid) {
+          toast({
+            variant: "destructive",
+            title: "無法插入 Flex 元件",
+            description: [
+              placementValidation.reason,
+              ...(placementValidation.suggestions || []),
+            ]
+              .filter(Boolean)
+              .join("；"),
+          });
+          return;
+        }
+
+        const blocksToAdd = createFlexBlocksForDrop(item, flexBlocks);
+        const candidateBlocks = [...flexBlocks];
+        candidateBlocks.splice(index, 0, ...blocksToAdd);
+        const structureValidation = validateFlexMessageBlocks(candidateBlocks);
+        if (!structureValidation.isValid) {
+          toast({
+            variant: "destructive",
+            title: "無法插入 Flex 元件",
+            description: structureValidation.errors.join("；"),
+          });
+          return;
+        }
 
         onFlexBlocksChange((prev) => {
           const newBlocks = [...prev];
-          newBlocks.splice(index, 0, blockToAdd);
+          newBlocks.splice(index, 0, ...blocksToAdd);
           console.log(
             "✅ 積木成功插入到 Flex Message 編輯位置",
             index,
-            blockToAdd
+            blocksToAdd
           );
           setSelectedFlexBlockIndex(index);
           return newBlocks;
@@ -618,7 +747,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
         console.error("Error occurred:", _error);
       }
     },
-    [onFlexBlocksChange, activeTab]
+    [onFlexBlocksChange, activeTab, flexBlocks, toast]
   );
 
   const handleRemoveFlexBlock = useCallback(

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Copy, Download, FileCode2, ListTree, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -77,12 +77,6 @@ const FlexMessageInspector: React.FC<FlexMessageInspectorProps> = ({
   const [activeTab, setActiveTab] = useState('settings');
   const flexMessage = useMemo(() => generateFlexMessageFromBlocks(blocks), [blocks]);
   const jsonText = useMemo(() => JSON.stringify(flexMessage, null, 2), [flexMessage]);
-
-  useEffect(() => {
-    if (selectedIndex !== null) {
-      setActiveTab('settings');
-    }
-  }, [selectedIndex]);
 
   const setSelectedBlockData: React.Dispatch<React.SetStateAction<BlockData>> = (value) => {
     if (selectedIndex === null || !selectedBlock) return;

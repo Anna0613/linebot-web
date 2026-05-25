@@ -66,6 +66,12 @@ export interface WorkflowValidationResult {
   warnings: string[];
 }
 
+export interface WorkflowOperationResult {
+  isValid: boolean;
+  reason?: string;
+  suggestions?: string[];
+}
+
 export const WORKFLOW_NODE_DEFINITIONS: WorkflowNodeDefinition[] = [
   {
     type: 'trigger.message',
@@ -173,10 +179,18 @@ export const WORKFLOW_NODE_DEFINITIONS: WorkflowNodeDefinition[] = [
   },
 ];
 
+const WORKFLOW_NODE_TYPE_SET = new Set<WorkflowNodeType>(
+  WORKFLOW_NODE_DEFINITIONS.map((definition) => definition.type)
+);
+
 const defaultViewport: WorkflowViewport = { x: 40, y: 30, zoom: 1 };
 
 export function generateWorkflowId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export function isKnownWorkflowNodeType(type: string): type is WorkflowNodeType {
+  return WORKFLOW_NODE_TYPE_SET.has(type as WorkflowNodeType);
 }
 
 export function getWorkflowNodeDefinition(type: WorkflowNodeType): WorkflowNodeDefinition {
@@ -334,7 +348,151 @@ export function removeWorkflowNode(graph: WorkflowGraph, nodeId: string): Workfl
   };
 }
 
+export function canAddWorkflowNode(graph: WorkflowGraph, type: WorkflowNodeType): WorkflowOperationResult {
+  if (!isKnownWorkflowNodeType(type)) {
+    return {
+      isValid: false,
+      reason: '無法辨識此節點類型',
+      suggestions: ['請重新整理頁面後再試一次'],
+    };
+  }
+
+  const kind = getWorkflowNodeKind(type);
+  const triggerCount = graph.nodes.filter((node) => getWorkflowNodeKind(node.type) === 'trigger').length;
+
+  if (kind === 'trigger' && triggerCount > 0) {
+    return {
+      isValid: false,
+      reason: '一個邏輯模板只能有一個觸發節點',
+      suggestions: ['請建立另一個邏輯模板處理其他觸發事件'],
+    };
+  }
+
+  if (kind !== 'trigger' && triggerCount === 0) {
+    return {
+      isValid: false,
+      reason: '請先放入一個觸發節點，再新增邏輯或動作節點',
+      suggestions: ['例如先新增「收到文字訊息」或「加入好友」'],
+    };
+  }
+
+  return { isValid: true };
+}
+
+function graphHasPath(graph: WorkflowGraph, fromNodeId: string, toNodeId: string): boolean {
+  const visited = new Set<string>();
+  const queue = [fromNodeId];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (current === toNodeId) return true;
+    if (visited.has(current)) continue;
+    visited.add(current);
+
+    graph.edges
+      .filter((edge) => edge.source === current)
+      .forEach((edge) => {
+        if (!visited.has(edge.target)) queue.push(edge.target);
+      });
+  }
+
+  return false;
+}
+
+export function canConnectWorkflowNodes(
+  graph: WorkflowGraph,
+  sourceId: string,
+  sourceHandle: string,
+  targetId: string
+): WorkflowOperationResult {
+  const source = graph.nodes.find((node) => node.id === sourceId);
+  const target = graph.nodes.find((node) => node.id === targetId);
+
+  if (!source || !target) {
+    return {
+      isValid: false,
+      reason: '連線的起點或終點不存在',
+    };
+  }
+
+  if (source.id === target.id) {
+    return {
+      isValid: false,
+      reason: '不允許節點連到自己',
+    };
+  }
+
+  if (getWorkflowNodeKind(target.type) === 'trigger') {
+    return {
+      isValid: false,
+      reason: '觸發節點只能作為流程起點，不能被其他節點連入',
+    };
+  }
+
+  const sourceOutputs = getWorkflowOutputHandles(source.type);
+  if (!sourceOutputs.some((handle) => handle.id === sourceHandle)) {
+    return {
+      isValid: false,
+      reason: `${getWorkflowNodeDefinition(source.type).label} 沒有可用的「${sourceHandle}」輸出`,
+    };
+  }
+
+  if (getWorkflowInputHandles(target.type).length === 0) {
+    return {
+      isValid: false,
+      reason: `${getWorkflowNodeDefinition(target.type).label} 不能接收輸入連線`,
+    };
+  }
+
+  if (graph.edges.some(
+    (edge) =>
+      edge.source === sourceId &&
+      edge.sourceHandle === sourceHandle &&
+      edge.target === targetId
+  )) {
+    return {
+      isValid: false,
+      reason: '此連線已經存在',
+    };
+  }
+
+  const existingOutgoing = graph.edges.find(
+    (edge) => edge.source === sourceId && edge.sourceHandle === sourceHandle
+  );
+  if (existingOutgoing) {
+    return {
+      isValid: false,
+      reason: '同一個輸出端只能連到一個下一步',
+      suggestions: ['條件節點請分別使用「符合」與「不符合」輸出'],
+    };
+  }
+
+  const existingIncoming = graph.edges.find((edge) => edge.target === targetId);
+  if (existingIncoming) {
+    return {
+      isValid: false,
+      reason: '同一個節點只能有一條輸入連線',
+      suggestions: ['請新增另一個節點，或先刪除原本的輸入連線'],
+    };
+  }
+
+  if (graphHasPath(graph, targetId, sourceId)) {
+    return {
+      isValid: false,
+      reason: '此連線會形成循環流程',
+      suggestions: ['請把流程設計成由觸發節點往右依序前進'],
+    };
+  }
+
+  return { isValid: true };
+}
+
 export function upsertWorkflowEdge(graph: WorkflowGraph, edge: WorkflowEdge): WorkflowGraph {
+  const connectionCheck = canConnectWorkflowNodes(graph, edge.source, edge.sourceHandle, edge.target);
+  if (!connectionCheck.isValid) {
+    return graph;
+  }
+
   const duplicateIndex = graph.edges.findIndex(
     (existing) =>
       existing.source === edge.source &&
@@ -370,30 +528,99 @@ export function validateWorkflowGraph(graph: WorkflowGraph | null): WorkflowVali
 
   const errors: string[] = [];
   const warnings: string[] = [];
-  const nodeIds = new Set(graph.nodes.map((node) => node.id));
+  const nodeIds = new Set<string>();
+  const duplicateNodeIds = new Set<string>();
+
+  graph.nodes.forEach((node) => {
+    if (nodeIds.has(node.id)) duplicateNodeIds.add(node.id);
+    nodeIds.add(node.id);
+    if (!isKnownWorkflowNodeType(node.type)) {
+      errors.push(`節點 ${node.id} 使用了無法辨識的類型 ${node.type}`);
+    }
+  });
+
+  duplicateNodeIds.forEach((nodeId) => {
+    errors.push(`節點 ID 重複：${nodeId}`);
+  });
+
   const triggerNodes = graph.nodes.filter((node) => getWorkflowNodeKind(node.type) === 'trigger');
 
   if (triggerNodes.length === 0) {
     errors.push('至少需要一個觸發節點');
+  } else if (triggerNodes.length > 1) {
+    errors.push('一個邏輯模板只能有一個觸發節點，請拆成多個邏輯模板');
   }
 
   graph.edges.forEach((edge) => {
     if (!nodeIds.has(edge.source)) errors.push(`連線 ${edge.id} 的起點不存在`);
     if (!nodeIds.has(edge.target)) errors.push(`連線 ${edge.id} 的終點不存在`);
     if (edge.source === edge.target) errors.push('不允許節點連到自己');
+
+    const source = graph.nodes.find((node) => node.id === edge.source);
+    const target = graph.nodes.find((node) => node.id === edge.target);
+    if (!source || !target) return;
+
+    const targetHandles = getWorkflowInputHandles(target.type).map((handle) => handle.id);
+    if (!targetHandles.includes(edge.targetHandle || 'in')) {
+      errors.push(`連線 ${edge.id} 的終點輸入端不存在`);
+    }
+
+    const graphWithoutCurrentEdge = {
+      ...graph,
+      edges: graph.edges.filter((candidate) => candidate.id !== edge.id),
+    };
+    const connectionCheck = canConnectWorkflowNodes(
+      graphWithoutCurrentEdge,
+      edge.source,
+      edge.sourceHandle,
+      edge.target
+    );
+    if (!connectionCheck.isValid) {
+      errors.push(`連線 ${edge.id} 無效：${connectionCheck.reason}`);
+    }
   });
+
+  const reachableNodeIds = new Set<string>();
+  const reachabilityQueue = triggerNodes.map((node) => node.id);
+  while (reachabilityQueue.length > 0) {
+    const nodeId = reachabilityQueue.shift()!;
+    if (reachableNodeIds.has(nodeId)) continue;
+    reachableNodeIds.add(nodeId);
+    graph.edges
+      .filter((edge) => edge.source === nodeId)
+      .forEach((edge) => reachabilityQueue.push(edge.target));
+  }
 
   graph.nodes.forEach((node) => {
     const incomingCount = graph.edges.filter((edge) => edge.target === node.id).length;
-    const outgoingCount = graph.edges.filter((edge) => edge.source === node.id).length;
+    const outgoingEdges = graph.edges.filter((edge) => edge.source === node.id);
+    const outgoingCount = outgoingEdges.length;
     const kind = getWorkflowNodeKind(node.type);
 
+    if (kind === 'trigger' && incomingCount > 0) {
+      errors.push(`${getWorkflowNodeDefinition(node.type).label} 是觸發節點，不能有輸入連線`);
+    }
+
     if (kind !== 'trigger' && incomingCount === 0) {
-      warnings.push(`${getWorkflowNodeDefinition(node.type).label} 沒有輸入連線`);
+      errors.push(`${getWorkflowNodeDefinition(node.type).label} 沒有輸入連線`);
+    }
+
+    if (kind !== 'trigger' && incomingCount > 1) {
+      errors.push(`${getWorkflowNodeDefinition(node.type).label} 只能有一條輸入連線`);
+    }
+
+    if (kind !== 'trigger' && triggerNodes.length > 0 && !reachableNodeIds.has(node.id)) {
+      errors.push(`${getWorkflowNodeDefinition(node.type).label} 沒有連到觸發節點形成的流程`);
     }
 
     if (kind === 'trigger' && outgoingCount === 0) {
       warnings.push(`${getWorkflowNodeDefinition(node.type).label} 沒有接到任何動作`);
+    }
+
+    if (node.type === 'condition.keyword') {
+      const handles = new Set(outgoingEdges.map((edge) => edge.sourceHandle));
+      if (!handles.has('true')) warnings.push('條件分支尚未連接「符合」路徑');
+      if (!handles.has('false')) warnings.push('條件分支尚未連接「不符合」路徑');
     }
 
     if (node.type === 'action.replyText' && !String(node.data.text || '').trim()) {

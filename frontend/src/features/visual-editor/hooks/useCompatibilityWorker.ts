@@ -188,7 +188,7 @@ export const useCompatibilityWorker = () => {
 function checkCompatibilitySync(
   block: UnifiedBlock | UnifiedDropItem,
   context: WorkspaceContext,
-  _existingBlocks: UnifiedBlock[] = []
+  existingBlocks: UnifiedBlock[] = []
 ): BlockValidationResult {
   // 簡化的同步相容性檢查
   // 這個函數作為 Worker 不可用時的後備方案
@@ -200,6 +200,57 @@ function checkCompatibilitySync(
       reason: '工作區上下文未正確初始化',
       suggestions: ['請重新整理頁面']
     };
+  }
+
+  if (context === WorkspaceContext.FLEX) {
+    if (!['flex-container', 'flex-content', 'flex-layout'].includes(block.blockType)) {
+      return {
+        isValid: false,
+        reason: '此積木不屬於 Flex Message 結構',
+        suggestions: ['請使用 Flex Message 編輯器左側的容器、內容或佈局積木']
+      };
+    }
+
+    if (block.blockType === 'flex-container') {
+      const data = block.blockData || {};
+      const containerType = typeof data.containerType === 'string' ? data.containerType : '';
+      const blockId = 'id' in block ? block.id : undefined;
+      const hasContainer = (type: string) => existingBlocks.some((existingBlock) => {
+        if (blockId && existingBlock.id === blockId) return false;
+        return existingBlock.blockType === 'flex-container' && existingBlock.blockData?.containerType === type;
+      });
+
+      if (containerType === 'carousel') {
+        if (hasContainer('carousel')) {
+          return {
+            isValid: false,
+            reason: '一個 Flex Message 只能有一個 Carousel 容器',
+            suggestions: ['請在現有 Carousel 裡新增 Bubble 卡片']
+          };
+        }
+
+        if (existingBlocks.length > 0) {
+          return {
+            isValid: false,
+            reason: 'Carousel 必須是 Flex Message 最外層容器',
+            suggestions: ['請先建立新的 Flex Message，再從 Carousel 容器開始設計']
+          };
+        }
+
+        return { isValid: true };
+      }
+
+      const hasCarousel = hasContainer('carousel');
+
+      if (!hasCarousel && containerType === 'bubble' && hasContainer('bubble')) {
+        return {
+          isValid: false,
+          reason: '單一卡片 Flex Message 只能有一個 Bubble 容器',
+          suggestions: ['若要建立多張卡片，請先建立 Carousel 容器']
+        };
+      }
+
+    }
   }
 
   // 寬鬆的相容性政策 - 允許大多數操作

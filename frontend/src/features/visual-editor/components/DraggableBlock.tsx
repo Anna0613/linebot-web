@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDrag } from 'react-dnd';
+import { getEmptyImage } from 'react-dnd-html5-backend';
 import { BlockCategory, WorkspaceContext } from '@/features/visual-editor/types/block';
 import { getCategoryFromBlockType, getBlockCompatibility } from '@/features/visual-editor/utils/blockCompatibility';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +30,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
   const compatibility = getBlockCompatibility(category);
   
   // React Hook must be called before any early returns
-  const [{ isDragging }, drag] = useDrag(() => ({
+  const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'block',
     item: () => {
       console.log('🏁 開始拖拽積木:', { blockType, category });
@@ -53,6 +54,10 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
       isDragging: monitor.isDragging(),
     }),
   }), [blockType, blockData, category, compatibility]);
+
+  useEffect(() => {
+    preview(getEmptyImage(), { captureDraggingState: true });
+  }, [preview]);
 
   // 調試資訊
   console.log('📦 DraggableBlock 初始化:', {
@@ -130,7 +135,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
     <div 
       ref={drag}
       className={`relative ${color} cursor-move rounded-lg border border-l-4 px-3 py-2 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-        isDragging ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
+        isDragging ? 'opacity-60 scale-95' : 'opacity-100 scale-100'
       }`}
     >
       <div className="flex items-center justify-between">
@@ -149,10 +154,6 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
         )}
       </div>
       
-      {/* 拖拽時的額外視覺提示 */}
-      {isDragging && (
-        <div className="pointer-events-none absolute inset-0 rounded-lg border-2 border-dashed border-current/40 bg-white/30" />
-      )}
     </div>
   );
 };
