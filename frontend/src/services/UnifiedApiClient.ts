@@ -3,12 +3,12 @@
  * 集成統一認證管理、自動重試、錯誤處理
  */
 
-import { authManager } from './UnifiedAuthManager';
-import { secureLog } from '../utils/secureTokenUtils';
-import { API_CONFIG, getApiUrl } from '../config/apiConfig';
-import LocalStorageCacheService from './LocalStorageCacheService';
-import { CACHE_KEYS } from '../config/cacheConfig';
-import type { LineBotProfile, LineBotProfilePreviewData } from '@/types/bot';
+import { authManager } from "./UnifiedAuthManager";
+import { secureLog } from "../utils/secureTokenUtils";
+import { API_CONFIG, getApiUrl } from "../config/apiConfig";
+import LocalStorageCacheService from "./LocalStorageCacheService";
+import { CACHE_KEYS } from "../config/cacheConfig";
+import type { LineBotProfile, LineBotProfilePreviewData } from "@/types/bot";
 
 interface ApiResponse<T = unknown> {
   data?: T;
@@ -18,7 +18,7 @@ interface ApiResponse<T = unknown> {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   headers?: Record<string, string>;
   body?: unknown;
   retries?: number;
@@ -50,7 +50,7 @@ export class UnifiedApiClient {
     options: RequestOptions = {}
   ): Promise<ApiResponse<T>> {
     const {
-      method = 'GET',
+      method = "GET",
       headers = {},
       body,
       retries = this.defaultRetries,
@@ -77,7 +77,7 @@ export class UnifiedApiClient {
           const requestInit: RequestInit = {
             method,
             headers: requestHeaders,
-            credentials: 'include',
+            credentials: "include",
             signal: controller.signal,
             ...(body && { body: JSON.stringify(body) }),
           };
@@ -85,8 +85,10 @@ export class UnifiedApiClient {
           // 超時控制 - 確保正確清理
           timeoutId = setTimeout(() => {
             if (controller && !controller.signal.aborted) {
-              secureLog(`請求超時，正在取消: ${method} ${endpoint}`, { timeout });
-              controller.abort('timeout');
+              secureLog(`請求超時，正在取消: ${method} ${endpoint}`, {
+                timeout,
+              });
+              controller.abort("timeout");
             }
           }, timeout);
 
@@ -117,42 +119,54 @@ export class UnifiedApiClient {
             timeoutId = null;
           }
 
-          lastError = _error instanceof Error ? _error : new Error('請求失敗');
+          lastError = _error instanceof Error ? _error : new Error("請求失敗");
 
           // 如果請求被取消，提供更詳細的錯誤信息
-          if (_error instanceof Error && _error.name === 'AbortError') {
-            const isTimeout = controller?.signal.reason === 'timeout' ||
-                             _error.message.includes('timeout') ||
-                             _error.message.includes('超時');
-            const abortReason = isTimeout ? '請求超時' : (controller?.signal.reason || '請求被取消');
-            secureLog(`請求被中止: ${method} ${endpoint}`, { reason: abortReason, isTimeout });
+          if (_error instanceof Error && _error.name === "AbortError") {
+            const isTimeout =
+              controller?.signal.reason === "timeout" ||
+              _error.message.includes("timeout") ||
+              _error.message.includes("超時");
+            const abortReason = isTimeout
+              ? "請求超時"
+              : controller?.signal.reason || "請求被取消";
+            secureLog(`請求被中止: ${method} ${endpoint}`, {
+              reason: abortReason,
+              isTimeout,
+            });
 
             // 對於知識庫操作的超時，提供更友好的錯誤信息
             if (isTimeout && this.isKnowledgeEndpoint(endpoint)) {
-              lastError = new Error('知識庫操作處理時間較長，請稍後查看結果或重新整理頁面');
+              lastError = new Error(
+                "知識庫操作處理時間較長，請稍後查看結果或重新整理頁面"
+              );
             } else {
-              lastError = new Error(`請求${isTimeout ? '超時' : '被取消'}: ${abortReason}`);
+              lastError = new Error(
+                `請求${isTimeout ? "超時" : "被取消"}: ${abortReason}`
+              );
             }
             break;
           }
 
           // 如果是 token 刷新成功，立即重試一次（不計入重試次數）
-          if (_error instanceof Error && _error.message === 'TOKEN_REFRESHED') {
-            secureLog('Token 已刷新，立即重試請求');
+          if (_error instanceof Error && _error.message === "TOKEN_REFRESHED") {
+            secureLog("Token 已刷新，立即重試請求");
             continue;
           }
 
           // 如果是最後一次嘗試或者是認證錯誤，不再重試
           if (
             attempt === retries ||
-            _error instanceof Error && _error.message.includes('401')
+            (_error instanceof Error && _error.message.includes("401"))
           ) {
             break;
           }
 
           // 漸進式延遲重試
           await this.delay(Math.pow(2, attempt) * 1000);
-          secureLog(`重試請求: ${method} ${endpoint}`, { attempt: attempt + 1 });
+          secureLog(`重試請求: ${method} ${endpoint}`, {
+            attempt: attempt + 1,
+          });
         }
       }
     } finally {
@@ -164,7 +178,7 @@ export class UnifiedApiClient {
     }
 
     return {
-      error: lastError?.message || '請求失敗',
+      error: lastError?.message || "請求失敗",
       status: 0,
     };
   }
@@ -172,10 +186,10 @@ export class UnifiedApiClient {
   /**
    * 取消指定端點的請求
    */
-  public cancelRequest(endpoint: string, method: string = 'GET'): void {
+  public cancelRequest(endpoint: string, method: string = "GET"): void {
     const requestKey = `${method}:${endpoint}:{}`;
     const controller = this.pendingRequests.get(requestKey);
-    
+
     if (controller) {
       controller.abort();
       this.pendingRequests.delete(requestKey);
@@ -191,7 +205,7 @@ export class UnifiedApiClient {
       controller.abort();
     });
     this.pendingRequests.clear();
-    secureLog('所有請求已取消');
+    secureLog("所有請求已取消");
   }
 
   /**
@@ -203,8 +217,8 @@ export class UnifiedApiClient {
   ): Promise<Record<string, string>> {
     // 不再注入 Authorization header，統一改用 HttpOnly Cookie
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      "Content-Type": "application/json",
+      Accept: "application/json",
       ...customHeaders,
     };
     return headers;
@@ -215,12 +229,12 @@ export class UnifiedApiClient {
    */
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     const { status } = response;
-    const contentType = response.headers.get('content-type');
+    const contentType = response.headers.get("content-type");
 
     try {
       // 嘗試解析JSON
       let data: unknown;
-      if (contentType?.includes('application/json')) {
+      if (contentType?.includes("application/json")) {
         data = await response.json();
       } else {
         data = await response.text();
@@ -228,35 +242,47 @@ export class UnifiedApiClient {
 
       // 處理認證失敗
       if (status === 401) {
-        secureLog('收到 401，嘗試以 Cookie 刷新會話');
+        secureLog("收到 401，嘗試以 Cookie 刷新會話");
         // 嘗試呼叫後端 refresh（會依賴 HttpOnly cookies）
         try {
-          const refreshResp = await fetch(getApiUrl(API_CONFIG.AUTH.BASE_URL, '/refresh'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            credentials: 'include',
-          });
+          const refreshResp = await fetch(
+            getApiUrl(API_CONFIG.AUTH.BASE_URL, "/refresh"),
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              credentials: "include",
+            }
+          );
 
           if (refreshResp.ok) {
-            secureLog('會話刷新成功，重新嘗試原請求');
-            throw new Error('TOKEN_REFRESHED');
+            secureLog("會話刷新成功，重新嘗試原請求");
+            throw new Error("TOKEN_REFRESHED");
           }
         } catch (refreshError) {
-          if (refreshError instanceof Error && refreshError.message === 'TOKEN_REFRESHED') {
+          if (
+            refreshError instanceof Error &&
+            refreshError.message === "TOKEN_REFRESHED"
+          ) {
             throw refreshError;
           }
-          secureLog('會話刷新失敗:', refreshError);
+          secureLog("會話刷新失敗:", refreshError);
         }
 
         const errFromData = (() => {
-          if (data && typeof data === 'object' && data !== null) {
+          if (data && typeof data === "object" && data !== null) {
             const d = data as Record<string, unknown>;
-            return typeof d.error === 'string' ? d.error : undefined;
+            return typeof d.error === "string" ? d.error : undefined;
           }
           return undefined;
         })();
-        authManager.handleAuthError({ status, message: errFromData || '認證已過期' });
-        return { error: errFromData || '認證已過期，請重新登入', status };
+        authManager.handleAuthError({
+          status,
+          message: errFromData || "認證已過期",
+        });
+        return { error: errFromData || "認證已過期，請重新登入", status };
       }
 
       // 處理其他錯誤狀態
@@ -289,26 +315,26 @@ export class UnifiedApiClient {
    */
   private getErrorMessage(status: number, data?: unknown): string {
     // 優先使用API返回的錯誤信息
-    if (data && typeof data === 'object' && data !== null) {
+    if (data && typeof data === "object" && data !== null) {
       const errorObj = data as Record<string, unknown>;
-      if (typeof errorObj.error === 'string') return errorObj.error;
-      if (typeof errorObj.detail === 'string') return errorObj.detail;
-      if (typeof errorObj.message === 'string') return errorObj.message;
+      if (typeof errorObj.error === "string") return errorObj.error;
+      if (typeof errorObj.detail === "string") return errorObj.detail;
+      if (typeof errorObj.message === "string") return errorObj.message;
     }
 
     // 默認錯誤信息
     const errorMessages: Record<number, string> = {
-      400: '請求參數錯誤',
-      401: '認證失敗',
-      403: '權限不足',
-      404: '資源不存在',
-      409: '資源衝突',
-      422: '資料驗證失敗',
-      429: '請求過於頻繁',
-      500: '伺服器內部錯誤',
-      502: '網關錯誤',
-      503: '服務暫時不可用',
-      504: '網關超時',
+      400: "請求參數錯誤",
+      401: "認證失敗",
+      403: "權限不足",
+      404: "資源不存在",
+      409: "資源衝突",
+      422: "資料驗證失敗",
+      429: "請求過於頻繁",
+      500: "伺服器內部錯誤",
+      502: "網關錯誤",
+      503: "服務暫時不可用",
+      504: "網關超時",
     };
 
     return errorMessages[status] || `HTTP ${status} 錯誤`;
@@ -318,9 +344,11 @@ export class UnifiedApiClient {
    * 根據端點判斷是否為知識庫相關操作
    */
   private isKnowledgeEndpoint(endpoint: string): boolean {
-    return endpoint.includes('/knowledge') ||
-           endpoint.includes('/ai/') ||
-           endpoint.includes('/chunks/');
+    return (
+      endpoint.includes("/knowledge") ||
+      endpoint.includes("/ai/") ||
+      endpoint.includes("/chunks/")
+    );
   }
 
   /**
@@ -337,51 +365,87 @@ export class UnifiedApiClient {
    * 延遲函數
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // HTTP方法包裝器
-  public async get<T = unknown>(endpoint: string, options?: Omit<RequestOptions, 'method'>): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'GET' });
+  public async get<T = unknown>(
+    endpoint: string,
+    options?: Omit<RequestOptions, "method">
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { ...options, method: "GET" });
   }
 
-  public async post<T = unknown>(endpoint: string, data?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'POST', body: data });
+  public async post<T = unknown>(
+    endpoint: string,
+    data?: unknown,
+    options?: Omit<RequestOptions, "method" | "body">
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: "POST",
+      body: data,
+    });
   }
 
-  public async put<T = unknown>(endpoint: string, data?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'PUT', body: data });
+  public async put<T = unknown>(
+    endpoint: string,
+    data?: unknown,
+    options?: Omit<RequestOptions, "method" | "body">
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { ...options, method: "PUT", body: data });
   }
 
-  public async delete<T = unknown>(endpoint: string, options?: Omit<RequestOptions, 'method'>): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+  public async delete<T = unknown>(
+    endpoint: string,
+    options?: Omit<RequestOptions, "method">
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { ...options, method: "DELETE" });
   }
 
-  public async patch<T = unknown>(endpoint: string, data?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'PATCH', body: data });
+  public async patch<T = unknown>(
+    endpoint: string,
+    data?: unknown,
+    options?: Omit<RequestOptions, "method" | "body">
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: "PATCH",
+      body: data,
+    });
   }
 
   /**
    * multipart/form-data 上傳 (修復版)
    */
-  public async postFormData<T = unknown>(endpoint: string, form: FormData, options?: Omit<RequestOptions, 'method' | 'body' | 'headers'>): Promise<ApiResponse<T>> {
-    const { retries: _retries = this.defaultRetries, timeout = this.getTimeoutForEndpoint(endpoint) } = options || {};
+  public async postFormData<T = unknown>(
+    endpoint: string,
+    form: FormData,
+    options?: Omit<RequestOptions, "method" | "body" | "headers">
+  ): Promise<ApiResponse<T>> {
+    const {
+      retries: _retries = this.defaultRetries,
+      timeout = this.getTimeoutForEndpoint(endpoint),
+    } = options || {};
     const controller = new AbortController();
     let timeoutId: NodeJS.Timeout | null = null;
 
     try {
       timeoutId = setTimeout(() => {
         if (!controller.signal.aborted) {
-          controller.abort('timeout');
+          controller.abort("timeout");
         }
       }, timeout);
 
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method: "POST",
         // 不要顯式設定 Content-Type，讓瀏覽器自動帶 boundary
-        headers: await this.buildHeaders({}, false).then(h => { delete h['Content-Type']; return h; }),
+        headers: await this.buildHeaders({}, false).then((h) => {
+          delete h["Content-Type"];
+          return h;
+        }),
         body: form,
-        credentials: 'include',
+        credentials: "include",
         signal: controller.signal,
       });
 
@@ -396,18 +460,22 @@ export class UnifiedApiClient {
         clearTimeout(timeoutId);
       }
 
-      const error = e instanceof Error ? e : new Error('上傳失敗');
+      const error = e instanceof Error ? e : new Error("上傳失敗");
 
       // 處理超時錯誤
-      if (error.name === 'AbortError') {
-        const isTimeout = controller.signal.reason === 'timeout' ||
-                         error.message.includes('timeout') ||
-                         error.message.includes('超時');
+      if (error.name === "AbortError") {
+        const isTimeout =
+          controller.signal.reason === "timeout" ||
+          error.message.includes("timeout") ||
+          error.message.includes("超時");
 
         if (isTimeout && this.isKnowledgeEndpoint(endpoint)) {
-          return { error: '檔案上傳處理時間較長，請稍後查看結果或重新整理頁面', status: 0 };
+          return {
+            error: "檔案上傳處理時間較長，請稍後查看結果或重新整理頁面",
+            status: 0,
+          };
         } else {
-          return { error: `上傳${isTimeout ? '超時' : '被取消'}`, status: 0 };
+          return { error: `上傳${isTimeout ? "超時" : "被取消"}`, status: 0 };
         }
       }
 
@@ -418,7 +486,10 @@ export class UnifiedApiClient {
   // 用戶資料相關API
   public async getProfile(): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.GET_PROFILE)
+      getApiUrl(
+        API_CONFIG.SETTING.BASE_URL,
+        API_CONFIG.SETTING.ENDPOINTS.GET_PROFILE
+      )
     );
   }
 
@@ -428,14 +499,23 @@ export class UnifiedApiClient {
     display_name?: string;
   }): Promise<ApiResponse> {
     return this.put(
-      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.UPDATE_PROFILE),
+      getApiUrl(
+        API_CONFIG.SETTING.BASE_URL,
+        API_CONFIG.SETTING.ENDPOINTS.UPDATE_PROFILE
+      ),
       profileData
     );
   }
 
-  public async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse> {
+  public async changePassword(
+    currentPassword: string,
+    newPassword: string
+  ): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.CHANGE_PASSWORD),
+      getApiUrl(
+        API_CONFIG.SETTING.BASE_URL,
+        API_CONFIG.SETTING.ENDPOINTS.CHANGE_PASSWORD
+      ),
       {
         current_password: currentPassword,
         new_password: newPassword,
@@ -446,17 +526,25 @@ export class UnifiedApiClient {
   // Bot管理相關API
   public async getBots(): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.GET_BOTS)
+      getApiUrl(
+        API_CONFIG.PUZZLE.BASE_URL,
+        API_CONFIG.PUZZLE.ENDPOINTS.GET_BOTS
+      )
     );
   }
 
   public async getBot(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.GET_BOT(botId))
+      getApiUrl(
+        API_CONFIG.PUZZLE.BASE_URL,
+        API_CONFIG.PUZZLE.ENDPOINTS.GET_BOT(botId)
+      )
     );
   }
 
-  public async getLineBotProfile(botId: string): Promise<ApiResponse<LineBotProfile>> {
+  public async getLineBotProfile(
+    botId: string
+  ): Promise<ApiResponse<LineBotProfile>> {
     return this.get(
       getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/${botId}/line-profile`)
     );
@@ -466,7 +554,7 @@ export class UnifiedApiClient {
     profileData: LineBotProfilePreviewData
   ): Promise<ApiResponse<LineBotProfile>> {
     return this.post(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, '/line-profile/preview'),
+      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, "/line-profile/preview"),
       profileData
     );
   }
@@ -477,17 +565,24 @@ export class UnifiedApiClient {
     channel_secret: string;
   }): Promise<ApiResponse> {
     const response = await this.post(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.CREATE_BOT),
+      getApiUrl(
+        API_CONFIG.PUZZLE.BASE_URL,
+        API_CONFIG.PUZZLE.ENDPOINTS.CREATE_BOT
+      ),
       botData
     );
 
     // 如果建立成功，清除 Bot 列表快取
-    if (response.success || response.status === 200 || response.status === 201) {
+    if (
+      response.success ||
+      response.status === 200 ||
+      response.status === 201
+    ) {
       try {
         LocalStorageCacheService.remove(CACHE_KEYS.USER_BOTS_SUMMARY);
-        secureLog('已清除 Bot 摘要列表快取（建立後）');
+        secureLog("已清除 Bot 摘要列表快取（建立後）");
       } catch (error) {
-        console.error('清除快取失敗:', error);
+        console.error("清除快取失敗:", error);
       }
     }
 
@@ -496,10 +591,18 @@ export class UnifiedApiClient {
 
   public async updateBot(
     botId: string,
-    botData: { name?: string; channel_token?: string; channel_secret?: string }
+    botData: {
+      name?: string;
+      channel_token?: string;
+      channel_secret?: string;
+      is_active?: boolean;
+    }
   ): Promise<ApiResponse> {
     const response = await this.put(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.UPDATE_BOT(botId)),
+      getApiUrl(
+        API_CONFIG.PUZZLE.BASE_URL,
+        API_CONFIG.PUZZLE.ENDPOINTS.UPDATE_BOT(botId)
+      ),
       botData
     );
 
@@ -507,9 +610,9 @@ export class UnifiedApiClient {
     if (response.success || response.status === 200) {
       try {
         LocalStorageCacheService.remove(CACHE_KEYS.USER_BOTS_SUMMARY);
-        secureLog('已清除 Bot 摘要列表快取（更新後）', { botId });
+        secureLog("已清除 Bot 摘要列表快取（更新後）", { botId });
       } catch (error) {
-        console.error('清除快取失敗:', error);
+        console.error("清除快取失敗:", error);
       }
     }
 
@@ -518,7 +621,10 @@ export class UnifiedApiClient {
 
   public async deleteBot(botId: string): Promise<ApiResponse> {
     const response = await this.delete(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, API_CONFIG.PUZZLE.ENDPOINTS.DELETE_BOT(botId))
+      getApiUrl(
+        API_CONFIG.PUZZLE.BASE_URL,
+        API_CONFIG.PUZZLE.ENDPOINTS.DELETE_BOT(botId)
+      )
     );
 
     // 如果刪除成功，清除相關快取
@@ -528,9 +634,9 @@ export class UnifiedApiClient {
         LocalStorageCacheService.remove(CACHE_KEYS.USER_BOTS_SUMMARY);
         // 清除邏輯模板摘要快取
         LocalStorageCacheService.remove(CACHE_KEYS.LOGIC_TEMPLATES_SUMMARY);
-        secureLog('已清除 Bot 相關快取', { botId });
+        secureLog("已清除 Bot 相關快取", { botId });
       } catch (error) {
-        console.error('清除快取失敗:', error);
+        console.error("清除快取失敗:", error);
       }
     }
 
@@ -540,7 +646,10 @@ export class UnifiedApiClient {
   // 用戶頭像相關API
   public async getAvatar(): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.GET_AVATAR)
+      getApiUrl(
+        API_CONFIG.SETTING.BASE_URL,
+        API_CONFIG.SETTING.ENDPOINTS.GET_AVATAR
+      )
     );
   }
 
@@ -550,7 +659,10 @@ export class UnifiedApiClient {
 
   public async updateAvatar(avatar: string): Promise<ApiResponse> {
     return this.put(
-      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.UPDATE_AVATAR),
+      getApiUrl(
+        API_CONFIG.SETTING.BASE_URL,
+        API_CONFIG.SETTING.ENDPOINTS.UPDATE_AVATAR
+      ),
       { avatar_base64: avatar }
     );
   }
@@ -558,7 +670,7 @@ export class UnifiedApiClient {
   public async uploadAvatar(formData: FormData): Promise<ApiResponse> {
     try {
       // 從 FormData 中獲取文件並轉換為 base64
-      const file = formData.get('avatar') as File;
+      const file = formData.get("avatar") as File;
       if (!file) {
         return {
           error: "未找到頭像文件",
@@ -568,7 +680,7 @@ export class UnifiedApiClient {
 
       // 將文件轉換為 base64
       const base64 = await this.fileToBase64(file);
-      
+
       return this.updateAvatar(base64);
     } catch (_error) {
       return {
@@ -580,7 +692,10 @@ export class UnifiedApiClient {
 
   public async deleteAvatar(): Promise<ApiResponse> {
     return this.delete(
-      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.DELETE_AVATAR)
+      getApiUrl(
+        API_CONFIG.SETTING.BASE_URL,
+        API_CONFIG.SETTING.ENDPOINTS.DELETE_AVATAR
+      )
     );
   }
 
@@ -597,14 +712,20 @@ export class UnifiedApiClient {
   // 刪除帳號
   public async deleteAccount(): Promise<ApiResponse> {
     return this.delete(
-      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.DELETE_ACCOUNT)
+      getApiUrl(
+        API_CONFIG.SETTING.BASE_URL,
+        API_CONFIG.SETTING.ENDPOINTS.DELETE_ACCOUNT
+      )
     );
   }
 
   // 重新發送電子郵件驗證
   public async resendEmailVerification(email: string): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.AUTH.BASE_URL, API_CONFIG.AUTH.ENDPOINTS.RESEND_VERIFICATION),
+      getApiUrl(
+        API_CONFIG.AUTH.BASE_URL,
+        API_CONFIG.AUTH.ENDPOINTS.RESEND_VERIFICATION
+      ),
       { email },
       { skipAuth: true }
     );
@@ -613,7 +734,10 @@ export class UnifiedApiClient {
   // 檢查電子郵件驗證狀態
   public async checkEmailVerification(): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.SETTING.BASE_URL, API_CONFIG.SETTING.ENDPOINTS.CHECK_EMAIL_VERIFICATION)
+      getApiUrl(
+        API_CONFIG.SETTING.BASE_URL,
+        API_CONFIG.SETTING.ENDPOINTS.CHECK_EMAIL_VERIFICATION
+      )
     );
   }
 
@@ -626,27 +750,48 @@ export class UnifiedApiClient {
 
   public async activateLogicTemplate(templateId: string): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/logic-templates/${templateId}/activate`)
+      getApiUrl(
+        API_CONFIG.PUZZLE.BASE_URL,
+        `/logic-templates/${templateId}/activate`
+      )
     );
   }
 
-  public async deactivateLogicTemplate(templateId: string): Promise<ApiResponse> {
+  public async deactivateLogicTemplate(
+    templateId: string
+  ): Promise<ApiResponse> {
     // 暫時使用 POST 方法，實際可能需要根據後端 API 設計調整
     return this.post(
-      getApiUrl(API_CONFIG.PUZZLE.BASE_URL, `/logic-templates/${templateId}/deactivate`)
+      getApiUrl(
+        API_CONFIG.PUZZLE.BASE_URL,
+        `/logic-templates/${templateId}/deactivate`
+      )
     );
   }
 
   // LINE Bot 分析 API - 修復：使用正確的 API 路徑
-  public async getBotAnalytics(botId: string, period: string = "week"): Promise<ApiResponse> {
+  public async getBotAnalytics(
+    botId: string,
+    period: string = "week"
+  ): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/analytics?period=${period}`)
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/analytics?period=${period}`
+      )
     );
   }
 
-  public async getBotMessageStats(botId: string, days: number = 7, granularity: string = "day"): Promise<ApiResponse> {
+  public async getBotMessageStats(
+    botId: string,
+    days: number = 7,
+    granularity: string = "day"
+  ): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/messages/stats?days=${days}&granularity=${granularity}`)
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/messages/stats?days=${days}&granularity=${granularity}`
+      )
     );
   }
 
@@ -662,42 +807,80 @@ export class UnifiedApiClient {
     );
   }
 
-  public async getBotUsers(botId: string, limit: number = 50, offset: number = 0): Promise<ApiResponse> {
+  public async getBotUsers(
+    botId: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users?limit=${limit}&offset=${offset}`)
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/users?limit=${limit}&offset=${offset}`
+      )
     );
   }
 
-  public async getUserInteractions(botId: string, lineUserId: string, limit: number = 20): Promise<ApiResponse> {
+  public async getUserInteractions(
+    botId: string,
+    lineUserId: string,
+    limit: number = 20
+  ): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/interactions?limit=${limit}`)
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/users/${lineUserId}/interactions?limit=${limit}`
+      )
     );
   }
 
-  public async broadcastMessage(botId: string, messageData: { message: string; user_ids?: string[] }): Promise<ApiResponse> {
+  public async broadcastMessage(
+    botId: string,
+    messageData: { message: string; user_ids?: string[] }
+  ): Promise<ApiResponse> {
     return this.post(
       getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/broadcast`),
       messageData
     );
   }
 
-  public async sendMessageToUser(botId: string, lineUserId: string, messageData: { message: string }): Promise<ApiResponse> {
+  public async sendMessageToUser(
+    botId: string,
+    lineUserId: string,
+    messageData: { message: string }
+  ): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/message`),
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/users/${lineUserId}/message`
+      ),
       messageData
     );
   }
 
-  public async selectiveBroadcastMessage(botId: string, messageData: { message: string; user_ids: string[] }): Promise<ApiResponse> {
+  public async selectiveBroadcastMessage(
+    botId: string,
+    messageData: { message: string; user_ids: string[] }
+  ): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/broadcast/selective`),
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/broadcast/selective`
+      ),
       messageData
     );
   }
 
-  public async getChatHistory(botId: string, lineUserId: string, limit: number = 50, offset: number = 0): Promise<ApiResponse> {
+  public async getChatHistory(
+    botId: string,
+    lineUserId: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/chat-history?limit=${limit}&offset=${offset}`)
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/users/${lineUserId}/chat-history?limit=${limit}&offset=${offset}`
+      )
     );
   }
 
@@ -707,37 +890,53 @@ export class UnifiedApiClient {
     lineUserId: string,
     data: {
       question: string;
-      history?: Array<{ role: 'user'|'assistant'; content: string }>;
+      history?: Array<{ role: "user" | "assistant"; content: string }>;
     }
   ): Promise<ApiResponse> {
     return this.post(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/ai/query`),
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/users/${lineUserId}/ai/query`
+      ),
       data
     );
   }
 
   // 取得可用的 AI 模型列表
   public async getAIModels(provider?: string): Promise<ApiResponse> {
-    const q = provider ? `?provider=${encodeURIComponent(provider)}` : '';
+    const q = provider ? `?provider=${encodeURIComponent(provider)}` : "";
     return this.get(
       getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/ai/models${q}`)
     );
   }
 
   // 清除 AI 分析快取
-  public async clearAIConversationHistory(botId: string, lineUserId: string): Promise<ApiResponse> {
+  public async clearAIConversationHistory(
+    botId: string,
+    lineUserId: string
+  ): Promise<ApiResponse> {
     return this.delete(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/users/${lineUserId}/ai/history`)
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bots/${botId}/users/${lineUserId}/ai/history`
+      )
     );
   }
 
-  public async getBotActivities(botId: string, limit: number = 20, offset: number = 0): Promise<ApiResponse> {
-    const url = getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/activities?limit=${limit}&offset=${offset}`);
-    console.log('調用 getBotActivities API:', url);
-    
+  public async getBotActivities(
+    botId: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<ApiResponse> {
+    const url = getApiUrl(
+      API_CONFIG.UNIFIED.BASE_URL,
+      `/bots/${botId}/activities?limit=${limit}&offset=${offset}`
+    );
+    console.log("調用 getBotActivities API:", url);
+
     const response = await this.get(url);
-    console.log('getBotActivities API 響應:', response);
-    
+    console.log("getBotActivities API 響應:", response);
+
     return response;
   }
 
@@ -750,43 +949,45 @@ export class UnifiedApiClient {
 
   // 儀表板複合端點 - 高效能資料獲取
   public async getBotDashboard(
-    botId: string, 
+    botId: string,
     options?: {
       includeAnalytics?: boolean;
       includeLogic?: boolean;
       includeWebhook?: boolean;
-      period?: 'day' | 'week' | 'month';
+      period?: "day" | "week" | "month";
     }
   ): Promise<ApiResponse> {
     const params = new URLSearchParams();
-    
+
     if (options?.includeAnalytics !== undefined) {
-      params.append('include_analytics', options.includeAnalytics.toString());
+      params.append("include_analytics", options.includeAnalytics.toString());
     }
     if (options?.includeLogic !== undefined) {
-      params.append('include_logic', options.includeLogic.toString());
+      params.append("include_logic", options.includeLogic.toString());
     }
     if (options?.includeWebhook !== undefined) {
-      params.append('include_webhook', options.includeWebhook.toString());
+      params.append("include_webhook", options.includeWebhook.toString());
     }
     if (options?.period) {
-      params.append('period', options.period);
+      params.append("period", options.period);
     }
 
     const url = getApiUrl(
-      API_CONFIG.UNIFIED.BASE_URL, 
-      `/bot_dashboard/${botId}/dashboard${params.toString() ? '?' + params.toString() : ''}`
+      API_CONFIG.UNIFIED.BASE_URL,
+      `/bot_dashboard/${botId}/dashboard${params.toString() ? "?" + params.toString() : ""}`
     );
-    
+
     return this.get(url);
   }
 
   public async getBotDashboardLight(botId: string): Promise<ApiResponse> {
     return this.get(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bot_dashboard/${botId}/dashboard/light`)
+      getApiUrl(
+        API_CONFIG.UNIFIED.BASE_URL,
+        `/bot_dashboard/${botId}/dashboard/light`
+      )
     );
   }
-
 }
 
 // 導出單例實例

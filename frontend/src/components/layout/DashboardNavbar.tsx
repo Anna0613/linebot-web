@@ -134,10 +134,12 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("theme");
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const dark = saved ? saved === 'dark' : prefersDark;
+      const prefersDark =
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const dark = saved ? saved === "dark" : prefersDark;
       setIsDarkMode(dark);
-      document.documentElement.classList.toggle('dark', dark);
+      document.documentElement.classList.toggle("dark", dark);
     } catch {
       // 靜默失敗
     }
@@ -184,14 +186,18 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
               className="flex items-center gap-2 sm:gap-3 z-10 min-w-0"
             >
               <picture>
-                <source srcSet="/assets/images/webp/LOGO.webp" type="image/webp" />
+                <source
+                  srcSet="/assets/images/webp/LOGO.webp"
+                  type="image/webp"
+                />
                 <img
                   src="/assets/images/origin/LOGO.png"
                   alt="Logo"
                   loading="eager"
                   decoding="async"
                   fetchpriority="high"
-                  width="48" height="48"
+                  width="48"
+                  height="48"
                   className="block h-8 sm:h-10 md:h-12 w-auto flex-shrink-0 object-contain align-middle"
                 />
               </picture>
@@ -218,7 +224,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                 </svg>
               </div>
             </Link>
-            <Link to="/bots/create">
+            <Link to="/dashboard?createBot=1">
               <Button className="web3-button font-bold rounded-[5px] text-sm lg:text-[16px] px-3 lg:px-4 h-8 lg:h-10">
                 建立 LINE Bot
               </Button>
@@ -422,104 +428,104 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
           </button>
         </div>
         <ul className="mt-8 space-y-4 text-foreground text-lg">
-            {/* 根據登入狀態顯示不同的選單項目 */}
-            {user ? (
-              <>
-                <li>
-                  <Link
-                    to="/dashboard"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
-                  >
-                    首頁
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/how-to-establish"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
-                  >
-                    如何建立LINE Bot
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/bots/create"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
-                  >
-                    建立LINE Bot
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/bots/management"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
-                  >
-                    LINE Bot 管理
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/about"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
-                  >
-                    關於
-                  </Link>
-                </li>
-              </>
-            ) : (
-              <>
-                <li>
-                  <Link
-                    to="/"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
-                  >
-                    首頁
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/how-to-establish"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
-                  >
-                    建立教學
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/about"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
-                  >
-                    關於
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/login"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
-                  >
-                    登入
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/register"
-                    onClick={toggleMobileMenu}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
-                  >
-                    註冊
-                  </Link>
-                </li>
-              </>
-            )}
+          {/* 根據登入狀態顯示不同的選單項目 */}
+          {user ? (
+            <>
+              <li>
+                <Link
+                  to="/dashboard"
+                  onClick={toggleMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
+                >
+                  首頁
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/how-to-establish"
+                  onClick={toggleMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
+                >
+                  如何建立LINE Bot
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/dashboard?createBot=1"
+                  onClick={toggleMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
+                >
+                  建立LINE Bot
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/bots/management"
+                  onClick={toggleMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
+                >
+                  LINE Bot 管理
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/about"
+                  onClick={toggleMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
+                >
+                  關於
+                </Link>
+              </li>
+            </>
+          ) : (
+            <>
+              <li>
+                <Link
+                  to="/"
+                  onClick={toggleMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
+                >
+                  首頁
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/how-to-establish"
+                  onClick={toggleMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
+                >
+                  建立教學
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/about"
+                  onClick={toggleMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
+                >
+                  關於
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/login"
+                  onClick={toggleMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
+                >
+                  登入
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/register"
+                  onClick={toggleMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-secondary dark:hover:bg-web3-cyan/10 dark:hover:text-web3-cyan transition-all duration-300 relative"
+                >
+                  註冊
+                </Link>
+              </li>
+            </>
+          )}
         </ul>
       </div>
 

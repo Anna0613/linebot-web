@@ -129,7 +129,7 @@ const GlobalBotSwitcher = ({
           size="icon"
           variant="outline"
           className="h-10 w-10 shrink-0 rounded-[14px] border-white/70 bg-white/75 text-slate-600 shadow-sm hover:bg-white"
-          onClick={() => navigate("/bots/create")}
+          onClick={() => navigate("/dashboard?createBot=1")}
           aria-label={copy.createBot}
           title={copy.createBot}
         >

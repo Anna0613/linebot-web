@@ -94,6 +94,9 @@ async def _ai_takeover_background_task(
             if not bot:
                 logger.error(f"AI 背景任務：找不到 Bot: {bot_id}")
                 return
+            if getattr(bot, "is_active", True) is False:
+                logger.info(f"AI 背景任務：Bot 已關閉，略過回覆: {bot_id}")
+                return
 
             # 建立 LineBotService 以便回覆
             line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
@@ -277,6 +280,10 @@ async def handle_webhook_event(
         if x_line_signature and not line_bot_service.verify_signature(body, x_line_signature):
             logger.error(f"簽名驗證失敗: {bot_id}")
             raise HTTPException(status_code=400, detail="簽名驗證失敗")
+
+        if getattr(bot, "is_active", True) is False:
+            logger.info(f"Bot 已關閉，略過 Webhook 事件: {bot_id}")
+            return Response(status_code=200)
 
         # 解析 Webhook 事件
         try:

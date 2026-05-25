@@ -1,23 +1,21 @@
-import React, { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Activity,
   ArrowDownRight,
   ArrowUpRight,
   Ban,
-  BarChart3,
   Bot as BotIcon,
-  CheckCircle2,
-  Edit3,
-  Grid3X3,
+  KeyRound,
   LayoutDashboard,
-  List,
   MessageSquare,
+  MoreHorizontal,
   Plus,
+  Power,
   Search,
   Send,
-  Settings2,
   SlidersHorizontal,
+  Trash2,
   Users,
 } from "lucide-react";
 import {
@@ -36,6 +34,28 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -43,19 +63,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader } from "@/components/ui/loader";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/services/UnifiedApiClient";
+import BotCreationForm from "@/features/bots/components/BotCreationForm";
 import { useBotManagement } from "@/features/bot-management/hooks/useBotManagement";
+import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
+import { useToast } from "@/hooks/use-toast";
 import { Bot as BotType } from "@/types/bot";
-
-const BotDetailsModal = lazy(() => import("./BotDetailsModal"));
 
 interface User {
   line_id?: string;
@@ -115,7 +130,6 @@ interface AnalyticsSummary {
   isLoading: boolean;
 }
 
-type ViewMode = "grid" | "list";
 type StatusFilter = "all" | "active" | "inactive";
 type IconComponent = React.ComponentType<{ className?: string }>;
 
@@ -148,6 +162,23 @@ const dashboardCopy = {
     newBot: "New Bot",
     searchBots: "Search bots",
     filter: "Filter",
+    botName: "Bot",
+    status: "Status",
+    enabled: "Enabled",
+    actions: "Actions",
+    botActions: "Bot actions",
+    enableBot: "Enable Bot",
+    disableBot: "Disable Bot",
+    deleteBot: "Delete Bot",
+    deleteConfirmTitle: "Delete Bot?",
+    deleteConfirmDescription:
+      "This will permanently remove the bot and its related settings. This action cannot be undone.",
+    cancel: "Cancel",
+    confirmDelete: "Delete",
+    deleting: "Deleting...",
+    actionFailed: "Action failed",
+    toggleSuccess: "Bot status updated",
+    deleteSuccess: "Bot deleted",
     allStatus: "All status",
     active: "Active",
     inactive: "Inactive",
@@ -165,7 +196,8 @@ const dashboardCopy = {
     edit: "Edit",
     settings: "Settings",
     analyticsTitle: "Recent interactions",
-    analyticsSubtitle: "A simple view of messages and friends across your bots.",
+    analyticsSubtitle:
+      "A simple view of messages and friends across your bots.",
     botsTracked: "bots tracked",
     metrics: {
       messagesSent: "Messages sent",
@@ -198,8 +230,7 @@ const dashboardCopy = {
     notifications: "通知",
     heroBadge: "你的 LINE Bot 工作台",
     heroTitle: "今天想更新哪一個 Bot？",
-    heroBody:
-      "建立 Bot、調整回覆、查看最近互動，都從這裡開始。",
+    heroBody: "建立 Bot、調整回覆、查看最近互動，都從這裡開始。",
     createLineBot: "建立我的 Bot",
     viewMyBots: "查看我的 Bot",
     myBotsTitle: "我的 Bot",
@@ -207,6 +238,23 @@ const dashboardCopy = {
     newBot: "新增 Bot",
     searchBots: "搜尋 Bot",
     filter: "篩選",
+    botName: "Bot",
+    status: "狀態",
+    enabled: "是否啟用",
+    actions: "動作",
+    botActions: "Bot 操作",
+    enableBot: "啟用 Bot",
+    disableBot: "關閉 Bot",
+    deleteBot: "刪除 Bot",
+    deleteConfirmTitle: "確認刪除 Bot？",
+    deleteConfirmDescription:
+      "刪除後，這個 Bot 和相關設定會永久移除，此操作無法復原。",
+    cancel: "取消",
+    confirmDelete: "刪除",
+    deleting: "刪除中...",
+    actionFailed: "操作失敗",
+    toggleSuccess: "Bot 狀態已更新",
+    deleteSuccess: "Bot 已刪除",
     allStatus: "所有狀態",
     active: "啟用",
     inactive: "停用",
@@ -326,7 +374,7 @@ const TrendPill = ({ value }: { value: number }) => {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
+        "inline-flex items-center gap-1 rounded-[10px] px-2.5 py-1 text-xs font-semibold",
         isPositive
           ? "bg-emerald-50 text-emerald-700"
           : "bg-rose-50 text-rose-700"
@@ -335,6 +383,70 @@ const TrendPill = ({ value }: { value: number }) => {
       <Icon className="h-3.5 w-3.5" />
       {formatPercent(Math.abs(value))}%
     </span>
+  );
+};
+
+const BotStateBadge = ({
+  active,
+  activeLabel,
+  inactiveLabel,
+  icon: Icon,
+  inactiveTone = "slate",
+  onClick,
+  disabled,
+  isLoading,
+  ariaLabel,
+}: {
+  active: boolean;
+  activeLabel: string;
+  inactiveLabel: string;
+  icon: IconComponent;
+  inactiveTone?: "amber" | "slate";
+  onClick?: () => void;
+  disabled?: boolean;
+  isLoading?: boolean;
+  ariaLabel?: string;
+}) => {
+  const className = cn(
+    "inline-flex h-8 items-center gap-1 rounded-[10px] border px-2.5 py-1 text-xs font-semibold transition-colors",
+    active
+      ? "border-emerald-200 bg-emerald-50 text-[#166534] hover:bg-emerald-50"
+      : inactiveTone === "amber"
+        ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50"
+        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-50",
+    onClick &&
+      "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
+  );
+  const content = (
+    <>
+      {isLoading ? <Loader size="sm" /> : <Icon className="h-3.5 w-3.5" />}
+      {active ? activeLabel : inactiveLabel}
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={onClick}
+        disabled={disabled || isLoading}
+        aria-label={ariaLabel}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Badge
+      className={cn(
+        className,
+        "!rounded-[10px] focus:ring-0 focus:ring-offset-0"
+      )}
+    >
+      {content}
+    </Badge>
   );
 };
 
@@ -353,11 +465,11 @@ const MetricCard = ({
   change: number;
   accent: string;
 }) => (
-  <div className="rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+  <div className="rounded-[12px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
     <div className="flex items-start justify-between gap-3">
       <span
         className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-[14px]",
+          "flex h-11 w-11 items-center justify-center rounded-[10px]",
           accent
         )}
       >
@@ -379,30 +491,34 @@ const MetricCard = ({
 
 const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { language } = useLanguagePreference();
+  const { toast } = useToast();
   const copy = dashboardCopy[language];
   const { bots, isLoading, error, fetchBots } = useBotManagement();
+  const { refreshBots: refreshSelectedBots } = useSelectedBot();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [subscriberCounts, setSubscriberCounts] = useState<
-    Record<string, number>
-  >({});
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [actionBotId, setActionBotId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BotType | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary>(
     initialAnalyticsSummary
   );
 
-  const [detailsModal, setDetailsModal] = useState<{
-    isOpen: boolean;
-    bot: BotType | null;
-  }>({
-    isOpen: false,
-    bot: null,
-  });
-
   useEffect(() => {
     fetchBots();
   }, [fetchBots]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const state = location.state as { openCreateBot?: boolean } | null;
+
+    if (params.get("createBot") === "1" || state?.openCreateBot) {
+      setIsCreateDialogOpen(true);
+    }
+  }, [location.search, location.state]);
 
   useEffect(() => {
     let isMounted = true;
@@ -410,7 +526,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     const loadAggregateAnalytics = async () => {
       if (!bots.length) {
         setAnalyticsSummary(initialAnalyticsSummary);
-        setSubscriberCounts({});
         return;
       }
 
@@ -445,7 +560,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         result.status === "fulfilled" ? [result.value] : []
       );
 
-      const nextSubscriberCounts: Record<string, number> = {};
       const trendMap = new Map<string, TrendPoint>();
 
       let totalMessages = 0;
@@ -465,7 +579,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
           toNumber(analytics?.totalUsers) ||
           users.length;
 
-        nextSubscriberCounts[result.botId] = subscriberTotal;
         totalSubscribers += subscriberTotal;
         blockCount += users.filter(
           (lineUser) => lineUser.is_followed === false
@@ -509,7 +622,6 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         a.date.localeCompare(b.date)
       );
 
-      setSubscriberCounts(nextSubscriberCounts);
       setAnalyticsSummary({
         messagesSent,
         newUsers: activeUsers,
@@ -585,151 +697,206 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     },
   ];
 
-  const handleEditClick = (botId: string) => {
-    navigate("/bots/visual-editor", {
-      state: {
-        selectedBotId: botId,
-        activeTab: "logic",
-        returnTo: "/dashboard",
-        returnLabel: "返回工作台",
-      },
-    });
+  const openCreateDialog = () => setIsCreateDialogOpen(true);
+
+  const closeCreateDialog = () => {
+    setIsCreateDialogOpen(false);
+
+    const params = new URLSearchParams(location.search);
+    const hasCreateParam = params.has("createBot");
+    const state = location.state as { openCreateBot?: boolean } | null;
+    if (hasCreateParam) {
+      params.delete("createBot");
+    }
+
+    if (hasCreateParam || state?.openCreateBot) {
+      const nextSearch = params.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: nextSearch ? `?${nextSearch}` : "",
+        },
+        { replace: true, state: null }
+      );
+    }
   };
 
-  const showBotDetails = (bot: BotType) => {
-    setDetailsModal({
-      isOpen: true,
-      bot,
-    });
+  const handleCreateDialogOpenChange = (open: boolean) => {
+    if (open) {
+      setIsCreateDialogOpen(true);
+      return;
+    }
+
+    closeCreateDialog();
   };
 
-  const closeDetailsModal = () => {
-    setDetailsModal({
-      isOpen: false,
-      bot: null,
-    });
+  const handleBotCreated = () => {
+    void fetchBots();
+  };
+
+  const refreshBotLists = async () => {
+    await Promise.all([fetchBots(), refreshSelectedBots()]);
+  };
+
+  const handleToggleBot = async (bot: BotType) => {
+    const nextIsActive = bot.is_active === false;
+    setActionBotId(bot.id);
+
+    try {
+      const response = await apiClient.updateBot(bot.id, {
+        is_active: nextIsActive,
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      toast({
+        title: copy.toggleSuccess,
+        description: nextIsActive ? copy.enableBot : copy.disableBot,
+      });
+      await refreshBotLists();
+    } catch (toggleError) {
+      toast({
+        variant: "destructive",
+        title: copy.actionFailed,
+        description:
+          toggleError instanceof Error
+            ? toggleError.message
+            : copy.actionFailed,
+      });
+    } finally {
+      setActionBotId(null);
+    }
+  };
+
+  const handleDeleteBot = async () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+
+    try {
+      const response = await apiClient.deleteBot(deleteTarget.id);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      toast({
+        title: copy.deleteSuccess,
+        description: deleteTarget.name,
+      });
+      setDeleteTarget(null);
+      await refreshBotLists();
+    } catch (deleteError) {
+      toast({
+        variant: "destructive",
+        title: copy.actionFailed,
+        description:
+          deleteError instanceof Error
+            ? deleteError.message
+            : copy.actionFailed,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
-    <TooltipProvider delayDuration={120}>
-      <AppShell
-        user={{ ...user, avatar_url: avatarUrl }}
-        activeNav="home"
-        headerKicker={copy.headerKicker}
-        welcomeLabel={copy.welcome}
-        sidebarCalloutTitle={copy.botHealthTitle}
-        sidebarCalloutBody={copy.botHealthBody}
-        innerClassName="max-w-[1480px]"
-      >
-        <div className="flex w-full flex-col gap-8 py-6">
-          <section>
-            <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-950">
-                  {copy.myBotsTitle}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {copy.myBotsSubtitle}
-                </p>
-              </div>
+    <AppShell
+      user={{ ...user, avatar_url: avatarUrl }}
+      activeNav="home"
+      headerKicker={copy.headerKicker}
+      welcomeLabel={copy.welcome}
+      sidebarCalloutTitle={copy.botHealthTitle}
+      sidebarCalloutBody={copy.botHealthBody}
+      innerClassName="max-w-[1480px]"
+    >
+      <div className="flex w-full flex-col gap-8 py-6">
+        <section>
+          <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-950">
+                {copy.myBotsTitle}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {copy.myBotsSubtitle}
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={openCreateDialog}
+              className="h-11 rounded-[12px] bg-[#16a34a] px-4 font-semibold text-white hover:bg-[#15803d]"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {copy.newBot}
+            </Button>
+          </div>
+
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder={copy.searchBots}
+                className="h-11 rounded-[12px] border-white/80 bg-white/85 pl-10 text-slate-700 shadow-sm placeholder:text-slate-400"
+              />
+            </div>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+            >
+              <SelectTrigger className="h-11 rounded-[12px] border-white/80 bg-white/80 text-slate-700 lg:w-44">
+                <SlidersHorizontal className="mr-2 h-4 w-4 text-slate-400" />
+                <SelectValue placeholder={copy.filter} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{copy.allStatus}</SelectItem>
+                <SelectItem value="active">{copy.active}</SelectItem>
+                <SelectItem value="inactive">{copy.inactive}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {error && (
+            <div className="mb-4 rounded-[12px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {error}
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="rounded-[12px] border border-white/70 bg-white/70 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)]">
+              <Loader
+                text={language === "zh" ? "載入 Bot..." : "Loading bots..."}
+              />
+            </div>
+          ) : filteredBots.length === 0 ? (
+            <div className="rounded-[12px] border border-dashed border-emerald-200 bg-white/60 px-6 py-12 text-center">
+              <BotIcon className="mx-auto h-12 w-12 text-[#16a34a]" />
+              <h3 className="mt-4 text-lg font-semibold text-slate-950">
+                {copy.noBotsTitle}
+              </h3>
+              <p className="mt-2 text-sm text-slate-500">{copy.noBotsBody}</p>
               <Button
-                asChild
-                className="h-11 rounded-[16px] bg-[#16a34a] px-4 font-semibold text-white hover:bg-[#15803d]"
+                type="button"
+                onClick={openCreateDialog}
+                className="mt-5 rounded-[12px] bg-[#16a34a] text-white hover:bg-[#15803d]"
               >
-                <Link to="/bots/create">
-                  <Plus className="mr-2 h-4 w-4" />
-                  {copy.newBot}
-                </Link>
+                {copy.createLineBot}
               </Button>
             </div>
-
-            <div className="mb-4 flex flex-col gap-3 rounded-[16px] border border-white/70 bg-white/65 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl lg:flex-row lg:items-center">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={copy.searchBots}
-                  className="h-11 rounded-[14px] border-white/80 bg-white/80 pl-10 text-slate-700 placeholder:text-slate-400"
-                />
+          ) : (
+            <div className="overflow-hidden rounded-[12px] border border-white/70 bg-white/75 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+              <div className="hidden grid-cols-[minmax(220px,1.6fr)_minmax(140px,0.75fr)_minmax(140px,0.75fr)_minmax(120px,0.65fr)_minmax(120px,0.65fr)_auto] gap-4 border-b border-slate-100/80 px-5 py-3 text-xs font-semibold uppercase tracking-normal text-slate-500 md:grid">
+                <span>{copy.botName}</span>
+                <span>{copy.created}</span>
+                <span>{copy.updated}</span>
+                <span>{copy.status}</span>
+                <span>{copy.enabled}</span>
+                <span className="sr-only">{copy.actions}</span>
               </div>
-              <Select
-                value={statusFilter}
-                onValueChange={(value) =>
-                  setStatusFilter(value as StatusFilter)
-                }
-              >
-                <SelectTrigger className="h-11 rounded-[14px] border-white/80 bg-white/80 text-slate-700 lg:w-44">
-                  <SlidersHorizontal className="mr-2 h-4 w-4 text-slate-400" />
-                  <SelectValue placeholder={copy.filter} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{copy.allStatus}</SelectItem>
-                  <SelectItem value="active">{copy.active}</SelectItem>
-                  <SelectItem value="inactive">{copy.inactive}</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex rounded-[14px] border border-white/80 bg-white/80 p-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={language === "zh" ? "網格檢視" : "Grid view"}
-                  className={cn(
-                    "h-9 w-9 rounded-[12px] text-slate-500",
-                    viewMode === "grid" && "bg-emerald-50 text-[#166534]"
-                  )}
-                  onClick={() => setViewMode("grid")}
-                >
-                  <Grid3X3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={language === "zh" ? "列表檢視" : "List view"}
-                  className={cn(
-                    "h-9 w-9 rounded-[12px] text-slate-500",
-                    viewMode === "list" && "bg-emerald-50 text-[#166534]"
-                  )}
-                  onClick={() => setViewMode("list")}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="mb-4 rounded-[16px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {error}
-              </div>
-            )}
-
-            {isLoading ? (
-              <div className="rounded-[16px] border border-white/70 bg-white/70 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)]">
-                <Loader text={language === "zh" ? "載入 Bot..." : "Loading bots..."} />
-              </div>
-            ) : filteredBots.length === 0 ? (
-              <div className="rounded-[16px] border border-dashed border-emerald-200 bg-white/60 px-6 py-12 text-center">
-                <BotIcon className="mx-auto h-12 w-12 text-[#16a34a]" />
-                <h3 className="mt-4 text-lg font-semibold text-slate-950">
-                  {copy.noBotsTitle}
-                </h3>
-                <p className="mt-2 text-sm text-slate-500">{copy.noBotsBody}</p>
-                <Button
-                  asChild
-                  className="mt-5 rounded-[16px] bg-[#16a34a] text-white hover:bg-[#15803d]"
-                >
-                  <Link to="/bots/create">{copy.createLineBot}</Link>
-                </Button>
-              </div>
-            ) : (
-              <div
-                className={cn(
-                  "grid gap-4",
-                  viewMode === "grid"
-                    ? "md:grid-cols-2 xl:grid-cols-3"
-                    : "grid-cols-1"
-                )}
-              >
+              <div className="divide-y divide-slate-100/80">
                 {filteredBots.map((bot: BotType) => {
                   const isActive = bot.is_active !== false;
                   const channelConfigured = Boolean(
@@ -739,20 +906,16 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                   return (
                     <div
                       key={bot.id}
-                      className={cn(
-                        "rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl transition-transform hover:-translate-y-0.5",
-                        viewMode === "list" &&
-                          "md:grid md:grid-cols-[1.1fr_1.4fr_auto] md:items-center md:gap-5"
-                      )}
+                      className="relative grid gap-4 px-4 py-4 transition-colors hover:bg-white/70 md:grid-cols-[minmax(220px,1.6fr)_minmax(140px,0.75fr)_minmax(140px,0.75fr)_minmax(120px,0.65fr)_minmax(120px,0.65fr)_auto] md:items-center md:px-5"
                     >
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12 shrink-0 rounded-[16px] shadow-lg shadow-emerald-700/15">
+                      <div className="flex min-w-0 items-start gap-4 pr-12 md:pr-0">
+                        <Avatar className="h-12 w-12 shrink-0 rounded-[12px] shadow-lg shadow-emerald-700/15">
                           <AvatarImage
                             src={bot.line_bot_picture_url ?? undefined}
                             alt={bot.name}
-                            className="rounded-[16px] object-cover"
+                            className="rounded-[12px] object-cover"
                           />
-                          <AvatarFallback className="rounded-[16px] bg-gradient-to-br from-[#16a34a] to-emerald-300 text-lg font-semibold text-white">
+                          <AvatarFallback className="rounded-[12px] bg-gradient-to-br from-[#16a34a] to-emerald-300 text-lg font-semibold text-white">
                             {getInitial(bot.name)}
                           </AvatarFallback>
                         </Avatar>
@@ -761,269 +924,298 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                             <h3 className="truncate text-lg font-semibold text-slate-950">
                               {bot.name}
                             </h3>
-                            <Badge
-                              className={cn(
-                                "border px-2.5 py-1 text-xs",
-                                isActive
-                                  ? "border-emerald-200 bg-emerald-50 text-[#166534] hover:bg-emerald-50"
-                                  : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-50"
-                              )}
-                            >
-                              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                              {isActive
-                                ? copy.statusActive
-                                : copy.statusInactive}
-                            </Badge>
                           </div>
-                          <p className="mt-1 line-clamp-2 text-sm text-slate-500">
-                            {bot.description || copy.botFallbackDescription}
-                          </p>
                         </div>
                       </div>
 
-                      <dl className="mt-5 grid grid-cols-2 gap-3 text-sm md:mt-0">
-                        <div className="rounded-[14px] bg-slate-50/80 p-3">
-                          <dt className="text-xs text-slate-500">
+                      <dl className="grid grid-cols-2 gap-3 text-sm md:contents">
+                        <div className="rounded-[12px] bg-slate-50/80 p-3 md:bg-transparent md:p-0">
+                          <dt className="text-xs text-slate-500 md:hidden">
                             {copy.created}
                           </dt>
-                          <dd className="mt-1 font-medium text-slate-800">
+                          <dd className="mt-1 font-medium text-slate-800 md:mt-0">
                             {formatDate(bot.created_at)}
                           </dd>
                         </div>
-                        <div className="rounded-[14px] bg-slate-50/80 p-3">
-                          <dt className="text-xs text-slate-500">
+                        <div className="rounded-[12px] bg-slate-50/80 p-3 md:bg-transparent md:p-0">
+                          <dt className="text-xs text-slate-500 md:hidden">
                             {copy.updated}
                           </dt>
-                          <dd className="mt-1 font-medium text-slate-800">
+                          <dd className="mt-1 font-medium text-slate-800 md:mt-0">
                             {formatDate(bot.updated_at)}
                           </dd>
                         </div>
-                        <div className="rounded-[14px] bg-slate-50/80 p-3">
-                          <dt className="text-xs text-slate-500">
-                            {copy.channel}
+                        <div className="rounded-[12px] bg-slate-50/80 p-3 md:bg-transparent md:p-0">
+                          <dt className="text-xs text-slate-500 md:hidden">
+                            {copy.status}
                           </dt>
-                          <dd
-                            className={cn(
-                              "mt-1 font-medium",
-                              channelConfigured
-                                ? "text-[#166534]"
-                                : "text-amber-700"
-                            )}
-                          >
-                            {channelConfigured ? copy.connected : copy.pending}
+                          <dd className="mt-1 md:mt-0">
+                            <BotStateBadge
+                              active={channelConfigured}
+                              activeLabel={copy.connected}
+                              inactiveLabel={copy.pending}
+                              icon={KeyRound}
+                              inactiveTone="amber"
+                            />
                           </dd>
                         </div>
-                        <div className="rounded-[14px] bg-slate-50/80 p-3">
-                          <dt className="text-xs text-slate-500">
-                            {copy.subscribers}
+                        <div className="rounded-[12px] bg-slate-50/80 p-3 md:bg-transparent md:p-0">
+                          <dt className="text-xs text-slate-500 md:hidden">
+                            {copy.enabled}
                           </dt>
-                          <dd className="mt-1 font-medium text-slate-800">
-                            {analyticsSummary.isLoading
-                              ? "--"
-                              : formatNumber(subscriberCounts[bot.id] || 0)}
+                          <dd className="mt-1 md:mt-0">
+                            <BotStateBadge
+                              active={isActive}
+                              activeLabel={copy.active}
+                              inactiveLabel={copy.inactive}
+                              icon={Power}
+                              onClick={() => void handleToggleBot(bot)}
+                              disabled={actionBotId === bot.id}
+                              isLoading={actionBotId === bot.id}
+                              ariaLabel={
+                                isActive ? copy.disableBot : copy.enableBot
+                              }
+                            />
                           </dd>
                         </div>
                       </dl>
 
-                      <div className="mt-5 flex justify-end gap-2 md:mt-0">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
+                      <div className="absolute right-4 top-4 md:static md:justify-self-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                             <Button
-                              asChild
-                              variant="outline"
+                              type="button"
+                              variant="ghost"
                               size="icon"
-                              className="h-10 w-10 rounded-[14px] border-white/80 bg-white/70 text-slate-600 hover:bg-emerald-50 hover:text-[#166534]"
+                              disabled={actionBotId === bot.id}
+                              className="h-10 w-10 rounded-[12px] text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                              aria-label={copy.botActions}
                             >
-                              <Link
-                                to="/bots/management"
-                                aria-label={copy.analyticsTitle}
-                              >
-                                <BarChart3 className="h-4 w-4" />
-                              </Link>
+                              {actionBotId === bot.id ? (
+                                <Loader size="sm" />
+                              ) : (
+                                <MoreHorizontal className="h-4 w-4" />
+                              )}
                             </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{copy.analyticsTitle}</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-10 w-10 rounded-[14px] border-white/80 bg-white/70 text-slate-600 hover:bg-emerald-50 hover:text-[#166534]"
-                              onClick={() => handleEditClick(bot.id)}
-                              aria-label={copy.edit}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                              onSelect={() => setDeleteTarget(bot)}
                             >
-                              <Edit3 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{copy.edit}</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-10 w-10 rounded-[14px] border-white/80 bg-white/70 text-slate-600 hover:bg-emerald-50 hover:text-[#166534]"
-                              onClick={() => showBotDetails(bot)}
-                              aria-label={copy.settings}
-                            >
-                              <Settings2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{copy.settings}</TooltipContent>
-                        </Tooltip>
+                              <Trash2 className="h-4 w-4" />
+                              {copy.deleteBot}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
-          </section>
+            </div>
+          )}
+        </section>
 
-          <section>
-            <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <section>
+          <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-950">
+                {copy.analyticsTitle}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {copy.analyticsSubtitle}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 rounded-[12px] border border-white/70 bg-white/65 px-3 py-2 text-sm text-slate-500">
+              <LayoutDashboard className="h-4 w-4 text-[#16a34a]" />
+              {formatNumber(bots.length)} {copy.botsTracked}
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {metricCards.map((metric) => (
+              <MetricCard key={metric.label} {...metric} />
+            ))}
+          </div>
+
+          <div className="mt-4 rounded-[12px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+            <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <div>
-                <h2 className="text-xl font-semibold text-slate-950">
-                  {copy.analyticsTitle}
-                </h2>
+                <h3 className="text-base font-semibold text-slate-950">
+                  {copy.chartTitle}
+                </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  {copy.analyticsSubtitle}
+                  {copy.chartSubtitle}
                 </p>
               </div>
-              <div className="flex items-center gap-2 rounded-full border border-white/70 bg-white/65 px-3 py-2 text-sm text-slate-500">
-                <LayoutDashboard className="h-4 w-4 text-[#16a34a]" />
-                {formatNumber(bots.length)} {copy.botsTracked}
-              </div>
+              <Badge className="w-fit !rounded-[10px] border-emerald-200 bg-emerald-50 text-[#166534] hover:bg-emerald-50">
+                <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
+                {copy.sevenDayView}
+              </Badge>
             </div>
-
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {metricCards.map((metric) => (
-                <MetricCard key={metric.label} {...metric} />
-              ))}
+            <div className="h-[320px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={analyticsSummary.chartData}
+                  margin={{ left: -20, right: 8, top: 10, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient
+                      id="messagesGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="#16a34a"
+                        stopOpacity={0.28}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="#16a34a"
+                        stopOpacity={0.02}
+                      />
+                    </linearGradient>
+                    <linearGradient
+                      id="sentGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="#38bdf8"
+                        stopOpacity={0.18}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="#38bdf8"
+                        stopOpacity={0.02}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    stroke="#d9e5d6"
+                    strokeDasharray="4 8"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="label"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#64748b", fontSize: 12 }}
+                    dy={10}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#64748b", fontSize: 12 }}
+                    width={44}
+                  />
+                  <RechartsTooltip
+                    cursor={{
+                      stroke: "#16a34a",
+                      strokeWidth: 1,
+                      strokeDasharray: "4 4",
+                    }}
+                    contentStyle={{
+                      border: "1px solid rgba(255,255,255,0.9)",
+                      borderRadius: 12,
+                      background: "rgba(255,255,255,0.92)",
+                      boxShadow: "0 18px 50px rgba(15,23,42,0.12)",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="messages"
+                    name={copy.chartMessages}
+                    stroke="#16a34a"
+                    strokeWidth={3}
+                    fill="url(#messagesGradient)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="sent"
+                    name={copy.chartSent}
+                    stroke="#38bdf8"
+                    strokeWidth={2}
+                    fill="url(#sentGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
+          </div>
+        </section>
+      </div>
 
-            <div className="mt-4 rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
-              <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                <div>
-                  <h3 className="text-base font-semibold text-slate-950">
-                    {copy.chartTitle}
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {copy.chartSubtitle}
-                  </p>
-                </div>
-                <Badge className="w-fit border-emerald-200 bg-emerald-50 text-[#166534] hover:bg-emerald-50">
-                  <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
-                  {copy.sevenDayView}
-                </Badge>
-              </div>
-              <div className="h-[320px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={analyticsSummary.chartData}
-                    margin={{ left: -20, right: 8, top: 10, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id="messagesGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="5%"
-                          stopColor="#16a34a"
-                          stopOpacity={0.28}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="#16a34a"
-                          stopOpacity={0.02}
-                        />
-                      </linearGradient>
-                      <linearGradient
-                        id="sentGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="5%"
-                          stopColor="#38bdf8"
-                          stopOpacity={0.18}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="#38bdf8"
-                          stopOpacity={0.02}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      stroke="#d9e5d6"
-                      strokeDasharray="4 8"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="label"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: "#64748b", fontSize: 12 }}
-                      dy={10}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: "#64748b", fontSize: 12 }}
-                      width={44}
-                    />
-                    <RechartsTooltip
-                      cursor={{
-                        stroke: "#16a34a",
-                        strokeWidth: 1,
-                        strokeDasharray: "4 4",
-                      }}
-                      contentStyle={{
-                        border: "1px solid rgba(255,255,255,0.9)",
-                        borderRadius: 16,
-                        background: "rgba(255,255,255,0.92)",
-                        boxShadow: "0 18px 50px rgba(15,23,42,0.12)",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="messages"
-                      name={copy.chartMessages}
-                      stroke="#16a34a"
-                      strokeWidth={3}
-                      fill="url(#messagesGradient)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="sent"
-                      name={copy.chartSent}
-                      stroke="#38bdf8"
-                      strokeWidth={2}
-                      fill="url(#sentGradient)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <Suspense fallback={null}>
-          <BotDetailsModal
-            isOpen={detailsModal.isOpen}
-            onClose={closeDetailsModal}
-            bot={detailsModal.bot}
+      <Dialog
+        open={isCreateDialogOpen}
+        onOpenChange={handleCreateDialogOpenChange}
+      >
+        <DialogContent className="max-h-[calc(100vh-3rem)] overflow-y-auto border-white/80 bg-white p-0 shadow-[0_28px_80px_rgba(15,23,42,0.22)] sm:max-w-3xl sm:rounded-[12px]">
+          <DialogHeader className="border-b border-slate-100 px-5 pb-4 pt-5 sm:px-6">
+            <DialogTitle className="flex items-center gap-2 text-xl text-slate-950">
+              <Plus className="h-5 w-5 text-[#16a34a]" />
+              {copy.createLineBot}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-slate-500">
+              貼上 LINE Developers 的 Channel Access Token 與 Channel
+              Secret，視窗右側可查看取得位置。
+            </DialogDescription>
+          </DialogHeader>
+          <BotCreationForm
+            variant="dialog"
+            onCreated={handleBotCreated}
+            onClose={closeCreateDialog}
           />
-        </Suspense>
-      </AppShell>
-    </TooltipProvider>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent className="border-white/80 bg-white sm:rounded-[12px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{copy.deleteConfirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription className="leading-6">
+              {copy.deleteConfirmDescription}
+              {deleteTarget && (
+                <span className="mt-3 block font-semibold text-slate-900">
+                  {deleteTarget.name}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              {copy.cancel}
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={() => void handleDeleteBot()}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader size="sm" />
+                  {copy.deleting}
+                </>
+              ) : (
+                copy.confirmDelete
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </AppShell>
   );
 };
 
