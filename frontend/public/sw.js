@@ -1,7 +1,7 @@
 // Service Worker for caching optimization
-const CACHE_NAME = 'botcraft-v1';
-const STATIC_CACHE_NAME = 'botcraft-static-v1';
-const DYNAMIC_CACHE_NAME = 'botcraft-dynamic-v1';
+const CACHE_NAME = 'botcraft-v2';
+const STATIC_CACHE_NAME = 'botcraft-static-v2';
+const DYNAMIC_CACHE_NAME = 'botcraft-dynamic-v2';
 
 // 靜態資源列表
 const STATIC_ASSETS = [
@@ -37,7 +37,8 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 啟動事件 - 清理舊快取
+// 啟動事件 - 清理舊快取（包含所有舊版本 botcraft-v1）
+const VALID_CACHES = new Set([CACHE_NAME, STATIC_CACHE_NAME, DYNAMIC_CACHE_NAME]);
 self.addEventListener('activate', (event) => {
   console.log('Service Worker: Activating...');
   event.waitUntil(
@@ -45,9 +46,7 @@ self.addEventListener('activate', (event) => {
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== STATIC_CACHE_NAME && 
-                cacheName !== DYNAMIC_CACHE_NAME &&
-                cacheName !== CACHE_NAME) {
+            if (!VALID_CACHES.has(cacheName)) {
               console.log('Service Worker: Deleting old cache', cacheName);
               return caches.delete(cacheName);
             }

@@ -61,4 +61,15 @@ if (fs.existsSync(manifestSrc)) {
   console.log('manifest.json not found in public directory');
 }
 
+// 複製 sw.js 到 dist 根目錄（讓新版 Service Worker 覆蓋舊版快取）
+const swSrc = path.join(__dirname, 'public/sw.js');
+const swDest = path.join(__dirname, 'dist/sw.js');
+
+if (fs.existsSync(swSrc)) {
+  fs.copyFileSync(swSrc, swDest);
+  console.log('sw.js copied to dist root');
+} else {
+  console.log('sw.js not found in public directory');
+}
+
 console.log('Assets copied successfully!');
