@@ -2265,23 +2265,35 @@ body {
 
 .bc-h1 {
   margin: 0;
-  font-size: clamp(48px, 6vw, 88px);
+  font-size: 72px;
   font-weight: 500;
-  line-height: 0.96;
-  letter-spacing: -0.035em;
+  line-height: 1.02;
+  letter-spacing: 0;
   text-wrap: balance;
+  word-break: keep-all;
+}
+
+.bc-h1-line {
+  display: block;
+  white-space: nowrap;
+}
+
+.bc-h1-line-wrap {
+  white-space: normal;
 }
 
 .bc-ital {
   color: var(--bc-accent-ink);
   font-style: italic;
   font-weight: 400;
+  white-space: nowrap;
 }
 
 .bc-hi-mark {
   padding: 0 4px;
   border-radius: 2px;
   background: linear-gradient(180deg, transparent 60%, var(--bc-hi-soft) 60%);
+  white-space: nowrap;
 }
 
 .bc-lead {
@@ -2519,7 +2531,7 @@ body {
   font-size: 20px;
   font-weight: 600;
   line-height: 1.15;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .bc-product-action {
@@ -2932,10 +2944,10 @@ body {
 
 .bc-section-title {
   margin: 14px 0 0;
-  font-size: clamp(36px, 4.4vw, 56px);
+  font-size: 52px;
   font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
@@ -3344,10 +3356,10 @@ body {
 
 .bc-builder-title {
   margin: 14px 0 0;
-  font-size: clamp(40px, 5vw, 64px);
+  font-size: 60px;
   font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
@@ -4115,10 +4127,10 @@ body {
 
 .bc-finale-title {
   margin: 0;
-  font-size: clamp(48px, 7vw, 104px);
+  font-size: 88px;
   font-weight: 500;
   line-height: 0.95;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
@@ -4408,7 +4420,23 @@ body {
   }
 
   .bc-h1 {
-    font-size: clamp(42px, 14vw, 58px);
+    font-size: 40px;
+    line-height: 1.08;
+  }
+
+  .bc-section-title {
+    font-size: 36px;
+    line-height: 1.06;
+  }
+
+  .bc-builder-title {
+    font-size: 42px;
+    line-height: 1.04;
+  }
+
+  .bc-finale-title {
+    font-size: 48px;
+    line-height: 1.02;
   }
 
   .bc-hero {
@@ -4448,16 +4476,35 @@ body {
   }
 
   .bc-stage-rail {
-    max-height: 260px;
-    overflow: auto;
+    display: grid;
+    max-height: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    overflow: visible;
   }
 
   .bc-stage-tabs {
     min-height: 52px;
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .bc-stage-tabs span {
+    flex: 1 1 calc(50% - 8px);
+    text-align: center;
   }
 
   .bc-flow-branches {
     grid-template-columns: 1fr;
+  }
+
+  .bc-rail-head {
+    grid-column: 1 / -1;
+    margin: 8px 0 0;
+  }
+
+  .bc-rail-item {
+    min-height: 38px;
   }
 
   .bc-chat-sticker.bc-s1,

@@ -481,10 +481,11 @@ const HomePage = () => {
         <div className="bc-hero-grid">
           <div>
             <h1 className="bc-h1">
-              把對話機器人，
-              <br />
-              做成<span className="bc-ital">你想要的</span>
-              <span className="bc-hi-mark">樣子</span>。
+              <span className="bc-h1-line">把對話機器人，</span>
+              <span className="bc-h1-line bc-h1-line-wrap">
+                做成<span className="bc-ital">你想要的</span>
+                <span className="bc-hi-mark">樣子</span>。
+              </span>
             </h1>
             <p className="bc-lead">
               BotCraft 是一個 LINE Bot 製作與管理工作台。建立
