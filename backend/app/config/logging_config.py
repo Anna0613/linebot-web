@@ -41,8 +41,10 @@ def setup_logging_config() -> Dict[str, Any]:
     log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
     # 獨立控制檔案日誌等級，預設與 LOG_LEVEL 一致
     file_log_level = os.getenv('LOG_FILE_LEVEL', log_level).upper()
+    environment = os.getenv('ENVIRONMENT', 'development').lower()
+    default_log_to_file = 'true' if environment == 'production' else 'false'
     # 可透過環境變數完全關閉檔案日誌（降低 IO 壓力）
-    log_to_file = os.getenv('LOG_TO_FILE', 'true').lower() == 'true'
+    log_to_file = os.getenv('LOG_TO_FILE', default_log_to_file).lower() == 'true'
     # 允許自訂輸出格式（預設: 時間-記錄器-等級-訊息，採 key=value 風格訊息建議）
     console_format = os.getenv(
         'LOG_FORMAT', '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
@@ -50,6 +52,39 @@ def setup_logging_config() -> Dict[str, Any]:
     file_format = os.getenv(
         'LOG_FILE_FORMAT', '%(asctime)s | %(levelname)s | %(name)s | %(filename)s:%(lineno)d | %(message)s'
     )
+
+    app_handlers = ['console'] + (['file'] if log_to_file else [])
+    background_handlers = ['file'] if log_to_file else ['console']
+    root_handlers = ['console'] + (['file', 'error_file'] if log_to_file else [])
+    handlers = {
+        'console': {
+            'level': log_level,
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+            'filters': ['pdf_warning_filter']
+        }
+    }
+
+    if log_to_file:
+        handlers.update({
+            'file': {
+                'level': file_log_level,
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': 'logs/app.log',
+                'maxBytes': 10485760,  # 10MB
+                'backupCount': 5,
+                'formatter': 'detailed',
+                'filters': ['pdf_warning_filter']
+            },
+            'error_file': {
+                'level': 'ERROR',
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': 'logs/error.log',
+                'maxBytes': 10485760,  # 10MB
+                'backupCount': 3,
+                'formatter': 'detailed'
+            }
+        })
 
     config = {
         'version': 1,
@@ -70,79 +105,55 @@ def setup_logging_config() -> Dict[str, Any]:
                 '()': PDFWarningFilter,
             }
         },
-        'handlers': {
-            'console': {
-                'level': log_level,
-                'class': 'logging.StreamHandler',
-                'formatter': 'standard',
-                'filters': ['pdf_warning_filter']
-            },
-            'file': {
-                'level': file_log_level,
-                'class': 'logging.handlers.RotatingFileHandler',
-                'filename': 'logs/app.log',
-                'maxBytes': 10485760,  # 10MB
-                'backupCount': 5,
-                'formatter': 'detailed',
-                'filters': ['pdf_warning_filter']
-            },
-            'error_file': {
-                'level': 'ERROR',
-                'class': 'logging.handlers.RotatingFileHandler',
-                'filename': 'logs/error.log',
-                'maxBytes': 10485760,  # 10MB
-                'backupCount': 3,
-                'formatter': 'detailed'
-            }
-        },
+        'handlers': handlers,
         'loggers': {
             # 應用程式日誌
             'app': {
-                'handlers': ['console', 'file'],
+                'handlers': app_handlers,
                 # 內部 application logger 設為 DEBUG（輸出位置由 handler 控制）
                 'level': 'DEBUG',
                 'propagate': False
             },
             # SQLAlchemy 日誌（預設抑制到 WARNING，避免大量 SQL 輸出）
             'sqlalchemy': {
-                'handlers': ['file'],
+                'handlers': background_handlers,
                 'level': 'WARNING',
                 'propagate': False
             },
             'sqlalchemy.engine': {
-                'handlers': ['file'],
+                'handlers': background_handlers,
                 'level': 'WARNING',
                 'propagate': False
             },
             'sqlalchemy.pool': {
-                'handlers': ['file'],
+                'handlers': background_handlers,
                 'level': 'WARNING',
                 'propagate': False
             },
             # PDF 處理相關日誌
             'pdfminer': {
-                'handlers': ['file'],
+                'handlers': background_handlers,
                 'level': 'ERROR',  # 只記錄錯誤
                 'propagate': False
             },
             'pdfminer.pdfinterp': {
-                'handlers': ['file'],
+                'handlers': background_handlers,
                 'level': 'ERROR',
                 'propagate': False
             },
             'pdfplumber': {
-                'handlers': ['file'],
+                'handlers': background_handlers,
                 'level': 'WARNING',
                 'propagate': False
             },
             # 其他第三方庫
             'urllib3': {
-                'handlers': ['file'],
+                'handlers': background_handlers,
                 'level': 'WARNING',
                 'propagate': False
             },
             'requests': {
-                'handlers': ['file'],
+                'handlers': background_handlers,
                 'level': 'WARNING',
                 'propagate': False
             }
@@ -150,7 +161,7 @@ def setup_logging_config() -> Dict[str, Any]:
         'root': {
             # root 以 LOG_LEVEL 控制，確保第三方與 __name__ logger 一致格式
             'level': log_level,
-            'handlers': ['console'] + (['file', 'error_file'] if log_to_file else [])
+            'handlers': root_handlers
         }
     }
 
@@ -189,9 +200,13 @@ def setup_application_logging():
     """設置應用程式日誌"""
     import os
     
-    # 確保日誌目錄存在
+    environment = os.getenv('ENVIRONMENT', 'development').lower()
+    default_log_to_file = 'true' if environment == 'production' else 'false'
+    log_to_file = os.getenv('LOG_TO_FILE', default_log_to_file).lower() == 'true'
+
+    # 只在檔案日誌啟用時建立日誌目錄
     log_dir = 'logs'
-    if not os.path.exists(log_dir):
+    if log_to_file and not os.path.exists(log_dir):
         os.makedirs(log_dir)
     
     # 應用日誌配置

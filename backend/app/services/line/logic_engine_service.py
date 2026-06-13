@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.bot import LogicTemplate, FlexMessage, Bot
+from app.config import settings
 from app.services.conversation.conversation_service import ConversationService
 from app.services.realtime.websocket_manager import websocket_manager
 
@@ -804,14 +805,14 @@ class LogicEngineService:
             templates: List[LogicTemplate] = result.scalars().all()
 
             if not templates:
-                logger.info("沒有啟用中的邏輯模板，跳過自動回覆")
+                logger.debug("沒有啟用中的邏輯模板，跳過自動回覆")
                 return results
 
-            logger.info(f"🔍 找到 {len(templates)} 個啟用的邏輯模板，開始匹配")
+            logger.debug(f"找到 {len(templates)} 個啟用的邏輯模板，開始匹配")
 
             # 預設策略：命中一個模板即停止
             for i, tpl in enumerate(templates):
-                logger.info(f"🔍 檢查邏輯模板 {i+1}/{len(templates)}: {tpl.name}")
+                logger.debug(f"檢查邏輯模板 {i+1}/{len(templates)}: {tpl.name}")
                 if LogicEngineService._is_workflow_graph(tpl.logic_blocks):
                     graph_results = await LogicEngineService._evaluate_workflow_graph(
                         db=db,
@@ -822,42 +823,42 @@ class LogicEngineService:
                         graph=tpl.logic_blocks,
                     )
                     if graph_results:
-                        logger.info(f"✅ 新版 workflow graph 模板 {tpl.name} 命中，結果數: {len(graph_results)}")
+                        logger.info(f"新版 workflow graph 模板命中: name={tpl.name} results={len(graph_results)}")
                         results.extend(graph_results)
                         break
-                    logger.info(f"❌ 新版 workflow graph 模板 {tpl.name} 未命中")
+                    logger.debug(f"新版 workflow graph 模板未命中: name={tpl.name}")
                     continue
 
-                logger.info(f"⚠️ 邏輯模板 {tpl.name} 是舊版積木格式，已依新版策略跳過")
+                logger.debug(f"邏輯模板 {tpl.name} 是舊版積木格式，已依新版策略跳過")
                 continue
 
                 blocks = LogicEngineService._normalize_blocks(tpl.logic_blocks)
-                logger.info(f"📦 邏輯模板 {tpl.name} 共有 {len(blocks)} 個 blocks")
+                logger.debug(f"邏輯模板 {tpl.name} 共有 {len(blocks)} 個 blocks")
 
                 event_blocks = LogicEngineService._extract_event_blocks(blocks)
                 reply_blocks = LogicEngineService._extract_reply_blocks(blocks)
 
-                logger.info(f"📋 邏輯模板 {tpl.name}: event_blocks={len(event_blocks)}, reply_blocks={len(reply_blocks)}")
+                logger.debug(f"邏輯模板 {tpl.name}: event_blocks={len(event_blocks)}, reply_blocks={len(reply_blocks)}")
 
                 if event_blocks:
                     for idx, eb in enumerate(event_blocks):
                         eb_data = eb.get("blockData") or {}
-                        logger.info(f"  事件 {idx+1}: eventType={eb_data.get('eventType')}, condition={eb_data.get('condition')}, pattern={eb_data.get('pattern')}")
+                        logger.debug(f"  事件 {idx+1}: eventType={eb_data.get('eventType')}, condition={eb_data.get('condition')}, pattern={eb_data.get('pattern')}")
 
                 if not event_blocks or not reply_blocks:
-                    logger.info(f"❌ 邏輯模板 {tpl.name} 缺少事件或回覆積木，跳過")
+                    logger.debug(f"邏輯模板 {tpl.name} 缺少事件或回覆積木，跳過")
                     continue
 
                 # 記錄收到的事件資訊
-                logger.info(f"📨 收到的事件: type={event.get('type')}, message_type={event.get('message', {}).get('type')}, text={event.get('message', {}).get('text')}")
+                logger.debug(f"收到的事件: type={event.get('type')}, message_type={event.get('message', {}).get('type')}, text={event.get('message', {}).get('text')}")
 
                 pair = LogicEngineService._select_reply_block(event_blocks, reply_blocks, event)
                 if not pair:
-                    logger.info(f"❌ 邏輯模板 {tpl.name} 沒有匹配的事件，跳過")
+                    logger.debug(f"邏輯模板 {tpl.name} 沒有匹配的事件，跳過")
                     continue
 
                 eb, rb = pair
-                logger.info(f"✅ 邏輯模板 {tpl.name} 匹配成功，準備執行回覆")
+                logger.info(f"邏輯模板匹配成功: name={tpl.name}")
 
                 # AI 接管優先規則：
                 # - 若 bot 啟用 AI 接管 且 事件為文字訊息，則下列事件不阻擋 AI：
@@ -874,7 +875,7 @@ class LogicEngineService:
                         (eb_event_type == 'message.text' and not eb_cond) or
                         (eb_event_type == 'message')
                     ):
-                        logger.info("AI 接管已啟用且為文字訊息，略過無條件/通用 message 積木以觸發 AI 備援")
+                        logger.debug("AI 接管已啟用且為文字訊息，略過無條件/通用 message 積木以觸發 AI 備援")
                         continue
                 except Exception as _:
                     pass
@@ -917,18 +918,17 @@ class LogicEngineService:
                         else:
                             send_result = await asyncio.to_thread(line_bot_service.send_text_or_reply, user_id, text, None)
                         try:
-                            logger.info(f"📝 準備記錄邏輯模板文字回覆到 MongoDB: bot_id={bot.id}, user_id={user_id}, text='{text}'")
+                            logger.debug(f"準備記錄邏輯模板文字回覆到 MongoDB: bot_id={bot.id}, user_id={user_id}, text={text!r}")
                             added_message = await ConversationService.add_bot_message(
                                 bot_id=str(bot.id),
                                 line_user_id=user_id,
                                 message_content={"text": text},
                                 message_type="text",
                             )
-                            logger.info(f"✅ 邏輯模板文字回覆已記錄到 MongoDB: message_id={added_message.id}")
+                            logger.debug(f"邏輯模板文字回覆已記錄到 MongoDB: message_id={added_message.id}")
                             # 推播 WebSocket 訊息讓前端即時更新
                             try:
-                                logger.info(f"🔄 準備推送邏輯模板文字回覆 WebSocket 訊息: bot_id={bot.id}, user_id={user_id}, message_id={added_message.id}")
-                                logger.info(f"🔍 WebSocket 管理器實例: {websocket_manager}, 類型: {type(websocket_manager)}")
+                                logger.debug(f"準備推送邏輯模板文字回覆 WebSocket 訊息: bot_id={bot.id}, user_id={user_id}, message_id={added_message.id}")
                                 await websocket_manager.broadcast_to_bot(str(bot.id), {
                                     'type': 'chat_message',
                                     'bot_id': str(bot.id),
@@ -948,7 +948,7 @@ class LogicEngineService:
                                         }
                                     }
                                 })
-                                logger.info(f"✅ 邏輯模板文字回覆 WebSocket 訊息推送成功")
+                                logger.debug("邏輯模板文字回覆 WebSocket 訊息推送成功")
                             except Exception as ws_err:
                                 logger.warning(f"❌ 推送邏輯模板回覆 WebSocket 訊息失敗: {ws_err}")
                         except Exception as log_err:
@@ -978,10 +978,9 @@ class LogicEngineService:
                         # 最後再次標準化 Flex 結構，確保符合 LINE API 規範
                         contents = LogicEngineService._normalize_flex_structure(contents)
 
-                        # 詳細記錄 Flex 訊息內容以便除錯
-                        import json as _json
-                        logger.info(f"📤 準備發送 Flex 訊息: alt_text='{alt_text}'")
-                        logger.info(f"📋 Flex 訊息完整內容: {_json.dumps(contents, ensure_ascii=False, indent=2)}")
+                        logger.debug(f"準備發送 Flex 訊息: alt_text={alt_text!r}")
+                        if getattr(settings, "LOG_WEBHOOK_VERBOSE", False):
+                            logger.debug("Flex 訊息完整內容: %s", json.dumps(contents, ensure_ascii=False))
 
                         send_result = await asyncio.to_thread(line_bot_service.send_flex_message, user_id, alt_text, contents)
                         try:

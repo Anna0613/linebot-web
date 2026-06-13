@@ -40,8 +40,10 @@ class Settings(BaseSettings):
     SQL_ECHO: bool = os.getenv("SQL_ECHO", "False").lower() == "true"
 
     # 日誌/請求細節控制
+    LOG_REQUESTS: bool = os.getenv("LOG_REQUESTS", "False").lower() == "true"
     LOG_REQUEST_HEADERS: bool = os.getenv("LOG_REQUEST_HEADERS", "False").lower() == "true"
     LOG_WEBHOOK_VERBOSE: bool = os.getenv("LOG_WEBHOOK_VERBOSE", "False").lower() == "true"
+    SLOW_REQUEST_LOG_SECONDS: float = float(os.getenv("SLOW_REQUEST_LOG_SECONDS", "1.0"))
 
     # 安全限制：Webhook 請求主體大小上限（避免惡意/異常大 payload）
     MAX_WEBHOOK_BODY_BYTES: int = int(os.getenv("MAX_WEBHOOK_BODY_BYTES", str(256 * 1024)))  # 256KB
@@ -132,6 +134,8 @@ class Settings(BaseSettings):
         "VITE_UNIFIED_API_URL",
         default="http://localhost:8000",
     )
+    # Dashboard 狀態讀取預設不修改 LINE 平台設定，避免讀取端點產生外部副作用。
+    AUTO_BIND_WEBHOOK_ON_STATUS: bool = os.getenv("AUTO_BIND_WEBHOOK_ON_STATUS", "False").lower() == "true"
 
     # 郵件設定
     MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")
@@ -278,7 +282,12 @@ class Settings(BaseSettings):
 
     # 安全設定
     SECRET_KEY: str = os.getenv("SECRET_KEY", FLASK_SECRET_KEY)
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "30"))
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", os.getenv("JWT_EXPIRE_MINUTES", "180"))
+    )
+
+    # 知識庫背景任務狀態保留時間，避免完成任務長期堆積在記憶體中。
+    KNOWLEDGE_JOB_RETENTION_SECONDS: int = int(os.getenv("KNOWLEDGE_JOB_RETENTION_SECONDS", "86400"))
 
     class Config:
         case_sensitive = True

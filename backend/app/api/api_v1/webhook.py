@@ -215,6 +215,29 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+def _schedule_background_task(coro, description: str) -> None:
+    """排入不影響請求回應的背景 coroutine，並集中記錄例外。"""
+    task = asyncio.create_task(coro)
+
+    def _log_result(done_task: asyncio.Task):
+        try:
+            done_task.result()
+        except asyncio.CancelledError:
+            logger.debug("%s 已取消", description)
+        except Exception as exc:
+            logger.warning("%s 失敗: %s", description, exc)
+
+    task.add_done_callback(_log_result)
+
+
+async def _broadcast_to_bot_safely(bot_id: str, payload: Dict[str, Any], description: str) -> None:
+    try:
+        await websocket_manager.broadcast_to_bot(bot_id, payload)
+    except Exception as ws_err:
+        logger.warning("%s 失敗: %s", description, ws_err)
+
+
 @router.post("/webhooks/{bot_id}")
 async def handle_webhook_event(
     bot_id: str,
@@ -235,13 +258,13 @@ async def handle_webhook_event(
     Returns:
         200 OK 響應
     """
-    logger.info(f"Webhook 開始處理: bot_id={bot_id}")
+    logger.debug(f"Webhook 開始處理: bot_id={bot_id}")
     logger.debug(f"webhook.py 已載入最新版本 - {datetime.now()}")
     try:
         # 獲取請求體
         body = await request.body()
         body_len = len(body) if body else 0
-        logger.info(f"📥 收到 Webhook 請求: Bot ID = {bot_id}, 內容長度 = {body_len}")
+        logger.debug(f"收到 Webhook 請求: bot_id={bot_id}, bytes={body_len}")
 
         # 安全限制：過大 payload 直接拒絕，避免造成伺服器負擔
         max_bytes = getattr(settings, "MAX_WEBHOOK_BODY_BYTES", 256 * 1024)
@@ -294,7 +317,7 @@ async def handle_webhook_event(
             for ev in events:
                 t = ev.get('type') or 'unknown'
                 type_counts[t] = type_counts.get(t, 0) + 1
-            logger.info(f"收到事件數: {len(events)} | 類型統計: {type_counts}")
+            logger.info(f"Webhook events: bot_id={bot_id} count={len(events)} types={type_counts}")
             if getattr(settings, "LOG_WEBHOOK_VERBOSE", False):
                 logger.debug(f"事件內容: {events}")
         except Exception as e:
@@ -309,7 +332,7 @@ async def handle_webhook_event(
         async def _process_one(i: int, event: dict):
             async with sem:
                 try:
-                    logger.info(f"處理事件 {i+1}: type={event.get('type')}")
+                    logger.debug(f"處理事件 {i+1}: type={event.get('type')}")
                     # 為避免 AsyncSession 並發問題，每個事件使用獨立的 session
                     async with AsyncSessionLocal() as event_db:
                         result = await process_single_event(event, bot_id, line_bot_service, event_db)
@@ -325,14 +348,14 @@ async def handle_webhook_event(
 
         processed_events = [r for r in processed_results if r]
 
-        logger.info(f"✅ Webhook 處理完成，成功處理 {len(processed_events)} 個事件")
+        logger.info(f"Webhook handled: bot_id={bot_id} processed={len(processed_events)} total={len(events)}")
 
         # 發送 WebSocket 通知（僅針對成功處理的事件）
         if processed_events:
-            try:
-                await send_websocket_notifications(bot_id, processed_events)
-            except Exception as ws_error:
-                logger.warning(f"發送 WebSocket 更新失敗: {ws_error}")
+            _schedule_background_task(
+                send_websocket_notifications(bot_id, processed_events),
+                f"Webhook WebSocket 通知 bot_id={bot_id}",
+            )
 
         # 返回 200 OK，告知 LINE 平台事件已處理
         return Response(status_code=200)
@@ -490,12 +513,16 @@ async def process_single_event(
         webhook_event_id = event.get('webhookEventId')
 
         reply_token = event.get('replyToken')
-        logger.info(f"📬 replyToken 存在: {bool(reply_token)}")
-
-        logger.info(
-            f"事件詳情 | type={event_type} source={source_type} user={user_id} webhookEventId={webhook_event_id}"
+        logger.debug(f"replyToken exists={bool(reply_token)}")
+        logger.debug(
+            "事件詳情 | type=%s source=%s user=%s webhookEventId=%s",
+            event_type,
+            source_type,
+            user_id,
+            webhook_event_id,
         )
-        logger.debug(f"事件內容: {event}")
+        if getattr(settings, "LOG_WEBHOOK_VERBOSE", False):
+            logger.debug(f"事件內容: {event}")
 
         # 檢查 webhookEventId 是否已處理過（防止重複處理）
         if webhook_event_id:
@@ -511,12 +538,12 @@ async def process_single_event(
                     logger.debug(f"快取檢查結果: {is_processed}")
 
                     if is_processed:
-                        logger.info(f"跳過重複的 webhook 事件: {webhook_event_id}")
+                        logger.debug(f"跳過重複的 webhook 事件: {webhook_event_id}")
                         return None
 
                     # 標記此事件為已處理（TTL 24小時）
                     await AsyncCache.set(webhook_cache_key, "processed", ttl=86400)
-                    logger.info(f"標記 webhook 事件為已處理: {webhook_event_id}")
+                    logger.debug(f"標記 webhook 事件為已處理: {webhook_event_id}")
                 except Exception as cache_err:
                     logger.warning(f"webhook 事件重複檢查失敗，繼續處理: {cache_err}")
             else:
@@ -524,7 +551,7 @@ async def process_single_event(
 
         # 僅處理來自 user 的事件
         if source_type != 'user' or not user_id:
-            logger.info(f"跳過非使用者來源事件: source_type={source_type}")
+            logger.debug(f"跳過非使用者來源事件: source_type={source_type}")
             return None
 
         # 根據事件類型組裝通用欄位
@@ -546,7 +573,7 @@ async def process_single_event(
             message_type = event_type
             line_message_id = None
         else:
-            logger.info(f"⏭️ 跳過未支援事件: {event_type}")
+            logger.debug(f"跳過未支援事件: {event_type}")
             return None
 
         # 保障：若 PostgreSQL 尚無此用戶紀錄，先建立/更新，確保不會出現未知用戶
@@ -608,48 +635,52 @@ async def process_single_event(
 
         # 如果是重複訊息（僅針對有 line_message_id 的事件），直接跳過
         if line_message_id and (not is_new):
-            logger.info(f"跳過重複訊息: {line_message_id}")
+            logger.debug(f"跳過重複訊息: {line_message_id}")
             return None
 
         # 如果是新訊息，處理媒體檔案
         if message_type in ['image', 'video', 'audio'] and line_message_id:
             # 異步處理媒體檔案
-            asyncio.create_task(
+            _schedule_background_task(
                 process_media_async(
                     bot_id=bot_id,
                     user_id=user_id,
                     message_type=message_type,
                     line_message_id=line_message_id,
                     line_bot_service=line_bot_service
-                )
+                ),
+                f"處理媒體檔案 message_id={line_message_id}",
             )
 
         # 即時推送完整聊天訊息到 WebSocket，讓前端增量插入（message/postback/follow）
         if event_type in ['message', 'postback', 'follow']:
-            try:
-                from app.services.realtime.websocket_manager import websocket_manager
-                admin_user_info = None
-                await websocket_manager.broadcast_to_bot(bot_id, {
-                    'type': 'chat_message',
-                    'bot_id': bot_id,
-                    'line_user_id': user_id,
-                    'data': {
+            admin_user_info = None
+            _schedule_background_task(
+                _broadcast_to_bot_safely(
+                    bot_id,
+                    {
+                        'type': 'chat_message',
+                        'bot_id': bot_id,
                         'line_user_id': user_id,
-                        'message': {
-                            'id': message_doc.id,
-                            'event_type': message_doc.event_type,
-                            'message_type': message_doc.message_type,
-                            'message_content': message_doc.content,
-                            'sender_type': message_doc.sender_type,
-                            'timestamp': message_doc.timestamp.isoformat() if hasattr(message_doc.timestamp, 'isoformat') else message_doc.timestamp,
-                            'media_url': message_doc.media_url,
-                            'media_path': message_doc.media_path,
-                            'admin_user': admin_user_info
+                        'data': {
+                            'line_user_id': user_id,
+                            'message': {
+                                'id': message_doc.id,
+                                'event_type': message_doc.event_type,
+                                'message_type': message_doc.message_type,
+                                'message_content': message_doc.content,
+                                'sender_type': message_doc.sender_type,
+                                'timestamp': message_doc.timestamp.isoformat() if hasattr(message_doc.timestamp, 'isoformat') else message_doc.timestamp,
+                                'media_url': message_doc.media_url,
+                                'media_path': message_doc.media_path,
+                                'admin_user': admin_user_info
+                            }
                         }
-                    }
-                })
-            except Exception as ws_err:
-                logger.warning(f"推送用戶聊天消息到 WebSocket 失敗: {ws_err}")
+                    },
+                    f"推送用戶聊天消息到 WebSocket bot_id={bot_id}",
+                ),
+                f"推送用戶聊天消息到 WebSocket bot_id={bot_id}",
+            )
 
         # 進行邏輯模板匹配與回覆（僅針對部分事件觸發）
         logger.debug(
@@ -682,38 +713,38 @@ async def process_single_event(
                     is_text_message = event_type == 'message' and event.get('message', {}).get('type') == 'text'
                     user_query = event.get('message', {}).get('text') or '' if is_text_message else ''
 
-                    logger.debug("AI 接管檢查:")
-                    logger.debug(f"  - 邏輯模板結果: {len(results) if results else 0} 個")
-                    logger.debug(f"  - AI 接管啟用: {ai_takeover_enabled}")
-                    logger.debug(f"  - 事件類型: {event_type}")
-                    logger.debug(f"  - 是文字訊息: {is_text_message}")
-                    logger.debug(f"  - 用戶訊息: '{user_query}'")
-                    logger.info(f"🔍 AI 接管檢查:")
-                    logger.info(f"  - 邏輯模板結果: {len(results) if results else 0} 個")
-                    logger.info(f"  - AI 接管啟用: {ai_takeover_enabled}")
-                    logger.info(f"  - Workflow 指定 AI 接管: {workflow_requested_ai_takeover}")
-                    logger.info(f"  - 事件類型: {event_type}")
-                    logger.info(f"  - 是文字訊息: {is_text_message}")
-                    logger.info(f"  - 用戶訊息: '{user_query}'")
+                    if getattr(settings, "LOG_WEBHOOK_VERBOSE", False):
+                        logger.debug(
+                            "AI 接管檢查: results=%s enabled=%s workflow_requested=%s "
+                            "event_type=%s is_text=%s query=%r",
+                            len(results) if results else 0,
+                            ai_takeover_enabled,
+                            workflow_requested_ai_takeover,
+                            event_type,
+                            is_text_message,
+                            user_query,
+                        )
 
                     if (
                         (workflow_requested_ai_takeover or (not results))
                         and ai_takeover_enabled
                         and is_text_message
                     ):
-                        logger.info("觸發 AI 接管，開始檔案查詢 / AI 自主回覆流程")
+                        logger.info("觸發 AI 接管，排程背景回覆流程")
                         try:
                             provider = getattr(bot, 'ai_model_provider', None) or 'groq'
                             model = getattr(bot, 'ai_model', None)
                             hist_n = getattr(bot, 'ai_history_messages', None)
 
-                            logger.info("🔧 AI 接管參數:")
-                            logger.info(f"  - 提供商: {provider}")
-                            logger.info(f"  - 模型: {model}")
-                            logger.info(f"  - 歷史訊息數: {hist_n}")
+                            if getattr(settings, "LOG_WEBHOOK_VERBOSE", False):
+                                logger.debug(
+                                    "AI 接管參數: provider=%s model=%s history=%s",
+                                    provider,
+                                    model,
+                                    hist_n,
+                                )
 
                             # 改為背景任務執行，避免阻塞 webhook 回應
-                            logger.info(f"排程 AI 接管背景任務")
                             await _schedule_ai_takeover(
                                 bot_id=str(bot_id),
                                 user_id=user_id,
@@ -724,15 +755,14 @@ async def process_single_event(
                                 hist_n=hist_n,
                                 system_prompt=getattr(bot, 'ai_system_prompt', None),
                             )
-                            logger.info(f"AI 接管背景任務已排入")
                         except Exception as takeover_err:
                             logger.error(f"AI 接管排程失敗: {takeover_err}", exc_info=True)
                     else:
-                        logger.info(f"跳過 AI 接管 (條件不符合)")
+                        logger.debug("跳過 AI 接管 (條件不符合)")
             except Exception as le_err:
                 logger.error(f"邏輯引擎處理失敗: {le_err}")
         else:
-            logger.info(f"事件類型不符合邏輯處理條件: {event_type}")
+            logger.debug(f"事件類型不符合邏輯處理條件: {event_type}")
 
         return {
             'event_type': event_type,

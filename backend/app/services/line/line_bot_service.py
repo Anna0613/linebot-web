@@ -17,6 +17,7 @@ from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
     ImageSendMessage, FlexSendMessage, RichMenu, StickerSendMessage
 )
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +205,7 @@ class LineBotService:
                         data = await response.json()
 
                         # 記錄獲取到的資訊以便調試
-                        logger.info(f"異步獲取到 Bot 資訊 - userId: {data.get('userId')}, basicId: {data.get('basicId')}")
+                        logger.debug(f"異步獲取到 Bot 資訊 - userId: {data.get('userId')}, basicId: {data.get('basicId')}")
 
                         return {
                             "user_id": data.get("userId"),  # 這就是 Channel ID
@@ -953,17 +954,17 @@ class LineBotService:
 
         try:
             # 記錄發送前的 Flex 內容
-            import json
-            logger.info(f"🔍 LINE Bot Service 準備發送 Flex 訊息給 {user_id}")
-            logger.info(f"📋 Flex content type: {flex_content.get('type')}")
-            logger.info(f"📋 完整 Flex content: {json.dumps(flex_content, ensure_ascii=False)}")
+            logger.debug(f"LINE Bot Service 準備發送 Flex 訊息給 {user_id}")
+            logger.debug(f"Flex content type: {flex_content.get('type')}")
+            if getattr(settings, "LOG_WEBHOOK_VERBOSE", False):
+                logger.debug("完整 Flex content: %s", json.dumps(flex_content, ensure_ascii=False))
 
             message = FlexSendMessage(
                 alt_text=alt_text,
                 contents=flex_content
             )
 
-            logger.info(f"✅ FlexSendMessage 物件創建成功，準備推送")
+            logger.debug("FlexSendMessage 物件創建成功，準備推送")
             self.line_bot_api.push_message(user_id, message)
 
             return {

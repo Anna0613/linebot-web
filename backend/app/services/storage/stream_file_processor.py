@@ -125,7 +125,7 @@ class StreamFileProcessor:
         
         logger.info(f"開始流式處理檔案: {file.filename}")
         
-        content = b""
+        content = bytearray()
         total_size = 0
         chunk_count = 0
         
@@ -164,7 +164,7 @@ class StreamFileProcessor:
                             detail="系統記憶體不足，檔案處理中斷"
                         )
                 
-                content += chunk
+                content.extend(chunk)
                 
                 # 記錄進度（每 10MB 記錄一次）
                 if total_size % (10 * 1024 * 1024) == 0 or chunk_count % 10 == 0:
@@ -182,7 +182,7 @@ class StreamFileProcessor:
                 f"{total_size / 1024 / 1024:.2f}MB, {chunk_count} 個分塊"
             )
             
-            return content
+            return bytes(content)
             
         except HTTPException:
             # 重新拋出 HTTP 異常
