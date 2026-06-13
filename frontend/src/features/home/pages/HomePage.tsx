@@ -23,14 +23,16 @@ const features = [
   {
     id: "01 / FLOW",
     title: "視覺化流程編輯器",
-    description: "把訊息積木一塊一塊接起來，就像畫流程圖。條件分支、變數、跳轉，都看得見。",
+    description:
+      "把訊息積木一塊一塊接起來，就像畫流程圖。條件分支、變數、跳轉，都看得見。",
     className: "bc-t-flow",
     art: "flow",
   },
   {
     id: "02 / AI",
     title: "AI 知識庫接管",
-    description: "整合 Groq 與 Gemini，讓 Bot 在你不在線時也能用你的資料回答問題。",
+    description:
+      "整合 Groq 與 Gemini，讓 Bot 在你不在線時也能用你的資料回答問題。",
     className: "bc-t-ai",
     art: "ai",
   },
@@ -49,67 +51,52 @@ const features = [
     art: "rich",
   },
   {
-    id: "05 / BROADCAST",
-    title: "分群推播",
-    description: "排程、A/B、追蹤點擊率，全在儀表板裡。",
-    className: "bc-t-broad",
-    art: "broad",
-  },
-];
-
-const plans = [
-  {
-    name: "Hobby",
-    price: "0",
-    description: "給想試試看 Bot 怎麼運作的學生與個人用戶。",
-    cta: "免費開始",
-    href: "/register",
-    features: ["1 個 Bot，1,000 訊息/月", "視覺化流程編輯", "Flex 訊息設計", "社群論壇支援"],
-  },
-  {
-    name: "Studio",
-    price: "299",
-    description: "適合接案、社團、小品牌。AI 接管 + 知識庫。",
-    cta: "升級 Studio",
-    href: "/register",
-    featured: true,
-    features: ["5 個 Bot，50,000 訊息/月", "AI 接管（Groq / Gemini）", "RAG 知識庫，3 GB", "分群推播 + A/B 測試", "對話歷史 90 天"],
-  },
-  {
-    name: "Team",
-    price: "999",
-    description: "給需要協作、稽核、私有部署的團隊。",
-    cta: "聯絡我們",
-    href: "mailto:jkl921102@gmail.com",
-    features: ["不限 Bot，500,000 訊息/月", "多人協作 + 權限管理", "對話分析與標註", "Webhook & API 開放", "專屬技術支援"],
+    id: "05 / INSIGHT",
+    title: "互動紀錄與好友管理",
+    description:
+      "查看訊息、好友、連線狀態與最近活動，調整 Bot 時不需要跳到別處。",
+    className: "bc-t-analytics",
+    art: "analytics",
   },
 ];
 
 const faqs = [
   {
     question: "我需要會寫程式才能用嗎？",
-    answer: "不需要。整個流程從 LINE Channel 連線、訊息設計、上線發布都是視覺化操作。如果你會寫，也可以用 Webhook 與 API 自己擴充。",
+    answer:
+      "不需要。整個流程從 LINE Channel 連線、訊息設計、上線發布都是視覺化操作。如果你會寫，也可以用 Webhook 與 API 自己擴充。",
   },
   {
-    question: "免費方案有時間限制嗎？",
-    answer: "沒有。Hobby 方案永久免費，每月 1,000 則訊息額度。學生用戶提供 NT$0 升級到 Studio 的優惠，請從學生方案頁申請。",
+    question: "目前可以怎麼開始使用？",
+    answer:
+      "註冊後可以依照建立教學新增 LINE Bot，接著進入工作台調整邏輯、Flex Message、AI 知識庫與 Rich Menu。",
   },
   {
     question: "Bot 的對話資料儲存在哪？",
-    answer: "對話歷史儲存在加密的 MongoDB，媒體檔案儲存在 MinIO 物件儲存。你可以隨時下載或刪除所有對話資料，也可以選擇關閉對話記錄功能。",
+    answer:
+      "對話歷史儲存在加密的 MongoDB，媒體檔案儲存在 MinIO 物件儲存。你可以隨時下載或刪除所有對話資料，也可以選擇關閉對話記錄功能。",
   },
   {
     question: "AI 接管是什麼意思？",
-    answer: "當你定義的流程沒有匹配到使用者訊息時，可以選擇交給 AI 處理。AI 會基於你上傳到知識庫的內容，用 RAG 檢索方式回覆。",
+    answer:
+      "當你定義的流程沒有匹配到使用者訊息時，可以選擇交給 AI 處理。AI 會基於你上傳到知識庫的內容，用 RAG 檢索方式回覆。",
   },
   {
     question: "可以同時連到 LINE 以外的平台嗎？",
-    answer: "目前主要支援 LINE Messaging API。Web Chat、Telegram、Discord 等管道在 roadmap 上，預計陸續開放。",
+    answer:
+      "目前首頁與工作台都以 LINE Messaging API 為主，示意畫面也只展示系統內實際支援的 LINE Bot 管理流程。",
   },
 ];
 
 const ArrowIcon = () => (
-  <svg className="bc-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+  <svg
+    className="bc-btn-arrow"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden="true"
+  >
     <path d="M5 12h14M13 5l7 7-7 7" />
   </svg>
 );
@@ -118,16 +105,30 @@ const FeatureArt = ({ type }: { type: string }) => {
   if (type === "flow") {
     return (
       <div className="bc-art-flow">
-        <svg className="bc-wire" style={{ left: 60, top: 50, width: 200, height: 60 }}>
+        <svg
+          className="bc-wire"
+          style={{ left: 60, top: 50, width: 200, height: 60 }}
+        >
           <path d="M 0 10 C 60 10, 60 50, 130 50" />
         </svg>
-        <svg className="bc-wire bc-live" style={{ left: 240, top: 60, width: 200, height: 60 }}>
+        <svg
+          className="bc-wire bc-live"
+          style={{ left: 240, top: 60, width: 200, height: 60 }}
+        >
           <path d="M 0 0 C 80 0, 80 60, 160 60" />
         </svg>
-        <div className="bc-node" style={{ left: 8, top: 34 }}>on:訊息</div>
-        <div className="bc-node bc-node-accent" style={{ left: 80, top: 88 }}>if 包含「訂位」</div>
-        <div className="bc-node bc-node-dark" style={{ left: 240, top: 48 }}>回覆 Flex 卡</div>
-        <div className="bc-node" style={{ left: 280, top: 128 }}>交給 AI</div>
+        <div className="bc-node" style={{ left: 8, top: 34 }}>
+          on:訊息
+        </div>
+        <div className="bc-node bc-node-accent" style={{ left: 80, top: 88 }}>
+          if 包含「訂位」
+        </div>
+        <div className="bc-node bc-node-dark" style={{ left: 240, top: 48 }}>
+          回覆 Flex 卡
+        </div>
+        <div className="bc-node" style={{ left: 280, top: 128 }}>
+          交給 AI
+        </div>
       </div>
     );
   }
@@ -173,72 +174,218 @@ const FeatureArt = ({ type }: { type: string }) => {
   }
 
   return (
-    <div className="bc-art-broad">
-      <div className="bc-broad-bar bc-acc" style={{ "--w": "78%" } as React.CSSProperties} />
-      <div className="bc-broad-meta"><span>VIP · 1,204</span><span>78%</span></div>
-      <div className="bc-broad-bar" style={{ "--w": "54%" } as React.CSSProperties} />
-      <div className="bc-broad-meta"><span>新會員 · 3,820</span><span>54%</span></div>
-      <div className="bc-broad-bar" style={{ "--w": "32%" } as React.CSSProperties} />
-      <div className="bc-broad-meta"><span>沉睡用戶 · 8,113</span><span>32%</span></div>
+    <div className="bc-art-analytics">
+      <div className="bc-analytics-top">
+        <span>最近 7 天</span>
+        <b>即時連線</b>
+      </div>
+      <div className="bc-analytics-bars" aria-hidden="true">
+        {[42, 58, 36, 72, 54, 88].map((height, index) => (
+          <span
+            key={index}
+            style={{ "--h": `${height}%` } as React.CSSProperties}
+          />
+        ))}
+      </div>
+      <div className="bc-analytics-list">
+        <span>訊息統計</span>
+        <span>好友列表</span>
+        <span>系統活動</span>
+      </div>
     </div>
   );
 };
+
+const ProductShellPreview = () => (
+  <div className="bc-product-shell" aria-label="BotCraft 工作台實際畫面示意">
+    <aside className="bc-product-sidebar">
+      <div className="bc-product-brand">
+        <span className="bc-product-mark" />
+        <span>BotCraft</span>
+      </div>
+      <div className="bc-product-switcher">
+        <span>目前 Bot</span>
+        <b>school project</b>
+      </div>
+      <nav className="bc-product-nav">
+        <span className="bc-product-nav-active">工作台</span>
+        <span>編輯 Bot</span>
+        <span>互動紀錄</span>
+        <span>好友</span>
+        <span>設定</span>
+      </nav>
+      <div className="bc-product-callout">
+        <b>Bot 目前正常</b>
+        <span>查看連線、訊息與好友互動。</span>
+      </div>
+    </aside>
+
+    <div className="bc-product-main">
+      <header className="bc-product-topbar">
+        <div>
+          <span>WORKSPACE</span>
+          <b>今天想更新哪一個 Bot？</b>
+        </div>
+        <div className="bc-product-user">R</div>
+      </header>
+
+      <section className="bc-product-hero-card">
+        <div>
+          <span>你的 LINE Bot 工作台</span>
+          <h3>建立 Bot、調整回覆、查看最近互動。</h3>
+        </div>
+        <span className="bc-product-action">建立 Bot</span>
+      </section>
+
+      <div className="bc-product-grid">
+        <section className="bc-product-panel bc-product-wide">
+          <div className="bc-product-panel-head">
+            <b>我的 Bot</b>
+            <span>搜尋 / 篩選 / 開啟設計</span>
+          </div>
+          <div className="bc-product-table">
+            <div>
+              <b>school project</b>
+              <span>啟用</span>
+              <em>編輯</em>
+            </div>
+            <div>
+              <b>customer support</b>
+              <span>停用</span>
+              <em>設定</em>
+            </div>
+            <div>
+              <b>line demo</b>
+              <span>啟用</span>
+              <em>互動</em>
+            </div>
+          </div>
+        </section>
+
+        <section className="bc-product-panel">
+          <div className="bc-product-panel-head">
+            <b>訊息趨勢</b>
+            <span>7 day view</span>
+          </div>
+          <div className="bc-product-chart" aria-hidden="true">
+            {[26, 52, 34, 68, 46, 74, 58].map((height, index) => (
+              <span
+                key={index}
+                style={{ "--h": `${height}%` } as React.CSSProperties}
+              />
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+);
 
 const BuilderStage = () => (
   <div className="bc-builder-stage bc-reveal">
     <aside className="bc-stage-rail">
       <div className="bc-rail-head">觸發</div>
-      <div className="bc-rail-item"><span className="bc-dot bc-y" />收到訊息</div>
-      <div className="bc-rail-item"><span className="bc-dot bc-y" />加入好友</div>
-      <div className="bc-rail-item"><span className="bc-dot bc-y" />排程</div>
+      <div className="bc-rail-item">
+        <span className="bc-dot bc-y" />
+        收到訊息
+      </div>
+      <div className="bc-rail-item">
+        <span className="bc-dot bc-y" />
+        加入好友
+      </div>
       <div className="bc-rail-head">邏輯</div>
-      <div className="bc-rail-item"><span className="bc-dot" />條件分支</div>
-      <div className="bc-rail-item"><span className="bc-dot" />變數設定</div>
-      <div className="bc-rail-item"><span className="bc-dot" />等待輸入</div>
+      <div className="bc-rail-item">
+        <span className="bc-dot" />
+        條件分支
+      </div>
+      <div className="bc-rail-item">
+        <span className="bc-dot" />
+        變數設定
+      </div>
+      <div className="bc-rail-item">
+        <span className="bc-dot" />
+        等待輸入
+      </div>
       <div className="bc-rail-head">動作</div>
-      <div className="bc-rail-item"><span className="bc-dot bc-b" />傳送文字</div>
-      <div className="bc-rail-item"><span className="bc-dot bc-b" />傳送 Flex</div>
-      <div className="bc-rail-item"><span className="bc-dot bc-g" />呼叫 AI</div>
-      <div className="bc-rail-item"><span className="bc-dot bc-g" />呼叫 API</div>
+      <div className="bc-rail-item">
+        <span className="bc-dot bc-b" />
+        傳送文字
+      </div>
+      <div className="bc-rail-item">
+        <span className="bc-dot bc-b" />
+        傳送 Flex
+      </div>
+      <div className="bc-rail-item">
+        <span className="bc-dot bc-g" />
+        呼叫 AI
+      </div>
+      <div className="bc-rail-item">
+        <span className="bc-dot bc-g" />
+        呼叫 API
+      </div>
     </aside>
 
     <div className="bc-stage-canvas">
-      <svg className="bc-canvas-wire" viewBox="0 0 800 460" preserveAspectRatio="none">
-        <path d="M 170 90 C 240 90, 240 200, 320 200" />
-        <path className="bc-live" d="M 470 200 C 540 200, 540 100, 620 100" />
-        <path d="M 470 240 C 540 240, 540 320, 620 320" />
-      </svg>
-      <div className="bc-canvas-node bc-start" style={{ left: 30, top: 70 }}>
-        <div className="bc-nh">TRIGGER</div>
-        收到訊息
+      <div className="bc-stage-tabs">
+        <span>基本資料</span>
+        <span className="bc-tab-active">邏輯編輯器</span>
+        <span>Flex Message 編輯</span>
+        <span>AI 知識庫管理</span>
+        <span>功能選單</span>
       </div>
-      <div className="bc-canvas-node bc-cond" style={{ left: 320, top: 180 }}>
-        <div className="bc-nh">IF</div>
-        包含「預約」
-      </div>
-      <div className="bc-canvas-node bc-action" style={{ left: 620, top: 80 }}>
-        <div className="bc-nh">ACTION</div>
-        回覆 Flex 卡片
-      </div>
-      <div className="bc-canvas-node bc-action" style={{ left: 620, top: 300 }}>
-        <div className="bc-nh">ACTION</div>
-        交給 AI 回覆
+      <div className="bc-canvas-board">
+        <div className="bc-canvas-dropzone">
+          <div className="bc-flow-card bc-start">
+            <div className="bc-nh">TRIGGER</div>
+            當收到文字訊息時
+          </div>
+          <div className="bc-flow-line" />
+          <div className="bc-flow-card bc-cond">
+            <div className="bc-nh">IF</div>
+            如果包含「預約」
+          </div>
+          <div className="bc-flow-branches">
+            <div className="bc-flow-card bc-action">
+              <div className="bc-nh">ACTION</div>
+              回覆 Flex 訊息
+            </div>
+            <div className="bc-flow-card bc-ai">
+              <div className="bc-nh">AI</div>
+              查詢知識庫
+            </div>
+          </div>
+        </div>
+        <div className="bc-stage-simulator">
+          <div className="bc-sim-head">LINE Bot 模擬器</div>
+          <div className="bc-sim-body">
+            <span>
+              歡迎使用 LINE Bot 模擬器，請輸入訊息來測試您的 Bot 邏輯。
+            </span>
+            <b>我想預約明天下午</b>
+            <span>已觸發「預約」分支，回覆 Flex 訊息。</span>
+          </div>
+          <div className="bc-sim-input">輸入訊息...</div>
+        </div>
       </div>
     </div>
 
     <aside className="bc-stage-insp">
-      <div className="bc-insp-head">節點屬性 <span className="bc-insp-pill">IF</span></div>
+      <div className="bc-insp-head">
+        節點屬性 <span className="bc-insp-pill">IF</span>
+      </div>
       <div className="bc-insp-row">
         <label>條件類型</label>
-        <div className="bc-insp-input">contains_keyword</div>
+        <div className="bc-insp-input">文字包含</div>
       </div>
       <div className="bc-insp-row">
         <label>關鍵字（OR）</label>
-        <div className="bc-insp-input">預約, 訂位, booking</div>
+        <div className="bc-insp-input">預約, 訂位</div>
       </div>
       <div className="bc-insp-row">
         <label>不符合時</label>
-        <div className="bc-insp-input bc-ml">→ 流向「交給 AI 回覆」分支，使用 knowledge base「v3-store」</div>
+        <div className="bc-insp-input bc-ml">
+          切到 AI 知識庫管理，確認是否需要由知識庫回覆。
+        </div>
       </div>
     </aside>
   </div>
@@ -296,7 +443,9 @@ const HomePage = () => {
       { threshold: 0.5 }
     );
 
-    document.querySelectorAll(".bc-stat-num").forEach((el) => numIo.observe(el));
+    document
+      .querySelectorAll(".bc-stat-num")
+      .forEach((el) => numIo.observe(el));
     return () => numIo.disconnect();
   }, []);
 
@@ -309,11 +458,12 @@ const HomePage = () => {
             <a href="#features">功能</a>
             <a href="#builder">編輯器</a>
             <a href="#how">怎麼運作</a>
-            <a href="#pricing">方案</a>
             <a href="#faq">常見問題</a>
           </div>
           <div className="bc-nav-cta">
-            <Link to="/login" className="bc-login">登入</Link>
+            <Link to="/login" className="bc-login">
+              登入
+            </Link>
             <Link to="/register" className="bc-btn bc-btn-primary">
               免費開始
               <ArrowIcon />
@@ -324,47 +474,47 @@ const HomePage = () => {
 
       <header className="bc-hero" data-screen-label="02 Hero">
         <div className="bc-grid-bg" />
-        <div className="bc-eyebrow"><span className="bc-eyebrow-dot" />v3.0 · AI 對話接管 已上線</div>
+        <div className="bc-eyebrow">
+          <span className="bc-eyebrow-dot" />
+          v3.0 · AI 對話接管 已上線
+        </div>
         <div className="bc-hero-grid">
           <div>
             <h1 className="bc-h1">
-              把對話機器人，<br />
-              做成<span className="bc-ital">你想要的</span><span className="bc-hi-mark">樣子</span>。
+              把對話機器人，
+              <br />
+              做成<span className="bc-ital">你想要的</span>
+              <span className="bc-hi-mark">樣子</span>。
             </h1>
             <p className="bc-lead">
-              BotCraft 是一個視覺化的對話流程編輯平台。把訊息積木拖一拖，串起來，就能在 LINE、Web、各種通訊管道上跑起來，不用寫一行程式碼。
+              BotCraft 是一個 LINE Bot 製作與管理工作台。建立
+              Bot、調整回覆、編輯 Flex Message、管理 Rich Menu 與 AI
+              知識庫，都在同一套實際介面裡完成。
             </p>
             <div className="bc-hero-cta">
               <Link className="bc-btn bc-btn-primary" to="/register">
                 開始建立你的 Bot
                 <ArrowIcon />
               </Link>
-              <a className="bc-btn bc-btn-ghost" href="#builder">先看編輯器長怎樣</a>
+              <a className="bc-btn bc-btn-ghost" href="#builder">
+                先看編輯器長怎樣
+              </a>
             </div>
             <div className="bc-hero-meta">
-              <span><b className="bc-mono">3</b>&nbsp;分鐘上手</span>
-              <span><b className="bc-mono">0</b>&nbsp;行程式碼</span>
-              <span><b className="bc-mono">∞</b>&nbsp;對話流程</span>
+              <span>
+                <b className="bc-mono">LINE</b>&nbsp;Messaging API
+              </span>
+              <span>
+                <b className="bc-mono">0</b>&nbsp;行程式碼
+              </span>
+              <span>
+                <b className="bc-mono">5</b>&nbsp;個編輯分頁
+              </span>
             </div>
           </div>
 
           <div className="bc-hero-visual">
-            <div className="bc-chat-canvas">
-              <div className="bc-chat-canvas-bg" />
-              <div className="bc-chat-head">
-                <div className="bc-traffic"><i /><i /><i /></div>
-                <span className="bc-url">botcraft.app/preview/onboarding</span>
-              </div>
-              <div className="bc-chat-body">
-                <div className="bc-bubble bc-in-bubble">嗨～請問營業時間是？<small>USER · 09:42</small></div>
-                <div className="bc-bubble bc-out-bubble">我們週一到週五 10:00–20:00 都開著喔 ✦<small>BOT · FLOW: hours</small></div>
-                <div className="bc-bubble bc-in-bubble">那我可以預約看店嗎？<small>USER · 09:42</small></div>
-                <div className="bc-bubble bc-ai-bubble">好的，我幫你看了週六下午有空檔，要約 14:30 嗎？<small>AI · KNOWLEDGE BASE</small></div>
-                <div className="bc-typing"><i /><i /><i /></div>
-              </div>
-              <div className="bc-chat-sticker bc-s1"><span className="bc-pulse" />已連線&nbsp;·&nbsp;LINE</div>
-              <div className="bc-chat-sticker bc-s2"><span className="bc-mono">↳</span>觸發節點&nbsp;<b className="bc-mono">#hours</b></div>
-            </div>
+            <ProductShellPreview />
           </div>
         </div>
       </header>
@@ -382,20 +532,32 @@ const HomePage = () => {
         </div>
       </div>
 
-      <section className="bc-section" id="features" data-screen-label="03 Features">
+      <section
+        className="bc-section"
+        id="features"
+        data-screen-label="03 Features"
+      >
         <div className="bc-section-head bc-reveal">
           <div>
             <div className="bc-section-tag">FEATURES · 01</div>
-            <h2 className="bc-section-title">不只是回覆，<br />是<span className="bc-ital">真的會聊天</span>的助理。</h2>
+            <h2 className="bc-section-title">
+              不只是回覆，
+              <br />是<span className="bc-ital">真的會聊天</span>的助理。
+            </h2>
           </div>
           <p className="bc-section-desc">
-            從拖拉式流程編輯、AI 知識庫接管，到 Flex 卡片、Rich Menu、群發排程，把過去散落在各處的 Bot 工作，整合在一個工作台裡。
+            從 Bot 建立、拖拉式邏輯編輯、AI 知識庫，到 Flex 卡片、Rich
+            Menu、互動紀錄與好友管理，把系統內實際存在的 Bot
+            工作整合在一個工作台裡。
           </p>
         </div>
 
         <div className="bc-mosaic">
           {features.map((feature) => (
-            <div key={feature.id} className={`bc-tile ${feature.className} bc-reveal`}>
+            <div
+              key={feature.id}
+              className={`bc-tile ${feature.className} bc-reveal`}
+            >
               <span className="bc-tile-num">{feature.id}</span>
               <h3>{feature.title}</h3>
               <p>{feature.description}</p>
@@ -407,15 +569,25 @@ const HomePage = () => {
         </div>
       </section>
 
-      <section className="bc-builder" id="builder" data-screen-label="04 Builder">
+      <section
+        className="bc-builder"
+        id="builder"
+        data-screen-label="04 Builder"
+      >
         <div className="bc-builder-inner">
           <div className="bc-builder-head bc-reveal">
             <div>
               <div className="bc-section-tag">BUILDER · 02</div>
-              <h2 className="bc-builder-title">畫得出來，<br />就跑得起來。</h2>
+              <h2 className="bc-builder-title">
+                畫得出來，
+                <br />
+                就跑得起來。
+              </h2>
             </div>
             <p className="bc-builder-desc">
-              左邊是元件抽屜，中間是畫布，右邊是屬性面板。三欄式工作流，熟悉、直覺、不出錯。底下把 Webhook、訊息事件、AI 推論都串好了。
+              這裡依照目前系統的編輯器結構呈現：基本資料、邏輯編輯器、Flex
+              Message、AI
+              知識庫管理與功能選單。左側選積木，中間編輯流程，右側即時模擬。
             </p>
           </div>
           <BuilderStage />
@@ -427,16 +599,25 @@ const HomePage = () => {
           <div className="bc-section-head bc-reveal">
             <div>
               <div className="bc-section-tag">FLOW · 03</div>
-              <h2 className="bc-section-title">三步驟，<br />從 0 到上線。</h2>
+              <h2 className="bc-section-title">
+                三步驟，
+                <br />從 0 到上線。
+              </h2>
             </div>
-            <p className="bc-section-desc">不需要伺服器、不用部署、不用設 webhook。把 LINE Channel 接上，畫好流程，按下發布。</p>
+            <p className="bc-section-desc">
+              依照建立教學填入 LINE Channel 資訊，選擇要編輯的
+              Bot，接著在工作台完成邏輯、Flex、AI 知識庫與 Rich Menu 設定。
+            </p>
           </div>
 
           <div className="bc-steps bc-reveal">
             <div className="bc-step">
               <div className="bc-step-num">STEP 01</div>
               <h3 className="bc-step-title">連結你的頻道</h3>
-              <p className="bc-step-desc">把 LINE Channel ID 與 Secret 貼進來，剩下的 Webhook、權限、SSL 我們處理。</p>
+              <p className="bc-step-desc">
+                依建立教學準備 Channel Access Token 與 Channel
+                Secret，建立你的第一個 LINE Bot。
+              </p>
               <div className="bc-step-art bc-s-art-1">
                 <div className="bc-blip">CH</div>
                 <div className="bc-link-line" />
@@ -448,21 +629,35 @@ const HomePage = () => {
             <div className="bc-step">
               <div className="bc-step-num">STEP 02</div>
               <h3 className="bc-step-title">畫出對話流程</h3>
-              <p className="bc-step-desc">在畫布上把節點拖出來、連起來。即時預覽機器人會怎麼回覆。</p>
+              <p className="bc-step-desc">
+                在畫布上把節點拖出來、連起來。即時預覽機器人會怎麼回覆。
+              </p>
               <div className="bc-step-art bc-s-art-2">
                 <div className="bc-mini-flow">
-                  <svg className="bc-wire" style={{ left: 0, top: 24, width: "100%", height: 60 }}>
+                  <svg
+                    className="bc-wire"
+                    style={{ left: 0, top: 24, width: "100%", height: 60 }}
+                  >
                     <path d="M 30 10 C 90 10, 90 50, 150 50" />
                   </svg>
-                  <div className="bc-node" style={{ left: 6, top: 14 }}>trigger</div>
-                  <div className="bc-node bc-node-accent" style={{ left: 80, top: 54 }}>flex</div>
+                  <div className="bc-node" style={{ left: 6, top: 14 }}>
+                    trigger
+                  </div>
+                  <div
+                    className="bc-node bc-node-accent"
+                    style={{ left: 80, top: 54 }}
+                  >
+                    flex
+                  </div>
                 </div>
               </div>
             </div>
             <div className="bc-step">
               <div className="bc-step-num">STEP 03</div>
-              <h3 className="bc-step-title">一鍵上線</h3>
-              <p className="bc-step-desc">發布後，每一則訊息都會即時透過 WebSocket 流回儀表板，可以邊看邊調。</p>
+              <h3 className="bc-step-title">查看互動狀態</h3>
+              <p className="bc-step-desc">
+                從互動紀錄與好友管理查看訊息、連線狀態和最近活動，再回編輯器快速調整。
+              </p>
               <div className="bc-step-art bc-s-art-3">
                 <div className="bc-pulse-ring" />
                 <div className="bc-pulse-core" />
@@ -471,57 +666,44 @@ const HomePage = () => {
           </div>
 
           <div className="bc-stats bc-reveal">
-            <div className="bc-stat"><div className="bc-stat-num" data-count="3" data-unit="分鐘">0分鐘</div><div className="bc-stat-label">平均上手時間</div></div>
-            <div className="bc-stat"><div className="bc-stat-num" data-count="98" data-unit="%">0%</div><div className="bc-stat-label">訊息送達成功率</div></div>
-            <div className="bc-stat"><div className="bc-stat-num" data-count="42" data-unit="ms">0ms</div><div className="bc-stat-label">P95 回應延遲</div></div>
-            <div className="bc-stat"><div className="bc-stat-num" data-count="12" data-unit="k+">0k+</div><div className="bc-stat-label">已建立的 Bot</div></div>
+            <div className="bc-stat">
+              <div className="bc-stat-num" data-count="5" data-unit="">
+                0
+              </div>
+              <div className="bc-stat-label">編輯器分頁</div>
+            </div>
+            <div className="bc-stat">
+              <div className="bc-stat-num" data-count="1" data-unit="">
+                0
+              </div>
+              <div className="bc-stat-label">主要通訊平台：LINE</div>
+            </div>
+            <div className="bc-stat">
+              <div className="bc-stat-num" data-count="4" data-unit="">
+                0
+              </div>
+              <div className="bc-stat-label">核心管理頁面</div>
+            </div>
+            <div className="bc-stat">
+              <div className="bc-stat-num" data-count="0" data-unit="行">
+                0行
+              </div>
+              <div className="bc-stat-label">建立流程必寫程式碼</div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="bc-section" id="pricing" data-screen-label="06 Pricing">
-        <div className="bc-section-head bc-reveal">
-          <div>
-            <div className="bc-section-tag">PRICING · 04</div>
-            <h2 className="bc-section-title">先免費，<br />有需要再升級。</h2>
-          </div>
-          <p className="bc-section-desc">學生與個人用戶永遠有可用的免費額度。需要更多訊息量、AI 接管或團隊協作時，再考慮其他方案。</p>
-        </div>
-
-        <div className="bc-price-grid bc-reveal">
-          {plans.map((plan) => {
-            const content = (
-              <>
-                {plan.featured && <div className="bc-plan-flag">最熱門</div>}
-                <div className="bc-plan-name">{plan.name}</div>
-                <div className="bc-plan-price"><span className="bc-currency">NT$</span>{plan.price}<span className="bc-period">/月</span></div>
-                <p className="bc-plan-desc">{plan.description}</p>
-                <ul className="bc-feat">
-                  {plan.features.map((item) => <li key={item}>{item}</li>)}
-                </ul>
-                <div className="bc-plan-cta">
-                  {plan.href.startsWith("mailto:") ? (
-                    <a className="bc-btn bc-btn-primary" href={plan.href}>{plan.cta}</a>
-                  ) : (
-                    <Link className="bc-btn bc-btn-primary" to={plan.href}>{plan.cta}</Link>
-                  )}
-                </div>
-              </>
-            );
-
-            return <div key={plan.name} className={`bc-plan ${plan.featured ? "bc-featured" : ""}`}>{content}</div>;
-          })}
-        </div>
-      </section>
-
-      <section className="bc-section" id="faq" data-screen-label="07 FAQ">
+      <section className="bc-section" id="faq" data-screen-label="06 FAQ">
         <div className="bc-section-head bc-reveal">
           <div>
             <div className="bc-section-tag">FAQ · 05</div>
             <h2 className="bc-section-title">常見問題</h2>
           </div>
           <p className="bc-section-desc">
-            沒看到你的問題？寄信到 <a href="mailto:jkl921102@gmail.com">jkl921102@gmail.com</a>，通常一天內回覆。
+            沒看到你的問題？寄信到{" "}
+            <a href="mailto:jkl921102@gmail.com">jkl921102@gmail.com</a>
+            ，通常一天內回覆。
           </p>
         </div>
 
@@ -529,7 +711,10 @@ const HomePage = () => {
           {faqs.map((faq, index) => {
             const isOpen = openFaq === index;
             return (
-              <div className={`bc-faq-item ${isOpen ? "bc-open" : ""}`} key={faq.question}>
+              <div
+                className={`bc-faq-item ${isOpen ? "bc-open" : ""}`}
+                key={faq.question}
+              >
                 <button
                   className="bc-faq-q"
                   type="button"
@@ -546,24 +731,30 @@ const HomePage = () => {
         </div>
       </section>
 
-      <section className="bc-finale" data-screen-label="08 CTA">
+      <section className="bc-finale" data-screen-label="07 CTA">
         <h2 className="bc-finale-title bc-reveal">
-          開始畫你的<br />
+          開始畫你的
+          <br />
           <span className="bc-ital">第一個</span> Bot 吧。
         </h2>
         <div className="bc-finale-side bc-reveal">
-          <p>免費註冊不用信用卡。三分鐘內就能在 LINE 上看到你做的機器人回應第一則訊息。</p>
+          <p>
+            註冊後依照建立教學新增 LINE Bot，再進入工作台設定回覆、Flex
+            Message、AI 知識庫與 Rich Menu。
+          </p>
           <div className="bc-ctas">
             <Link className="bc-btn bc-btn-primary" to="/register">
               免費開始
               <ArrowIcon />
             </Link>
-            <Link className="bc-btn bc-btn-ghost" to="/how-to-establish">看建立教學</Link>
+            <Link className="bc-btn bc-btn-ghost" to="/how-to-establish">
+              看建立教學
+            </Link>
           </div>
         </div>
       </section>
 
-      <footer className="bc-footer" data-screen-label="09 Footer">
+      <footer className="bc-footer" data-screen-label="08 Footer">
         <div className="bc-foot-inner">
           <div className="bc-foot-grid">
             <div className="bc-foot-brand">
@@ -574,28 +765,49 @@ const HomePage = () => {
             <div className="bc-foot-col">
               <h4>產品</h4>
               <ul>
-                <li><a href="#features">功能總覽</a></li>
-                <li><a href="#builder">編輯器</a></li>
-                <li><a href="#pricing">方案</a></li>
-                <li><Link to="/dashboard">工作台</Link></li>
+                <li>
+                  <a href="#features">功能總覽</a>
+                </li>
+                <li>
+                  <a href="#builder">編輯器</a>
+                </li>
+                <li>
+                  <Link to="/dashboard">工作台</Link>
+                </li>
               </ul>
             </div>
             <div className="bc-foot-col">
               <h4>資源</h4>
               <ul>
-                <li><Link to="/how-to-establish">建立教學</Link></li>
-                <li><Link to="/suggest">意見回饋</Link></li>
-                <li><Link to="/terms">服務條款</Link></li>
-                <li><Link to="/privacy">隱私權</Link></li>
+                <li>
+                  <Link to="/how-to-establish">建立教學</Link>
+                </li>
+                <li>
+                  <Link to="/suggest">意見回饋</Link>
+                </li>
+                <li>
+                  <Link to="/terms">服務條款</Link>
+                </li>
+                <li>
+                  <Link to="/privacy">隱私權</Link>
+                </li>
               </ul>
             </div>
             <div className="bc-foot-col">
               <h4>公司</h4>
               <ul>
-                <li><Link to="/about">關於我們</Link></li>
-                <li><a href="mailto:jkl921102@gmail.com">聯絡</a></li>
-                <li><Link to="/login">登入</Link></li>
-                <li><Link to="/register">建立帳號</Link></li>
+                <li>
+                  <Link to="/about">關於我們</Link>
+                </li>
+                <li>
+                  <a href="mailto:jkl921102@gmail.com">聯絡</a>
+                </li>
+                <li>
+                  <Link to="/login">登入</Link>
+                </li>
+                <li>
+                  <Link to="/register">建立帳號</Link>
+                </li>
               </ul>
             </div>
           </div>
