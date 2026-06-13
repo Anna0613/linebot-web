@@ -4,6 +4,7 @@ BotCraft 統一 API 主應用程式
 import logging
 from contextlib import asynccontextmanager
 import asyncio
+import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -221,9 +222,15 @@ async def session_context_middleware(request: Request, call_next):
 # 請求日誌中間件
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    """記錄所有請求（統一格式，避免過度詳盡以降低 I/O 負擔）"""
+    """記錄請求摘要；預設只記錄慢請求以降低熱路徑 I/O。"""
     path = request.url.path
-    logger.info(f"HTTP {request.method} {path}")
+    should_log_request = bool(getattr(settings, "LOG_REQUESTS", False))
+    slow_threshold = float(getattr(settings, "SLOW_REQUEST_LOG_SECONDS", 1.0))
+    started_at = time.perf_counter()
+
+    if should_log_request:
+        logger.info(f"HTTP {request.method} {path}")
+
     # 僅在顯式啟用時輸出標頭，避免每請求大量 debug 日誌
     try:
         if getattr(settings, "LOG_REQUEST_HEADERS", False):
@@ -231,9 +238,16 @@ async def log_requests(request: Request, call_next):
     except Exception:
         ...
 
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration = time.perf_counter() - started_at
+        logger.exception(f"HTTP {request.method} {path} failed after {duration:.3f}s")
+        raise
 
-    logger.info(f"HTTP {request.method} {path} -> {response.status_code}")
+    duration = time.perf_counter() - started_at
+    if should_log_request or duration >= slow_threshold:
+        logger.info(f"HTTP {request.method} {path} -> {response.status_code} ({duration:.3f}s)")
     return response
 
 # 信任主機中間件

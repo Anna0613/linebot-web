@@ -22,6 +22,7 @@ from app.services.runtime.background_tasks import get_task_manager, TaskPriority
 from app.services.storage.minio_service import get_minio_service
 from app.services.runtime.adaptive_concurrency import get_adaptive_concurrency_manager
 from app.services.storage.stream_file_processor import get_stream_file_processor
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,19 @@ class KnowledgeProcessingService:
         return f"knowledge_processing_{uuid.uuid4().hex}"
 
     @classmethod
+    def _prune_finished_jobs(cls) -> None:
+        """清理已完成/失敗且超過保留時間的任務狀態。"""
+        retention_seconds = max(0, int(getattr(settings, "KNOWLEDGE_JOB_RETENTION_SECONDS", 86400)))
+        now = datetime.utcnow()
+
+        for job_id, job in list(cls._active_jobs.items()):
+            if job.status not in (ProcessingStatus.COMPLETED, ProcessingStatus.FAILED):
+                continue
+            finished_at = job.completed_at or job.created_at
+            if (now - finished_at).total_seconds() > retention_seconds:
+                cls._active_jobs.pop(job_id, None)
+
+    @classmethod
     async def _get_processing_semaphore(cls) -> asyncio.Semaphore:
         """獲取動態調整的處理信號量"""
         import time
@@ -118,6 +132,7 @@ class KnowledgeProcessingService:
         Returns:
             job_id: 任務 ID
         """
+        cls._prune_finished_jobs()
         job_id = cls.generate_job_id()
         
         # 創建處理任務
@@ -210,8 +225,11 @@ class KnowledgeProcessingService:
                 logger.error(f"檔案處理失敗 {job_id}: {e}")
                 job.status = ProcessingStatus.FAILED
                 job.error_message = str(e)
+                job.completed_at = datetime.utcnow()
                 if progress_callback:
                     progress_callback(job)
+            finally:
+                cls._prune_finished_jobs()
     
     @classmethod
     async def _process_extracted_text(

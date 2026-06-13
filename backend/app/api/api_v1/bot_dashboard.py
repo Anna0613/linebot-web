@@ -10,11 +10,13 @@ from typing import Dict, Optional, Any
 from datetime import datetime, timedelta
 
 from app.db.database_async import get_async_db
+from app.db.database_async import AsyncSessionLocal
 from app.dependencies import get_current_user_async
 from app.models.user import User
 from app.models.bot import Bot, LogicTemplate
 from app.models.line_user import LineBotUser
 from app.services.line.line_bot_service import LineBotService
+from app.config import settings
 from app.config.redis_config import (
     CacheKeys,
     cache_result,
@@ -90,9 +92,10 @@ async def get_bot_dashboard(
         # 基本統計資料（總是獲取，因為開銷小）
         async def get_basic_stats():
             from sqlalchemy import select, func
-            res = await db.execute(select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id))
-            total_users = res.scalar() or 0
-            return {"total_users": total_users}
+            async with AsyncSessionLocal() as task_db:
+                res = await task_db.execute(select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id))
+                total_users = res.scalar() or 0
+                return {"total_users": total_users}
         
         # 邏輯模板查詢
         async def get_logic_templates():
@@ -100,12 +103,13 @@ async def get_bot_dashboard(
                 return None
                 
             from sqlalchemy import select
-            res_lt = await db.execute(
-                select(LogicTemplate.id, LogicTemplate.name, LogicTemplate.description, LogicTemplate.is_active, LogicTemplate.created_at, LogicTemplate.updated_at)
-                .where(LogicTemplate.bot_id == bot_id)
-                .order_by(LogicTemplate.is_active.desc(), LogicTemplate.updated_at.desc())
-            )
-            logic_templates = res_lt.all()
+            async with AsyncSessionLocal() as task_db:
+                res_lt = await task_db.execute(
+                    select(LogicTemplate.id, LogicTemplate.name, LogicTemplate.description, LogicTemplate.is_active, LogicTemplate.created_at, LogicTemplate.updated_at)
+                    .where(LogicTemplate.bot_id == bot_id)
+                    .order_by(LogicTemplate.is_active.desc(), LogicTemplate.updated_at.desc())
+                )
+                logic_templates = res_lt.all()
             
             return [
                 {
@@ -118,12 +122,16 @@ async def get_bot_dashboard(
                 }
                 for template in logic_templates
             ]
+
+        async def get_analytics():
+            async with AsyncSessionLocal() as task_db:
+                return await _get_analytics_data(bot_id, period, task_db)
         
         # 建立並行任務
         tasks = {
             "basic_stats": get_basic_stats(),
             "logic_templates": get_logic_templates() if include_logic else None,
-            "analytics": _get_analytics_data(bot_id, period, db) if include_analytics else None,
+            "analytics": get_analytics() if include_analytics else None,
             "webhook_status": _get_webhook_status(bot) if include_webhook else None
         }
         
@@ -165,7 +173,7 @@ async def get_bot_dashboard(
     ttl=BOT_ANALYTICS_TTL,
     l1_ttl=300,   # L1 快取 5 分鐘
     l2_ttl=900,   # L2 快取 15 分鐘
-    use_args_in_key=True
+    key_generator=lambda bot_id, period, db: f"analytics:{bot_id}:{period}"
 )
 async def _get_analytics_data(bot_id: str, period: str, db: AsyncSession) -> Dict[str, Any]:
     """獲取分析資料"""
@@ -318,34 +326,32 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
     try:
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
         webhook_url = LineBotService.build_webhook_endpoint(str(bot.id))
-        auto_bind_result = await line_bot_service.ensure_webhook_endpoint(webhook_url)
-        if not auto_bind_result.get("success"):
-            logger.warning(
-                "Dashboard webhook auto-bind failed: bot_id=%s error=%s",
-                bot.id,
-                auto_bind_result.get("error"),
-            )
+        auto_bind_result = None
+        if settings.AUTO_BIND_WEBHOOK_ON_STATUS:
+            auto_bind_result = await line_bot_service.ensure_webhook_endpoint(webhook_url)
+            if not auto_bind_result.get("success"):
+                logger.warning(
+                    "Dashboard webhook auto-bind failed: bot_id=%s error=%s",
+                    bot.id,
+                    auto_bind_result.get("error"),
+                )
         
-        # 使用 asyncio.gather 並行執行 API 檢查 - 效能優化
+        # 使用 asyncio.gather 並行執行 API 檢查；避免 async_check_connection 重複呼叫 bot/info。
         check_tasks = [
-            line_bot_service.async_check_connection(),
             line_bot_service.async_get_bot_info(),
             line_bot_service.async_check_webhook_endpoint()
         ]
         
         # 並行執行所有檢查，顯著提升效能
-        line_api_accessible, bot_info, webhook_endpoint_info = await asyncio.gather(
+        bot_info, webhook_endpoint_info = await asyncio.gather(
             *check_tasks, return_exceptions=True
         )
-        
-        # 處理異常結果
-        if isinstance(line_api_accessible, Exception):
-            logger.error(f"檢查連接失敗: {line_api_accessible}")
-            line_api_accessible = False
-        
+
         if isinstance(bot_info, Exception):
             logger.error(f"獲取Bot資訊失敗: {bot_info}")
             bot_info = None
+
+        line_api_accessible = bool(bot_info and not bot_info.get("error"))
         
         if isinstance(webhook_endpoint_info, Exception):
             logger.error(f"檢查Webhook失敗: {webhook_endpoint_info}")
@@ -384,9 +390,9 @@ async def _get_webhook_status(bot: Bot) -> Dict[str, Any]:
         # 如果成功獲取 Bot 資訊，添加 channel_id
         if bot_info and bot_info.get("channel_id"):
             result["channel_id"] = bot_info["channel_id"]
-            logger.info(f"Bot {bot.id} - 異步獲取到 Channel ID: {bot_info['channel_id']}")
+            logger.debug(f"Bot {bot.id} - 異步獲取到 Channel ID: {bot_info['channel_id']}")
         else:
-            logger.warning(f"Bot {bot.id} - 未能異步獲取到 Channel ID, bot_info: {bot_info}")
+            logger.debug(f"Bot {bot.id} - 未能異步獲取到 Channel ID, bot_info: {bot_info}")
         
         return result
         
