@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
+import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import AppShell from "@/components/layout/AppShell";
@@ -104,19 +105,19 @@ const LegalPage = () => {
                   本頁為平台目前的使用與資料處理摘要，後續可依正式政策更新。
                 </div>
 
-                <div className="grid gap-4">
-                  {sections.map((section) => (
-                    <section
-                      key={section.title}
-                      className="rounded-[16px] border border-slate-200 bg-white p-5"
-                    >
-                      <h2 className="mb-2 text-lg font-semibold text-slate-950">
-                        {section.title}
-                      </h2>
-                  <p className="text-sm leading-relaxed text-[var(--bc-ink-2)] sm:text-base">
-                        {section.body}
-                      </p>
-                    </section>
+                <div>
+                  {sections.map((section, index) => (
+                    <div key={section.title}>
+                      {index > 0 && <Separator className="my-6" />}
+                      <section>
+                        <h2 className="mb-2 text-lg font-semibold text-slate-950">
+                          {section.title}
+                        </h2>
+                        <p className="text-sm leading-relaxed text-[var(--bc-ink-2)] sm:text-base">
+                          {section.body}
+                        </p>
+                      </section>
+                    </div>
                   ))}
                 </div>
 

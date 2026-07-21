@@ -8,6 +8,16 @@ import SecuritySection from "../components/SecuritySection";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AlertTriangle } from "lucide-react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -256,44 +266,43 @@ const Setting: React.FC = () => {
       </div>
 
       {/* 帳號刪除確認對話框 */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
-          <div className="app-panel mx-4 max-w-md p-6">
-            <div className="flex items-center gap-3 mb-4">
+      <AlertDialog
+        open={showConfirmModal}
+        onOpenChange={(open) => setShowConfirmModal(open)}
+      >
+        <AlertDialogContent className="border-white/80 bg-white sm:rounded-[12px]">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
               <AlertTriangle className="w-6 h-6 text-red-600" />
-              <h3 className="text-lg font-semibold text-red-600">確認刪除帳號</h3>
+              <AlertDialogTitle className="text-red-600">
+                確認刪除帳號
+              </AlertDialogTitle>
             </div>
-
-            <p className="mb-6 text-sm leading-6 text-slate-600">
-              確定要刪除帳號嗎？此操作會永久刪除你的資料，包括：
-            </p>
-
-            <ul className="mb-6 space-y-1 text-sm leading-6 text-slate-600">
-              <li>• 個人資料和設定</li>
-              <li>• 建立的所有 Bot</li>
-              <li>• 對話紀錄和互動資料</li>
-              <li>• 無法復原的永久刪除</li>
-            </ul>
-
-            <div className="flex gap-3">
-              <Button
-                variant="destructive"
-                onClick={confirmDeleteAccount}
-                className="flex-1"
-              >
-                確定刪除
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowConfirmModal(false)}
-                className="flex-1"
-              >
-                取消
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            <AlertDialogDescription asChild>
+              <div className="text-sm leading-6 text-slate-600">
+                <p>確定要刪除帳號嗎？此操作會永久刪除你的資料，包括：</p>
+                <ul className="mt-3 space-y-1">
+                  <li>• 個人資料和設定</li>
+                  <li>• 建立的所有 Bot</li>
+                  <li>• 對話紀錄和互動資料</li>
+                  <li>• 無法復原的永久刪除</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowConfirmModal(false)}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteAccount}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              確定刪除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 };

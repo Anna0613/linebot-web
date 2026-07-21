@@ -1,4 +1,7 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode } from 'react';
+import { motion } from 'framer-motion';
+
+import { pageTransition } from '@/lib/motion';
 
 interface PageContentWrapperProps {
   children: ReactNode;
@@ -7,8 +10,7 @@ interface PageContentWrapperProps {
 
 /**
  * 頁面內容包裝器
- * 為頁面主要內容區域提供淡入動畫效果，不影響 Navbar 和 Footer
- * 使用 CSS 動畫而非 framer-motion，避免導航欄閃爍
+ * 為頁面主要內容區域提供進場動畫，不包 Navbar/Footer，避免導航欄跟著淡入
  *
  * 使用方式：
  * ```tsx
@@ -22,31 +24,16 @@ interface PageContentWrapperProps {
  * ```
  */
 export const PageContentWrapper = ({ children, className = '' }: PageContentWrapperProps) => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    // 組件掛載後觸發淡入動畫
-    setIsVisible(false);
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 10);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
-    <div
-      className={`transition-opacity duration-300 ease-in-out ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      } ${className}`}
-      style={{
-        willChange: 'opacity',
-      }}
+    <motion.div
+      className={className}
+      variants={pageTransition}
+      initial="initial"
+      animate="animate"
     >
       {children}
-    </div>
+    </motion.div>
   );
 };
 
 export default PageContentWrapper;
-

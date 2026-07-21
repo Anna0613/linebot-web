@@ -144,7 +144,7 @@ const ForgetPassword = () => {
       <div className="mt-4 text-center text-sm">
         <Link
           to="/login"
-          className="font-medium text-[#16a34a] transition-colors hover:text-[#15803d] hover:underline"
+          className="font-medium text-[var(--bc-ink)] transition-colors hover:text-[var(--bc-accent-ink)] hover:underline"
         >
           返回登入
         </Link>

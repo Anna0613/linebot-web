@@ -12,6 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
+import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import AppShell from "@/components/layout/AppShell";
@@ -170,14 +171,14 @@ const HowToEstablish = () => {
                   </div>
                 </div>
 
-                <div className="mt-8 grid gap-4 flex-1 content-start">
-                  {activeStep.checklist.map((item) => (
-                    <div
-                      key={item}
-                      className="flex items-center gap-3 rounded-[16px] border border-slate-200 bg-white px-5 py-4 text-base text-slate-700 shadow-sm"
-                    >
-                      <CheckCircle2 className="h-5 w-5 text-[#16a34a]" />
-                      {item}
+                <div className="mt-8 flex-1">
+                  {activeStep.checklist.map((item, index) => (
+                    <div key={item}>
+                      {index > 0 && <Separator />}
+                      <div className="flex items-center gap-3 rounded-[10px] px-2 py-4 text-base text-slate-700 transition-colors hover:bg-emerald-50/60">
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-[#16a34a]" />
+                        {item}
+                      </div>
                     </div>
                   ))}
                 </div>

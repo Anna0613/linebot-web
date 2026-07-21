@@ -191,7 +191,7 @@ const AppSidebar = ({
 
       <GlobalBotSwitcher
         className="w-full"
-        triggerClassName="border-[var(--bc-line-2)] bg-white text-[var(--bc-ink)] rounded-[12px]"
+        triggerClassName="border-border bg-card text-[var(--bc-ink)] rounded-lg"
       />
 
       <nav className="mt-7 space-y-1">
@@ -205,10 +205,10 @@ const AppSidebar = ({
               to={item.href}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 rounded-[12px] px-4 py-3 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-[var(--bc-accent-soft)] text-[var(--bc-accent-ink)] shadow-sm"
-                  : "text-[var(--bc-ink-2)] hover:bg-white/70 hover:text-[var(--bc-ink)]"
+                  : "text-[var(--bc-ink-2)] hover:bg-card/70 hover:text-[var(--bc-ink)]"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -218,8 +218,8 @@ const AppSidebar = ({
         })}
       </nav>
 
-      <div className="mt-auto rounded-[12px] border border-[var(--bc-line-2)] bg-gradient-to-br from-[var(--bc-accent-soft)] via-white to-[var(--bc-hi-soft)] p-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-white shadow-sm">
+      <div className="mt-auto rounded-lg border border-[var(--bc-line-2)] bg-gradient-to-br from-[var(--bc-accent-soft)] via-white to-[var(--bc-hi-soft)] p-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-card shadow-sm">
           <BotCraftMark className="h-6 w-6" />
         </div>
         <p className="mt-3 text-sm font-semibold text-[var(--bc-ink)]">
@@ -367,7 +367,7 @@ const AppTopbar = ({
             variant="ghost"
             size="icon"
             onClick={onOpenSidebar}
-            className="h-10 w-10 rounded-[12px] text-[var(--bc-ink-2)] hover:bg-white/80 lg:hidden"
+            className="h-10 w-10 rounded-lg text-[var(--bc-ink-2)] hover:bg-card/80 lg:hidden"
             aria-label={copy.openNavigation}
           >
             <Menu className="h-5 w-5" />
@@ -396,19 +396,19 @@ const AppTopbar = ({
             type="button"
             variant="outline"
             size="icon"
-            className="h-10 w-10 rounded-[12px] border-[var(--bc-line-2)] bg-white/70 text-[var(--bc-ink-2)] shadow-sm hover:bg-white hover:text-[var(--bc-ink)]"
+            className="h-10 w-10 rounded-lg border-border bg-card/70 text-[var(--bc-ink-2)] shadow-sm hover:bg-card hover:text-[var(--bc-ink)]"
             aria-label={copy.notifications}
           >
             <Bell className="h-4 w-4" />
           </Button>
-          <div className="flex h-10 items-center rounded-[12px] border border-[var(--bc-line-2)] bg-white/70 px-2 shadow-sm">
+          <div className="flex h-10 items-center rounded-lg border border-border bg-card/70 px-2 shadow-sm">
             <LanguageToggle className="h-8 min-w-8 text-sm" />
           </div>
           <Button
             type="button"
             variant="outline"
             onClick={handleLogout}
-            className="h-10 rounded-[12px] border-[var(--bc-line)] bg-transparent px-3 text-sm font-medium text-[var(--bc-ink-2)] shadow-none hover:border-[var(--bc-ink)] hover:bg-transparent hover:text-[var(--bc-ink)]"
+            className="h-10 rounded-lg border-[var(--bc-line)] bg-transparent px-3 text-sm font-medium text-[var(--bc-ink-2)] shadow-none hover:border-[var(--bc-ink)] hover:bg-transparent hover:text-[var(--bc-ink)]"
             aria-label={copy.logout}
           >
             <LogOut className="h-4 w-4 xl:mr-2" />
@@ -487,7 +487,7 @@ const AppShell = ({
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(false)}
-            className="absolute right-4 top-4 h-10 w-10 rounded-[12px] bg-white/90 text-[var(--bc-ink-2)] shadow-lg"
+            className="absolute right-4 top-4 h-10 w-10 rounded-lg bg-card/90 text-[var(--bc-ink-2)] shadow-lg"
             aria-label={copy.closeNavigation}
           >
             <X className="h-5 w-5" />

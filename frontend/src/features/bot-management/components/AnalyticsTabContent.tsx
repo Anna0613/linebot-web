@@ -1,8 +1,6 @@
 import React, { useMemo } from "react";
 import {
   Activity,
-  ArrowDownRight,
-  ArrowUpRight,
   Bot as BotIcon,
   MessageSquare,
   RefreshCw,
@@ -230,58 +228,6 @@ const getActivityIcon = (type: ActivityItem["type"]): IconComponent => {
   }
 };
 
-const KpiCard = ({
-  icon: Icon,
-  title,
-  value,
-  trend,
-  comparison,
-  accentClass,
-  negative = false,
-}: {
-  icon: IconComponent;
-  title: string;
-  value: string;
-  trend: number;
-  comparison: string;
-  accentClass: string;
-  negative?: boolean;
-}) => {
-  const trendIsPositive = negative ? trend <= 0 : trend >= 0;
-  const TrendIcon = trendIsPositive ? ArrowUpRight : ArrowDownRight;
-
-  return (
-    <div className="rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
-      <div className="flex items-start justify-between gap-3">
-        <span
-          className={cn(
-            "flex h-11 w-11 items-center justify-center rounded-[14px]",
-            accentClass
-          )}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
-            trendIsPositive
-              ? "bg-emerald-50 text-emerald-700"
-              : "bg-rose-50 text-rose-700"
-          )}
-        >
-          <TrendIcon className="h-3.5 w-3.5" />
-          {formatPercent(Math.abs(trend))}%
-        </span>
-      </div>
-      <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-[-0.01em] text-slate-950">
-        {value}
-      </p>
-      <p className="mt-2 text-xs font-medium text-slate-400">{comparison}</p>
-    </div>
-  );
-};
-
 const AnalyticsLoading = () => (
   <div className="rounded-[16px] border border-white/70 bg-white/75 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
     <Loader text="載入分析資料..." />
@@ -353,41 +299,54 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
     return <AnalyticsLoading />;
   }
 
+  const kpis = [
+    {
+      icon: MessageSquare,
+      title: copy.kpis.totalMessages,
+      value: formatNumber(analytics?.totalMessages || 0),
+      comparison: copy.comparisons.messages,
+    },
+    {
+      icon: Users,
+      title: copy.kpis.activeUsers,
+      value: formatNumber(analytics?.activeUsers || 0),
+      comparison: copy.comparisons.activeUsers,
+    },
+    {
+      icon: TrendingUp,
+      title: copy.kpis.retentionRate,
+      value: `${formatPercent(analytics?.userRetention || 0)}%`,
+      comparison: copy.comparisons.retention,
+    },
+    {
+      icon: UserMinus,
+      title: copy.kpis.peakTime,
+      value: formatNumber(lineFollowers),
+      comparison: copy.comparisons.peak,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          icon={MessageSquare}
-          title={copy.kpis.totalMessages}
-          value={formatNumber(analytics?.totalMessages || 0)}
-          trend={0}
-          comparison={copy.comparisons.messages}
-          accentClass="bg-emerald-100 text-emerald-700"
-        />
-        <KpiCard
-          icon={Users}
-          title={copy.kpis.activeUsers}
-          value={formatNumber(analytics?.activeUsers || 0)}
-          trend={0}
-          comparison={copy.comparisons.activeUsers}
-          accentClass="bg-sky-100 text-sky-700"
-        />
-        <KpiCard
-          icon={TrendingUp}
-          title={copy.kpis.retentionRate}
-          value={`${formatPercent(analytics?.userRetention || 0)}%`}
-          trend={0}
-          comparison={copy.comparisons.retention}
-          accentClass="bg-violet-100 text-violet-700"
-        />
-        <KpiCard
-          icon={UserMinus}
-          title={copy.kpis.peakTime}
-          value={formatNumber(lineFollowers)}
-          trend={0}
-          comparison={copy.comparisons.peak}
-          accentClass="bg-amber-100 text-amber-700"
-        />
+      <div className="grid divide-y divide-[var(--bc-line-2)] rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl sm:grid-cols-2 sm:divide-y-0 sm:divide-x xl:grid-cols-4">
+        {kpis.map((kpi) => (
+          <div key={kpi.title} className="flex items-start gap-3 p-5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[var(--bc-accent-soft)] text-[var(--bc-accent-ink)]">
+              <kpi.icon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-[var(--bc-ink-3)]">
+                {kpi.title}
+              </p>
+              <p className="mt-1 text-2xl font-semibold tracking-[-0.01em] text-[var(--bc-ink)]">
+                {kpi.value}
+              </p>
+              <p className="mt-1 truncate text-xs font-medium text-[var(--bc-ink-3)]">
+                {kpi.comparison}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
@@ -537,30 +496,27 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
             </div>
           </div>
 
-          <div className="mt-5 space-y-3">
+          <div className="mt-5 divide-y divide-[var(--bc-line-2)]">
             {recentActivities.length ? (
               recentActivities.map((item) => {
                 const Icon = getActivityIcon(item.type);
 
                 return (
-                  <div
-                    key={item.id}
-                    className="flex gap-3 rounded-[16px] border border-white/70 bg-white/65 p-3"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-emerald-50 text-emerald-700">
+                  <div key={item.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--bc-accent-soft)] text-[var(--bc-accent-ink)]">
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-3">
-                        <p className="truncate text-sm font-semibold text-slate-900">
+                        <p className="truncate text-sm font-semibold text-[var(--bc-ink)]">
                           {item.title}
                         </p>
-                        <span className="shrink-0 text-xs font-medium text-slate-400">
+                        <span className="shrink-0 text-xs font-medium text-[var(--bc-ink-3)]">
                           {formatTimestamp(item.timestamp, language)}
                         </span>
                       </div>
                       {item.description && (
-                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--bc-ink-2)]">
                           {item.description}
                         </p>
                       )}
@@ -604,8 +560,8 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                   <div
                     key={item.hour}
                     className={cn(
-                      "flex h-16 flex-col justify-between rounded-[14px] border border-white/70 p-3 shadow-sm",
-                      intensity > 0.58 ? "text-white" : "text-slate-700"
+                      "flex h-16 flex-col justify-between rounded-[12px] p-3",
+                      intensity > 0.58 ? "text-white" : "text-[var(--bc-ink-2)]"
                     )}
                     style={{
                       backgroundColor: `rgba(22, 163, 74, ${0.08 + intensity * 0.74})`,
@@ -669,7 +625,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
               )}
             </div>
 
-            <div className="space-y-3">
+            <div className="divide-y divide-[var(--bc-line-2)]">
               {usageData.length ? (
                 usageData.map((item) => {
                   const percent = usageTotal
@@ -679,23 +635,23 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                   return (
                     <div
                       key={item.feature}
-                      className="flex items-center justify-between gap-3 rounded-[14px] bg-white/60 px-3 py-2"
+                      className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
                     >
-                      <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-slate-600">
+                      <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-[var(--bc-ink-2)]">
                         <span
                           className="h-2.5 w-2.5 shrink-0 rounded-full"
                           style={{ backgroundColor: item.color }}
                         />
                         <span className="truncate">{item.feature}</span>
                       </span>
-                      <span className="text-sm font-semibold text-slate-950">
+                      <span className="text-sm font-semibold text-[var(--bc-ink)]">
                         {formatPercent(percent)}%
                       </span>
                     </div>
                   );
                 })
               ) : (
-                <div className="rounded-[14px] bg-white/60 px-3 py-8 text-center text-sm text-slate-400">
+                <div className="px-3 py-8 text-center text-sm text-[var(--bc-ink-3)]">
                   {copy.usageEmpty}
                 </div>
               )}
