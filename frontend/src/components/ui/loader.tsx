@@ -28,7 +28,7 @@ export function Loader({
     <span
       aria-hidden="true"
       className={cn(
-        "inline-block shrink-0 animate-spin rounded-full border-emerald-100 border-t-[#16a34a]",
+        "inline-block shrink-0 animate-spin rounded-full border-[var(--bc-line-2)] border-t-[var(--bc-ink)]",
         spinnerSizeClass[size]
       )}
     />
@@ -45,7 +45,7 @@ export function Loader({
         <div className="flex flex-col items-center gap-3">
           {spinner}
           {text && (
-            <span className="text-sm font-medium text-[#166534]">{text}</span>
+            <span className="text-sm font-medium text-[var(--bc-ink-2)]">{text}</span>
           )}
           <span className="sr-only">{accessibleText}</span>
         </div>
@@ -61,7 +61,7 @@ export function Loader({
       {...props}
     >
       {spinner}
-      {text && <span className="text-sm font-medium text-[#166534]">{text}</span>}
+      {text && <span className="text-sm font-medium text-[var(--bc-ink-2)]">{text}</span>}
       <span className="sr-only">{accessibleText}</span>
     </span>
   );

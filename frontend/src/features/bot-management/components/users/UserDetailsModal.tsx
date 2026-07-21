@@ -224,12 +224,12 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ user, isOpen, onClo
           </div>
 
           {/* 互動頻率統計 */}
-          <div className="bg-blue-50 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-sm text-blue-700 mb-2">
+          <div className="bg-[var(--bc-accent-soft)] rounded-lg p-3">
+            <div className="flex items-center gap-2 text-sm text-[var(--bc-accent-ink)] mb-2">
               <MessageSquare className="h-4 w-4" />
               <span>互動統計</span>
             </div>
-            <div className="text-xs text-blue-600">
+            <div className="text-xs text-[var(--bc-accent-ink)]">
               {hasInteractionDates && daysFromFirst
                 ? `平均每天 ${(parseInt(user.interaction_count) / daysFromFirst).toFixed(1)} 次互動`
                 : "尚無足夠的互動時間資料。"}

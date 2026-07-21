@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -34,11 +33,6 @@ const EmailVerificationPending = lazy(
 const ResetPassword = lazy(() => import("./features/auth/pages/ResetPassword"));
 
 // 低優先級 - Bot 管理功能（需要登入後才能訪問）
-const BotEditorPage = lazy(() =>
-  import("./features/bots/pages/BotEditorPage").then((module) => ({
-    default: module.default,
-  }))
-);
 const VisualBotEditorPage = lazy(() =>
   import("./features/visual-editor/pages/VisualBotEditorPage").then(
     (module) => ({ default: module.default })
@@ -95,7 +89,6 @@ const AnimatedRoutes = () => {
         path="/bots/create"
         element={<Navigate to="/dashboard?createBot=1" replace />}
       />
-      <Route path="/bots/editor" element={<BotEditorPage />} />
       <Route path="/bots/visual-editor" element={<VisualBotEditorPage />} />
       <Route path="/bots/management" element={<BotManagementPage />} />
       <Route path="/bots/user-management" element={<UserManagementPage />} />
@@ -176,7 +169,6 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Sonner />
         <SelectedBotProvider>
           <BrowserRouter
             future={{

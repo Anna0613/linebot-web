@@ -85,9 +85,9 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
 
   if (!selectedBotId) {
     return (
-      <Card>
+      <Card className="app-panel border-0">
         <CardContent className="text-center py-8">
-          <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <Bot className="h-12 w-12 text-[var(--bc-ink-3)] mx-auto mb-4" />
           <p className="text-muted-foreground">請先選擇一個 Bot 來查看好友</p>
         </CardContent>
       </Card>
@@ -97,7 +97,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-1 gap-4 lg:gap-8 equal-columns lg:min-h-[calc(100vh-10rem)]">
       <div className="flex flex-col h-full min-h-0">
-        <Card className="flex-1 flex flex-col">
+        <Card className="app-panel border-0 flex-1 flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -165,10 +165,10 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
                 filteredUsers.map((user) => (
                   <div
                     key={user.id}
-                    className={`p-4 border rounded-lg transition-colors hover:bg-secondary ${
+                    className={`rounded-lg p-3 transition-colors ${
                       selectedUser?.id === user.id
-                        ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10"
-                        : ""
+                        ? "bg-[var(--bc-accent-soft)] text-[var(--bc-accent-ink)]"
+                        : "hover:bg-[var(--bc-bg-2)]"
                     }`}
                   >
                     <div className="flex items-center gap-3">

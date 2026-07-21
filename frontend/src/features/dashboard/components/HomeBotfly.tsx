@@ -7,6 +7,7 @@ import {
   Ban,
   Bot as BotIcon,
   KeyRound,
+  Pencil,
   LayoutDashboard,
   MessageSquare,
   MoreHorizontal,
@@ -62,10 +63,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { motion } from "framer-motion";
 import { Loader } from "@/components/ui/loader";
+import { Skeleton } from "@/components/ui/skeleton";
+import { listItem, listStagger } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/services/UnifiedApiClient";
 import BotCreationForm from "@/features/bots/components/BotCreationForm";
+import BotEditModal from "@/features/bots/components/BotEditModal";
 import { useBotManagement } from "@/features/bot-management/hooks/useBotManagement";
 import { useSelectedBot } from "@/features/bots/context/SelectedBotContext";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
@@ -502,6 +507,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [actionBotId, setActionBotId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<BotType | null>(null);
+  const [editTarget, setEditTarget] = useState<BotType | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary>(
     initialAnalyticsSummary
@@ -866,10 +872,19 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
           )}
 
           {isLoading ? (
-            <div className="rounded-[12px] border border-white/70 bg-white/70 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)]">
-              <Loader
-                text={language === "zh" ? "載入 Bot..." : "Loading bots..."}
-              />
+            <div className="space-y-3">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 rounded-[12px] border border-white/70 bg-white/70 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.07)]"
+                >
+                  <Skeleton className="h-12 w-12 shrink-0 rounded-[12px]" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-1/4" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredBots.length === 0 ? (
             <div className="rounded-[12px] border border-dashed border-emerald-200 bg-white/60 px-6 py-12 text-center">
@@ -896,7 +911,12 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                 <span>{copy.enabled}</span>
                 <span className="sr-only">{copy.actions}</span>
               </div>
-              <div className="divide-y divide-slate-100/80">
+              <motion.div
+                className="divide-y divide-slate-100/80"
+                variants={listStagger}
+                initial="initial"
+                animate="animate"
+              >
                 {filteredBots.map((bot: BotType) => {
                   const isActive = bot.is_active !== false;
                   const channelConfigured = Boolean(
@@ -904,8 +924,9 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                   );
 
                   return (
-                    <div
+                    <motion.div
                       key={bot.id}
+                      variants={listItem}
                       className="relative grid gap-4 px-4 py-4 transition-colors hover:bg-white/70 md:grid-cols-[minmax(220px,1.6fr)_minmax(140px,0.75fr)_minmax(140px,0.75fr)_minmax(120px,0.65fr)_minmax(120px,0.65fr)_auto] md:items-center md:px-5"
                     >
                       <div className="flex min-w-0 items-start gap-4 pr-12 md:pr-0">
@@ -928,25 +949,25 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                         </div>
                       </div>
 
-                      <dl className="grid grid-cols-2 gap-3 text-sm md:contents">
-                        <div className="rounded-[12px] bg-slate-50/80 p-3 md:bg-transparent md:p-0">
-                          <dt className="text-xs text-slate-500 md:hidden">
+                      <dl className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm md:contents">
+                        <div className="flex items-baseline gap-1.5 md:block">
+                          <dt className="text-xs text-[var(--bc-ink-3)] md:hidden">
                             {copy.created}
                           </dt>
-                          <dd className="mt-1 font-medium text-slate-800 md:mt-0">
+                          <dd className="font-medium text-[var(--bc-ink-2)] md:mt-0">
                             {formatDate(bot.created_at)}
                           </dd>
                         </div>
-                        <div className="rounded-[12px] bg-slate-50/80 p-3 md:bg-transparent md:p-0">
-                          <dt className="text-xs text-slate-500 md:hidden">
+                        <div className="flex items-baseline gap-1.5 md:block">
+                          <dt className="text-xs text-[var(--bc-ink-3)] md:hidden">
                             {copy.updated}
                           </dt>
-                          <dd className="mt-1 font-medium text-slate-800 md:mt-0">
+                          <dd className="font-medium text-[var(--bc-ink-2)] md:mt-0">
                             {formatDate(bot.updated_at)}
                           </dd>
                         </div>
-                        <div className="rounded-[12px] bg-slate-50/80 p-3 md:bg-transparent md:p-0">
-                          <dt className="text-xs text-slate-500 md:hidden">
+                        <div className="md:block">
+                          <dt className="text-xs text-[var(--bc-ink-3)] md:hidden">
                             {copy.status}
                           </dt>
                           <dd className="mt-1 md:mt-0">
@@ -959,8 +980,8 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                             />
                           </dd>
                         </div>
-                        <div className="rounded-[12px] bg-slate-50/80 p-3 md:bg-transparent md:p-0">
-                          <dt className="text-xs text-slate-500 md:hidden">
+                        <div className="md:block">
+                          <dt className="text-xs text-[var(--bc-ink-3)] md:hidden">
                             {copy.enabled}
                           </dt>
                           <dd className="mt-1 md:mt-0">
@@ -999,6 +1020,10 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => setEditTarget(bot)}>
+                              <Pencil className="h-4 w-4" />
+                              {copy.edit}
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-rose-600 focus:bg-rose-50 focus:text-rose-700"
                               onSelect={() => setDeleteTarget(bot)}
@@ -1009,10 +1034,10 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
             </div>
           )}
         </section>
@@ -1215,6 +1240,19 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {editTarget && (
+        <BotEditModal
+          isOpen={Boolean(editTarget)}
+          onClose={() => setEditTarget(null)}
+          botId={editTarget.id}
+          editType="all"
+          onBotUpdated={() => {
+            setEditTarget(null);
+            void fetchBots();
+          }}
+        />
+      )}
     </AppShell>
   );
 };

@@ -63,7 +63,7 @@ const DashboardFooter = () => {
                 </li>
                 <li>
                   <Link
-                    to="/bots/editor"
+                    to="/bots/visual-editor"
                     className="text-muted-foreground hover:text-foreground transition-colors text-sm block py-1"
                   >
                     開始設計LINE Bot

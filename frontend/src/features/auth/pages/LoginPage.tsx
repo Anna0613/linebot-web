@@ -176,7 +176,7 @@ const LoginPage = () => {
     <AuthFormLayout title="登入工作台" description="回到你的 LINE Bot 工作台，繼續建立與調整 Bot。">
       <form ref={formRef} onSubmit={noopSubmit} className="space-y-4" noValidate>
         <div className="space-y-2">
-          <Label htmlFor="username" className="text-slate-700">帳號</Label>
+          <Label htmlFor="username" className="text-[var(--bc-ink)]">帳號</Label>
           <Input
             id="username"
             name="username"
@@ -191,7 +191,7 @@ const LoginPage = () => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-slate-700">密碼</Label>
+          <Label htmlFor="password" className="text-[var(--bc-ink)]">密碼</Label>
 
           <div className="relative">
             <Input
@@ -208,7 +208,7 @@ const LoginPage = () => {
 
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 select-none text-slate-400 transition-colors hover:text-slate-700"
+              className="absolute right-3 top-1/2 -translate-y-1/2 select-none text-[var(--bc-ink-3)] transition-colors hover:text-[var(--bc-ink)]"
               onMouseDown={() => setShowPassword(true)}
               onMouseUp={() => setShowPassword(false)}
               onMouseLeave={() => setShowPassword(false)}
@@ -231,13 +231,13 @@ const LoginPage = () => {
               onCheckedChange={(checked) => setRememberMe(checked as boolean)}
               disabled={loading}
             />
-            <Label htmlFor="remember" className="text-sm text-slate-600">
+            <Label htmlFor="remember" className="text-sm text-[var(--bc-ink-2)]">
               記住我
             </Label>
           </div>
           <Link
             to="/forgetthepassword"
-            className="text-sm font-medium text-[#16a34a] hover:text-[#15803d] hover:underline"
+            className="text-sm font-medium text-[var(--bc-ink)] hover:text-[var(--bc-accent-ink)] hover:underline"
           >
             忘記密碼？
           </Link>
@@ -254,7 +254,7 @@ const LoginPage = () => {
 
       <div className="flex items-center my-4">
         <Separator className="flex-1" />
-        <span className="px-3 text-sm text-slate-500">或</span>
+        <span className="px-3 text-sm text-[var(--bc-ink-3)]">或</span>
         <Separator className="flex-1" />
       </div>
 
@@ -262,9 +262,9 @@ const LoginPage = () => {
         <LINELoginButton onLogin={handleLINELoginWithRememberMe} disabled={loading} />
       </div>
 
-      <p className="mt-4 text-center text-sm text-slate-500">
+      <p className="mt-4 text-center text-sm text-[var(--bc-ink-3)]">
         還沒有帳號？{" "}
-        <Link to="/register" className="font-medium text-[#16a34a] hover:text-[#15803d] hover:underline">
+        <Link to="/register" className="font-medium text-[var(--bc-ink)] hover:text-[var(--bc-accent-ink)] hover:underline">
           建立帳號
         </Link>
       </p>

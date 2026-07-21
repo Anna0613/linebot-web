@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 // import { Loader } from "@/components/ui/loader";
 import AvatarUpload from "./AvatarUpload";
 import { useToast } from "@/hooks/use-toast";
+import { User as UserIcon } from "lucide-react";
 
 interface User {
   line_id?: string;
@@ -80,7 +81,10 @@ const UserProfileSection = ({
 
   return (
     <div className="app-panel mb-6 p-6">
-      <h2 className="mb-4 text-xl font-semibold text-slate-950">個人資料</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <UserIcon className="h-5 w-5 text-emerald-700" />
+        <h2 className="text-xl font-semibold text-slate-950">個人資料</h2>
+      </div>
 
       {/* 頭像區塊 */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">

@@ -414,7 +414,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
                 className={
                   `relative grid grid-cols-12 gap-2 rounded-lg p-3 pr-12 transition-all border ` +
                   (selectedAreaIndex === idx
-                    ? 'ring-2 ring-blue-500 border-blue-300 shadow-sm bg-blue-50/40'
+                    ? 'ring-2 ring-accent border-accent shadow-sm bg-accent/40'
                     : 'border-border')
                 }
                 onClick={() => {

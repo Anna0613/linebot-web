@@ -668,10 +668,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
 
   if (!selectedUser) {
     return (
-      <Card className="flex flex-col h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[calc(100vh-10rem)] w-full">
+      <Card className="app-panel border-0 flex flex-col h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[calc(100vh-10rem)] w-full">
         <CardContent className="flex items-center justify-center flex-1">
           <div className="text-center">
-            <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <MessageSquare className="h-12 w-12 text-[var(--bc-ink-3)] mx-auto mb-4" />
             <p className="text-muted-foreground">請選擇一位好友開始聊天</p>
           </div>
         </CardContent>
@@ -680,7 +680,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
   }
 
   return (
-    <Card className="flex flex-col h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[calc(100vh-10rem)] w-full">
+    <Card className="app-panel border-0 flex flex-col h-[60vh] sm:h-[65vh] md:h-[70vh] lg:h-[calc(100vh-10rem)] w-full">
       {/* 聊天室頭部 */}
       <CardHeader className="pb-3 border-b flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -804,12 +804,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ botId, selectedUser, onClose }) =
             </div>
           ) : (!aiMode && chatHistory.length === 0) ? (
             <div className="text-center py-8">
-              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <MessageSquare className="h-12 w-12 text-[var(--bc-ink-3)] mx-auto mb-4" />
               <p className="text-muted-foreground">尚無對話記錄</p>
             </div>
           ) : (aiMode && aiMessages.length === 0) ? (
             <div className="text-center py-8">
-              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <MessageSquare className="h-12 w-12 text-[var(--bc-ink-3)] mx-auto mb-4" />
               <p className="text-muted-foreground">歡迎使用 AI 分析功能</p>
               <p className="text-sm text-muted-foreground mt-2">
                 請在下方輸入問題，AI 會根據這位好友的對話紀錄進行分析。

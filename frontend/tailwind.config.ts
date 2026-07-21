@@ -68,26 +68,12 @@ const config: Config = {
           light: "#00E05A",
           dark: "#00B849",
         },
-        web3: {
-          cyan: "hsl(var(--web3-cyan))",
-          purple: "hsl(var(--web3-purple))",
-          indigo: "hsl(var(--web3-indigo))",
-          pink: "hsl(var(--web3-pink))",
-          green: "hsl(var(--web3-green))",
-          orange: "hsl(var(--web3-orange))",
-          red: "hsl(var(--web3-red))",
-        },
-        neon: {
-          cyan: "hsl(var(--neon-cyan))",
-          purple: "hsl(var(--neon-purple))",
-          pink: "hsl(var(--neon-pink))",
-          green: "hsl(var(--neon-green))",
-        },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--bc-rad)",
+        md: "var(--bc-rad-sm)",
+        sm: "calc(var(--bc-rad-sm) - 2px)",
+        pill: "9999px",
       },
       keyframes: {
         "accordion-down": {
@@ -127,29 +113,6 @@ const config: Config = {
           "50%": { backgroundPosition: "100% 50%" },
           "100%": { backgroundPosition: "0% 50%" },
         },
-        "neon-pulse": {
-          "0%, 100%": {
-            boxShadow: "0 0 10px rgba(0, 212, 255, 0.3), 0 0 20px rgba(0, 212, 255, 0.2)"
-          },
-          "50%": {
-            boxShadow: "0 0 20px rgba(0, 212, 255, 0.6), 0 0 40px rgba(0, 212, 255, 0.4)"
-          },
-        },
-        "web3-glow": {
-          "0%, 100%": {
-            boxShadow: "0 0 20px rgba(0, 212, 255, 0.2), 0 0 40px rgba(168, 85, 247, 0.1)"
-          },
-          "50%": {
-            boxShadow: "0 0 40px rgba(0, 212, 255, 0.4), 0 0 80px rgba(168, 85, 247, 0.3)"
-          },
-        },
-        "cosmic-flow": {
-          "0%": { backgroundPosition: "0% 50%" },
-          "25%": { backgroundPosition: "100% 0%" },
-          "50%": { backgroundPosition: "100% 100%" },
-          "75%": { backgroundPosition: "0% 100%" },
-          "100%": { backgroundPosition: "0% 50%" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -161,9 +124,6 @@ const config: Config = {
         "slide-up": "slide-up 0.3s ease-out forwards",
         float: "float 6s ease-in-out infinite",
         "gradient-flow": "gradient-flow 10s ease infinite",
-        "neon-pulse": "neon-pulse 2s ease-in-out infinite",
-        "web3-glow": "web3-glow 3s ease-in-out infinite",
-        "cosmic-flow": "cosmic-flow 8s ease infinite",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
@@ -177,10 +137,6 @@ const config: Config = {
         "glass-sm": "0 4px 16px 0 rgba(31, 38, 135, 0.05)",
         "glass-lg": "0 16px 48px 0 rgba(31, 38, 135, 0.09)",
         neon: "0 0 10px rgba(6, 199, 85, 0.3), 0 0 20px rgba(6, 199, 85, 0.2), 0 0 30px rgba(6, 199, 85, 0.1)",
-        "neon-cyan": "0 0 10px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.3), 0 0 30px rgba(0, 212, 255, 0.2)",
-        "neon-purple": "0 0 10px rgba(168, 85, 247, 0.5), 0 0 20px rgba(168, 85, 247, 0.3), 0 0 30px rgba(168, 85, 247, 0.2)",
-        "neon-pink": "0 0 10px rgba(244, 114, 182, 0.5), 0 0 20px rgba(244, 114, 182, 0.3), 0 0 30px rgba(244, 114, 182, 0.2)",
-        "web3-glow": "0 0 20px rgba(0, 212, 255, 0.3), 0 0 40px rgba(168, 85, 247, 0.2), 0 0 60px rgba(244, 114, 182, 0.1)",
       },
     },
   },

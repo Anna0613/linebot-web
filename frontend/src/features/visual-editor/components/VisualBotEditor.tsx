@@ -734,7 +734,7 @@ export const VisualBotEditor: React.FC = () => {
       <DragDropProvider>
         <div className="app-page-surface flex h-screen flex-col overflow-hidden">
         {/* Header */}
-        <header className="border-b border-white/60 bg-white/65 px-4 py-3 backdrop-blur-2xl sm:px-6">
+        <header className="border-b border-[var(--bc-line-2)] bg-[color-mix(in_oklch,var(--bc-bg)_82%,transparent)] px-4 py-3 backdrop-blur-2xl sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-center gap-3">
               {/* 返回按鈕 */}
@@ -742,7 +742,7 @@ export const VisualBotEditor: React.FC = () => {
                 variant="ghost"
                 size="icon"
                 onClick={handleGoBack}
-                className="app-icon-button shrink-0 border-white/70"
+                className="app-icon-button shrink-0 border-[var(--bc-line-2)]"
                 title={returnLabel}
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -750,12 +750,12 @@ export const VisualBotEditor: React.FC = () => {
 
               <div className="hidden min-w-0 sm:block">
                 <p className="app-kicker">Visual editor</p>
-                <h1 className="truncate text-lg font-semibold text-slate-950">
+                <h1 className="truncate text-lg font-semibold text-[var(--bc-ink)]">
                   LINE Bot 視覺化編輯器
                 </h1>
               </div>
               <div className="hidden items-center gap-2 sm:flex">
-                <div className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-[#166534]">
+                <div className="app-soft-icon rounded-full px-3 py-1 text-xs font-semibold">
                   v{projectVersion}
                 </div>
                 <SaveStatusIndicator 
