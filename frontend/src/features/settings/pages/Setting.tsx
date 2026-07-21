@@ -214,7 +214,7 @@ const Setting: React.FC = () => {
     >
       <div className="py-8">
         {authError ? (
-          <Alert className="rounded-[16px] border-rose-100 bg-white/80 shadow-sm">
+          <Alert className="rounded-[16px] border-rose-100 bg-[var(--surface-panel)] shadow-sm">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>{authError}</AlertDescription>
           </Alert>
@@ -279,7 +279,7 @@ const Setting: React.FC = () => {
               </AlertDialogTitle>
             </div>
             <AlertDialogDescription asChild>
-              <div className="text-sm leading-6 text-slate-600">
+              <div className="text-sm leading-6 text-[var(--bc-ink-3)]">
                 <p>確定要刪除帳號嗎？此操作會永久刪除你的資料，包括：</p>
                 <ul className="mt-3 space-y-1">
                   <li>• 個人資料和設定</li>

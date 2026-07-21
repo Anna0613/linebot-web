@@ -232,16 +232,16 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
               onDrop={handleDrop}
               onClick={openFileSelector}
             >
-              <Upload className="mx-auto mb-2 h-8 w-8 text-slate-400" />
-              <p className="mb-1 text-sm text-slate-500">
+              <Upload className="mx-auto mb-2 h-8 w-8 text-[var(--bc-ink-3)]" />
+              <p className="mb-1 text-sm text-[var(--bc-ink-3)]">
                 點擊或拖曳圖片到此處上傳
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[var(--bc-ink-3)]">
                 支援 JPG、PNG、GIF，最大 {maxSize}KB
               </p>
 
               {isUploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/40 rounded-lg">
+                <div className="absolute inset-0 flex items-center justify-center bg-[var(--bc-bg)]/50 dark:bg-black/40 rounded-lg">
                   <Loader text="處理中..." />
                 </div>
               )}

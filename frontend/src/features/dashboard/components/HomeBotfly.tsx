@@ -1,10 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  Activity,
-  ArrowDownRight,
-  ArrowUpRight,
-  Ban,
   Bot as BotIcon,
   KeyRound,
   Pencil,
@@ -14,10 +10,8 @@ import {
   Plus,
   Power,
   Search,
-  Send,
   SlidersHorizontal,
   Trash2,
-  Users,
 } from "lucide-react";
 import {
   Area,
@@ -96,6 +90,7 @@ interface AnalyticsPayload {
   todayMessages?: number;
   weekMessages?: number;
   monthMessages?: number;
+  newFollowers?: number;
 }
 
 interface MessageStatPayload {
@@ -123,14 +118,11 @@ interface TrendPoint {
 
 interface AnalyticsSummary {
   messagesSent: number;
-  newUsers: number;
+  newFollowers: number;
   blockCount: number;
+  reach: number;
   engagementRate: number;
   totalSubscribers: number;
-  messagesChange: number;
-  usersChange: number;
-  blockChange: number;
-  engagementChange: number;
   chartData: TrendPoint[];
   isLoading: boolean;
 }
@@ -204,12 +196,25 @@ const dashboardCopy = {
     analyticsSubtitle:
       "A simple view of messages and friends across your bots.",
     botsTracked: "bots tracked",
+    heroLabel: "Messages this week",
+    heroUnit: "messages · last 7 days",
+    heroSource: "System conversation records (MongoDB) · updated hourly",
     metrics: {
       messagesSent: "Messages sent",
-      newUsers: "New users",
-      blockCount: "Block count",
+      reach: "Reachable friends",
+      newFollowers: "New friends this week",
+      blocked: "Unfollowed (total)",
       engagementRate: "Engagement rate",
     },
+    dataSource: {
+      lineInsight: "LINE Insight",
+      webhook: "Webhook",
+      autoTrack: "Auto-tracked",
+    },
+    reachSub: (rate: string, total: string) =>
+      `${rate}% reach rate · ${total} total friends`,
+    newFollowersSub: "Counted from first-follow timestamps",
+    blockedSub: (pct: string) => `${pct}% of total friends`,
     chartTitle: "Message trend",
     chartSubtitle: "Sent and received messages from every bot.",
     sevenDayView: "7 day view",
@@ -279,12 +284,25 @@ const dashboardCopy = {
     analyticsTitle: "最近互動",
     analyticsSubtitle: "用簡單的方式查看所有 Bot 的訊息與好友變化。",
     botsTracked: "個 Bot",
+    heroLabel: "本週訊息量",
+    heroUnit: "則 · 近 7 天",
+    heroSource: "系統對話紀錄（MongoDB）· 每小時更新",
     metrics: {
       messagesSent: "已發送訊息",
-      newUsers: "新增好友",
-      blockCount: "封鎖數",
+      reach: "可觸及好友",
+      newFollowers: "本週新好友",
+      blocked: "取消關注（累計）",
       engagementRate: "互動率",
     },
+    dataSource: {
+      lineInsight: "LINE Insight",
+      webhook: "Webhook",
+      autoTrack: "自動追蹤",
+    },
+    reachSub: (rate: string, total: string) =>
+      `觸及率 ${rate}% · 好友總數 ${total}`,
+    newFollowersSub: "首次加入時間統計",
+    blockedSub: (pct: string) => `佔好友總數 ${pct}%`,
     chartTitle: "訊息趨勢",
     chartSubtitle: "所有 Bot 的發送與接收訊息。",
     sevenDayView: "最近 7 天",
@@ -304,14 +322,11 @@ const fallbackTrendData = (): TrendPoint[] =>
 
 const initialAnalyticsSummary: AnalyticsSummary = {
   messagesSent: 0,
-  newUsers: 0,
+  newFollowers: 0,
   blockCount: 0,
+  reach: 0,
   engagementRate: 0,
   totalSubscribers: 0,
-  messagesChange: 0,
-  usersChange: 0,
-  blockChange: 0,
-  engagementChange: 0,
   chartData: fallbackTrendData(),
   isLoading: false,
 };
@@ -328,13 +343,6 @@ const formatPercent = (value: number) =>
 const toNumber = (value: unknown, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const calculateChange = (current: number, baseline: number) => {
-  if (!baseline) {
-    return current > 0 ? 100 : 0;
-  }
-  return ((current - baseline) / baseline) * 100;
 };
 
 const formatDate = (value?: string) => {
@@ -370,25 +378,6 @@ const getApiData = <T,>(
     return null;
   }
   return (result.value.data as T) || null;
-};
-
-const TrendPill = ({ value }: { value: number }) => {
-  const isPositive = value >= 0;
-  const Icon = isPositive ? ArrowUpRight : ArrowDownRight;
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-[10px] px-2.5 py-1 text-xs font-semibold",
-        isPositive
-          ? "bg-emerald-50 text-emerald-700"
-          : "bg-rose-50 text-rose-700"
-      )}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      {formatPercent(Math.abs(value))}%
-    </span>
-  );
 };
 
 const BotStateBadge = ({
@@ -455,42 +444,30 @@ const BotStateBadge = ({
   );
 };
 
-const MetricCard = ({
-  icon: Icon,
+const StatTile = ({
   label,
   value,
-  suffix,
-  change,
-  accent,
+  sourceLabel,
+  sub,
 }: {
-  icon: IconComponent;
   label: string;
   value: string;
-  suffix?: string;
-  change: number;
-  accent: string;
+  sourceLabel: string;
+  sub?: string;
 }) => (
-  <div className="rounded-[12px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
-    <div className="flex items-start justify-between gap-3">
-      <span
-        className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-[10px]",
-          accent
-        )}
-      >
-        <Icon className="h-5 w-5" />
+  <div className="flex flex-col gap-1.5 p-5">
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[12.5px] font-semibold text-[var(--bc-ink-3)]">
+        {label}
       </span>
-      <TrendPill value={change} />
+      <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.05em] text-emerald-700">
+        {sourceLabel}
+      </span>
     </div>
-    <p className="mt-5 text-sm font-medium text-slate-500">{label}</p>
-    <div className="mt-2 flex items-end gap-1">
-      <span className="text-3xl font-semibold text-slate-950">{value}</span>
-      {suffix && (
-        <span className="pb-1 text-sm font-semibold text-slate-500">
-          {suffix}
-        </span>
-      )}
-    </div>
+    <span className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--bc-ink)] [font-variant-numeric:tabular-nums]">
+      {value}
+    </span>
+    {sub && <span className="text-xs text-[var(--bc-ink-3)]">{sub}</span>}
   </div>
 );
 
@@ -573,8 +550,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
       let activeUsers = 0;
       let totalSubscribers = 0;
       let blockCount = 0;
-      let todayMessages = 0;
-      let weekMessages = 0;
+      let newFollowers = 0;
 
       successfulResults.forEach((result) => {
         const analytics = result.analytics;
@@ -592,8 +568,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
 
         totalMessages += toNumber(analytics?.totalMessages);
         activeUsers += toNumber(analytics?.activeUsers);
-        todayMessages += toNumber(analytics?.todayMessages);
-        weekMessages += toNumber(analytics?.weekMessages);
+        newFollowers += toNumber(analytics?.newFollowers);
 
         result.messageStats.forEach((stat, index) => {
           const key = stat.date || `${result.botId}-${index}`;
@@ -623,23 +598,17 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
       const engagementRate = totalSubscribers
         ? Math.min(100, (activeUsers / totalSubscribers) * 100)
         : 0;
-      const dailyAverage = weekMessages ? weekMessages / 7 : 0;
       const chartData = Array.from(trendMap.values()).sort((a, b) =>
         a.date.localeCompare(b.date)
       );
 
       setAnalyticsSummary({
         messagesSent,
-        newUsers: activeUsers,
+        newFollowers,
         blockCount,
+        reach: activeUsers,
         engagementRate,
         totalSubscribers,
-        messagesChange: calculateChange(todayMessages, dailyAverage),
-        usersChange: totalSubscribers
-          ? (activeUsers / totalSubscribers) * 100
-          : 0,
-        blockChange: blockCount ? -Math.min(blockCount * 1.8, 12) : 0,
-        engagementChange: engagementRate - 50,
         chartData: chartData.length ? chartData : fallbackTrendData(),
         isLoading: false,
       });
@@ -671,35 +640,31 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
     });
   }, [bots, searchQuery, statusFilter]);
 
-  const metricCards = [
+  const blockRate = analyticsSummary.totalSubscribers
+    ? (analyticsSummary.blockCount / analyticsSummary.totalSubscribers) * 100
+    : 0;
+
+  const statTiles = [
     {
-      label: copy.metrics.messagesSent,
-      value: formatNumber(analyticsSummary.messagesSent),
-      change: analyticsSummary.messagesChange,
-      icon: Send,
-      accent: "bg-emerald-100 text-emerald-700",
+      label: copy.metrics.reach,
+      value: formatNumber(analyticsSummary.reach),
+      sourceLabel: copy.dataSource.lineInsight,
+      sub: copy.reachSub(
+        formatPercent(analyticsSummary.engagementRate),
+        formatNumber(analyticsSummary.totalSubscribers)
+      ),
     },
     {
-      label: copy.metrics.newUsers,
-      value: formatNumber(analyticsSummary.newUsers),
-      change: analyticsSummary.usersChange,
-      icon: Users,
-      accent: "bg-sky-100 text-sky-700",
+      label: copy.metrics.newFollowers,
+      value: formatNumber(analyticsSummary.newFollowers),
+      sourceLabel: copy.dataSource.autoTrack,
+      sub: copy.newFollowersSub,
     },
     {
-      label: copy.metrics.blockCount,
+      label: copy.metrics.blocked,
       value: formatNumber(analyticsSummary.blockCount),
-      change: analyticsSummary.blockChange,
-      icon: Ban,
-      accent: "bg-rose-100 text-rose-700",
-    },
-    {
-      label: copy.metrics.engagementRate,
-      value: formatPercent(analyticsSummary.engagementRate),
-      suffix: "%",
-      change: analyticsSummary.engagementChange,
-      icon: Activity,
-      accent: "bg-violet-100 text-violet-700",
+      sourceLabel: copy.dataSource.webhook,
+      sub: copy.blockedSub(formatPercent(blockRate)),
     },
   ];
 
@@ -1045,36 +1010,92 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
         <section>
           <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <h2 className="text-xl font-semibold text-slate-950">
+              <h2 className="text-xl font-semibold text-[var(--bc-ink)]">
                 {copy.analyticsTitle}
               </h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[var(--bc-ink-3)]">
                 {copy.analyticsSubtitle}
               </p>
             </div>
-            <div className="flex items-center gap-2 rounded-[12px] border border-white/70 bg-white/65 px-3 py-2 text-sm text-slate-500">
-              <LayoutDashboard className="h-4 w-4 text-[#16a34a]" />
+            <div className="flex items-center gap-2 rounded-full border border-[var(--bc-line-2)] bg-[var(--surface-panel)] px-3 py-2 text-sm text-[var(--bc-ink-3)]">
+              <LayoutDashboard className="h-4 w-4 text-[var(--bc-accent-ink)]" />
               {formatNumber(bots.length)} {copy.botsTracked}
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {metricCards.map((metric) => (
-              <MetricCard key={metric.label} {...metric} />
+          {/* hero metric — real, trackable data: system conversation records */}
+          <div className="relative grid gap-6 overflow-hidden rounded-[18px] border border-[var(--bc-line-2)] bg-[var(--bc-card)] p-6 shadow-[0_28px_80px_rgba(24,22,40,0.1)] sm:grid-cols-[minmax(0,1fr)_minmax(200px,300px)] sm:items-center sm:p-8">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(var(--bc-line-2)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_100%_at_100%_0%,black_0%,transparent_70%)]"
+            />
+            <div className="relative">
+              <p className="text-sm font-semibold text-[var(--bc-ink-3)]">
+                {copy.heroLabel}
+              </p>
+              <div className="mt-1.5 flex items-baseline gap-2">
+                <span className="text-[44px] font-semibold tracking-[-0.03em] text-[var(--bc-ink)] [font-variant-numeric:tabular-nums] sm:text-[52px]">
+                  {formatNumber(analyticsSummary.messagesSent)}
+                </span>
+                <span className="text-sm font-semibold text-[var(--bc-ink-3)]">
+                  {copy.heroUnit}
+                </span>
+              </div>
+              <p className="mt-3 inline-flex items-center gap-1.5 font-mono text-[10.5px] tracking-[0.04em] text-[var(--bc-ink-3)]">
+                <span className="h-[5px] w-[5px] rounded-full bg-[var(--bc-ink-3)]" />
+                {copy.heroSource}
+              </p>
+            </div>
+            <div className="relative h-20 sm:h-24">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={analyticsSummary.chartData}
+                  margin={{ left: 0, right: 0, top: 4, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="heroSpark" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="0%"
+                        stopColor="var(--bc-accent)"
+                        stopOpacity={0.3}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="var(--bc-accent)"
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="messages"
+                    stroke="var(--bc-accent)"
+                    strokeWidth={2.5}
+                    fill="url(#heroSpark)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* secondary stats — each labeled with its real data source */}
+          <div className="mt-4 grid divide-y divide-[var(--bc-line-2)] rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
+            {statTiles.map((tile) => (
+              <StatTile key={tile.label} {...tile} />
             ))}
           </div>
 
-          <div className="mt-4 rounded-[12px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+          <div className="mt-4 rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
             <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <div>
-                <h3 className="text-base font-semibold text-slate-950">
+                <h3 className="text-base font-semibold text-[var(--bc-ink)]">
                   {copy.chartTitle}
                 </h3>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-[var(--bc-ink-3)]">
                   {copy.chartSubtitle}
                 </p>
               </div>
-              <Badge className="w-fit !rounded-[10px] border-emerald-200 bg-emerald-50 text-[#166534] hover:bg-emerald-50">
+              <Badge className="w-fit !rounded-full border-[var(--bc-line-2)] bg-[var(--bc-bg-2)] text-[var(--bc-ink-2)] hover:bg-[var(--bc-bg-2)]">
                 <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
                 {copy.sevenDayView}
               </Badge>
@@ -1095,12 +1116,12 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                     >
                       <stop
                         offset="5%"
-                        stopColor="#16a34a"
-                        stopOpacity={0.28}
+                        stopColor="var(--bc-ink)"
+                        stopOpacity={0.18}
                       />
                       <stop
                         offset="95%"
-                        stopColor="#16a34a"
+                        stopColor="var(--bc-ink)"
                         stopOpacity={0.02}
                       />
                     </linearGradient>
@@ -1113,18 +1134,18 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                     >
                       <stop
                         offset="5%"
-                        stopColor="#38bdf8"
-                        stopOpacity={0.18}
+                        stopColor="var(--bc-accent)"
+                        stopOpacity={0.24}
                       />
                       <stop
                         offset="95%"
-                        stopColor="#38bdf8"
+                        stopColor="var(--bc-accent)"
                         stopOpacity={0.02}
                       />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
-                    stroke="#d9e5d6"
+                    stroke="var(--bc-line-2)"
                     strokeDasharray="4 8"
                     vertical={false}
                   />
@@ -1132,33 +1153,33 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                     dataKey="label"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#64748b", fontSize: 12 }}
+                    tick={{ fill: "var(--bc-ink-3)", fontSize: 12 }}
                     dy={10}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#64748b", fontSize: 12 }}
+                    tick={{ fill: "var(--bc-ink-3)", fontSize: 12 }}
                     width={44}
                   />
                   <RechartsTooltip
                     cursor={{
-                      stroke: "#16a34a",
+                      stroke: "var(--bc-ink)",
                       strokeWidth: 1,
                       strokeDasharray: "4 4",
                     }}
                     contentStyle={{
-                      border: "1px solid rgba(255,255,255,0.9)",
+                      border: "1px solid var(--bc-line-2)",
                       borderRadius: 12,
-                      background: "rgba(255,255,255,0.92)",
-                      boxShadow: "0 18px 50px rgba(15,23,42,0.12)",
+                      background: "var(--bc-card)",
+                      boxShadow: "0 18px 50px rgba(24,22,40,0.12)",
                     }}
                   />
                   <Area
                     type="monotone"
                     dataKey="messages"
                     name={copy.chartMessages}
-                    stroke="#16a34a"
+                    stroke="var(--bc-ink)"
                     strokeWidth={3}
                     fill="url(#messagesGradient)"
                   />
@@ -1166,7 +1187,7 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
                     type="monotone"
                     dataKey="sent"
                     name={copy.chartSent}
-                    stroke="#38bdf8"
+                    stroke="var(--bc-accent)"
                     strokeWidth={2}
                     fill="url(#sentGradient)"
                   />

@@ -142,7 +142,7 @@ const SecuritySection = ({
     <div className="app-panel mb-6 p-6">
       <div className="flex items-center gap-2 mb-4">
         <Shield className="h-5 w-5 text-emerald-700" />
-        <h2 className="text-xl font-semibold text-slate-950">安全設定</h2>
+        <h2 className="text-xl font-semibold text-[var(--bc-ink)]">安全設定</h2>
       </div>
 
       <div className="space-y-6">

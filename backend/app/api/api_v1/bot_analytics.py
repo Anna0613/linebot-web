@@ -287,6 +287,13 @@ async def get_bot_analytics(
         targeted_reaches = _extract_targeted_reaches(followers_data)
         reach_rate = (targeted_reaches / followers * 100) if followers else 0.0
 
+        new_followers = await db.scalar(
+            select(func.count()).where(
+                LineBotUser.bot_id == bot.id,
+                LineBotUser.created_at >= now - timedelta(days=days),
+            )
+        )
+
         return {
             "totalMessages": local_analytics.get("totalMessages", 0),
             "activeUsers": targeted_reaches or followers,
@@ -295,6 +302,7 @@ async def get_bot_analytics(
             "weekMessages": local_analytics.get("weekMessages", 0),
             "monthMessages": local_analytics.get("monthMessages", 0),
             "localActiveUsers": local_analytics.get("activeUsers", 0),
+            "newFollowers": new_followers or 0,
             "period": period,
             "startDate": local_analytics.get("startDate"),
             "endDate": local_analytics.get("endDate"),

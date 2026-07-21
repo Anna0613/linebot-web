@@ -37,7 +37,7 @@ const SocialAccountSection = ({
     <div className="app-panel mb-6 p-6">
       <div className="flex items-center gap-2 mb-4">
         <LinkIcon className="h-5 w-5 text-emerald-700" />
-        <h2 className="text-xl font-semibold text-slate-950">登入方式</h2>
+        <h2 className="text-xl font-semibold text-[var(--bc-ink)]">登入方式</h2>
       </div>
 
       <div className="space-y-4">
@@ -114,10 +114,10 @@ const SocialAccountSection = ({
             ) : (
               <div className="space-y-3">
                 <div className="rounded-[14px] bg-slate-50 p-3">
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-[var(--bc-ink-3)]">
                     尚未連結 LINE 帳號。連結後可以：
                   </p>
-                  <ul className="mt-2 space-y-1 text-sm leading-6 text-slate-500">
+                  <ul className="mt-2 space-y-1 text-sm leading-6 text-[var(--bc-ink-3)]">
                     <li>• 使用 LINE 帳號快速登入</li>
                     <li>• 同步 LINE 個人資料照片</li>
                     <li>• 享受更便捷的使用體驗</li>

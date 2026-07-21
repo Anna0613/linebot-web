@@ -229,17 +229,17 @@ const getActivityIcon = (type: ActivityItem["type"]): IconComponent => {
 };
 
 const AnalyticsLoading = () => (
-  <div className="rounded-[16px] border border-white/70 bg-white/75 p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+  <div className="rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] p-10 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
     <Loader text="載入分析資料..." />
   </div>
 );
 
 const EmptyState = ({ message }: { message: string }) => (
-  <div className="rounded-[16px] border border-white/70 bg-white/75 p-10 text-center shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
-    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[16px] bg-emerald-100 text-[#16a34a]">
+  <div className="rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] p-10 text-center shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[16px] bg-[var(--bc-accent-soft)] text-[var(--bc-accent-ink)]">
       <BotIcon className="h-6 w-6" />
     </div>
-    <p className="mt-4 text-sm font-medium text-slate-500">{message}</p>
+    <p className="mt-4 text-sm font-medium text-[var(--bc-ink-3)]">{message}</p>
   </div>
 );
 
@@ -299,13 +299,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
     return <AnalyticsLoading />;
   }
 
-  const kpis = [
-    {
-      icon: MessageSquare,
-      title: copy.kpis.totalMessages,
-      value: formatNumber(analytics?.totalMessages || 0),
-      comparison: copy.comparisons.messages,
-    },
+  const secondaryKpis = [
     {
       icon: Users,
       title: copy.kpis.activeUsers,
@@ -328,8 +322,51 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="grid divide-y divide-[var(--bc-line-2)] rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl sm:grid-cols-2 sm:divide-y-0 sm:divide-x xl:grid-cols-4">
-        {kpis.map((kpi) => (
+      {/* hero metric — total messages, real system data, echoes Dashboard hero */}
+      <div className="relative grid gap-6 overflow-hidden rounded-[18px] border border-[var(--bc-line-2)] bg-[var(--bc-card)] p-6 shadow-[0_28px_80px_rgba(24,22,40,0.1)] sm:grid-cols-[minmax(0,1fr)_minmax(200px,300px)] sm:items-center sm:p-8">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(var(--bc-line-2)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_100%_at_100%_0%,black_0%,transparent_70%)]"
+        />
+        <div className="relative flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[var(--bc-accent-soft)] text-[var(--bc-accent-ink)]">
+            <MessageSquare className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-[var(--bc-ink-3)]">
+              {copy.kpis.totalMessages}
+            </p>
+            <p className="mt-1 text-[44px] font-semibold tracking-[-0.03em] text-[var(--bc-ink)] [font-variant-numeric:tabular-nums] sm:text-[52px]">
+              {formatNumber(analytics?.totalMessages || 0)}
+            </p>
+            <p className="mt-1 text-xs text-[var(--bc-ink-3)]">
+              {copy.comparisons.messages}
+            </p>
+          </div>
+        </div>
+        <div className="relative h-20 sm:h-24">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={trendData} margin={{ left: 0, right: 0, top: 4, bottom: 0 }}>
+              <defs>
+                <linearGradient id="analyticsHeroSpark" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--bc-accent)" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="var(--bc-accent)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area
+                type="monotone"
+                dataKey="messages"
+                stroke="var(--bc-accent)"
+                strokeWidth={2.5}
+                fill="url(#analyticsHeroSpark)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="grid divide-y divide-[var(--bc-line-2)] rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
+        {secondaryKpis.map((kpi) => (
           <div key={kpi.title} className="flex items-start gap-3 p-5">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[var(--bc-accent-soft)] text-[var(--bc-accent-ink)]">
               <kpi.icon className="h-5 w-5" />
@@ -350,13 +387,13 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
-        <section className="rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+        <section className="rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-lg font-semibold text-slate-950">
+              <p className="text-lg font-semibold text-[var(--bc-ink)]">
                 {copy.chartTitle}
               </p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[var(--bc-ink-3)]">
                 {copy.chartSubtitle}
               </p>
             </div>
@@ -376,7 +413,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                     "h-9 rounded-full px-3 text-xs font-semibold",
                     timeRange === item.value
                       ? "bg-emerald-50 text-emerald-700"
-                      : "text-slate-500 hover:bg-white"
+                      : "text-[var(--bc-ink-3)] hover:bg-white"
                   )}
                 >
                   {item.label}
@@ -387,7 +424,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                 variant="outline"
                 size="icon"
                 onClick={onRefreshData}
-                className="h-9 w-9 rounded-full border-emerald-100 bg-white/70 text-emerald-700 hover:bg-emerald-50"
+                className="h-9 w-9 rounded-full border-[var(--bc-line-2)] bg-[var(--bc-bg-2)] text-[var(--bc-accent-ink)] hover:bg-[var(--bc-accent-soft)]"
                 aria-label={copy.refreshData}
               >
                 <RefreshCw className="h-4 w-4" />
@@ -409,12 +446,12 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                     >
                       <stop
                         offset="0%"
-                        stopColor="#16a34a"
+                        stopColor="var(--bc-accent)"
                         stopOpacity={0.28}
                       />
                       <stop
                         offset="100%"
-                        stopColor="#16a34a"
+                        stopColor="var(--bc-accent)"
                         stopOpacity={0.02}
                       />
                     </linearGradient>
@@ -432,7 +469,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                     tick={{ fill: "#64748b", fontSize: 12 }}
                   />
                   <RechartsTooltip
-                    cursor={{ stroke: "#16a34a", strokeWidth: 1 }}
+                    cursor={{ stroke: "var(--bc-accent)", strokeWidth: 1 }}
                     contentStyle={{
                       border: "1px solid rgba(255,255,255,0.8)",
                       borderRadius: 16,
@@ -443,12 +480,12 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                     type="monotone"
                     dataKey="messages"
                     name={copy.chartMetric}
-                    stroke="#16a34a"
+                    stroke="var(--bc-accent)"
                     strokeWidth={3}
                     fill="url(#messageFill)"
                     activeDot={{
                       r: 5,
-                      fill: "#16a34a",
+                      fill: "var(--bc-accent)",
                       stroke: "#fff",
                       strokeWidth: 3,
                     }}
@@ -456,20 +493,20 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center rounded-[16px] bg-white/60 text-sm text-slate-400">
+              <div className="flex h-full items-center justify-center rounded-[16px] bg-[var(--bc-bg-2)] text-sm text-[var(--bc-ink-3)]">
                 {copy.chartEmpty}
               </div>
             )}
           </div>
         </section>
 
-        <section className="rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+        <section className="rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-lg font-semibold text-slate-950">
+              <p className="text-lg font-semibold text-[var(--bc-ink)]">
                 {copy.activityTitle}
               </p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[var(--bc-ink-3)]">
                 {copy.activitySubtitle}
               </p>
             </div>
@@ -477,7 +514,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
               <Badge
                 variant="outline"
                 className={cn(
-                  "border-white/70 bg-white/70 text-xs",
+                  "border-[var(--bc-line-2)] bg-[var(--bc-bg-2)] text-xs",
                   isLive ? "text-emerald-700" : "text-amber-700"
                 )}
               >
@@ -488,7 +525,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                 variant="outline"
                 size="icon"
                 onClick={onRefreshActivities}
-                className="h-9 w-9 rounded-full border-emerald-100 bg-white/70 text-emerald-700 hover:bg-emerald-50"
+                className="h-9 w-9 rounded-full border-[var(--bc-line-2)] bg-[var(--bc-bg-2)] text-[var(--bc-accent-ink)] hover:bg-[var(--bc-accent-soft)]"
                 aria-label={copy.refreshActivities}
               >
                 <RefreshCw className="h-4 w-4" />
@@ -525,7 +562,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                 );
               })
             ) : (
-              <div className="flex h-[260px] items-center justify-center rounded-[16px] bg-white/60 text-sm text-slate-400">
+              <div className="flex h-[260px] items-center justify-center rounded-[16px] bg-[var(--bc-bg-2)] text-sm text-[var(--bc-ink-3)]">
                 {copy.activityEmpty}
               </div>
             )}
@@ -534,13 +571,13 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-        <section className="rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+        <section className="rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-lg font-semibold text-slate-950">
+              <p className="text-lg font-semibold text-[var(--bc-ink)]">
                 {copy.heatmapTitle}
               </p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[var(--bc-ink-3)]">
                 {copy.heatmapSubtitle}
               </p>
             </div>
@@ -578,18 +615,18 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
               })}
             </div>
           ) : (
-            <div className="mt-6 flex h-[192px] items-center justify-center rounded-[16px] bg-white/60 text-sm text-slate-400">
+            <div className="mt-6 flex h-[192px] items-center justify-center rounded-[16px] bg-[var(--bc-bg-2)] text-sm text-[var(--bc-ink-3)]">
               {copy.noData}
             </div>
           )}
         </section>
 
-        <section className="rounded-[16px] border border-white/70 bg-white/75 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+        <section className="rounded-[16px] border border-[var(--bc-line-2)] bg-[var(--surface-panel)] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.07)] backdrop-blur-xl">
           <div>
-            <p className="text-lg font-semibold text-slate-950">
+            <p className="text-lg font-semibold text-[var(--bc-ink)]">
               {copy.usageTitle}
             </p>
-            <p className="mt-1 text-sm text-slate-500">{copy.usageSubtitle}</p>
+            <p className="mt-1 text-sm text-[var(--bc-ink-3)]">{copy.usageSubtitle}</p>
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-[220px_minmax(0,1fr)] md:items-center">
@@ -619,7 +656,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-full items-center justify-center rounded-full bg-white/60 text-sm text-slate-400">
+                <div className="flex h-full items-center justify-center rounded-full bg-[var(--bc-bg-2)] text-sm text-[var(--bc-ink-3)]">
                   {copy.noData}
                 </div>
               )}
@@ -662,14 +699,14 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
 
       <section className="flex flex-col gap-4 rounded-[16px] border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-stone-50 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-white text-[#16a34a] shadow-sm">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--bc-card)] text-[var(--bc-accent-ink)] shadow-sm">
             <Send className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-950">
+            <p className="text-sm font-semibold text-[var(--bc-ink)]">
               {copy.insightTitle}
             </p>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <p className="mt-1 text-sm leading-6 text-[var(--bc-ink-3)]">
               {copy.insightBody}
             </p>
           </div>
@@ -677,7 +714,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
         <Button
           type="button"
           onClick={onRefreshData}
-          className="rounded-[14px] bg-[#16a34a] px-5 font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-[#15803d]"
+          className="rounded-[14px] bg-[var(--bc-ink)] px-5 font-semibold text-[var(--bc-bg)] shadow-lg hover:bg-[var(--bc-accent-ink)]"
         >
           {copy.viewFullReport}
         </Button>

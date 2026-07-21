@@ -76,7 +76,7 @@ const EmailManagementSection = ({
     <div className="app-panel mb-6 p-6">
       <div className="flex items-center gap-2 mb-4">
         <Mail className="h-5 w-5 text-emerald-700" />
-        <h2 className="text-xl font-semibold text-slate-950">電子郵件</h2>
+        <h2 className="text-xl font-semibold text-[var(--bc-ink)]">電子郵件</h2>
       </div>
 
       <div className="space-y-4">
@@ -152,7 +152,7 @@ const EmailManagementSection = ({
         )}
 
         {/* 說明文字 */}
-          <div className="space-y-1 text-sm leading-6 text-slate-500">
+          <div className="space-y-1 text-sm leading-6 text-[var(--bc-ink-3)]">
           <p>• 驗證的電子郵件會用於重要通知和密碼重設</p>
           <p>• 更改電子郵件後需要重新驗證</p>
           {!emailVerified && email && (
