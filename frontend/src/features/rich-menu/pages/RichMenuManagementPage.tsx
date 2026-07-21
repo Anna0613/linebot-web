@@ -105,15 +105,19 @@ const RichMenuManagementPage: React.FC = () => {
   return (
     <AppShell user={user} activeNav="editor" headerKicker="圖文選單">
       <main className="py-8 space-y-4">
-        <div className="app-panel flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+        <div className="app-panel relative flex flex-col gap-4 overflow-hidden p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(var(--bc-line-2)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_100%_at_100%_0%,black_0%,transparent_70%)]"
+          />
+          <div className="relative">
             <p className="app-kicker mb-2">設計</p>
-            <h1 className="text-2xl font-semibold text-slate-950">圖文選單</h1>
-            <p className="mt-2 text-sm text-slate-500">
+            <h1 className="text-2xl font-semibold text-[var(--bc-ink)]">圖文選單</h1>
+            <p className="mt-2 text-sm text-[var(--bc-ink-3)]">
               建立 LINE 對話下方的快捷選單。
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="relative flex items-center gap-2">
             <Button
               onClick={() => {
                 setCreating(true);
@@ -134,7 +138,7 @@ const RichMenuManagementPage: React.FC = () => {
         )}
 
         {!authLoading && !selectedBotId && (
-          <div className="app-muted-panel text-sm text-slate-600">
+          <div className="app-muted-panel text-sm text-[var(--bc-ink-3)]">
             請先從左上角選擇一個 Bot
           </div>
         )}

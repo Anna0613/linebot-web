@@ -83,7 +83,7 @@ const UserProfileSection = ({
     <div className="app-panel mb-6 p-6">
       <div className="flex items-center gap-2 mb-4">
         <UserIcon className="h-5 w-5 text-emerald-700" />
-        <h2 className="text-xl font-semibold text-slate-950">個人資料</h2>
+        <h2 className="text-xl font-semibold text-[var(--bc-ink)]">個人資料</h2>
       </div>
 
       {/* 頭像區塊 */}
@@ -111,7 +111,7 @@ const UserProfileSection = ({
             disabled={user?.isLineUser || avatarLoading}
           />
           {user?.isLineUser && (
-            <p className="mt-2 max-w-24 text-center text-xs text-slate-500">
+            <p className="mt-2 max-w-24 text-center text-xs text-[var(--bc-ink-3)]">
               LINE 帳號頭像會自動同步
             </p>
           )}
@@ -119,7 +119,7 @@ const UserProfileSection = ({
 
         <div className="flex-1">
           <Label className="text-sm font-medium text-slate-700">頭像</Label>
-          <p className="mt-1 text-sm leading-6 text-slate-500">
+          <p className="mt-1 text-sm leading-6 text-[var(--bc-ink-3)]">
             {user?.isLineUser
               ? "頭像會同步你的 LINE 個人資料照片"
               : "上傳 JPG、PNG、GIF 或 WebP 格式的圖片，檔案大小不超過 5MB"}
@@ -172,7 +172,7 @@ const UserProfileSection = ({
             </Button>
           )}
         </div>
-        <p className="text-sm text-slate-500">這是工作台中顯示的名稱。</p>
+        <p className="text-sm text-[var(--bc-ink-3)]">這是工作台中顯示的名稱。</p>
       </div>
     </div>
   );

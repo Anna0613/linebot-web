@@ -773,10 +773,10 @@ export const VisualBotEditor: React.FC = () => {
         {/* Main Content */}
         <div className="flex-1 overflow-hidden relative">
           {isLoadingData && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/55 backdrop-blur-sm">
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bc-bg)]/55 backdrop-blur-sm">
               <div className="app-panel flex items-center gap-3 p-4">
                 <Loader size="sm" />
-                <span className="text-sm font-medium text-slate-600">載入 Bot 數據中...</span>
+                <span className="text-sm font-medium text-[var(--bc-ink-3)]">載入 Bot 數據中...</span>
               </div>
             </div>
           )}
