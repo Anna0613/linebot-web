@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import BotCraftBrand from "@/components/brand/BotCraftIdentity";
+import BotlynBrand from "@/components/brand/BotlynIdentity";
 import LanguageToggle from "../LanguageToggle/LanguageToggle";
 import QuickActions from "@/components/common/QuickActions";
 
@@ -42,7 +42,7 @@ const Navbar = () => {
               <Menu size={24} className="sm:hidden" />
               <Menu size={28} className="hidden sm:block" />
             </button>
-            <BotCraftBrand className="z-10 min-w-0" compact />
+            <BotlynBrand className="z-10 min-w-0" compact />
           </div>
 
           <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">

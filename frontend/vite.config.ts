@@ -171,18 +171,17 @@ export default defineConfig(({ mode }) => {
       configureServer(server: ViteDevServer) {
         server.middlewares.use('/manifest.json', (_req: IncomingMessage, res: ServerResponse) => {
           const manifest = {
-            name: 'BotCraft',
-            short_name: 'BotCraft',
+            name: 'Botlyn',
+            short_name: 'Botlyn',
             start_url: '/',
             display: 'standalone',
             background_color: '#ffffff',
-            theme_color: '#2563eb',
+            theme_color: '#1f7a4a',
             icons: [
-              { src: '/assets/images/logo.svg', sizes: 'any', type: 'image/svg+xml' },
-              { src: '/assets/images/webp/LOGO-sm.webp', sizes: '192x192', type: 'image/webp' },
-              { src: '/assets/images/webp/LOGO-md.webp', sizes: '384x384', type: 'image/webp' },
-              { src: '/assets/images/webp/LOGO.webp', sizes: '512x512', type: 'image/webp' },
-              { src: '/assets/images/webp/LOGO-lg.webp', sizes: '1024x1024', type: 'image/webp' }
+              { src: '/assets/brand/botlyn-logo-192.png', sizes: '192x192', type: 'image/png' },
+              { src: '/assets/brand/botlyn-logo-384.png', sizes: '384x384', type: 'image/png' },
+              { src: '/assets/brand/botlyn-logo-512.png', sizes: '512x512', type: 'image/png' },
+              { src: '/assets/brand/botlyn-logo-1024.png', sizes: '1024x1024', type: 'image/png' }
             ]
           };
           res.setHeader('Content-Type', 'application/manifest+json');
@@ -192,18 +191,17 @@ export default defineConfig(({ mode }) => {
       configurePreviewServer(server: ViteDevServer) {
         server.middlewares.use('/manifest.json', (_req: IncomingMessage, res: ServerResponse) => {
           const manifest = {
-            name: 'BotCraft',
-            short_name: 'BotCraft',
+            name: 'Botlyn',
+            short_name: 'Botlyn',
             start_url: '/',
             display: 'standalone',
             background_color: '#ffffff',
-            theme_color: '#2563eb',
+            theme_color: '#1f7a4a',
             icons: [
-              { src: '/assets/images/logo.svg', sizes: 'any', type: 'image/svg+xml' },
-              { src: '/assets/images/webp/LOGO-sm.webp', sizes: '192x192', type: 'image/webp' },
-              { src: '/assets/images/webp/LOGO-md.webp', sizes: '384x384', type: 'image/webp' },
-              { src: '/assets/images/webp/LOGO.webp', sizes: '512x512', type: 'image/webp' },
-              { src: '/assets/images/webp/LOGO-lg.webp', sizes: '1024x1024', type: 'image/webp' }
+              { src: '/assets/brand/botlyn-logo-192.png', sizes: '192x192', type: 'image/png' },
+              { src: '/assets/brand/botlyn-logo-384.png', sizes: '384x384', type: 'image/png' },
+              { src: '/assets/brand/botlyn-logo-512.png', sizes: '512x512', type: 'image/png' },
+              { src: '/assets/brand/botlyn-logo-1024.png', sizes: '1024x1024', type: 'image/png' }
             ]
           };
           res.setHeader('Content-Type', 'application/manifest+json');

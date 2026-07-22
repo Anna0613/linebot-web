@@ -17,6 +17,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import AppShell from "@/components/layout/AppShell";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
+import { useSEO } from "@/hooks/useSEO";
 import { PageContentWrapper } from "@/components/common/PageContentWrapper";
 
 const guideSteps = [
@@ -76,6 +77,13 @@ const HowToEstablish = () => {
     requireAuth: false,
   });
 
+  useSEO({
+    title: "建立 LINE 客服機器人教學 | Botlyn",
+    description:
+      "手把手教學：註冊 LINE Developers、建立 Provider 與 Channel、取得 API 金鑰，四步驟把 LINE 客服機器人接上 Botlyn 工作台。",
+    canonicalPath: "/how-to-establish",
+  });
+
   const steps = useMemo(() => guideSteps, []);
   const activeStep = steps[currentStep - 1];
 
@@ -102,10 +110,10 @@ const HowToEstablish = () => {
             <div className="mb-8">
               <p className="app-kicker mb-2">建立教學</p>
               <h1 className="mt-2 text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl">
-                BotCraft 建立教學
+                Botlyn 建立教學
               </h1>
               <p className="mt-4 max-w-2xl text-lg leading-relaxed text-[var(--bc-ink-2)]">
-                四個步驟取得 LINE Channel 憑證，完成後即可回到 BotCraft
+                四個步驟取得 LINE Channel 憑證，完成後即可回到 Botlyn
                 工作台建立 Bot。
               </p>
             </div>

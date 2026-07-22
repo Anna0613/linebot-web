@@ -1,7 +1,7 @@
 export type AppLanguage = "en" | "zh";
 
-export const LANGUAGE_STORAGE_KEY = "botcraft-language";
-export const LANGUAGE_CHANGE_EVENT = "botcraft-language-change";
+export const LANGUAGE_STORAGE_KEY = "botlyn-language";
+export const LANGUAGE_CHANGE_EVENT = "botlyn-language-change";
 
 export const normalizeLanguage = (value?: string | null): AppLanguage =>
   value === "zh" || value === "zh-TW" || value === "zh-Hant" ? "zh" : "en";

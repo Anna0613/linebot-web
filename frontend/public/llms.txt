@@ -1,0 +1,23 @@
+# BotCraft
+
+> BotCraft 是視覺化的 LINE 客服機器人建構平台。用拖拉式流程編輯器串接訊息積木，結合 AI 知識庫（Groq、Gemini、RAG 向量檢索）、Flex 訊息與圖文選單（Rich Menu），不需寫程式碼即可打造 LINE 客服機器人並發佈到 LINE Messaging API。
+
+## 核心功能
+
+- 視覺化對話流程編輯器：條件分支、變數、跳轉皆可視覺化操作
+- AI 知識庫接管：整合 Groq 與 Gemini，透過 RAG 檢索使用者上傳的資料自動回覆
+- Flex 訊息設計：所見即所得排版卡片訊息
+- 圖文選單（Rich Menu）管理
+- 互動紀錄與好友管理：訊息、好友、連線狀態即時查看
+
+## 重要頁面
+
+- 首頁與功能介紹: https://linebot.jkl921102.org/
+- 關於我們: https://linebot.jkl921102.org/about
+- 建立教學: https://linebot.jkl921102.org/how-to-establish
+- 隱私權政策: https://linebot.jkl921102.org/privacy
+- 服務條款: https://linebot.jkl921102.org/terms
+
+## 常見問題
+
+詳見首頁 FAQ 區塊（含 FAQPage schema）：資料儲存於加密 MongoDB、媒體存於 MinIO、使用者可隨時下載或刪除對話資料、AI 接管採 RAG 檢索、目前主要支援 LINE Messaging API。
