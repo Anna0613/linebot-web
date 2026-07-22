@@ -4,5 +4,4 @@ Disallow:
 Allow: /
 Allow: /dashboard
 
-# Sitemap (optional)
-# Sitemap: /sitemap.xml
+Sitemap: https://linebot.jkl921102.org/sitemap.xml

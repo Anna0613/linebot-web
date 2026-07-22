@@ -942,7 +942,7 @@ body {
   }
 }
 
-/* BotCraft CIS redesign: source of truth follows /design.md and Landing Page.html. */
+/* Botlyn CIS redesign: source of truth follows /design.md and Landing Page.html. */
 @layer base {
   :root {
     --bc-bg: oklch(0.98 0.006 85);
@@ -952,9 +952,9 @@ body {
     --bc-ink-3: oklch(0.58 0.012 270);
     --bc-line: oklch(0.88 0.008 270);
     --bc-line-2: oklch(0.93 0.006 270);
-    --bc-accent: oklch(0.62 0.18 290);
-    --bc-accent-soft: oklch(0.92 0.06 290);
-    --bc-accent-ink: oklch(0.32 0.16 290);
+    --bc-accent: oklch(0.62 0.18 150);
+    --bc-accent-soft: oklch(0.92 0.06 150);
+    --bc-accent-ink: oklch(0.32 0.16 150);
     --bc-hi: oklch(0.9 0.13 95);
     --bc-hi-soft: oklch(0.95 0.08 95);
     --bc-card: #ffffff;
@@ -973,19 +973,19 @@ body {
     --card-foreground: 250 18% 16%;
     --popover: 0 0% 100%;
     --popover-foreground: 250 18% 16%;
-    --primary: 250 18% 16%;
+    --primary: 145 65% 28%;
     --primary-foreground: 42 36% 98%;
     --secondary: 42 24% 96%;
     --secondary-foreground: 250 18% 16%;
     --muted: 42 18% 94%;
     --muted-foreground: 250 8% 42%;
-    --accent: 286 78% 93%;
-    --accent-foreground: 286 62% 28%;
+    --accent: 145 78% 93%;
+    --accent-foreground: 145 62% 28%;
     --destructive: 0 62% 42%;
     --destructive-foreground: 0 0% 100%;
     --border: 250 12% 89%;
     --input: 250 12% 89%;
-    --ring: 286 62% 42%;
+    --ring: 145 62% 42%;
     --radius: 0.875rem;
 
     --surface-base: var(--bc-bg);
@@ -1009,27 +1009,27 @@ body {
     --card-foreground: 42 36% 96%;
     --popover: 250 18% 13%;
     --popover-foreground: 42 36% 96%;
-    --primary: 286 66% 72%;
+    --primary: 145 66% 72%;
     --primary-foreground: 250 18% 10%;
     --secondary: 250 14% 18%;
     --secondary-foreground: 42 36% 96%;
     --muted: 250 12% 20%;
     --muted-foreground: 250 8% 74%;
-    --accent: 286 42% 22%;
-    --accent-foreground: 286 78% 88%;
+    --accent: 145 42% 22%;
+    --accent-foreground: 145 78% 88%;
     --border: 250 12% 26%;
     --input: 250 12% 26%;
-    --ring: 286 66% 72%;
+    --ring: 145 66% 72%;
     --surface-base: oklch(0.13 0.01 270);
     --surface-panel: oklch(0.18 0.01 270 / 0.9);
     --surface-panel-strong: oklch(0.2 0.01 270 / 0.96);
     --surface-soft: oklch(0.16 0.01 270);
     --text-main: var(--bc-bg);
     --text-muted: oklch(0.78 0.012 270);
-    --line-primary: oklch(0.78 0.1 290);
-    --line-primary-dark: oklch(0.82 0.1 290);
-    --line-primary-soft: oklch(0.32 0.1 290 / 0.45);
-    --focus-ring: oklch(0.78 0.1 290);
+    --line-primary: oklch(0.78 0.1 150);
+    --line-primary-dark: oklch(0.82 0.1 150);
+    --line-primary-soft: oklch(0.32 0.1 150 / 0.45);
+    --focus-ring: oklch(0.78 0.1 150);
   }
 
   html {
@@ -1142,8 +1142,8 @@ body {
   .bg-\[\#06C755\] {
     min-height: 44px !important;
     border-radius: 999px !important;
-    background: var(--bc-ink) !important;
-    color: var(--bc-bg) !important;
+    background: var(--line-primary-dark) !important;
+    color: #ffffff !important;
     border-color: transparent !important;
     box-shadow: none !important;
     font-weight: 500 !important;
@@ -1155,8 +1155,8 @@ body {
   .primary-button:hover,
   .hover\:bg-\[\#15803d\]:hover,
   .hover\:bg-\[\#05b04a\]:hover {
-    background: oklch(0.1 0.012 270) !important;
-    color: var(--bc-bg) !important;
+    background: #0f6d35 !important;
+    color: #ffffff !important;
     transform: none !important;
   }
 
@@ -1216,47 +1216,12 @@ body {
     height: 26px;
     flex-shrink: 0;
     place-items: center;
-    border-radius: 7px;
-    background: var(--bc-ink);
   }
 
-  .bc-brand-mark-inverted {
-    background: var(--bc-bg);
-  }
-
-  .bc-brand-mark::before,
-  .bc-brand-mark::after {
-    content: "";
-    position: absolute;
-    top: 7px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-  }
-
-  .bc-brand-mark::before {
-    left: 6px;
-    background: var(--bc-accent);
-  }
-
-  .bc-brand-mark::after {
-    right: 6px;
-    background: var(--bc-hi);
-  }
-
-  .bc-brand-tail {
-    position: absolute;
-    bottom: 5px;
-    left: 9px;
-    width: 8px;
-    height: 4px;
-    border-bottom-right-radius: 2px;
-    border-bottom-left-radius: 8px;
-    background: #ffffff;
-  }
-
-  .bc-brand-mark-inverted .bc-brand-tail {
-    background: var(--bc-ink);
+  .bc-brand-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 
   .bc-brand-word {
@@ -1539,7 +1504,7 @@ body {
   border: 1px solid var(--bc-line-2);
   border-radius: 18px;
   background: var(--bc-card);
-  box-shadow: 0 30px 80px -40px oklch(0.3 0.05 290 / 0.35);
+  box-shadow: 0 30px 80px -40px oklch(0.3 0.05 150 / 0.35);
 }
 
 .bc-product-sidebar {
@@ -1855,7 +1820,7 @@ body {
   border: 1px solid var(--bc-line-2);
   border-radius: 18px;
   background: var(--bc-card);
-  box-shadow: 0 30px 80px -40px oklch(0.3 0.05 290 / 0.35);
+  box-shadow: 0 30px 80px -40px oklch(0.3 0.05 150 / 0.35);
 }
 
 .bc-chat-canvas-bg {
@@ -1967,7 +1932,7 @@ body {
 }
 
 .bc-ai-bubble small {
-  color: oklch(0.45 0.1 290);
+  color: oklch(0.45 0.1 150);
 }
 .bc-out-bubble small {
   color: oklch(0.78 0.012 270);
@@ -2303,7 +2268,7 @@ body {
   background: radial-gradient(
     circle at 30% 30%,
     var(--bc-accent),
-    oklch(0.42 0.18 290)
+    oklch(0.42 0.18 150)
   );
   filter: blur(0.4px);
   animation: bc-blob 6s ease-in-out infinite;
@@ -2543,11 +2508,11 @@ body {
 }
 
 .bc-builder .bc-section-tag {
-  color: oklch(0.78 0.1 290);
+  color: oklch(0.78 0.1 150);
 }
 
 .bc-builder .bc-section-tag::before {
-  background: oklch(0.78 0.1 290);
+  background: oklch(0.78 0.1 150);
 }
 
 .bc-builder-title {
@@ -2671,9 +2636,9 @@ body {
 }
 
 .bc-stage-tabs .bc-tab-active {
-  border-color: oklch(0.78 0.1 290 / 0.55);
-  background: oklch(0.32 0.1 290 / 0.45);
-  color: oklch(0.9 0.08 290);
+  border-color: oklch(0.78 0.1 150 / 0.55);
+  background: oklch(0.32 0.1 150 / 0.45);
+  color: oklch(0.9 0.08 150);
 }
 
 .bc-canvas-board {
@@ -2729,7 +2694,7 @@ body {
   border-color: var(--bc-accent);
 }
 .bc-flow-card.bc-cond .bc-nh {
-  color: oklch(0.78 0.1 290);
+  color: oklch(0.78 0.1 150);
 }
 .bc-flow-card.bc-action {
   border-color: oklch(0.65 0.14 240);
@@ -2848,8 +2813,8 @@ body {
 .bc-insp-pill {
   padding: 2px 8px;
   border-radius: 999px;
-  background: oklch(0.32 0.1 290 / 0.4);
-  color: oklch(0.85 0.1 290);
+  background: oklch(0.32 0.1 150 / 0.4);
+  color: oklch(0.85 0.1 150);
   font-family: var(--bc-f-mono);
   font-size: 10px;
 }

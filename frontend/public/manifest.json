@@ -1,44 +1,38 @@
 {
-  "name": "BotCraft | LINE Bot 管理平台",
-  "short_name": "BotCraft",
+  "name": "Botlyn | LINE Bot 管理平台",
+  "short_name": "Botlyn",
   "description": "現代化的 LINE Bot 管理平台，提供完整的 Bot 創建、管理和配置功能",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "theme_color": "#1f7a4a",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "zh-TW",
   "categories": ["productivity", "business", "utilities"],
   "icons": [
     {
-      "src": "/assets/images/logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/assets/brand/botlyn-logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/brand/botlyn-logo-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/brand/botlyn-logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/assets/images/webp/LOGO-sm.webp",
-      "sizes": "192x192",
-      "type": "image/webp",
-      "purpose": "any"
-    },
-    {
-      "src": "/assets/images/webp/LOGO-md.webp",
-      "sizes": "384x384",
-      "type": "image/webp",
-      "purpose": "any"
-    },
-    {
-      "src": "/assets/images/webp/LOGO.webp",
-      "sizes": "512x512",
-      "type": "image/webp",
-      "purpose": "any"
-    },
-    {
-      "src": "/assets/images/webp/LOGO-lg.webp",
+      "src": "/assets/brand/botlyn-logo-1024.png",
       "sizes": "1024x1024",
-      "type": "image/webp",
+      "type": "image/png",
       "purpose": "any"
     }
   ],
@@ -50,9 +44,9 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/assets/images/webp/LOGO-sm.webp",
-          "sizes": "96x96",
-          "type": "image/webp"
+          "src": "/assets/brand/botlyn-logo-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -63,9 +57,9 @@
       "url": "/bots/create",
       "icons": [
         {
-          "src": "/assets/images/webp/LOGO-sm.webp",
-          "sizes": "96x96",
-          "type": "image/webp"
+          "src": "/assets/brand/botlyn-logo-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }

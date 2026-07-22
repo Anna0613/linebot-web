@@ -1,18 +1,18 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-interface BotCraftMarkProps {
+interface BotlynMarkProps {
   className?: string;
   inverted?: boolean;
 }
 
-export const BotCraftMark = ({ className, inverted = false }: BotCraftMarkProps) => (
+export const BotlynMark = ({ className, inverted = false }: BotlynMarkProps) => (
   <span className={cn("bc-brand-mark", inverted && "bc-brand-mark-inverted", className)} aria-hidden="true">
-    <span className="bc-brand-tail" />
+    <img src="/assets/brand/botlyn-logo.png" alt="" />
   </span>
 );
 
-interface BotCraftBrandProps {
+interface BotlynBrandProps {
   to?: string;
   className?: string;
   markClassName?: string;
@@ -21,21 +21,21 @@ interface BotCraftBrandProps {
   inverted?: boolean;
 }
 
-const BotCraftBrand = ({
+const BotlynBrand = ({
   to = "/",
   className,
   markClassName,
   textClassName,
   compact = false,
   inverted = false,
-}: BotCraftBrandProps) => (
-  <Link to={to} className={cn("bc-brand", inverted && "bc-brand-inverted", className)} aria-label="BotCraft">
-    <BotCraftMark className={markClassName} inverted={inverted} />
+}: BotlynBrandProps) => (
+  <Link to={to} className={cn("bc-brand", inverted && "bc-brand-inverted", className)} aria-label="Botlyn">
+    <BotlynMark className={markClassName} inverted={inverted} />
     <span className={cn("bc-brand-word", compact && "bc-brand-word-compact", textClassName)}>
-      <span className={compact ? "hidden sm:inline" : undefined}>BotCraft</span>
-      {compact && <span className="sm:hidden">BC</span>}
+      <span className={compact ? "hidden sm:inline" : undefined}>Botlyn</span>
+      {compact && <span className="sm:hidden">BL</span>}
     </span>
   </Link>
 );
 
-export default BotCraftBrand;
+export default BotlynBrand;

@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer";
 import AppShell from "@/components/layout/AppShell";
 import { PageContentWrapper } from "@/components/common/PageContentWrapper";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
+import { useSEO } from "@/hooks/useSEO";
 
 type LegalSection = {
   title: string;
@@ -60,9 +61,15 @@ const LegalPage = () => {
 
   const title = isTerms ? "服務條款" : "隱私政策";
   const description = isTerms
-    ? "使用 BotCraft 前，請先了解平台使用範圍與帳號責任。"
+    ? "使用 Botlyn 前，請先了解平台使用範圍與帳號責任。"
     : "了解平台如何使用資料支援 Bot 建立、設定、AI 接管與互動查看。";
   const sections = isTerms ? termsSections : privacySections;
+
+  useSEO({
+    title: `${title} | Botlyn`,
+    description,
+    canonicalPath: isTerms ? "/terms" : "/privacy",
+  });
 
   if (loading) {
     return (

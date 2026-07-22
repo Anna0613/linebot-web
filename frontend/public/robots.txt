@@ -5,8 +5,4 @@ Disallow:
 Allow: /
 Allow: /dashboard
 
-# Sitemap (optional, add if available)
-# Sitemap: /sitemap.xml
-# https://www.robotstxt.org/robotstxt.html
-User-agent: *
-Disallow:
+Sitemap: https://linebot.jkl921102.org/sitemap.xml

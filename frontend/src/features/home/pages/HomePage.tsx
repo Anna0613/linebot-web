@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import BotCraftBrand from "@/components/brand/BotCraftIdentity";
+import BotlynBrand from "@/components/brand/BotlynIdentity";
 import { authManager } from "@/services/UnifiedAuthManager";
 
 const integrations = [
@@ -197,11 +197,11 @@ const FeatureArt = ({ type }: { type: string }) => {
 };
 
 const ProductShellPreview = () => (
-  <div className="bc-product-shell" aria-label="BotCraft 工作台實際畫面示意">
+  <div className="bc-product-shell" aria-label="Botlyn 工作台實際畫面示意">
     <aside className="bc-product-sidebar">
       <div className="bc-product-brand">
         <span className="bc-product-mark" />
-        <span>BotCraft</span>
+        <span>Botlyn</span>
       </div>
       <div className="bc-product-switcher">
         <span>目前 Bot</span>
@@ -402,6 +402,27 @@ const HomePage = () => {
   }, [navigate]);
 
   useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.answer,
+        },
+      })),
+    });
+    document.head.appendChild(script);
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
+
+  useEffect(() => {
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -453,7 +474,7 @@ const HomePage = () => {
     <div className="bc-landing">
       <nav className="bc-nav" data-screen-label="01 Nav">
         <div className="bc-nav-inner">
-          <BotCraftBrand />
+          <BotlynBrand />
           <div className="bc-nav-links">
             <a href="#features">功能</a>
             <a href="#builder">編輯器</a>
@@ -488,7 +509,7 @@ const HomePage = () => {
               </span>
             </h1>
             <p className="bc-lead">
-              BotCraft 是一個 LINE Bot 製作與管理工作台。建立
+              Botlyn 是一個 LINE Bot 製作與管理工作台。建立
               Bot、調整回覆、編輯 Flex Message、管理 Rich Menu 與 AI
               知識庫，都在同一套實際介面裡完成。
             </p>
@@ -759,9 +780,9 @@ const HomePage = () => {
         <div className="bc-foot-inner">
           <div className="bc-foot-grid">
             <div className="bc-foot-brand">
-              <BotCraftBrand inverted />
+              <BotlynBrand inverted />
               <p>視覺化的對話機器人建構平台。把想法畫出來，就讓它跑起來。</p>
-              <p className="bc-mono">© 2026 BotCraft Studio</p>
+              <p className="bc-mono">© 2026 Botlyn Studio</p>
             </div>
             <div className="bc-foot-col">
               <h4>產品</h4>

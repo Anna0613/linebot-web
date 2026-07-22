@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import AppShell, { AppRobotIllustration } from "@/components/layout/AppShell";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
+import { useSEO } from "@/hooks/useSEO";
 import { PageContentWrapper } from "@/components/common/PageContentWrapper";
 
 const highlights = [
@@ -32,6 +33,13 @@ const About = () => {
   const navigate = useNavigate();
   const { user, loading, isAuthenticated } = useUnifiedAuth({
     requireAuth: false,
+  });
+
+  useSEO({
+    title: "關於 Botlyn | LINE 客服機器人建構平台",
+    description:
+      "Botlyn 是視覺化的 LINE 客服機器人工作台，把建立、設計、AI 知識庫接管與互動查看整合在同一個流程，適合客服、活動通知與社群互動情境。",
+    canonicalPath: "/about",
   });
 
   if (loading) {
@@ -66,10 +74,10 @@ const About = () => {
               <div className="p-8 sm:p-10 lg:p-12">
                 <p className="app-kicker mb-2">關於</p>
                 <h1 className="text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl lg:text-5xl">
-                  關於 BotCraft
+                  關於 Botlyn
                 </h1>
                 <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--bc-ink-2)]">
-                  BotCraft
+                  Botlyn
                   是一個視覺化的對話機器人工作台。重點是把建立、設計、AI
                   接管與查看互動放在同一個清楚流程裡。
                 </p>
