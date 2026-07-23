@@ -244,7 +244,10 @@ class Settings(BaseSettings):
             "http://api.jkl921102.org",
             "https://api.jkl921102.org",
             "https://jkl921102.org",
-            "http://jkl921102.org"
+            "http://jkl921102.org",
+            "https://botlyn.net",
+            "https://www.botlyn.net",
+            "https://api.botlyn.net",
         ]
 
         # 從環境變數添加額外的來源
@@ -262,8 +265,9 @@ class Settings(BaseSettings):
         regex = os.getenv("ALLOWED_ORIGIN_REGEX")
         if regex:
             return regex
-        # 允許 localhost/127.0.0.1 任意埠，以及 *.jkl921102.org
-        return r"^https?://((localhost|127\\.0\\.0\\.1)(:\\d+)?|([A-Za-z0-9-]+\\.)*jkl921102\\.org)$"
+        # 允許 localhost/127.0.0.1 任意埠，以及 *.jkl921102.org、*.botlyn.net
+        # 注意：這裡是 raw string，正則中的反斜線只需要單一層跳脫
+        return r"^https?://((localhost|127\.0\.0\.1)(:\d+)?|([A-Za-z0-9-]+\.)*jkl921102\.org|([A-Za-z0-9-]+\.)*botlyn\.net)$"
 
     def is_origin_allowed(self, origin: str) -> bool:
         """檢查輸入的 Origin 是否允許（清單或正則其一符合即可）"""
