@@ -117,17 +117,23 @@ const FeatureArt = ({ type }: { type: string }) => {
         >
           <path d="M 0 0 C 80 0, 80 60, 160 60" />
         </svg>
-        <div className="bc-node" style={{ left: 8, top: 34 }}>
-          on:訊息
+        <div className="bc-node bc-node-event" style={{ left: 8, top: 34 }}>
+          事件：收到訊息
         </div>
-        <div className="bc-node bc-node-accent" style={{ left: 80, top: 88 }}>
-          if 包含「訂位」
+        <div
+          className="bc-node bc-node-control"
+          style={{ left: 80, top: 88 }}
+        >
+          控制：如果...那麼
         </div>
-        <div className="bc-node bc-node-dark" style={{ left: 240, top: 48 }}>
-          回覆 Flex 卡
+        <div className="bc-node bc-node-reply" style={{ left: 240, top: 48 }}>
+          回覆 Flex 訊息
         </div>
-        <div className="bc-node" style={{ left: 280, top: 128 }}>
-          交給 AI
+        <div
+          className="bc-node bc-node-reply"
+          style={{ left: 280, top: 128 }}
+        >
+          回覆文字訊息
         </div>
       </div>
     );
@@ -284,44 +290,41 @@ const ProductShellPreview = () => (
 const BuilderStage = () => (
   <div className="bc-builder-stage bc-reveal">
     <aside className="bc-stage-rail">
-      <div className="bc-rail-head">觸發</div>
+      <div className="bc-rail-head">事件</div>
       <div className="bc-rail-item">
         <span className="bc-dot bc-y" />
-        收到訊息
+        當收到文字訊息時
       </div>
       <div className="bc-rail-item">
         <span className="bc-dot bc-y" />
-        加入好友
+        當好友加入時
       </div>
-      <div className="bc-rail-head">邏輯</div>
-      <div className="bc-rail-item">
-        <span className="bc-dot" />
-        條件分支
-      </div>
-      <div className="bc-rail-item">
-        <span className="bc-dot" />
-        變數設定
-      </div>
-      <div className="bc-rail-item">
-        <span className="bc-dot" />
-        等待輸入
-      </div>
-      <div className="bc-rail-head">動作</div>
+      <div className="bc-rail-head">回覆</div>
       <div className="bc-rail-item">
         <span className="bc-dot bc-b" />
-        傳送文字
+        回覆文字訊息
       </div>
       <div className="bc-rail-item">
         <span className="bc-dot bc-b" />
-        傳送 Flex
+        回覆 Flex 訊息
+      </div>
+      <div className="bc-rail-head">控制</div>
+      <div className="bc-rail-item">
+        <span className="bc-dot" />
+        如果...那麼
+      </div>
+      <div className="bc-rail-item">
+        <span className="bc-dot" />
+        等待
+      </div>
+      <div className="bc-rail-head">設定</div>
+      <div className="bc-rail-item">
+        <span className="bc-dot bc-g" />
+        設定變數
       </div>
       <div className="bc-rail-item">
         <span className="bc-dot bc-g" />
-        呼叫 AI
-      </div>
-      <div className="bc-rail-item">
-        <span className="bc-dot bc-g" />
-        呼叫 API
+        儲存好友資料
       </div>
     </aside>
 
@@ -336,55 +339,65 @@ const BuilderStage = () => (
       <div className="bc-canvas-board">
         <div className="bc-canvas-dropzone">
           <div className="bc-flow-card bc-start">
-            <div className="bc-nh">TRIGGER</div>
+            <div className="bc-nh">EVENT</div>
             當收到文字訊息時
           </div>
           <div className="bc-flow-line" />
           <div className="bc-flow-card bc-cond">
-            <div className="bc-nh">IF</div>
-            如果包含「預約」
+            <div className="bc-nh">CONTROL</div>
+            如果...那麼
           </div>
           <div className="bc-flow-branches">
             <div className="bc-flow-card bc-action">
-              <div className="bc-nh">ACTION</div>
+              <div className="bc-nh">REPLY</div>
               回覆 Flex 訊息
             </div>
             <div className="bc-flow-card bc-ai">
-              <div className="bc-nh">AI</div>
-              查詢知識庫
+              <div className="bc-nh">REPLY</div>
+              回覆文字訊息
             </div>
           </div>
         </div>
         <div className="bc-stage-simulator">
-          <div className="bc-sim-head">LINE Bot 模擬器</div>
-          <div className="bc-sim-body">
-            <span>
-              歡迎使用 LINE Bot 模擬器，請輸入訊息來測試您的 Bot 邏輯。
-            </span>
-            <b>我想預約明天下午</b>
-            <span>已觸發「預約」分支，回覆 Flex 訊息。</span>
+          <div className="bc-sim-head">
+            生成的程式碼
+            <span>PYTHON</span>
           </div>
-          <div className="bc-sim-input">輸入訊息...</div>
+          <div className="bc-sim-body">
+            <span className="bc-code-kw">from</span> linebot.models{" "}
+            <span className="bc-code-kw">import</span> MessageEvent,
+            TextSendMessage{"\n\n"}
+            <span className="bc-code-cm">
+              {"# 由「當收到文字訊息時」事件積木生成"}
+            </span>
+            {"\n"}
+            <span className="bc-code-kw">if</span>{" "}
+            <span className="bc-code-str">"營業"</span> in
+            user_message.lower():{"\n"}
+            {"    "}reply = TextSendMessage(text=
+            <span className="bc-code-str">"我們每天 10:00-21:00 營業"</span>
+            )
+          </div>
         </div>
       </div>
     </div>
 
     <aside className="bc-stage-insp">
       <div className="bc-insp-head">
-        節點屬性 <span className="bc-insp-pill">IF</span>
+        節點屬性 <span className="bc-insp-pill">CONTROL</span>
+      </div>
+      <div className="bc-insp-row">
+        <label>控制類型</label>
+        <div className="bc-insp-input">如果...那麼</div>
       </div>
       <div className="bc-insp-row">
         <label>條件類型</label>
-        <div className="bc-insp-input">文字包含</div>
+        <div className="bc-insp-input">自訂條件</div>
       </div>
       <div className="bc-insp-row">
-        <label>關鍵字（OR）</label>
-        <div className="bc-insp-input">預約, 訂位</div>
-      </div>
-      <div className="bc-insp-row">
-        <label>不符合時</label>
+        <label>條件表達式</label>
         <div className="bc-insp-input bc-ml">
-          切到 AI 知識庫管理，確認是否需要由知識庫回覆。
+          user_message == 'hello'
         </div>
       </div>
     </aside>
@@ -509,9 +522,7 @@ const HomePage = () => {
               </span>
             </h1>
             <p className="bc-lead">
-              Botlyn 是一個 LINE Bot 製作與管理工作台。建立
-              Bot、調整回覆、編輯 Flex Message、管理 Rich Menu 與 AI
-              知識庫，都在同一套實際介面裡完成。
+              LINE Bot 製作與管理工作台。拖積木畫流程，不用寫程式碼。
             </p>
             <div className="bc-hero-cta">
               <Link className="bc-btn bc-btn-primary" to="/register">
@@ -568,9 +579,7 @@ const HomePage = () => {
             </h2>
           </div>
           <p className="bc-section-desc">
-            從 Bot 建立、拖拉式邏輯編輯、AI 知識庫，到 Flex 卡片、Rich
-            Menu、互動紀錄與好友管理，把系統內實際存在的 Bot
-            工作整合在一個工作台裡。
+            建立、設計、管理、發布，都在同一個工作台完成。
           </p>
         </div>
 
@@ -607,9 +616,7 @@ const HomePage = () => {
               </h2>
             </div>
             <p className="bc-builder-desc">
-              這裡依照目前系統的編輯器結構呈現：基本資料、邏輯編輯器、Flex
-              Message、AI
-              知識庫管理與功能選單。左側選積木，中間編輯流程，右側即時模擬。
+              左側拖積木，中間串流程並即時看到生成的程式碼，右側調整節點屬性。
             </p>
           </div>
           <BuilderStage />
@@ -626,10 +633,7 @@ const HomePage = () => {
                 <br />從 0 到上線。
               </h2>
             </div>
-            <p className="bc-section-desc">
-              依照建立教學填入 LINE Channel 資訊，選擇要編輯的
-              Bot，接著在工作台完成邏輯、Flex、AI 知識庫與 Rich Menu 設定。
-            </p>
+            <p className="bc-section-desc">連上頻道、畫流程、上線，三步驟搞定。</p>
           </div>
 
           <div className="bc-steps bc-reveal">
@@ -645,7 +649,7 @@ const HomePage = () => {
                 <div className="bc-link-line" />
                 <div className="bc-blip bc-dark">⇄</div>
                 <div className="bc-link-line" />
-                <div className="bc-blip bc-acc">BC</div>
+                <div className="bc-blip bc-acc">BL</div>
               </div>
             </div>
             <div className="bc-step">
@@ -662,14 +666,17 @@ const HomePage = () => {
                   >
                     <path d="M 30 10 C 90 10, 90 50, 150 50" />
                   </svg>
-                  <div className="bc-node" style={{ left: 6, top: 14 }}>
-                    trigger
+                  <div
+                    className="bc-node bc-node-event"
+                    style={{ left: 6, top: 14 }}
+                  >
+                    事件
                   </div>
                   <div
-                    className="bc-node bc-node-accent"
+                    className="bc-node bc-node-reply"
                     style={{ left: 80, top: 54 }}
                   >
-                    flex
+                    回覆
                   </div>
                 </div>
               </div>
@@ -760,10 +767,7 @@ const HomePage = () => {
           <span className="bc-ital">第一個</span> Bot 吧。
         </h2>
         <div className="bc-finale-side bc-reveal">
-          <p>
-            註冊後依照建立教學新增 LINE Bot，再進入工作台設定回覆、Flex
-            Message、AI 知識庫與 Rich Menu。
-          </p>
+          <p>免費註冊，依照建立教學幾分鐘接上你的第一個 LINE Bot。</p>
           <div className="bc-ctas">
             <Link className="bc-btn bc-btn-primary" to="/register">
               免費開始

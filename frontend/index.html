@@ -24,8 +24,10 @@
 
           // 如果不是本地開發環境，使用當前域名或其 API 子域名
           if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-            if (hostname.includes('linebot.')) {
-              // linebot.jkl921102.org -> api.jkl921102.org
+            if (hostname === 'botlyn.net' || hostname === 'www.botlyn.net') {
+              apiOrigin = protocol + '//api.botlyn.net';
+            } else if (hostname.includes('linebot.')) {
+              // 舊網域相容：linebot.jkl921102.org -> api.jkl921102.org
               apiOrigin = protocol + '//api.' + hostname.replace('linebot.', '');
             } else {
               // 使用當前域名
@@ -81,14 +83,14 @@
     <meta name="description" content="Botlyn 是一個視覺化的 LINE 客服機器人建構平台。把訊息積木拖一拖，串起來，結合 AI 知識庫，就能在 LINE、Web 與各種通訊管道上跑起來，不用寫一行程式碼。" />
     <meta name="author" content="Botlyn Studio" />
     <meta name="keywords" content="Botlyn, LINE Bot, LINE 客服機器人, 客服機器人, AI 工具, AI 客服, 對話機器人, 視覺化流程編輯, LINE Messaging API, Flex Message, Rich Menu, AI 知識庫, RAG" />
-    <link rel="canonical" href="https://linebot.jkl921102.org/" />
+    <link rel="canonical" href="https://botlyn.net/" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Botlyn | LINE 客服機器人與 AI 對話流程建構平台" />
     <meta property="og:description" content="把 LINE 客服機器人，做成你想要的樣子。視覺化流程、Flex 訊息、Rich Menu、AI 知識庫與 LINE 整合都在一個工作台。" />
-    <meta property="og:image" content="https://linebot.jkl921102.org/assets/brand/botlyn-logo-512.png" />
-    <meta property="og:url" content="https://linebot.jkl921102.org/" />
+    <meta property="og:image" content="https://botlyn.net/assets/brand/botlyn-logo-512.png" />
+    <meta property="og:url" content="https://botlyn.net/" />
     <meta property="og:site_name" content="Botlyn" />
     <meta property="og:locale" content="zh_TW" />
 
@@ -96,7 +98,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Botlyn | LINE 客服機器人與 AI 對話流程建構平台" />
     <meta name="twitter:description" content="用拖拉式流程、Flex 訊息、Rich Menu 與 AI 知識庫快速建立 LINE 客服機器人。" />
-    <meta name="twitter:image" content="https://linebot.jkl921102.org/assets/brand/botlyn-logo-512.png" />
+    <meta name="twitter:image" content="https://botlyn.net/assets/brand/botlyn-logo-512.png" />
 
     <!-- Structured Data / JSON-LD -->
     <script type="application/ld+json">
@@ -107,8 +109,8 @@
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web",
         "description": "視覺化的 LINE 客服機器人建構平台，結合 AI 知識庫、Flex 訊息與 Rich Menu，不用寫程式碼就能打造 LINE 客服機器人。",
-        "url": "https://linebot.jkl921102.org/",
-        "image": "https://linebot.jkl921102.org/assets/brand/botlyn-logo-512.png",
+        "url": "https://botlyn.net/",
+        "image": "https://botlyn.net/assets/brand/botlyn-logo-512.png",
         "offers": {
           "@type": "Offer",
           "category": "SaaS"
@@ -116,7 +118,7 @@
         "publisher": {
           "@type": "Organization",
           "name": "Botlyn Studio",
-          "url": "https://linebot.jkl921102.org/"
+          "url": "https://botlyn.net/"
         }
       }
     </script>

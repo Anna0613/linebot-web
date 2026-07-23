@@ -1495,6 +1495,19 @@ body {
   aspect-ratio: 1.05 / 1;
 }
 
+.bc-hero-visual::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  z-index: -1;
+  background: radial-gradient(
+    circle at 60% 30%,
+    oklch(0.72 0.16 150 / 0.32),
+    transparent 60%
+  );
+  filter: blur(10px);
+}
+
 .bc-product-shell {
   position: absolute;
   inset: 0;
@@ -2139,10 +2152,17 @@ body {
   background: var(--bc-card);
   transition:
     border-color 0.25s ease,
-    transform 0.25s ease;
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .bc-tile:hover {
+  border-color: var(--bc-accent);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px -24px oklch(0.62 0.18 150 / 0.35);
+}
+
+.bc-t-ai:hover {
   border-color: var(--bc-ink);
 }
 
@@ -2224,15 +2244,23 @@ body {
   font-size: 12px;
 }
 
-.bc-node-accent {
-  border-color: var(--bc-accent);
-  color: var(--bc-accent-ink);
+/* 事件＝amber，控制＝violet，回覆＝emerald，對照 blockVisualStyles.ts 真實積木配色 */
+.bc-node-event {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #78350f;
 }
 
-.bc-node-dark {
-  border-color: var(--bc-ink);
-  background: var(--bc-ink);
-  color: var(--bc-bg);
+.bc-node-control {
+  border-color: #8b5cf6;
+  background: #f5f3ff;
+  color: #4c1d95;
+}
+
+.bc-node-reply {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
 }
 
 .bc-wire {
@@ -2532,19 +2560,22 @@ body {
   text-wrap: pretty;
 }
 
+/* 這裡的視覺樣式對照真實編輯器程式碼：
+   ModularBlockPalette / DraggableBlock / DroppedBlock 的白底 + 粉彩 border-l-4 積木卡，
+   Workspace.tsx 的 emerald-50 active tab，DropZone.tsx 的白底虛線畫布。 */
 .bc-builder-stage {
   display: grid;
   overflow: hidden;
   grid-template-columns: 210px minmax(0, 1fr) 260px;
   min-height: 540px;
-  border: 1px solid oklch(0.26 0.01 270);
+  border: 1px solid var(--bc-line-2);
   border-radius: 18px;
-  background: oklch(0.13 0.01 270);
+  background: #f7fbf8;
 }
 
 .bc-stage-rail,
 .bc-stage-insp {
-  background: oklch(0.1 0.01 270);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .bc-stage-rail {
@@ -2552,12 +2583,12 @@ body {
   flex-direction: column;
   gap: 6px;
   padding: 18px 14px;
-  border-right: 1px solid oklch(0.22 0.01 270);
+  border-right: 1px solid var(--bc-line-2);
 }
 
 .bc-rail-head {
   margin: 14px 0 6px;
-  color: oklch(0.55 0.01 270);
+  color: var(--bc-ink-3);
   font-family: var(--bc-f-mono);
   font-size: 10px;
   letter-spacing: 0.1em;
@@ -2571,35 +2602,62 @@ body {
 .bc-rail-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-left: 3px solid transparent;
   border-radius: 8px;
-  color: oklch(0.85 0.012 270);
-  font-size: 13px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  color: var(--bc-ink-2);
+  font-size: 12.5px;
   cursor: grab;
-  transition: background 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .bc-rail-item:hover {
-  background: oklch(0.16 0.01 270);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
 }
 
 .bc-dot {
   width: 8px;
   height: 8px;
   flex-shrink: 0;
-  border-radius: 2px;
+  border-radius: 999px;
   background: var(--bc-accent);
 }
 
+/* 事件＝amber，回覆＝emerald，控制＝violet，設定＝slate，對照 blockVisualStyles.ts */
 .bc-dot.bc-y {
-  background: var(--bc-hi);
+  background: #f59e0b;
+}
+.bc-rail-item:has(.bc-dot.bc-y) {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
 }
 .bc-dot.bc-b {
-  background: oklch(0.65 0.14 240);
+  background: #10b981;
+}
+.bc-rail-item:has(.bc-dot.bc-b) {
+  border-left-color: #10b981;
+  background: #ecfdf5;
 }
 .bc-dot.bc-g {
-  background: oklch(0.7 0.15 150);
+  background: #64748b;
+}
+.bc-rail-item:has(.bc-dot.bc-g) {
+  border-left-color: #64748b;
+  background: #f8fafc;
+}
+.bc-rail-item:has(.bc-dot:not(.bc-y):not(.bc-b):not(.bc-g)) {
+  border-left-color: #8b5cf6;
+  background: #f5f3ff;
+}
+.bc-rail-item:has(.bc-dot:not(.bc-y):not(.bc-b):not(.bc-g)) .bc-dot {
+  background: #8b5cf6;
 }
 
 .bc-stage-canvas {
@@ -2607,38 +2665,33 @@ body {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  background: radial-gradient(
-      circle at 1px 1px,
-      oklch(0.24 0.01 270) 1px,
-      transparent 0
-    )
-    0 0 / 22px 22px;
+  background: #f7fbf8;
 }
 
 .bc-stage-tabs {
   display: flex;
-  min-height: 58px;
+  min-height: 54px;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   overflow-x: auto;
-  border-bottom: 1px solid oklch(0.22 0.01 270);
-  padding: 10px 12px;
+  border-bottom: 1px solid var(--bc-line-2);
+  background: rgba(255, 255, 255, 0.65);
+  padding: 8px 10px;
   scrollbar-width: thin;
 }
 
 .bc-stage-tabs span {
   flex-shrink: 0;
-  padding: 8px 12px;
-  border: 1px solid oklch(0.26 0.01 270);
-  border-radius: 999px;
-  color: oklch(0.72 0.012 270);
+  padding: 7px 12px;
+  border-radius: 8px;
+  color: #475569;
   font-size: 12px;
+  font-weight: 500;
 }
 
 .bc-stage-tabs .bc-tab-active {
-  border-color: oklch(0.78 0.1 150 / 0.55);
-  background: oklch(0.32 0.1 150 / 0.45);
-  color: oklch(0.9 0.08 150);
+  background: #ecfdf5;
+  color: #166534;
 }
 
 .bc-canvas-board {
@@ -2657,62 +2710,56 @@ body {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border: 1px dashed oklch(0.38 0.01 270);
+  border: 2px dashed #cbd5e1;
   border-radius: 16px;
-  background: oklch(0.15 0.01 270 / 0.88);
+  background: #ffffff;
   padding: 18px;
 }
 
 .bc-flow-card {
   width: min(100%, 240px);
   padding: 10px 14px;
-  border: 1px solid oklch(0.3 0.01 270);
+  border: 1px solid transparent;
+  border-left: 4px solid transparent;
   border-radius: 10px;
-  background: oklch(0.18 0.01 270);
-  color: var(--bc-bg);
-  box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.6);
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
   font-size: 13px;
   text-align: left;
 }
 
 .bc-nh {
   margin-bottom: 4px;
-  color: oklch(0.6 0.01 270);
   font-family: var(--bc-f-mono);
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  opacity: 0.7;
 }
 
+/* EVENT = amber，CONTROL = violet，REPLY = emerald，對照 BLOCK_COLOR_CLASS_BY_TYPE */
 .bc-flow-card.bc-start {
-  border-color: var(--bc-hi);
-}
-.bc-flow-card.bc-start .bc-nh {
-  color: var(--bc-hi);
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #78350f;
 }
 .bc-flow-card.bc-cond {
-  border-color: var(--bc-accent);
+  border-color: #8b5cf6;
+  background: #f5f3ff;
+  color: #4c1d95;
 }
-.bc-flow-card.bc-cond .bc-nh {
-  color: oklch(0.78 0.1 150);
-}
-.bc-flow-card.bc-action {
-  border-color: oklch(0.65 0.14 240);
-}
-.bc-flow-card.bc-action .bc-nh {
-  color: oklch(0.75 0.12 240);
-}
+.bc-flow-card.bc-action,
 .bc-flow-card.bc-ai {
-  border-color: oklch(0.7 0.15 150);
-}
-.bc-flow-card.bc-ai .bc-nh {
-  color: oklch(0.78 0.13 150);
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
 }
 
 .bc-flow-line {
   width: 1.5px;
   height: 34px;
-  background: oklch(0.42 0.01 270);
+  background: #cbd5e1;
 }
 
 .bc-flow-branches {
@@ -2727,58 +2774,65 @@ body {
   min-width: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid oklch(0.26 0.01 270);
+  border: 1px solid var(--bc-line-2);
   border-radius: 16px;
-  background: oklch(0.11 0.01 270);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .bc-sim-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 13px 14px;
-  background: oklch(0.62 0.18 150);
-  color: #ffffff;
-  font-size: 13px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--bc-line-2);
+  color: #334155;
+  font-size: 12px;
   font-weight: 600;
 }
 
-.bc-sim-body {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  color: oklch(0.78 0.012 270);
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.bc-sim-body span,
-.bc-sim-body b {
-  display: block;
-  padding: 10px 12px;
-  border-radius: 12px;
-}
-
-.bc-sim-body span {
-  align-self: flex-start;
-  border: 1px solid oklch(0.26 0.01 270);
-  background: oklch(0.15 0.01 270);
+.bc-sim-head span {
+  color: #94a3b8;
+  font-family: var(--bc-f-mono);
+  font-size: 10px;
   font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.bc-sim-body b {
-  align-self: flex-end;
-  background: oklch(0.24 0.01 270);
-  color: var(--bc-bg);
-  font-weight: 500;
+.bc-sim-body {
+  flex: 1;
+  overflow: auto;
+  padding: 14px;
+  background: #fafaf9;
+  color: #166534;
+  font-family: var(--bc-f-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.bc-sim-body .bc-code-kw {
+  color: #7c3aed;
+}
+
+.bc-sim-body .bc-code-str {
+  color: #b45309;
+}
+
+.bc-sim-body .bc-code-cm {
+  color: #94a3b8;
 }
 
 .bc-sim-input {
   margin: 0 14px 14px;
-  padding: 10px 12px;
-  border: 1px solid oklch(0.26 0.01 270);
-  border-radius: 10px;
-  color: oklch(0.55 0.01 270);
-  font-size: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--bc-line-2);
+  border-radius: 8px;
+  color: #94a3b8;
+  font-family: var(--bc-f-mono);
+  font-size: 11px;
 }
 
 .bc-canvas-wire {
@@ -2789,7 +2843,7 @@ body {
 
 .bc-canvas-wire path {
   fill: none;
-  stroke: oklch(0.42 0.01 270);
+  stroke: #cbd5e1;
   stroke-width: 1.5;
 }
 
@@ -2798,7 +2852,7 @@ body {
   flex-direction: column;
   gap: 14px;
   padding: 18px;
-  border-left: 1px solid oklch(0.22 0.01 270);
+  border-left: 1px solid var(--bc-line-2);
   font-size: 13px;
 }
 
@@ -2806,6 +2860,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: #0f172a;
   font-size: 14px;
   font-weight: 500;
 }
@@ -2813,8 +2868,8 @@ body {
 .bc-insp-pill {
   padding: 2px 8px;
   border-radius: 999px;
-  background: oklch(0.32 0.1 150 / 0.4);
-  color: oklch(0.85 0.1 150);
+  background: #f5f3ff;
+  color: #6d28d9;
   font-family: var(--bc-f-mono);
   font-size: 10px;
 }
@@ -2826,7 +2881,7 @@ body {
 }
 
 .bc-insp-row label {
-  color: oklch(0.55 0.01 270);
+  color: #94a3b8;
   font-family: var(--bc-f-mono);
   font-size: 10px;
   letter-spacing: 0.08em;
@@ -2835,10 +2890,10 @@ body {
 
 .bc-insp-input {
   padding: 7px 10px;
-  border: 1px solid oklch(0.26 0.01 270);
+  border: 1px solid var(--bc-line-2);
   border-radius: 6px;
-  background: oklch(0.16 0.01 270);
-  color: var(--bc-bg);
+  background: #f8fafc;
+  color: #0f172a;
   font-family: var(--bc-f-mono);
   font-size: 12px;
 }
@@ -3375,11 +3430,11 @@ body {
   }
 
   .bc-stage-rail {
-    border-bottom: 1px solid oklch(0.22 0.01 270);
+    border-bottom: 1px solid var(--bc-line-2);
   }
 
   .bc-stage-insp {
-    border-top: 1px solid oklch(0.22 0.01 270);
+    border-top: 1px solid var(--bc-line-2);
   }
 
   .bc-stage-canvas {

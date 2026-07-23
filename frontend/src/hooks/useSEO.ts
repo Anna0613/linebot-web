@@ -6,7 +6,7 @@ interface SEOOptions {
   canonicalPath: string;
 }
 
-const SITE_URL = "https://linebot.jkl921102.org";
+const SITE_URL = "https://botlyn.net";
 const DEFAULT_TITLE = "Botlyn | LINE 客服機器人與 AI 對話流程建構平台";
 const DEFAULT_DESCRIPTION =
   "Botlyn 是一個視覺化的 LINE 客服機器人建構平台。把訊息積木拖一拖，串起來，結合 AI 知識庫，就能在 LINE、Web 與各種通訊管道上跑起來，不用寫一行程式碼。";
