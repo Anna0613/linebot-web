@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://linebot.jkl921102.org/</loc>
+    <loc>https://botlyn.net/</loc>
     <lastmod>2026-07-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://linebot.jkl921102.org/about</loc>
+    <loc>https://botlyn.net/about</loc>
     <lastmod>2026-07-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://linebot.jkl921102.org/how-to-establish</loc>
+    <loc>https://botlyn.net/how-to-establish</loc>
     <lastmod>2026-07-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://linebot.jkl921102.org/privacy</loc>
+    <loc>https://botlyn.net/privacy</loc>
     <lastmod>2026-07-22</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://linebot.jkl921102.org/terms</loc>
+    <loc>https://botlyn.net/terms</loc>
     <lastmod>2026-07-22</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

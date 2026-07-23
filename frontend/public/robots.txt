@@ -5,4 +5,4 @@ Disallow:
 Allow: /
 Allow: /dashboard
 
-Sitemap: https://linebot.jkl921102.org/sitemap.xml
+Sitemap: https://botlyn.net/sitemap.xml

@@ -13,7 +13,11 @@ const UNIFIED_API_URL = (() => {
     // 生產環境：使用當前域名的 API 子域名或相同域名
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    // 如果是 linebot.jkl921102.org，則使用 linebot-api.jkl921102.org
+    // 如果是 botlyn.net，則使用 api.botlyn.net
+    if (hostname === 'botlyn.net' || hostname === 'www.botlyn.net') {
+      return `${protocol}//api.botlyn.net`;
+    }
+    // 舊網域相容：linebot.jkl921102.org -> linebot-api.jkl921102.org
     if (hostname.startsWith('linebot.')) {
       return `${protocol}//linebot-api.${hostname.replace(/^linebot\./, '')}`;
     }

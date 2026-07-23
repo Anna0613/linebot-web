@@ -1,6 +1,6 @@
-# BotCraft
+# Botlyn
 
-> BotCraft 是視覺化的 LINE 客服機器人建構平台。用拖拉式流程編輯器串接訊息積木，結合 AI 知識庫（Groq、Gemini、RAG 向量檢索）、Flex 訊息與圖文選單（Rich Menu），不需寫程式碼即可打造 LINE 客服機器人並發佈到 LINE Messaging API。
+> Botlyn 是視覺化的 LINE 客服機器人建構平台。用拖拉式流程編輯器串接訊息積木，結合 AI 知識庫（Groq、Gemini、RAG 向量檢索）、Flex 訊息與圖文選單（Rich Menu），不需寫程式碼即可打造 LINE 客服機器人並發佈到 LINE Messaging API。
 
 ## 核心功能
 
@@ -12,11 +12,11 @@
 
 ## 重要頁面
 
-- 首頁與功能介紹: https://linebot.jkl921102.org/
-- 關於我們: https://linebot.jkl921102.org/about
-- 建立教學: https://linebot.jkl921102.org/how-to-establish
-- 隱私權政策: https://linebot.jkl921102.org/privacy
-- 服務條款: https://linebot.jkl921102.org/terms
+- 首頁與功能介紹: https://botlyn.net/
+- 關於我們: https://botlyn.net/about
+- 建立教學: https://botlyn.net/how-to-establish
+- 隱私權政策: https://botlyn.net/privacy
+- 服務條款: https://botlyn.net/terms
 
 ## 常見問題
 
