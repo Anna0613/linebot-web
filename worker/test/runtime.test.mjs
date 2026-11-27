@@ -36,9 +36,15 @@ test('verified webhook survives a PostgreSQL outage and redelivery', { timeout: 
   await client.query('CREATE TABLE bots(id uuid PRIMARY KEY, is_active boolean, user_id uuid)');
   await client.query('INSERT INTO bots VALUES($1,true,$2)', [bot, owner]);
   await client.query(await readFile(new URL('../../backend/migrations/sql/20261127_inbox.sql', import.meta.url), 'utf8'));
+  await client.query(await readFile(new URL('../../backend/migrations/sql/20261127_inbox_drafts.sql', import.meta.url), 'utf8'));
+  await client.query(`CREATE TABLE knowledge_documents(id uuid PRIMARY KEY, bot_id uuid, title text, original_file_name text, deleted_at timestamptz);
+    CREATE TABLE knowledge_chunks(id uuid PRIMARY KEY, document_id uuid, bot_id uuid, content text, deleted_at timestamptz)`);
+  const doc = randomUUID(), chunk = randomUUID();
+  await client.query("INSERT INTO knowledge_documents(id,bot_id,title) VALUES ($1,$2,'門市資訊')", [doc,bot]);
+  await client.query("INSERT INTO knowledge_chunks(id,document_id,bot_id,content) VALUES ($1,$2,$3,'營業時間為週一至週五九點到六點。')", [chunk,doc,bot]);
   await client.end();
   const runtime = await startEmulator({
-    databaseUrl: `postgres://postgres:${password}@127.0.0.1:${port}/postgres`, botId: bot, destination, secret
+    databaseUrl: `postgres://postgres:${password}@127.0.0.1:${port}/postgres`, botId: bot, destination, secret, tickToken: secret
   });
   t.after(() => runtime.dispose());
   const url = new URL('/api/v1/webhooks/' + bot, await runtime.ready);
@@ -70,6 +76,16 @@ test('verified webhook survives a PostgreSQL outage and redelivery', { timeout: 
     await delay(1600);
     assert.equal((await check.query('SELECT * FROM inbox_messages')).rows.length, 1);
     assert.equal((await check.query('SELECT * FROM inbox_jobs')).rows.length, 1);
+    await check.query("UPDATE inbox_jobs SET draft_state='requested',draft_started_at=now()");
+    const tick = await runtime.dispatchFetch('http://localhost/internal/local-draft-tick', {
+      method:'POST', headers:{Authorization:'Bearer ' + secret}
+    });
+    assert.equal(tick.status, 204);
+    const draft = (await check.query('SELECT * FROM inbox_jobs')).rows[0];
+    assert.equal(draft.draft_chunk,chunk);
+    assert.equal(draft.draft_model,'local-fixture');
+    assert.equal(draft.draft_state,'ready');
+    assert.deepEqual(draft.draft_tools,['knowledge.search','knowledge.read']);
     if (process.env.INBOX_TEST_PYTHON) {
       execFileSync(process.env.INBOX_TEST_PYTHON, ['-m', 'pytest', '-q', '-o', 'addopts=', '--noconftest', 'tests/test_pg_inbox.py'], {
         cwd: fileURLToPath(new URL('../../backend/', import.meta.url)), stdio: 'inherit',

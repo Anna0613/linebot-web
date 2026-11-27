@@ -24,12 +24,28 @@ def test_pg_inbox_api():
         thread = listing.json()["items"][0]["id"]
         detail = client.get(f"{endpoint}/{thread}/messages").json()
         assert detail["items"][0]["body"] == "營業時間"
+        msg = detail["items"][0]
+        assert msg["draft_state"] == "ready" and msg["source_title"] == "門市資訊"
+        assert msg["source_excerpt"] == msg["draft_body"]
+        import psycopg2
+        with psycopg2.connect(host="127.0.0.1", port=os.environ["DB_PORT"], dbname="postgres",
+                              user="postgres", password=os.environ["DB_PASSWORD"]) as pg:
+            with pg.cursor() as cursor:
+                cursor.execute("UPDATE knowledge_chunks SET content='已修訂'")
+        stale = client.get(f"{endpoint}/{thread}/messages").json()["items"][0]
+        assert stale["draft_state"] == "stale" and stale["draft_body"] is None
+        draft_url = f"{endpoint}/{thread}/messages/{msg['seq']}/draft"
+        for _ in range(2):
+            assert client.post(draft_url).status_code == 202
         url = f"{endpoint}/{thread}/takeover"
         assert client.post(url, json={"ownership_epoch": 9}).status_code == 409
         for _ in range(2):
             result = client.post(url, json={"ownership_epoch": 0})
             assert result.json() == {"owner_mode": "human", "ownership_epoch": 1}
+        assert client.post(draft_url).status_code == 409
+        assert client.get(f"{endpoint}/{thread}/messages").json()["items"][0]["can_draft"] is False
         app.dependency_overrides[inbox.get_current_user_async] = lambda: SimpleNamespace(id=uuid4())
+        assert client.post(draft_url).status_code == 404
         assert client.get(endpoint).status_code == 404
         assert client.get(f"{endpoint}/{thread}/messages").status_code == 404
         assert client.post(url, json={"ownership_epoch": 1}).status_code == 404

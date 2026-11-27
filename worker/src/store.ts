@@ -45,8 +45,9 @@ async function storeMessage(db: Pick<Client, 'query'>, event: Envelope) {
   if (!result.rows.length) return;
   if (withdrawn) {
     await db.query("UPDATE inbox_jobs SET state='cancelled' WHERE conversation_id=$1 AND seq=$2", [thread.id, result.rows[0].seq]);
-  } else if (thread.owner_mode === 'auto' && thread.current_turn && event.messageKind === 'text') {
+  } else if (thread.owner_mode === 'auto' && thread.current_turn) {
     await db.query("UPDATE inbox_jobs SET state='cancelled' WHERE conversation_id=$1 AND state='pending'", [thread.id]);
+    if (event.messageKind !== 'text') return;
     await db.query('INSERT INTO inbox_jobs(conversation_id,seq,ownership_epoch) VALUES ($1,$2,$3)',
       [thread.id, thread.last_seq, thread.ownership_epoch]);
   }

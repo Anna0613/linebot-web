@@ -3,7 +3,7 @@ import { Miniflare } from 'miniflare';
 import { randomBytes, createCipheriv } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-export async function startEmulator({ databaseUrl, botId, destination, secret, port = 0 }) {
+export async function startEmulator({ databaseUrl, botId, destination, secret, port = 0, tickToken }) {
   if (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(databaseUrl).hostname)) {
     throw new Error('Local development requires a loopback PostgreSQL address.');
   }
@@ -26,7 +26,7 @@ export async function startEmulator({ databaseUrl, botId, destination, secret, p
     modules: true, script: bridge + outputFiles[0].text, host: '127.0.0.1', port,
     compatibilityDate: '2026-05-04', compatibilityFlags: ['nodejs_compat'],
     hyperdrives: { HYPERDRIVE: databaseUrl },
-    r2Buckets: ['CHANNELS'], bindings: { CHANNEL_KEY: key.toString('base64') },
+    r2Buckets: ['CHANNELS'], bindings: { CHANNEL_KEY: key.toString('base64'), LOCAL_DRAFT_FIXTURE:'1', LOCAL_TICK_TOKEN:tickToken ?? '' },
     queueProducers: { INBOUND: 'line-inbound' },
     queueConsumers: { 'line-inbound': { maxBatchSize: 10, maxBatchTimeout: 1, retryDelay: 2, maxRetries: 8, deadLetterQueue: 'line-inbound-dead' } },
   });

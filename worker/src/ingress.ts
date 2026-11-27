@@ -16,6 +16,9 @@ export interface Bindings {
   INBOUND: Queue<Envelope>;
   CHANNELS: R2Bucket;
   CHANNEL_KEY: string;
+  LOCAL_DRAFT_FIXTURE?: string;
+  LOCAL_TICK_TOKEN?: string;
+  AI?: {run(model: string, input: unknown, options?: { signal: AbortSignal }): Promise<{response: string}>};
   HYPERDRIVE: Hyperdrive;
 }
 
