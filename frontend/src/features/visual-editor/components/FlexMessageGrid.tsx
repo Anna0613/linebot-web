@@ -143,14 +143,14 @@ const FlexMessageGrid: React.FC<FlexMessageGridProps> = ({ onSelect, onCreate, o
   }
 
   return (
-    <div className="h-full overflow-auto bg-[#f7fbf8] p-6">
+    <div className="studio-library h-full overflow-auto p-4 sm:p-6">
       {messages.length === 0 ? (
         <div className="flex h-full items-center justify-center">
           <div className="app-panel-strong max-w-lg p-8 text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
               <Plus className="h-6 w-6" />
             </div>
-            <h2 className="text-xl font-semibold text-slate-950">選擇或新增 Flex Message 模板</h2>
+            <h2 className="text-xl font-semibold text-slate-950">建立第一張 Flex 卡片</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Flex Message 編輯器可視覺化設計 LINE 訊息卡片。請先新增一個新的 Flex Message 開始設計。
             </p>
@@ -163,27 +163,26 @@ const FlexMessageGrid: React.FC<FlexMessageGridProps> = ({ onSelect, onCreate, o
         <div>
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-slate-900">Flex Message</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-[var(--bc-ink)]">Flex Message</h2>
               <p className="mt-0.5 text-xs text-slate-500">點擊方塊進入編輯器</p>
             </div>
             <Button className="app-primary-button h-8" size="sm" onClick={() => { setNewName(''); setShowCreateDialog(true); }}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />新增
             </Button>
           </div>
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid gap-4 grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {messages.map((message) => {
               const blocks = previewBlocks.get(message.id);
               return (
               <div
                 key={message.id}
-                className="group relative cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-emerald-300 hover:shadow-md"
-                onClick={() => onSelect(message.id)}
+                className="group relative cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-[var(--bc-accent)] hover:shadow-md"
               >
                 {/* 三點選單 */}
                 <div className="absolute right-1.5 top-1.5 z-10" onClick={(e) => e.stopPropagation()}>
                   <Popover open={openMenuId === message.id} onOpenChange={(open) => setOpenMenuId(open ? message.id : null)}>
                     <PopoverTrigger asChild>
-                      <button className="flex h-6 w-6 items-center justify-center rounded-md bg-white/80 text-slate-400 opacity-0 shadow-sm transition hover:bg-white hover:text-slate-700 group-hover:opacity-100">
+                      <button type="button" aria-label={`${message.name}的操作`} className="studio-template-menu">
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </PopoverTrigger>
@@ -215,7 +214,9 @@ const FlexMessageGrid: React.FC<FlexMessageGridProps> = ({ onSelect, onCreate, o
                 </div>
                 {/* 名稱 / 日期 */}
                 <div className="p-3">
-                  <p className="truncate text-sm font-medium text-slate-900">{message.name}</p>
+                  <button type="button" className="studio-open-template" onClick={() => onSelect(message.id)}>
+                    {message.name}
+                  </button>
                   <p className="mt-1 text-[11px] text-slate-400">{new Date(message.created_at).toLocaleDateString('zh-TW')}</p>
                 </div>
               </div>

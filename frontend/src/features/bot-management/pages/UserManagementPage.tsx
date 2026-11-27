@@ -36,8 +36,6 @@ const userManagementCopy = {
     createFirstBot: "Create first Bot",
     viewSetupGuide: "View setup guide",
     loading: "Loading friends...",
-    botHealthTitle: "Messages are synced",
-    botHealthBody: "Incoming messages and friend activity stay up to date.",
   },
   zh: {
     sidebarSubtitle: "工作台",
@@ -58,8 +56,6 @@ const userManagementCopy = {
     createFirstBot: "建立第一個 Bot",
     viewSetupGuide: "查看建立教學",
     loading: "載入好友...",
-    botHealthTitle: "訊息已同步",
-    botHealthBody: "好友訊息與互動會保持更新。",
   },
 };
 
@@ -201,8 +197,6 @@ const UserManagementPage: React.FC = () => {
       activeNav="users"
       headerKicker={copy.topbarKicker}
       welcomeLabel={copy.welcome}
-      sidebarCalloutTitle={copy.botHealthTitle}
-      sidebarCalloutBody={copy.botHealthBody}
       headerStatus={
         <>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
@@ -223,7 +217,11 @@ const UserManagementPage: React.FC = () => {
       }
       innerClassName="max-w-none px-4 pb-12 sm:px-6 lg:px-8"
     >
-      <div className="mt-6 space-y-6">
+      <div className="space-y-6 pb-8">
+        <header className="studio-page-heading">
+          <h1>{copy.title}</h1>
+          <p>{copy.subtitle}</p>
+        </header>
         {isInitialPageLoading && (
           <UserManagementLoadingPanel text={copy.loading} />
         )}

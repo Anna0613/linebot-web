@@ -169,13 +169,10 @@ const FlexMessageInspector: React.FC<FlexMessageInspectorProps> = ({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white/80 backdrop-blur-xl">
       <div className="shrink-0 border-b border-slate-200/80 p-4">
-        <div className="text-sm font-semibold text-slate-950">右側工具</div>
+        <div className="text-sm font-semibold text-slate-950">元件屬性</div>
         <div className="mt-1 truncate text-sm font-semibold text-slate-950">
           {getFlexBlockDisplayName(selectedBlock)}
         </div>
-        <p className="mt-1 text-sm leading-5 text-slate-500">
-          先用畫布看結果，再到這裡調整細節。
-        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">

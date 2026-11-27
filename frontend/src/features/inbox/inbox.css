@@ -22,3 +22,12 @@
 .inbox-empty { display:grid; align-content:center; justify-items:center; gap:.6rem; color:#576681 }
 @media(max-width:720px){.inbox-grid{grid-template-columns:minmax(0,1fr)}.inbox-list{max-height:15rem;border-right:0;border-bottom:1px solid var(--line)}.inbox-empty{padding:1.5rem}}
 @media(prefers-reduced-motion:no-preference){.inbox-row,.inbox-grid button{transition:background-color .15s ease}.inbox-row:hover{background:#f2f5fc}}
+.inbox-workspace { --blue:var(--bc-accent-ink); --line:var(--bc-line-2); --ink:var(--bc-ink); padding-top:.75rem }
+.studio-inbox-title{font-size:clamp(1.8rem,3vw,2.65rem);font-weight:680;letter-spacing:-.055em;line-height:1.18}
+.inbox-grid{box-shadow:0 8px 30px #22233b06}.inbox-grid header{min-height:4.2rem}
+.inbox-row[aria-pressed=true]{background:var(--bc-accent-soft);box-shadow:inset 3px 0 var(--bc-accent)}
+.studio-draft{margin-top:.75rem;border-left:2px solid var(--bc-accent);padding:.3rem .85rem;display:grid;justify-items:start;gap:.45rem;font-size:.86rem}
+.studio-draft strong{font-size:.72rem;color:var(--bc-accent-ink)}
+.studio-draft blockquote,.studio-draft details div{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.studio-draft summary{cursor:pointer;font-weight:600}
+.studio-draft details[open]{background:var(--bc-bg);padding:.6rem;border-radius:6px}

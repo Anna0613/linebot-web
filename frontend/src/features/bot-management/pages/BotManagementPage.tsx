@@ -31,8 +31,6 @@ import {
 const managementCopy = {
   en: {
     sidebarSubtitle: "Workspace",
-    botHealthTitle: "Bot is ready",
-    botHealthBody: "Check connection, messages, and friends from here.",
     topbarKicker: "Interactions",
     welcome: "Welcome back",
     openNavigation: "Open navigation",
@@ -74,8 +72,6 @@ const managementCopy = {
   },
   zh: {
     sidebarSubtitle: "工作台",
-    botHealthTitle: "Bot 目前正常",
-    botHealthBody: "查看連線、訊息與好友互動。",
     topbarKicker: "互動紀錄",
     welcome: "歡迎回來",
     openNavigation: "開啟導覽",
@@ -678,8 +674,6 @@ const BotManagementPage: React.FC = () => {
       activeNav="analytics"
       headerKicker={copy.topbarKicker}
       welcomeLabel={copy.welcome}
-      sidebarCalloutTitle={copy.botHealthTitle}
-      sidebarCalloutBody={copy.botHealthBody}
       headerStatus={
         <>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
@@ -706,7 +700,11 @@ const BotManagementPage: React.FC = () => {
         </>
       }
     >
-      <div className="mt-6 space-y-6">
+      <div className="space-y-6 pb-8">
+        <header className="studio-page-heading">
+          <h1>{copy.title}</h1>
+          <p>{copy.subtitle}</p>
+        </header>
         {isInitialPageLoading && <ManagementLoadingPanel />}
 
         {!isInitialPageLoading && bots.length === 0 && !loading && (

@@ -8,7 +8,7 @@ interface BotlynMarkProps {
 
 export const BotlynMark = ({ className, inverted = false }: BotlynMarkProps) => (
   <span className={cn("bc-brand-mark", inverted && "bc-brand-mark-inverted", className)} aria-hidden="true">
-    <img src="/assets/brand/botlyn-logo.png" alt="" />
+    <i /><i /><i />
   </span>
 );
 

@@ -107,8 +107,7 @@ const HowToEstablish = () => {
       <PageContentWrapper>
         <main className={isAuthenticated ? "py-6" : "pt-32"}>
           <section className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 pb-16 relative z-10">
-            <div className="mb-8">
-              <p className="app-kicker mb-2">建立教學</p>
+            <header className="studio-page-heading mb-6">
               <h1 className="mt-2 text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl">
                 Botlyn 建立教學
               </h1>
@@ -116,7 +115,7 @@ const HowToEstablish = () => {
                 四個步驟取得 LINE Channel 憑證，完成後即可回到 Botlyn
                 工作台建立 Bot。
               </p>
-            </div>
+            </header>
 
             <div className="grid gap-6 lg:grid-cols-[0.68fr_1fr]">
               <aside className="app-panel p-5">
@@ -129,6 +128,7 @@ const HowToEstablish = () => {
                       <button
                         key={step.id}
                         type="button"
+                        aria-current={isActive ? "step" : undefined}
                         onClick={() => goToStep(step.id)}
                         className={`flex items-center gap-3 rounded-[14px] px-3 py-3 text-left transition-colors ${
                           isActive

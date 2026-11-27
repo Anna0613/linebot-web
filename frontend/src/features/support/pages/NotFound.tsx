@@ -36,8 +36,10 @@ const NotFound = () => {
 
   return (
     <div className="app-page-surface flex min-h-screen items-center justify-center px-4">
-      <div className="app-panel max-w-md p-10 text-center sm:p-12">
-        <h1 className="mb-4 text-6xl font-semibold tracking-normal text-slate-950">404</h1>
+      <div className="studio-auth">
+        <div className="studio-auth-art" aria-hidden="true" />
+        <div className="studio-auth-form">
+        <h1 className="mb-4 text-6xl font-semibold tracking-normal text-[var(--bc-accent-ink)]">404</h1>
         <p className="mb-8 text-base leading-7 text-slate-600">
           找不到這個頁面。可能是連結已變更，或網址輸入錯誤。
         </p>
@@ -52,6 +54,7 @@ const NotFound = () => {
         {isAuthenticated === null && (
           <Loader text="載入中..." />
         )}
+        </div>
       </div>
     </div>
   );

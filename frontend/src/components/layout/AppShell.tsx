@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   BarChart3,
-  Bell,
   Home,
   LogOut,
   Inbox,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 
 import BotlynBrand, {
-  BotlynMark,
 } from "@/components/brand/BotlynIdentity";
 import LanguageToggle from "@/components/LanguageToggle/LanguageToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -67,8 +65,6 @@ const appShellCopy = {
     logoutErrorTitle: "Logout failed",
     defaultKicker: "Workspace",
     welcome: "Welcome back",
-    calloutTitle: "Bot is ready",
-    calloutBody: "Check connection, messages, and friends from here.",
   },
   zh: {
     sidebarSubtitle: "LineBot 管理",
@@ -90,8 +86,6 @@ const appShellCopy = {
     logoutErrorTitle: "登出失敗",
     defaultKicker: "工作台",
     welcome: "歡迎回來",
-    calloutTitle: "Bot 目前正常",
-    calloutBody: "查看連線、訊息與好友互動。",
   },
 };
 
@@ -168,14 +162,10 @@ const AppSidebar = ({
   activeNav,
   onNavigate,
   mobile = false,
-  calloutTitle,
-  calloutBody,
 }: {
   activeNav: AppShellNavId;
   onNavigate?: () => void;
   mobile?: boolean;
-  calloutTitle?: string;
-  calloutBody?: string;
 }) => {
   const { language } = useLanguagePreference();
   const copy = appShellCopy[language];
@@ -183,15 +173,13 @@ const AppSidebar = ({
   return (
     <aside
       className={cn(
-        "flex h-full flex-col border-r border-[var(--bc-line-2)] bg-[color-mix(in_oklch,var(--bc-bg)_86%,transparent)] px-4 py-5 shadow-[0_24px_80px_rgba(24,22,40,0.08)] backdrop-blur-2xl",
-        mobile ? "w-72" : "w-72"
+        "studio-sidebar flex h-full flex-col border-r border-[var(--bc-line-2)] bg-[color-mix(in_oklch,var(--bc-bg)_86%,transparent)] px-4 py-5 shadow-[0_24px_80px_rgba(24,22,40,0.08)] backdrop-blur-2xl",
+        mobile ? "w-72" : "w-60"
       )}
     >
       <div className="mb-5 px-2">
         <BotlynBrand to="/dashboard" />
-        <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--bc-ink-3)]">
-          {copy.sidebarSubtitle}
-        </p>
+
       </div>
 
       <GlobalBotSwitcher
@@ -208,6 +196,7 @@ const AppSidebar = ({
             <Link
               key={item.id}
               to={item.href}
+              aria-current={isActive ? "page" : undefined}
               onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors",
@@ -223,17 +212,6 @@ const AppSidebar = ({
         })}
       </nav>
 
-      <div className="mt-auto rounded-lg border border-[var(--bc-line-2)] bg-gradient-to-br from-[var(--bc-accent-soft)] via-white to-[var(--bc-hi-soft)] p-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-card shadow-sm">
-          <BotlynMark className="h-6 w-6" />
-        </div>
-        <p className="mt-3 text-sm font-semibold text-[var(--bc-ink)]">
-          {calloutTitle || copy.calloutTitle}
-        </p>
-        <p className="mt-1 text-xs leading-5 text-[var(--bc-ink-2)]">
-          {calloutBody || copy.calloutBody}
-        </p>
-      </div>
     </aside>
   );
 };
@@ -364,7 +342,7 @@ const AppTopbar = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--bc-line-2)] bg-[color-mix(in_oklch,var(--bc-bg)_82%,transparent)] px-4 py-4 backdrop-blur-2xl sm:px-6 lg:px-8">
+    <header className="studio-topbar sticky top-0 z-30 border-b border-[var(--bc-line-2)] bg-[color-mix(in_oklch,var(--bc-bg)_82%,transparent)] px-4 py-4 backdrop-blur-2xl sm:px-6 lg:px-8">
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <Button
@@ -381,12 +359,12 @@ const AppTopbar = ({
             className="min-w-0 max-w-[260px] flex-1 lg:hidden"
             showLabel={false}
           />
-          <div className="hidden min-w-0 sm:block">
+          <div className="min-w-0">
             <p className="truncate font-mono text-xs font-medium uppercase tracking-[0.12em] text-[var(--bc-accent-ink)]">
               {kicker || copy.defaultKicker}
             </p>
             <p className="truncate text-sm text-[var(--bc-ink-2)]">
-              {welcomeLabel || copy.welcome}, {displayName}!
+              {welcomeLabel || copy.welcome}
             </p>
           </div>
           {headerStatus && (
@@ -397,15 +375,7 @@ const AppTopbar = ({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-10 w-10 rounded-lg border-border bg-card/70 text-[var(--bc-ink-2)] shadow-sm hover:bg-card hover:text-[var(--bc-ink)]"
-            aria-label={copy.notifications}
-          >
-            <Bell className="h-4 w-4" />
-          </Button>
+
           <div className="flex h-10 items-center rounded-lg border border-border bg-card/70 px-2 shadow-sm">
             <LanguageToggle className="h-8 min-w-8 text-sm" />
           </div>
@@ -438,8 +408,6 @@ interface AppShellProps {
   headerKicker?: string;
   welcomeLabel?: string;
   headerStatus?: React.ReactNode;
-  sidebarCalloutTitle?: string;
-  sidebarCalloutBody?: string;
   contentClassName?: string;
   innerClassName?: string;
 }
@@ -451,8 +419,6 @@ const AppShell = ({
   headerKicker,
   welcomeLabel,
   headerStatus,
-  sidebarCalloutTitle,
-  sidebarCalloutBody,
   contentClassName,
   innerClassName,
 }: AppShellProps) => {
@@ -465,8 +431,6 @@ const AppShell = ({
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:block">
         <AppSidebar
           activeNav={activeNav}
-          calloutTitle={sidebarCalloutTitle}
-          calloutBody={sidebarCalloutBody}
         />
       </div>
 
@@ -482,8 +446,6 @@ const AppShell = ({
             <AppSidebar
               activeNav={activeNav}
               mobile
-              calloutTitle={sidebarCalloutTitle}
-              calloutBody={sidebarCalloutBody}
               onNavigate={() => setSidebarOpen(false)}
             />
           </div>
@@ -500,7 +462,7 @@ const AppShell = ({
         </div>
       )}
 
-      <main className={cn("min-h-screen lg:pl-72", contentClassName)}>
+      <main className={cn("min-h-screen lg:pl-60", contentClassName)}>
         <AppTopbar
           user={user}
           onOpenSidebar={() => setSidebarOpen(true)}

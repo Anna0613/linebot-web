@@ -56,7 +56,6 @@ export const VisualBotEditor: React.FC = () => {
   const returnLabel = initialRouteState?.returnLabel || '返回互動紀錄';
   const [logicGraph, setLogicGraph] = useState<WorkflowGraph | null>(null);
   const [flexBlocks, setFlexBlocks] = useState<UnifiedBlock[]>([]);
-  const [projectVersion, _setProjectVersion] = useState<string>('2.0'); // 新版本使用統一積木系統
   const [selectedBotId, setSelectedBotId] = useState<string>(initialSelectedBotId);
   const [selectedLogicTemplateId, setSelectedLogicTemplateId] = useState<string>('');
   const [selectedFlexMessageId, setSelectedFlexMessageId] = useState<string>('');
@@ -732,7 +731,7 @@ export const VisualBotEditor: React.FC = () => {
   return (
     <VisualEditorProvider selectedBotId={selectedBotId}>
       <DragDropProvider>
-        <div className="app-page-surface flex h-screen flex-col overflow-hidden">
+        <div className="studio-editor app-page-surface flex h-dvh flex-col overflow-hidden">
         {/* Header */}
         <header className="border-b border-[var(--bc-line-2)] bg-[color-mix(in_oklch,var(--bc-bg)_82%,transparent)] px-4 py-3 backdrop-blur-2xl sm:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -748,16 +747,12 @@ export const VisualBotEditor: React.FC = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
 
-              <div className="hidden min-w-0 sm:block">
-                <p className="app-kicker">Visual editor</p>
+              <div className="min-w-0">
                 <h1 className="truncate text-lg font-semibold text-[var(--bc-ink)]">
-                  LINE Bot 視覺化編輯器
+                  頻道編輯器
                 </h1>
               </div>
-              <div className="hidden items-center gap-2 sm:flex">
-                <div className="app-soft-icon rounded-full px-3 py-1 text-xs font-semibold">
-                  v{projectVersion}
-                </div>
+              <div className="ml-auto flex items-center sm:ml-0">
                 <SaveStatusIndicator 
                   status={saveStatus}
                   lastSavedTime={lastSavedTime}

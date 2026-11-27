@@ -6,7 +6,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useEmailManagement } from "@/hooks/useEmailManagement";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
-import { CheckCircle2, Languages } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const Language = () => {
@@ -116,90 +116,19 @@ const Language = () => {
       headerKicker="Language"
       innerClassName="max-w-5xl"
     >
-      <div className="py-8">
-        <div className="mb-10 text-center">
-          <p className="app-kicker mb-2">設定</p>
-          <h1 className="app-page-title px-2">
-            語言設定
-          </h1>
-          <p className="app-subtitle mx-auto mt-3 max-w-3xl px-4">
-            選擇你偏好的介面語言。
-          </p>
-        </div>
-
-        <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
-          <div className="app-panel p-8 sm:p-10">
-            <h2 className="text-center text-2xl font-semibold text-slate-950">
-              選擇語言
-            </h2>
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
-              <div
-                className={`cursor-pointer rounded-[16px] border p-6 transition-colors ${
-                  language === "zh"
-                    ? "border-emerald-200 bg-emerald-50"
-                    : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/60"
-                }`}
-                onClick={() => handleLanguageSelect("zh")}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    handleLanguageSelect("zh");
-                  }
-                }}
-              >
-                <div className="text-center">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[14px] bg-white text-emerald-700 shadow-sm">
-                    {language === "zh" ? (
-                      <CheckCircle2 className="h-6 w-6" />
-                    ) : (
-                      <Languages className="h-6 w-6" />
-                    )}
-                  </div>
-                  <h3 className="mb-2 text-xl font-semibold text-slate-950">
-                    繁體中文
-                  </h3>
-                  <p className="text-sm text-slate-500">Traditional Chinese</p>
-                </div>
-              </div>
-
-              <div
-                className={`cursor-pointer rounded-[16px] border p-6 transition-colors ${
-                  language === "en"
-                    ? "border-emerald-200 bg-emerald-50"
-                    : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/60"
-                }`}
-                onClick={() => handleLanguageSelect("en")}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    handleLanguageSelect("en");
-                  }
-                }}
-              >
-                <div className="text-center">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[14px] bg-white text-emerald-700 shadow-sm">
-                    {language === "en" ? (
-                      <CheckCircle2 className="h-6 w-6" />
-                    ) : (
-                      <Languages className="h-6 w-6" />
-                    )}
-                  </div>
-                  <h3 className="mb-2 text-xl font-semibold text-slate-950">
-                    English
-                  </h3>
-                  <p className="text-sm text-slate-500">English (US)</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center mt-8">
-              <p className="text-sm text-slate-500">
-                更多語言選項即將推出
-              </p>
-            </div>
-          </div>
+      <div className="pb-8">
+        <header className="studio-page-heading">
+          <h1>語言設定</h1>
+          <p>選擇工作台的介面語言。</p>
+        </header>
+        <div role="group" aria-label="介面語言" className="studio-language-options">
+          {([{ id: "zh", label: "繁體中文", detail: "Traditional Chinese" }, { id: "en", label: "English", detail: "英文" }] as const).map(option => (
+            <button type="button" key={option.id} aria-pressed={language === option.id}
+              onClick={() => handleLanguageSelect(option.id)}>
+              <span><strong>{option.label}</strong><small>{option.detail}</small></span>
+              {language === option.id && <CheckCircle2 aria-hidden="true" />}
+            </button>
+          ))}
         </div>
       </div>
     </AppShell>

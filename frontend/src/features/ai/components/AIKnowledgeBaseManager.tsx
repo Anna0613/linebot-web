@@ -29,12 +29,8 @@ type Props = {
 
 const pageSize = 10;
 const knowledgeScope: Scope = 'project';
-const defaultProvider = 'groq';
-const defaultModel = 'openai/gpt-oss-120b';
-const defaultHistoryMessages = 12;
 const defaultChunkSize = 800;
 const defaultOverlap = 80;
-const defaultSystemPrompt = '你是一個對話助理。若提供了知識片段，請優先引用並準確回答；若未提供或不足，也可依一般常識與推理能力完整作答。';
 
 const sourceTypeLabel = (sourceType: string) => {
   if (sourceType === 'text') return '文字';
@@ -45,7 +41,8 @@ const sourceTypeLabel = (sourceType: string) => {
 
 export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   const { toast } = useToast();
-  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState<boolean | null>(null);
+  const [savingToggle, setSavingToggle] = useState(false);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
@@ -113,36 +110,18 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
     }
   }, [botId, page, submittedQuery, toast]);
 
-  const loadToggle = useCallback(async () => {
-    if (!botId) return;
-
-    try {
-      const settings = await AIKnowledgeApi.getAIToggle(botId);
-      const enabled = Boolean(settings.ai_takeover_enabled);
-      setAiEnabled(enabled);
-
-      if (
-        settings.provider !== defaultProvider ||
-        settings.model !== defaultModel ||
-        settings.history_messages == null
-      ) {
-        const nextSettings = await AIKnowledgeApi.setAIAdvanced(botId, {
-          enabled,
-          provider: defaultProvider,
-          model: defaultModel,
-          history_messages: settings.history_messages ?? defaultHistoryMessages,
-          system_prompt: settings.system_prompt || defaultSystemPrompt,
-        });
-        setAiEnabled(Boolean(nextSettings.ai_takeover_enabled));
-      }
-    } catch (_err) {
-      // Keep the page usable even if settings are temporarily unavailable.
-    }
-  }, [botId]);
-
   useEffect(() => {
-    loadToggle();
-  }, [loadToggle]);
+    let active = true;
+    setAiEnabled(null);
+    if (botId) {
+      AIKnowledgeApi.getAIToggle(botId).then(settings => {
+        if (active) setAiEnabled(Boolean(settings.ai_takeover_enabled));
+      }).catch(() => {
+        if (active) toast({ variant: 'destructive', title: '無法取得自動回覆設定' });
+      });
+    }
+    return () => { active = false; };
+  }, [botId, toast]);
 
   useEffect(() => {
     loadList();
@@ -169,20 +148,16 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   }, []);
 
   const toggleAI = async (value: boolean) => {
-    if (!botId) return;
-
+    if (!botId || savingToggle || aiEnabled === null) return;
+    setSavingToggle(true);
     try {
-      setAiEnabled(value);
-      await AIKnowledgeApi.setAIAdvanced(botId, {
-        enabled: value,
-        provider: defaultProvider,
-        model: defaultModel,
-        history_messages: defaultHistoryMessages,
-      });
-      toast({ title: '已更新', description: `AI 接管已${value ? '啟用' : '停用'}` });
+      const settings = await AIKnowledgeApi.setAIToggle(botId, value);
+      setAiEnabled(Boolean(settings.ai_takeover_enabled));
+      toast({ title: '已更新', description: `自動回覆已${value ? '啟用' : '停用'}` });
     } catch (e) {
-      setAiEnabled(!value);
       toast({ variant: 'destructive', title: '更新失敗', description: String(e) });
+    } finally {
+      setSavingToggle(false);
     }
   };
 
@@ -438,18 +413,21 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="rounded-lg border bg-background">
+    <div className="studio-knowledge">
+      <header className="studio-page-heading">
+        <h1>知識庫</h1>
+        <p>管理這個頻道用來回答顧客問題的文件與文字。</p>
+      </header>
+      <section className="studio-documents">
         <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-base font-semibold">檔案列表</h3>
-            <p className="text-xs text-muted-foreground">此 Line Bot 的知識庫文件</p>
+            <h2 className="text-base font-semibold">知識文件 <span className="studio-count">{total}</span></h2>
           </div>
 
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 text-sm">
-              <span>AI 接管</span>
-              <Switch checked={aiEnabled} onCheckedChange={toggleAI} />
+              <span>既有 AI 自動回覆</span>
+              <Switch aria-label="既有 AI 自動回覆" disabled={savingToggle || aiEnabled === null} checked={aiEnabled === true} onCheckedChange={toggleAI} />
             </label>
             <input
               ref={fileInputRef}
@@ -461,9 +439,9 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
             />
             <Popover open={addMenuOpen} onOpenChange={setAddMenuOpen}>
               <PopoverTrigger asChild>
-                <Button type="button" size="icon" aria-label="新增知識">
+                <Button type="button" size="sm" aria-label="新增知識">
                   {uploading ? <Loader size="sm" /> : <Plus aria-hidden="true" />}
-                  <span className="sr-only">新增知識</span>
+                  新增知識
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-48 p-1">
@@ -501,7 +479,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
           <div className="flex flex-1 items-center gap-2">
             <Input
               className="max-w-md"
-              placeholder="搜尋檔案名稱"
+              aria-label="搜尋文件名稱" placeholder="搜尋文件名稱"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
@@ -577,12 +555,16 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
               載入中...
             </div>
           ) : items.length === 0 ? (
-            <div className="p-4 text-sm text-muted-foreground">沒有資料</div>
+            <div className="studio-empty-documents">
+              <FileText aria-hidden="true" />
+              <strong>{submittedQuery ? '找不到符合的文件' : '加入第一份知識文件'}</strong>
+              <p>{submittedQuery ? '試試其他關鍵字，或清除搜尋查看全部文件。' : '點選「新增知識」貼上文字，或上傳 TXT、PDF、DOCX 檔。'}</p>
+            </div>
           ) : (
             items.map(item => (
               <div key={item.id} className="grid grid-cols-12 items-center px-3 py-3 hover:bg-muted/40">
                 <div className="col-span-1">
-                  <input type="checkbox" checked={Boolean(selected[item.id])} onChange={() => toggleSelect(item.id)} />
+                  <input type="checkbox" aria-label={`選取 ${item.title || item.original_file_name || "未命名文件"}`} checked={Boolean(selected[item.id])} onChange={() => toggleSelect(item.id)} />
                 </div>
                 <div className="col-span-6 pr-4 text-sm">
                   <div className="line-clamp-1 font-medium text-foreground">
@@ -612,7 +594,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
           <Button size="sm" variant="secondary" onClick={() => setPage(prev => Math.max(1, prev - 1))} disabled={page <= 1}>上一頁</Button>
           <Button size="sm" variant="secondary" onClick={() => setPage(prev => Math.min(totalPages, prev + 1))} disabled={page >= totalPages}>下一頁</Button>
         </div>
-      </div>
+      </section>
 
       <Dialog open={textDialogOpen} onOpenChange={setTextDialogOpen}>
         <DialogContent>

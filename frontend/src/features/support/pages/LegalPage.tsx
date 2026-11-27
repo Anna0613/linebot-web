@@ -98,16 +98,21 @@ const LegalPage = () => {
     <PageShell>
       <PageContentWrapper>
         <main className="flex-1">
-          <div className="pt-32 pb-16 px-4 sm:px-6">
+          <div className={isAuthenticated ? "pb-16 px-4 sm:px-6" : "pt-20 pb-16 px-4 sm:px-6"}>
             <div className="max-w-4xl mx-auto">
-              <div className="mb-8 text-center">
-                <h1 className="app-page-title mb-3">{title}</h1>
+              <header className="studio-page-heading">
+                <h1>{title}</h1>
                 <p className="text-base leading-relaxed text-[var(--bc-ink-2)] sm:text-lg">
                   {description}
                 </p>
-              </div>
-
-              <div className="app-panel space-y-6 p-6 sm:p-8">
+              </header>
+              <div className="studio-settings">
+                <nav aria-label="章節">
+                  {sections.map((section, index) => (
+                    <a key={section.title} href={`#section-${index + 1}`}>{section.title}</a>
+                  ))}
+                </nav>
+                <article className="app-panel space-y-6 p-6 sm:p-8">
                 <div className="app-muted-panel p-4 text-sm text-slate-600">
                   本頁為平台目前的使用與資料處理摘要，後續可依正式政策更新。
                 </div>
@@ -116,7 +121,7 @@ const LegalPage = () => {
                   {sections.map((section, index) => (
                     <div key={section.title}>
                       {index > 0 && <Separator className="my-6" />}
-                      <section>
+                      <section id={`section-${index + 1}`}>
                         <h2 className="mb-2 text-lg font-semibold text-slate-950">
                           {section.title}
                         </h2>
@@ -140,6 +145,7 @@ const LegalPage = () => {
                     </Link>
                   </Button>
                 </div>
+                </article>
               </div>
             </div>
           </div>

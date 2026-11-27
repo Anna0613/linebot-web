@@ -212,7 +212,8 @@ const Setting: React.FC = () => {
       headerKicker="設定"
       innerClassName="max-w-5xl"
     >
-      <div className="py-8">
+      <div className="pb-8">
+        <header className="studio-page-heading"><h1>帳號設定</h1></header>
         {authError ? (
           <Alert className="rounded-[16px] border-rose-100 bg-[var(--surface-panel)] shadow-sm">
             <AlertTriangle className="h-4 w-4" />
@@ -221,47 +222,56 @@ const Setting: React.FC = () => {
         ) : isSettingsLoading ? (
           <SettingsLoadingPanel />
         ) : (
-          <>
-            {/* 用戶資料區塊 */}
-            <UserProfileSection
-              user={user}
-              displayName={displayName}
-              userImage={userImage}
-              isEditingName={isEditingName}
-              avatarLoading={avatarLoading}
-              onDisplayNameChange={setDisplayName}
-              onEditNameToggle={setIsEditingName}
-              onSaveDisplayName={handleSaveDisplayName}
-              onAvatarUpload={uploadAvatar}
-              onAvatarDelete={deleteAvatar}
-            />
-
-            {/* 電子郵件管理區塊 */}
-            <EmailManagementSection
-              email={email}
-              emailVerified={emailVerified}
-              isEditingEmail={isEditingEmail}
-              isResendingEmailVerification={isResendingEmailVerification}
-              onEmailChange={setEmail}
-              onEditEmailToggle={setIsEditingEmail}
-              onSaveEmail={handleSaveEmail}
-              onResendVerification={resendEmailVerification}
-            />
-
-            {/* 社群帳號區塊 */}
-            <SocialAccountSection
-              user={user}
-              onLinkLineAccount={handleLinkLineAccount}
-              onUnlinkLineAccount={handleUnlinkLineAccount}
-            />
-
-            {/* 安全設定區塊 */}
-            <SecuritySection
-              onChangePassword={changePassword}
-              onDeleteAccount={handleDeleteAccount}
-              showDeleteConfirmation={showConfirmModal}
-            />
-          </>
+          <div className="studio-settings">
+            <nav aria-label="設定項目">
+              <a href="#account-profile">個人資料</a>
+              <a href="#account-email">電子郵件</a>
+              <a href="#account-connections">帳號連結</a>
+              <a href="#account-security">安全設定</a>
+            </nav>
+            <div className="min-w-0">
+              <section id="account-profile">
+                <UserProfileSection
+                  user={user}
+                  displayName={displayName}
+                  userImage={userImage}
+                  isEditingName={isEditingName}
+                  avatarLoading={avatarLoading}
+                  onDisplayNameChange={setDisplayName}
+                  onEditNameToggle={setIsEditingName}
+                  onSaveDisplayName={handleSaveDisplayName}
+                  onAvatarUpload={uploadAvatar}
+                  onAvatarDelete={deleteAvatar}
+                />
+              </section>
+              <section id="account-email">
+                <EmailManagementSection
+                  email={email}
+                  emailVerified={emailVerified}
+                  isEditingEmail={isEditingEmail}
+                  isResendingEmailVerification={isResendingEmailVerification}
+                  onEmailChange={setEmail}
+                  onEditEmailToggle={setIsEditingEmail}
+                  onSaveEmail={handleSaveEmail}
+                  onResendVerification={resendEmailVerification}
+                />
+              </section>
+              <section id="account-connections">
+                <SocialAccountSection
+                  user={user}
+                  onLinkLineAccount={handleLinkLineAccount}
+                  onUnlinkLineAccount={handleUnlinkLineAccount}
+                />
+              </section>
+              <section id="account-security">
+                <SecuritySection
+                  onChangePassword={changePassword}
+                  onDeleteAccount={handleDeleteAccount}
+                  showDeleteConfirmation={showConfirmModal}
+                />
+              </section>
+            </div>
+          </div>
         )}
       </div>
 

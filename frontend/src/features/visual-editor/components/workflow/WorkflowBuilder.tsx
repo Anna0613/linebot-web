@@ -1,3 +1,4 @@
+import EditorPanelSwitch, { type EditorPanel } from '../EditorPanelSwitch';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Brain,
@@ -122,6 +123,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
     offsetY: number;
   } | null>(null);
   const [canvasPan, setCanvasPan] = useState<CanvasPan | null>(null);
+  const [panel, setPanel] = useState<EditorPanel>('canvas');
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [flexMessages, setFlexMessages] = useState<FlexMessageSummary[]>([]);
   const [testMessage, setTestMessage] = useState('預約');
@@ -349,12 +351,17 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({ graph, onChang
   return (
     <div
       className={[
-        'grid h-full min-h-0 overflow-hidden bg-[#f7fbf8] transition-[grid-template-columns] duration-200',
+        'studio-flow grid h-full min-h-0 overflow-hidden bg-[var(--bc-bg)] transition-[grid-template-columns] duration-200',
         inspectorOpen
           ? 'grid-cols-[280px_minmax(0,1fr)_330px]'
           : 'grid-cols-[280px_minmax(0,1fr)_48px]',
       ].join(' ')}
+      data-panel={panel}
     >
+      <EditorPanelSwitch value={panel} onChange={(next) => {
+        setPanel(next);
+        if (next === 'inspector') setInspectorOpen(true);
+      }} />
       <NodeDrawer
         graph={graph}
         selectedNodeId={selectedNodeId}

@@ -15,18 +15,24 @@ type Thread = {
 };
 type Content = { kind: string; body: string | null; withdrawn: boolean };
 type Summary = Thread & Content & { last_activity: string };
-type Message = Content & { seq: number; occurred_at: string };
+type Message = Content & {
+  seq: number; occurred_at: string; can_draft: boolean;
+  draft_state: "requested" | "working" | "ready" | "handoff" | "failed" | "stale" | null;
+  draft_body?: string; source_title?: string; source_excerpt?: string; draft_model?: string; draft_tools?: string[];
+};
 const copy = {
   zh: {
     title: "客服收件匣", pilot: "試行工作區", note: "接手會取消新收件流程的待辦。此工作區尚未啟用 LINE 外送。",
     threads: "對話", empty: "目前沒有對話", choose: "選擇對話以查看訊息", error: "目前無法同步", retry: "重新整理",
     human: "人工接手中", auto: "自動模式", claim: "接手對話", older: "更早的訊息", more: "更多對話", removed: "訊息已收回",
+    draft: "產生回覆草稿", pending: "正在查找文件", citation: "引用原文", fixture: "本機模擬", handoff: "缺少可引用的依據，請由客服處理。", stale: "來源已更新，請重新產生。", draftFailed: "產生失敗，可重新嘗試。", search: "搜尋文件", read: "讀取段落",
     user: "個人", group: "群組", room: "聊天室", noBot: "請先選擇或建立頻道", dashboard: "回工作台", loading: "載入中",
   },
   en: {
     title: "Support inbox", pilot: "Pilot workspace", note: "Taking over cancels pending work in this inbox. LINE delivery is not enabled here.",
     threads: "Conversations", empty: "No conversations yet", choose: "Select a conversation to read its messages", error: "Sync unavailable", retry: "Refresh",
     human: "Human support", auto: "Automatic", claim: "Take over", older: "Earlier messages", more: "More conversations", removed: "Message withdrawn",
+    draft: "Generate reply draft", pending: "Checking sources", citation: "Source passage", fixture: "Local simulator", handoff: "No supporting source. Review manually.", stale: "Source changed. Generate again.", draftFailed: "Draft failed. Try again.", search: "Search documents", read: "Read passage",
     user: "Direct", group: "Group", room: "Room", noBot: "Select or create a channel", dashboard: "Dashboard", loading: "Loading",
   },
 };
@@ -54,19 +60,39 @@ function ThreadView({ base, keys, thread, labels }: { base: string; keys: string
     }),
     onSettled: () => cache.invalidateQueries({ queryKey: keys }),
   });
+  const draft = useMutation({
+    mutationFn: (seq: number) => read(base + "/" + thread.id + "/messages/" + seq + "/draft", {method: "POST"}),
+    onSettled: () => cache.invalidateQueries({ queryKey: [...keys, thread.id] }),
+  });
   const items = details.data?.pages.slice().reverse().flatMap(page => page.items) ?? [];
   return <section className="inbox-detail">
     <header><div><small>{labels[current.source_type]}</small><h2>{current.source_id}</h2></div>
       {current.owner_mode === "human" ? <span className="inbox-tag human">{labels.human}</span> :
         <button disabled={claim.isPending || !details.isSuccess || details.isError} onClick={() => claim.mutate()}><Hand size={16}/>{labels.claim}</button>}
     </header>
-    {(details.isError || claim.isError) && <p role="alert">{labels.error} <button onClick={() => void details.refetch()}>{labels.retry}</button></p>}
+    {(details.isError || claim.isError || draft.isError) && <p role="alert">{labels.error} <button onClick={() => void details.refetch()}>{labels.retry}</button></p>}
     <div className="inbox-timeline">
       {details.isLoading && <p role="status">{labels.loading}</p>}
       {details.hasNextPage && <button disabled={details.isFetchingNextPage} onClick={() => void details.fetchNextPage()}>{labels.older}</button>}
       {items.map(item => <article key={item.seq}>
         <time dateTime={item.occurred_at}>{new Date(item.occurred_at).toLocaleString()}</time>
         <p>{item.withdrawn ? labels.removed : item.body ?? item.kind}</p>
+        {item.can_draft && current.owner_mode === "auto" && !claim.isPending && !details.isError &&
+          <div className="studio-draft">
+            {item.draft_state === "ready" && <>
+              <strong>{item.draft_model === "local-fixture" ? labels.fixture : item.draft_model}</strong>
+              <blockquote>{item.draft_body}</blockquote>
+              <details><summary>{labels.citation} · {item.source_title}</summary>
+                <small>{item.draft_tools?.map(tool => tool === "knowledge.search" ? labels.search : labels.read).join(" → ")}</small>
+                <div>{item.source_excerpt}</div></details>
+            </>}
+            {item.draft_state === "handoff" && <small>{labels.handoff}</small>}
+            {item.draft_state === "failed" && <small>{labels.draftFailed}</small>}
+            {item.draft_state === "stale" && <small>{labels.stale}</small>}
+            {item.draft_state === "requested" || item.draft_state === "working"
+              ? <small role="status">{labels.pending}</small>
+              : <button disabled={draft.isPending} onClick={() => draft.mutate(item.seq)}>{labels.draft}</button>}
+          </div>}
       </article>)}
     </div>
   </section>;
@@ -105,7 +131,7 @@ export default function InboxPage() {
   const { language } = useLanguagePreference();
   const labels = copy[language];
   return <AppShell activeNav="inbox" user={user} headerKicker={labels.pilot} welcomeLabel={labels.title}>
-    <div className="inbox-workspace"><p className="inbox-note">{labels.note}</p>
+    <div className="inbox-workspace"><h1 className="studio-inbox-title">{labels.title}</h1><p className="inbox-note">{labels.note}</p>
       {loading || !user || !hasLoaded ? <p role="status">{labels.loading}</p> : error ?
         <p role="alert">{labels.error} <button onClick={() => void refreshBots()}>{labels.retry}</button></p> : selectedBot ?
         <ChannelInbox key={selectedBot.id} bot={selectedBot.id} account={user.id?.toString() ?? user.username} labels={labels}/> :

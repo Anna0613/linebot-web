@@ -339,7 +339,7 @@ const CanvasDropSurface: React.FC<CanvasDropSurfaceProps> = ({
       ref={drop}
       className={[
         className || '',
-        isOver ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-white' : '',
+        isOver ? 'ring-2 ring-[var(--bc-accent)] ring-offset-2 ring-offset-white' : '',
       ].filter(Boolean).join(' ')}
       style={style}
       onClick={onClick}
@@ -585,7 +585,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
     const selected = selectedIndex === index;
     const frameClass = [
       'group relative rounded-md transition-all duration-150',
-      selected ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-white' : 'hover:ring-2 hover:ring-emerald-200',
+      selected ? 'ring-2 ring-[var(--bc-accent)] ring-offset-2 ring-offset-white' : 'hover:ring-2 hover:ring-emerald-200',
     ].join(' ');
 
     const commonProps = {
@@ -682,7 +682,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
               ) : (
                 <div className="flex h-full min-h-24 flex-col items-center justify-center px-3 text-center text-xs text-slate-500">
                   <ImageIcon className="mb-2 h-6 w-6 text-slate-400" />
-                  選取圖片積木後，可在右側設定上傳圖片
+                  選取圖片元件後，可在屬性中上傳圖片
                 </div>
               )}
             </div>
@@ -780,7 +780,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
     const nestedAppendInsertIndex = getContentAppendInsertIndex(nestedItems, item.index + 1);
     const frameClass = [
       'group relative rounded-lg border border-slate-200 bg-white/70 transition-all duration-150',
-      selected ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-white' : 'hover:ring-2 hover:ring-emerald-200',
+      selected ? 'ring-2 ring-[var(--bc-accent)] ring-offset-2 ring-offset-white' : 'hover:ring-2 hover:ring-emerald-200',
     ].join(' ');
 
     return (
@@ -899,7 +899,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
         onInsert={onInsert}
         className={[
           'w-full rounded-lg border border-dashed border-emerald-300 bg-emerald-50/40 p-4 transition',
-          selectedIndex === carouselIndex ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-[#d9efe3]' : '',
+          selectedIndex === carouselIndex ? 'ring-2 ring-[var(--bc-accent)] ring-offset-2 ring-offset-[var(--bc-bg)]' : '',
         ].join(' ')}
         onClick={(event) => {
           event.stopPropagation();
@@ -921,7 +921,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
                 className={[
                   'w-[320px] shrink-0 snap-start rounded-[18px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.12)] transition',
                   selectedIndex === group.bubbleIndex && group.bubbleIndex !== undefined
-                    ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-[#d9efe3]'
+                    ? 'ring-2 ring-[var(--bc-accent)] ring-offset-2 ring-offset-[var(--bc-bg)]'
                     : '',
                 ].join(' ')}
                 style={{ maxWidth: bubbleWidth[asString(groupBubbleData.size, 'mega')] || '390px' }}
@@ -936,7 +936,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
                   className={[
                     'min-h-28 rounded-[18px] transition',
                     selectedIndex === group.boxIndex && group.boxIndex !== undefined
-                      ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-white'
+                      ? 'ring-2 ring-[var(--bc-accent)] ring-offset-2 ring-offset-white'
                       : '',
                   ].join(' ')}
                   style={getBoxStyle(groupBoxData)}
@@ -961,7 +961,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
                 type="button"
                 aria-label="新增 Carousel 卡片"
                 title="新增 Carousel 卡片"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-emerald-300 bg-white text-emerald-700 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06C755] focus-visible:ring-offset-2"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-emerald-300 bg-white text-emerald-700 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bc-accent)] focus-visible:ring-offset-2"
                 onClick={(event) => {
                   event.stopPropagation();
                   onInsert?.(carouselAppendInsertIndex, createCarouselBubbleDropItem());
@@ -1009,7 +1009,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
           onInsert={onInsert}
           className={[
             'mx-auto min-h-28 w-full rounded-lg border border-dashed border-slate-300 bg-white/45 transition',
-            selectedIndex === boxIndex ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-[#d9efe3]' : '',
+            selectedIndex === boxIndex ? 'ring-2 ring-[var(--bc-accent)] ring-offset-2 ring-offset-[var(--bc-bg)]' : '',
           ].join(' ')}
           style={{
             ...getBoxStyle(boxData),
@@ -1034,7 +1034,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
       <div
         className={[
           'mx-auto w-full rounded-[18px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.12)] transition',
-          selectedIndex === bubbleIndex && bubbleIndex >= 0 ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-[#d9efe3]' : '',
+          selectedIndex === bubbleIndex && bubbleIndex >= 0 ? 'ring-2 ring-[var(--bc-accent)] ring-offset-2 ring-offset-[var(--bc-bg)]' : '',
         ].join(' ')}
         style={{ maxWidth: bubbleWidth[asString(bubbleData.size, 'mega')] || '390px' }}
         onClick={(event) => {
@@ -1047,7 +1047,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
           onInsert={onInsert}
           className={[
             'min-h-28 rounded-[18px] transition',
-            selectedIndex === boxIndex && boxIndex >= 0 ? 'ring-2 ring-[#06C755] ring-offset-2 ring-offset-white' : '',
+            selectedIndex === boxIndex && boxIndex >= 0 ? 'ring-2 ring-[var(--bc-accent)] ring-offset-2 ring-offset-white' : '',
           ].join(' ')}
           style={getBoxStyle(boxData)}
           onClick={(event) => {
@@ -1071,7 +1071,7 @@ const FlexMessageCanvas: React.FC<FlexMessageCanvasProps> = ({
       ref={drop}
       onClick={() => onSelect(null)}
       className={[
-        'flex h-full min-h-0 overflow-auto bg-[#d9efe3] p-6 transition',
+        'studio-flex-canvas flex h-full min-h-0 overflow-auto p-6 transition',
         isOver ? 'ring-2 ring-inset ring-emerald-300' : '',
       ].join(' ')}
     >

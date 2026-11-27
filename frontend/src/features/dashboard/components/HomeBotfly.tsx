@@ -133,8 +133,6 @@ type IconComponent = React.ComponentType<{ className?: string }>;
 const dashboardCopy = {
   en: {
     sidebarSubtitle: "Workspace",
-    botHealthTitle: "Bot is ready",
-    botHealthBody: "Check connection, messages, and friends from here.",
     nav: {
       home: "Home",
       myBots: "My Bots",
@@ -223,8 +221,6 @@ const dashboardCopy = {
   },
   zh: {
     sidebarSubtitle: "工作台",
-    botHealthTitle: "Bot 目前正常",
-    botHealthBody: "查看連線、訊息與好友互動。",
     nav: {
       home: "工作台",
       myBots: "我的 Bot",
@@ -779,11 +775,18 @@ const HomeBotfly: React.FC<HomeBotflyProps> = ({ user }) => {
       activeNav="home"
       headerKicker={copy.headerKicker}
       welcomeLabel={copy.welcome}
-      sidebarCalloutTitle={copy.botHealthTitle}
-      sidebarCalloutBody={copy.botHealthBody}
       innerClassName="max-w-[1480px]"
     >
       <div className="flex w-full flex-col gap-8 py-6">
+        <header className="studio-overview">
+          <div><h1>{language === "en" ? "Workspace overview" : "營運總覽"}</h1>
+            <p>{language === "en" ? "Channels" : "管理頻道"} <b>{Array.isArray(bots) ? bots.length : 0}</b></p>
+            <button type="button" onClick={() => navigate(import.meta.env.VITE_PG_INBOX === "true" ? "/bots/inbox" : "/bots/user-management")}>
+              <MessageSquare size={16} />{import.meta.env.VITE_PG_INBOX === "true" ? (language === "en" ? "Open inbox" : "進入客服收件匣") : (language === "en" ? "Manage contacts" : "管理好友")}
+            </button>
+          </div>
+          <img src="/assets/brand/studio-fold.webp" alt="" />
+        </header>
         <section>
           <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>

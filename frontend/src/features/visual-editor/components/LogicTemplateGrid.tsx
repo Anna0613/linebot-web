@@ -204,16 +204,16 @@ const LogicTemplateGrid: React.FC<LogicTemplateGridProps> = ({ selectedBotId, on
   }
 
   return (
-    <div className="h-full overflow-auto bg-[#f7fbf8] p-6">
+    <div className="studio-library h-full overflow-auto p-4 sm:p-6">
       {templates.length === 0 ? (
         <div className="flex h-full items-center justify-center">
           <div className="app-panel-strong max-w-lg p-8 text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
               <Plus className="h-6 w-6" />
             </div>
-            <h2 className="text-xl font-semibold text-slate-950">選擇或新增邏輯模板</h2>
+            <h2 className="text-xl font-semibold text-slate-950">建立第一個回覆流程</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              新版邏輯編輯器使用節點與連線建立流程。請先新增一個新版模板開始建立流程。
+              選擇觸發條件、連上回覆動作，再用測試訊息檢查結果。
             </p>
             <Button className="app-primary-button mt-6" onClick={() => { setNewName(''); setShowCreateDialog(true); }}>
               <Plus className="mr-2 h-4 w-4" />新增邏輯模板
@@ -224,27 +224,26 @@ const LogicTemplateGrid: React.FC<LogicTemplateGridProps> = ({ selectedBotId, on
         <div>
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-slate-900">邏輯模板</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-[var(--bc-ink)]">邏輯模板</h2>
               <p className="mt-0.5 text-xs text-slate-500">點擊方塊進入編輯器</p>
             </div>
             <Button className="app-primary-button h-8" size="sm" onClick={() => { setNewName(''); setShowCreateDialog(true); }}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />新增模板
             </Button>
           </div>
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid gap-4 grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {templates.map((template) => {
               const graph = previewGraphs.get(template.id);
               return (
               <div
                 key={template.id}
-                className="group relative cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-emerald-300 hover:shadow-md"
-                onClick={() => onSelect(template.id)}
+                className="group relative cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-[var(--bc-accent)] hover:shadow-md"
               >
                 {/* 三點選單 */}
                 <div className="absolute right-1.5 top-1.5 z-10" onClick={(e) => e.stopPropagation()}>
                   <Popover open={openMenuId === template.id} onOpenChange={(open) => setOpenMenuId(open ? template.id : null)}>
                     <PopoverTrigger asChild>
-                      <button className="flex h-6 w-6 items-center justify-center rounded-md bg-white/80 text-slate-400 opacity-0 shadow-sm transition hover:bg-white hover:text-slate-700 group-hover:opacity-100">
+                      <button type="button" aria-label={`${template.name}的操作`} className="studio-template-menu">
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </PopoverTrigger>
@@ -276,7 +275,9 @@ const LogicTemplateGrid: React.FC<LogicTemplateGridProps> = ({ selectedBotId, on
                 </div>
                 {/* 名稱 / Switch / 日期 */}
                 <div className="p-3">
-                  <p className="truncate text-sm font-medium text-slate-900">{template.name}</p>
+                  <button type="button" className="studio-open-template" onClick={() => onSelect(template.id)}>
+                    {template.name}
+                  </button>
                   <div className="mt-2 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                     <span className={`text-[11px] font-medium ${template.is_active === 'true' ? 'text-emerald-600' : 'text-slate-400'}`}>
                       {template.is_active === 'true' ? '啟用中' : '已停用'}
@@ -284,7 +285,7 @@ const LogicTemplateGrid: React.FC<LogicTemplateGridProps> = ({ selectedBotId, on
                     <Switch
                       checked={template.is_active === 'true'}
                       onCheckedChange={(checked) => handleToggle(template.id, checked)}
-                      className="scale-75 origin-right"
+                      aria-label={`啟用 ${template.name}`} className="relative z-[1]"
                     />
                   </div>
                   <p className="mt-1 text-[11px] text-slate-400">{new Date(template.created_at).toLocaleDateString('zh-TW')}</p>

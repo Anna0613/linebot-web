@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ui/loader";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
-import AppShell, { AppRobotIllustration } from "@/components/layout/AppShell";
+import AppShell from "@/components/layout/AppShell";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { useSEO } from "@/hooks/useSEO";
 import { PageContentWrapper } from "@/components/common/PageContentWrapper";
@@ -72,7 +72,6 @@ const About = () => {
           <section className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 pb-12 relative z-10">
             <div className="app-panel grid overflow-hidden p-0 lg:grid-cols-[1fr_0.82fr]">
               <div className="p-8 sm:p-10 lg:p-12">
-                <p className="app-kicker mb-2">關於</p>
                 <h1 className="text-3xl font-medium leading-tight tracking-[-0.03em] text-[var(--bc-ink)] sm:text-4xl lg:text-5xl">
                   關於 Botlyn
                 </h1>
@@ -99,9 +98,7 @@ const About = () => {
                   </Button>
                 </div>
               </div>
-              <div className="flex items-end justify-center bg-gradient-to-br from-[var(--bc-accent-soft)] via-white/50 to-[var(--bc-hi-soft)] p-6">
-                <AppRobotIllustration />
-              </div>
+              <div className="studio-auth-art min-h-36" aria-hidden="true" />
             </div>
           </section>
 

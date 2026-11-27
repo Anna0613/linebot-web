@@ -1,3 +1,4 @@
+import EditorPanelSwitch, { type EditorPanel } from "./EditorPanelSwitch";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -286,6 +287,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
   initialActiveTab = "basic",
 }) => {
   const navigate = useNavigate();
+  const [flexPanel, setFlexPanel] = useState<EditorPanel>("canvas");
   const [activeTab, setActiveTab] = useState(initialActiveTab);
   const shouldShowLeftPanel = Boolean(
     selectedBotId && tabUsesBlockPalette(activeTab)
@@ -885,7 +887,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
             }}
             className="flex h-full min-h-0 flex-col"
           >
-            <div className="mx-3 mb-2 mt-2 flex shrink-0 items-stretch overflow-visible rounded-lg border border-white/70 bg-white/65 shadow-sm backdrop-blur-xl">
+            <div className="studio-editor-tabs mx-3 mb-2 mt-2 flex shrink-0 items-stretch overflow-visible rounded-lg border border-white/70 bg-white/65 shadow-sm backdrop-blur-xl">
               <TabsList
                 className={[
                   "h-auto min-h-11 min-w-0 flex-1 self-stretch justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-1",
@@ -894,13 +896,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
               >
                 <TabsTrigger
                   value="basic"
-                  className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]"
+                  className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-[var(--bc-accent-soft)] data-[state=active]:text-[var(--bc-accent-ink)]"
                 >
                   基本資料
                 </TabsTrigger>
                 <TabsTrigger
                   value="logic"
-                  className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]"
+                  className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-[var(--bc-accent-soft)] data-[state=active]:text-[var(--bc-accent-ink)]"
                 >
                   邏輯編輯器
                   {!workspaceValidation.logic.isValid && (
@@ -909,7 +911,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
                 </TabsTrigger>
                 <TabsTrigger
                   value="flex"
-                  className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]"
+                  className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-[var(--bc-accent-soft)] data-[state=active]:text-[var(--bc-accent-ink)]"
                 >
                   Flex Message 編輯
                   {!workspaceValidation.flex.isValid && (
@@ -918,13 +920,13 @@ const Workspace: React.FC<WorkspaceProps> = ({
                 </TabsTrigger>
                 <TabsTrigger
                   value="preview"
-                  className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]"
+                  className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-[var(--bc-accent-soft)] data-[state=active]:text-[var(--bc-accent-ink)]"
                 >
                   AI 知識庫管理
                 </TabsTrigger>
                 <TabsTrigger
                   value="richmenu"
-                  className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-emerald-50 data-[state=active]:text-[#166534]"
+                  className="h-8 shrink-0 rounded-md px-2.5 py-1.5 text-slate-600 data-[state=active]:bg-[var(--bc-accent-soft)] data-[state=active]:text-[var(--bc-accent-ink)]"
                 >
                   功能選單
                 </TabsTrigger>
@@ -1002,7 +1004,8 @@ const Workspace: React.FC<WorkspaceProps> = ({
                       }}
                     />
                   ) : (
-                    <div className="grid h-full min-h-0 overflow-hidden bg-[#f7fbf8] grid-cols-[280px_minmax(0,1fr)_330px]">
+                    <div className="studio-flex" data-panel={flexPanel}>
+                      <EditorPanelSwitch value={flexPanel} onChange={setFlexPanel} />
                       <aside className="flex min-h-0 flex-col bg-white/75 backdrop-blur-xl">
                         <div className="border-b border-slate-200/80 p-4">
                           <div className="text-sm font-semibold text-slate-950">
@@ -1026,7 +1029,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
                               Flex Message 畫布
                             </div>
                             <div className="truncate text-xs text-slate-500">
-                              拖曳左側元件到畫布，點選畫布內容後到右側調整細節
+                              選取畫布上的元件，即可調整屬性。
                             </div>
                           </div>
                           <Badge
@@ -1078,7 +1081,7 @@ const Workspace: React.FC<WorkspaceProps> = ({
                   className="m-0 h-full min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden"
                 >
                   <div className="h-full flex flex-col">
-                    <AIKnowledgeBaseManager botId={selectedBotId} />
+                    <AIKnowledgeBaseManager key={selectedBotId} botId={selectedBotId} />
                   </div>
                 </TabsContent>
 

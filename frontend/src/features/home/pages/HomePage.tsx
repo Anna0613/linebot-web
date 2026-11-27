@@ -202,91 +202,6 @@ const FeatureArt = ({ type }: { type: string }) => {
   );
 };
 
-const ProductShellPreview = () => (
-  <div className="bc-product-shell" aria-label="Botlyn 工作台實際畫面示意">
-    <aside className="bc-product-sidebar">
-      <div className="bc-product-brand">
-        <span className="bc-product-mark" />
-        <span>Botlyn</span>
-      </div>
-      <div className="bc-product-switcher">
-        <span>目前 Bot</span>
-        <b>school project</b>
-      </div>
-      <nav className="bc-product-nav">
-        <span className="bc-product-nav-active">工作台</span>
-        <span>編輯 Bot</span>
-        <span>互動紀錄</span>
-        <span>好友</span>
-        <span>設定</span>
-      </nav>
-      <div className="bc-product-callout">
-        <b>Bot 目前正常</b>
-        <span>查看連線、訊息與好友互動。</span>
-      </div>
-    </aside>
-
-    <div className="bc-product-main">
-      <header className="bc-product-topbar">
-        <div>
-          <span>WORKSPACE</span>
-          <b>今天想更新哪一個 Bot？</b>
-        </div>
-        <div className="bc-product-user">R</div>
-      </header>
-
-      <section className="bc-product-hero-card">
-        <div>
-          <span>你的 LINE Bot 工作台</span>
-          <h3>建立 Bot、調整回覆、查看最近互動。</h3>
-        </div>
-        <span className="bc-product-action">建立 Bot</span>
-      </section>
-
-      <div className="bc-product-grid">
-        <section className="bc-product-panel bc-product-wide">
-          <div className="bc-product-panel-head">
-            <b>我的 Bot</b>
-            <span>搜尋 / 篩選 / 開啟設計</span>
-          </div>
-          <div className="bc-product-table">
-            <div>
-              <b>school project</b>
-              <span>啟用</span>
-              <em>編輯</em>
-            </div>
-            <div>
-              <b>customer support</b>
-              <span>停用</span>
-              <em>設定</em>
-            </div>
-            <div>
-              <b>line demo</b>
-              <span>啟用</span>
-              <em>互動</em>
-            </div>
-          </div>
-        </section>
-
-        <section className="bc-product-panel">
-          <div className="bc-product-panel-head">
-            <b>訊息趨勢</b>
-            <span>7 day view</span>
-          </div>
-          <div className="bc-product-chart" aria-hidden="true">
-            {[26, 52, 34, 68, 46, 74, 58].map((height, index) => (
-              <span
-                key={index}
-                style={{ "--h": `${height}%` } as React.CSSProperties}
-              />
-            ))}
-          </div>
-        </section>
-      </div>
-    </div>
-  </div>
-);
-
 const BuilderStage = () => (
   <div className="bc-builder-stage bc-reveal">
     <aside className="bc-stage-rail">
@@ -507,48 +422,21 @@ const HomePage = () => {
       </nav>
 
       <header className="bc-hero" data-screen-label="02 Hero">
-        <div className="bc-grid-bg" />
-        <div className="bc-eyebrow">
-          <span className="bc-eyebrow-dot" />
-          v3.0 · AI 對話接管 已上線
-        </div>
-        <div className="bc-hero-grid">
+        <div className="bc-hero-grid studio-landing">
           <div>
-            <h1 className="bc-h1">
-              <span className="bc-h1-line">把對話機器人，</span>
-              <span className="bc-h1-line bc-h1-line-wrap">
-                做成<span className="bc-ital">你想要的</span>
-                <span className="bc-hi-mark">樣子</span>。
-              </span>
-            </h1>
-            <p className="bc-lead">
-              LINE Bot 製作與管理工作台。拖積木畫流程，不用寫程式碼。
-            </p>
+            <h1 className="bc-h1">把每一場對話，<br />交到對的人手上。</h1>
+            <p className="bc-lead">用流程編輯器設計 LINE 回覆與 Flex 卡片，從同一個工作台管理頻道、知識與客服對話。</p>
             <div className="bc-hero-cta">
               <Link className="bc-btn bc-btn-primary" to="/register">
                 開始建立你的 Bot
                 <ArrowIcon />
               </Link>
               <a className="bc-btn bc-btn-ghost" href="#builder">
-                先看編輯器長怎樣
+                查看流程編輯器
               </a>
             </div>
-            <div className="bc-hero-meta">
-              <span>
-                <b className="bc-mono">LINE</b>&nbsp;Messaging API
-              </span>
-              <span>
-                <b className="bc-mono">0</b>&nbsp;行程式碼
-              </span>
-              <span>
-                <b className="bc-mono">5</b>&nbsp;個編輯分頁
-              </span>
-            </div>
           </div>
-
-          <div className="bc-hero-visual">
-            <ProductShellPreview />
-          </div>
+          <img className="studio-landing-art" src="/assets/brand/studio-fold.webp" alt="" />
         </div>
       </header>
 

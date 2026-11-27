@@ -109,17 +109,12 @@ const Suggest = () => {
       headerKicker="意見回饋"
       innerClassName="max-w-5xl"
     >
-      <main className="py-8">
+      <div className="pb-8">
         <div>
-          <div className="mb-10 text-center">
-            <p className="app-kicker mb-2">設定</p>
-            <h1 className="app-page-title">
-              意見回饋
-            </h1>
-            <p className="app-subtitle mx-auto mt-3 max-w-3xl">
-              遇到問題或有想法，都可以直接告訴我們。
-            </p>
-          </div>
+          <header className="studio-page-heading mb-6">
+            <h1>意見回饋</h1>
+            <p>遇到問題或有想法，都可以直接告訴我們。</p>
+          </header>
 
           <div className="max-w-4xl mx-auto">
             <div className="app-panel p-8 sm:p-10">
@@ -232,7 +227,7 @@ const Suggest = () => {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </AppShell>
   );
 };
