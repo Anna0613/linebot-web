@@ -7,7 +7,7 @@ if (![LOCAL_DATABASE_URL, LOCAL_BOT_ID, LOCAL_CHANNEL_SECRET, LOCAL_DESTINATION]
 const tickToken = crypto.randomUUID();
 const runtime = await startEmulator({
   databaseUrl: LOCAL_DATABASE_URL, botId: LOCAL_BOT_ID.toLowerCase(),
-  secret: LOCAL_CHANNEL_SECRET, destination: LOCAL_DESTINATION, port: 8787, tickToken, r2Persist: process.env.LOCAL_R2_DIR || '.local-r2',
+  secret: LOCAL_CHANNEL_SECRET, destination: LOCAL_DESTINATION, port: 8787, tickToken, auditToken: process.env.LOCAL_R2_AUDIT_TOKEN, r2Persist: process.env.LOCAL_R2_DIR || '.local-r2',
 });
 console.log('Local webhook:', new URL('/api/v1/webhooks/' + LOCAL_BOT_ID, await runtime.ready).href);
 let busy = false;

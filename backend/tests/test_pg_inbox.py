@@ -149,7 +149,7 @@ def test_locate_source_sections():
     from docx import Document
     from PyPDF2 import PdfWriter
     from PyPDF2.generic import DecodedStreamObject, DictionaryObject, NameObject
-    from app.api.api_v1.inbox_sources import extract_sections
+    from app.services.knowledge.source_publication import extract_sections
 
     document = Document()
     document.add_paragraph("文件標題")
