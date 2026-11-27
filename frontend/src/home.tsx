@@ -43,6 +43,7 @@ const BotManagementPage = lazy(() =>
     (module) => ({ default: module.default })
   )
 );
+const InboxPage = lazy(() => import("./features/inbox/InboxPage"));
 const UserManagementPage = lazy(() =>
   import("./features/bot-management/pages/UserManagementPage").then(
     (module) => ({ default: module.default })
@@ -91,6 +92,7 @@ const AnimatedRoutes = () => {
       />
       <Route path="/bots/visual-editor" element={<VisualBotEditorPage />} />
       <Route path="/bots/management" element={<BotManagementPage />} />
+      {import.meta.env.VITE_PG_INBOX === "true" && <Route path="/bots/inbox" element={<InboxPage />} />}
       <Route path="/bots/user-management" element={<UserManagementPage />} />
       <Route
         path="/bots/management/richmenu"

@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     SLOW_REQUEST_LOG_SECONDS: float = float(os.getenv("SLOW_REQUEST_LOG_SECONDS", "1.0"))
 
     # 安全限制：Webhook 請求主體大小上限（避免惡意/異常大 payload）
+    PG_INBOX_ENABLED: bool = os.getenv("PG_INBOX_ENABLED", "false").lower() == "true"
     MAX_WEBHOOK_BODY_BYTES: int = int(os.getenv("MAX_WEBHOOK_BODY_BYTES", str(256 * 1024)))  # 256KB
 
     # 連線池設定（可由環境變數覆蓋）

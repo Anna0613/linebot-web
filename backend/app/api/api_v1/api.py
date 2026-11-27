@@ -3,7 +3,8 @@ API v1 路由聚合器
 將所有 API 路由統一管理
 """
 from fastapi import APIRouter
-from app.api.api_v1 import auth, users, bots, bot_analytics, webhook, bot_dashboard, websocket, storage, ai_analysis, ai_knowledge, knowledge_async, rich_menu
+from app.config import settings
+from app.api.api_v1 import inbox, auth, users, bots, bot_analytics, webhook, bot_dashboard, websocket, storage, ai_analysis, ai_knowledge, knowledge_async, rich_menu
 
 api_router = APIRouter()
 
@@ -15,6 +16,8 @@ api_router.include_router(users.router, prefix="/users", tags=["用戶管理"])
 
 # Bot 管理路由
 api_router.include_router(bots.router, prefix="/bots", tags=["Bot 管理"])
+if settings.PG_INBOX_ENABLED:
+    api_router.include_router(inbox.router, prefix="/bots", tags=["客服收件匣"])
 api_router.include_router(rich_menu.router, prefix="/bots", tags=["Rich Menu"])
 
 # Bot 分析路由

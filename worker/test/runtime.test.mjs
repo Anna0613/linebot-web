@@ -1,0 +1,86 @@
+import test from 'node:test';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import assert from 'node:assert/strict';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
+import { mkdtemp, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
+import { createServer } from 'node:net';
+import EmbeddedPostgres from 'embedded-postgres';
+import { startEmulator } from '../scripts/emulator.mjs';
+
+async function freePort() {
+  const server = createServer();
+  await new Promise((resolve, reject) => server.once('error', reject).listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+  await new Promise(resolve => server.close(resolve));
+  return port;
+}
+
+test('verified webhook survives a PostgreSQL outage and redelivery', { timeout: 65000 }, async t => {
+  const bot = randomUUID(), owner = randomUUID(), secret = 'local-test-only', destination = 'Ulocal';
+  const port = await freePort();
+  const directory = await mkdtemp(join(tmpdir(), 'botlyn-pg-'));
+  const password = randomBytes(12).toString('hex');
+  const pg = new EmbeddedPostgres({
+    databaseDir: join(directory, 'db'), port, password, autoRehydrateSymlinks: true,
+    postgresFlags: ['-h', '127.0.0.1', '-k', directory], onLog() {},
+  });
+  await pg.initialise();
+  await pg.start();
+  t.after(() => pg.stop());
+  const client = pg.getPgClient();
+  await client.connect();
+  await client.query('CREATE TABLE bots(id uuid PRIMARY KEY, is_active boolean, user_id uuid)');
+  await client.query('INSERT INTO bots VALUES($1,true,$2)', [bot, owner]);
+  await client.query(await readFile(new URL('../../backend/migrations/sql/20261127_inbox.sql', import.meta.url), 'utf8'));
+  await client.end();
+  const runtime = await startEmulator({
+    databaseUrl: `postgres://postgres:${password}@127.0.0.1:${port}/postgres`, botId: bot, destination, secret
+  });
+  t.after(() => runtime.dispose());
+  const url = new URL('/api/v1/webhooks/' + bot, await runtime.ready);
+  function send(events, { target = destination, signWith = secret } = {}) {
+    const body = JSON.stringify({ destination: target, events });
+    const signature = createHmac('sha256', signWith).update(body).digest('base64');
+    return fetch(url, { method: 'POST', body, headers: { 'x-line-signature': signature } });
+  }
+  assert.equal((await send([])).status, 200);
+  assert.equal((await send([], { signWith: 'wrong' })).status, 401);
+  assert.equal((await send([], { target: 'another-bot' })).status, 400);
+  const message = { type: 'message', webhookEventId:'e1', timestamp:Date.now(),
+    source:{type:'user', userId:'U1'}, message:{id:'1',type:'text',text:'營業時間'} };
+  await pg.stop();
+  assert.equal((await send([message])).status, 200);
+  await delay(1500);
+  await pg.start();
+  const check = pg.getPgClient();
+  await check.connect();
+  try {
+    let count = 0;
+    for (let attempt=0; attempt<60; attempt++) {
+      count = (await check.query('SELECT * FROM inbox_messages')).rows.length;
+      if (count) break;
+      await delay(250);
+    }
+    assert.equal(count, 1, 'the original queued event must survive the outage');
+    assert.equal((await send([message])).status, 200);
+    await delay(1600);
+    assert.equal((await check.query('SELECT * FROM inbox_messages')).rows.length, 1);
+    assert.equal((await check.query('SELECT * FROM inbox_jobs')).rows.length, 1);
+    if (process.env.INBOX_TEST_PYTHON) {
+      execFileSync(process.env.INBOX_TEST_PYTHON, ['-m', 'pytest', '-q', '-o', 'addopts=', '--noconftest', 'tests/test_pg_inbox.py'], {
+        cwd: fileURLToPath(new URL('../../backend/', import.meta.url)), stdio: 'inherit',
+        env: { ...process.env, INBOX_TEST_BOT: bot, INBOX_TEST_OWNER: owner,
+          DB_HOST:'127.0.0.1', DB_PORT:String(port), DB_NAME:'postgres', DB_USER:'postgres', DB_PASSWORD:password,
+          DB_REPLICA_HOST:'127.0.0.1', DB_REPLICA_PORT:String(port), DB_REPLICA_NAME:'postgres',
+          DB_REPLICA_USER:'postgres', DB_REPLICA_PASSWORD:password },
+      });
+      assert.equal((await check.query('SELECT state FROM inbox_jobs')).rows[0].state, 'cancelled');
+    }
+  } finally {
+    await check.end();
+  }
+});

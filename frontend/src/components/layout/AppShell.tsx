@@ -5,6 +5,7 @@ import {
   Bell,
   Home,
   LogOut,
+  Inbox,
   Menu,
   PencilRuler,
   Settings,
@@ -32,6 +33,7 @@ export type AppShellNavId =
   | "home"
   | "editor"
   | "analytics"
+  | "inbox"
   | "users"
   | "settings";
 
@@ -52,6 +54,7 @@ const appShellCopy = {
       create: "Create Bot",
       editor: "Edit Bot",
       analytics: "Interactions",
+      inbox: "Inbox",
       users: "Friends",
       settings: "Settings",
     },
@@ -74,6 +77,7 @@ const appShellCopy = {
       create: "建立 Bot",
       editor: "編輯 Bot",
       analytics: "互動紀錄",
+      inbox: "客服收件匣",
       users: "好友",
       settings: "設定",
     },
@@ -97,6 +101,7 @@ const navItems: Array<{
   icon: IconComponent;
 }> = [
   { id: "home", href: "/dashboard", icon: Home },
+  ...(import.meta.env.VITE_PG_INBOX === "true" ? [{ id: "inbox" as const, href: "/bots/inbox", icon: Inbox }] : []),
   { id: "editor", href: "/bots/visual-editor", icon: PencilRuler },
   { id: "analytics", href: "/bots/management", icon: BarChart3 },
   { id: "users", href: "/bots/user-management", icon: Users },

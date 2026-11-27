@@ -65,6 +65,9 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Private inbox data must never enter the shared Service Worker cache.
+  if (/^\/api\/v1\/bots\/[^/]+\/inbox(?:\/|$)/.test(url.pathname)) return;
+
   // 跳過非 GET 請求
   if (request.method !== 'GET') {
     return;

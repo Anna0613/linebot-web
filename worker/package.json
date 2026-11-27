@@ -1,0 +1,23 @@
+{
+  "name": "botlyn-line-ingress",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/local.mjs",
+    "check": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test test/*.test.mjs",
+    "sample": "node scripts/sample.mjs"
+  },
+  "dependencies": {
+    "pg": "8.22.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20260702.1",
+    "@electric-sql/pglite": "0.2.17",
+    "@types/pg": "8.18.0",
+    "embedded-postgres": "^18.6.0-beta.19",
+    "esbuild": "0.25.12",
+    "miniflare": "4.20260504.0",
+    "typescript": "5.9.3"
+  }
+}

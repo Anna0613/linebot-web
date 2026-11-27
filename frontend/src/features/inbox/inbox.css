@@ -1,0 +1,24 @@
+.inbox-workspace { --blue:#254cba; --line:#dce2ec; --ink:#18233a; color:var(--ink); margin-top:1rem }
+.inbox-note { margin:.6rem 0 1rem; color:#495775; font-size:.875rem }
+.inbox-grid { display:grid; grid-template-columns:minmax(13rem,.8fr) minmax(0,2fr); min-height:28rem;
+  background:white; border:1px solid var(--line); border-radius:1rem; overflow:hidden }
+.inbox-grid header { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.2rem; border-bottom:1px solid var(--line) }
+.inbox-grid h2 { font-size:1.02rem; font-weight:650; overflow-wrap:anywhere }
+.inbox-grid button { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; padding:.45rem .7rem; border-radius:.5rem; color:var(--blue); font-weight:600 }
+.inbox-grid button:focus-visible { outline:2px solid var(--blue); outline-offset:-2px }
+.inbox-grid button:disabled { opacity:.55 }
+.inbox-list { border-right:1px solid var(--line); max-height:70vh; overflow:auto }
+.inbox-list>p,.inbox-detail>p { padding:1rem }
+.inbox-grid .inbox-row { display:grid; width:100%; text-align:left; justify-content:stretch; padding:.85rem 1.15rem; border-radius:0; border-bottom:1px solid var(--line); color:var(--ink) }
+.inbox-row[aria-pressed=true] { background:#edf2ff; box-shadow:inset 3px 0 var(--blue) }
+.inbox-row span,.inbox-row small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.inbox-grid small,.inbox-grid time { color:#586780; font-weight:400; font-size:.78rem }
+.inbox-row em,.inbox-tag { font-size:.72rem; font-style:normal; color:var(--blue) }
+.inbox-detail header button { color:white; background:var(--blue); flex-shrink:0 }
+.inbox-detail { min-width:0 }
+.inbox-timeline { padding:1.2rem; max-height:60vh; overflow:auto }
+.inbox-timeline article { margin:.7rem 0 1.1rem }
+.inbox-timeline article p { width:fit-content; max-width:95%; margin-top:.25rem; background:#f0f3f9; border-radius:.25rem .85rem .85rem; padding:.65rem .9rem; white-space:pre-wrap; overflow-wrap:anywhere }
+.inbox-empty { display:grid; align-content:center; justify-items:center; gap:.6rem; color:#576681 }
+@media(max-width:720px){.inbox-grid{grid-template-columns:minmax(0,1fr)}.inbox-list{max-height:15rem;border-right:0;border-bottom:1px solid var(--line)}.inbox-empty{padding:1.5rem}}
+@media(prefers-reduced-motion:no-preference){.inbox-row,.inbox-grid button{transition:background-color .15s ease}.inbox-row:hover{background:#f2f5fc}}
