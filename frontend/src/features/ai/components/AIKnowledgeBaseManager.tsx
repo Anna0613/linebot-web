@@ -41,6 +41,19 @@ const sourceTypeLabel = (sourceType: string) => {
 };
 
 export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
+  if (import.meta.env.VITE_PG_INBOX === "true") {
+    if (!botId) return <div className="p-4 text-sm text-muted-foreground">請先選擇頻道</div>;
+    return (
+      <div className="studio-knowledge">
+        <header className="studio-page-heading"><h1>知識庫</h1></header>
+        <PublishedSources key={botId} botId={botId} />
+      </div>
+    );
+  }
+  return <LegacyKnowledgeManager botId={botId} />;
+};
+
+const LegacyKnowledgeManager: React.FC<Props> = ({ botId }) => {
   const { toast } = useToast();
   const [aiEnabled, setAiEnabled] = useState<boolean | null>(null);
   const [savingToggle, setSavingToggle] = useState(false);
@@ -419,7 +432,6 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
         <h1>知識庫</h1>
         <p>管理這個頻道用來回答顧客問題的文件與文字。</p>
       </header>
-      {botId && import.meta.env.VITE_PG_INBOX === "true" && <PublishedSources key={botId} botId={botId} documents={items} />}
       <section className="studio-documents">
         <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

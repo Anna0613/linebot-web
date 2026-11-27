@@ -10,7 +10,7 @@ import argparse
 from pathlib import Path
 
 # 添加項目根目錄到 Python 路径
-project_root = Path(__file__).parent
+project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root))
 
 # 檢查依賴套件

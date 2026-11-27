@@ -15,6 +15,10 @@ from alembic.script import ScriptDirectory
 
 logger = logging.getLogger(__name__)
 
+# Last revision represented by the ORM. Subsequent inbox DDL lives in Alembic.
+ORM_BASELINE = "add_bot_is_active_20260525"
+
+
 class DatabaseInitializer:
     """資料庫初始化器"""
 
@@ -186,8 +190,12 @@ class DatabaseInitializer:
             import app.models  # noqa: F401
             from app.db.database import Base
 
-            Base.metadata.create_all(bind=self.engine)
-            command.stamp(self._get_alembic_config(), "head", purge=True)
+            config = self._get_alembic_config()
+            with self.engine.begin() as connection:
+                config.attributes["connection"] = connection
+                Base.metadata.create_all(bind=connection)
+                command.stamp(config, ORM_BASELINE)
+                command.upgrade(config, "head")
             logger.info("✅ 空白資料庫 schema 建立完成，Alembic 已標記為 head")
             return True
         except Exception as e:
@@ -227,8 +235,8 @@ class DatabaseInitializer:
                 # 如果沒有版本記錄，檢查實際表結構來推斷版本
                 if not current_version:
                     if self._has_current_model_tables():
-                        command.stamp(self._get_alembic_config(), "head", purge=True)
-                        logger.info("偵測到完整現行 schema，已將 Alembic 版本標記為 head")
+                        command.stamp(self._get_alembic_config(), ORM_BASELINE)
+                        logger.info("已標記 ORM 基準版本，接續套用後續 migration")
                         return True
 
                     version = self._detect_database_version(conn)

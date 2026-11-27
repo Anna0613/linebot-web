@@ -27,15 +27,9 @@ def test_pg_inbox_api():
         detail = client.get(f"{endpoint}/{thread}/messages").json()
         assert detail["items"][0]["body"] == "營業時間"
         msg = detail["items"][0]
-        assert msg["draft_state"] == "ready" and msg["source_title"] == "門市資訊"
-        assert msg["source_excerpt"] == msg["draft_body"]
-        import psycopg2
-        with psycopg2.connect(host="127.0.0.1", port=os.environ["DB_PORT"], dbname="postgres",
-                              user="postgres", password=os.environ["DB_PASSWORD"]) as pg:
-            with pg.cursor() as cursor:
-                cursor.execute("UPDATE knowledge_chunks SET content='已修訂'")
-        stale = client.get(f"{endpoint}/{thread}/messages").json()["items"][0]
-        assert stale["draft_state"] == "stale" and stale["draft_body"] is None
+        assert msg["draft_state"] == "handoff" and msg["draft_body"] is None
+        assert client.get(endpoint + "/sources").json() == []
+        assert client.get(endpoint + "/releases").json() == []
         draft_url = f"{endpoint}/{thread}/messages/{msg['seq']}/draft"
         for _ in range(2):
             assert client.post(draft_url).status_code == 202
@@ -46,11 +40,8 @@ def test_pg_inbox_api():
                                   headers={"Authorization": "Bearer " + os.environ["INBOX_TEST_TICK"]})
             assert response.status_code == 204
 
-        with pg, pg.cursor() as cursor:
-            cursor.execute("SELECT id FROM knowledge_documents WHERE bot_id=%s",(os.environ["INBOX_TEST_BOT"],))
-            original = cursor.fetchone()[0]
-            cursor.execute("UPDATE knowledge_chunks SET content='營業時間為週一至週五九點到六點。'")
-        source_url = f"{endpoint}/sources/{original}"
+        source_id = str(uuid4())
+        source_url = f"{endpoint}/sources/{source_id}"
         def publish(content, base):
             return client.put(source_url, files={"file": ("門市.md", content.encode())},
                               data={"base_version": str(base)})
@@ -85,18 +76,11 @@ def test_pg_inbox_api():
         assert client.post(draft_url).status_code == 202
         tick()
         assert current()["draft_state"] == "handoff"
-        # A gradual upgrade must keep unrelated old documents searchable.
-        with pg, pg.cursor() as cursor:
-            old_doc, old_chunk = str(uuid4()), str(uuid4())
-            cursor.execute("INSERT INTO knowledge_documents(id,bot_id,title) VALUES(%s,%s,'客服值班')",
-                           (old_doc,os.environ["INBOX_TEST_BOT"]))
-            cursor.execute("INSERT INTO knowledge_chunks(id,document_id,bot_id,content) VALUES(%s,%s,%s,'營業時間可洽值班客服')",
-                           (old_chunk,old_doc,os.environ["INBOX_TEST_BOT"]))
-        assert client.post(draft_url).status_code == 202
-        tick()
-        assert current()["source_title"] == "客服值班" and current()["source_version"] is None
         # The saved Flex source can change while a published replay stays reproducible.
+        import psycopg2
         from psycopg2.extras import Json
+        pg = psycopg2.connect(host="127.0.0.1", port=os.environ["DB_PORT"], dbname="postgres",
+                              user="postgres", password=os.environ["DB_PASSWORD"])
         template_id, flex_id = str(uuid4()), str(uuid4())
         graph = {"schemaVersion":"workflow-graph/v1","nodes":[
             {"id":"start","type":"trigger.message","data":{}},
@@ -127,8 +111,9 @@ def test_pg_inbox_api():
         assert client.get(other + "/releases").json() == []
         assert client.get(other + "/releases/" + first["id"]).status_code == 404
         assert client.post(other + "/releases/templates/" + template_id).status_code == 404
-        assert client.put(other + "/sources/" + old_doc, files={"file": ("另一個.txt", b"hello")},
+        assert client.put(other + "/sources/" + source_id, files={"file": ("另一個.txt", b"hello")},
                           data={"base_version": "0"}).status_code == 404
+        pg.close()
         url = f"{endpoint}/{thread}/takeover"
         assert client.post(url, json={"ownership_epoch": 9}).status_code == 409
         for _ in range(2):

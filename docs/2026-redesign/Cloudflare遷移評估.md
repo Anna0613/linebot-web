@@ -6,7 +6,7 @@
 
 ## 用 Hyperdrive 連回 NAS Docker 的 PostgreSQL
 
-**資料庫沿用 NAS 上既有的 PostgreSQL 主庫。** 正式連線走 **Worker → Hyperdrive → TCP VPC Service → Cloudflare Tunnel → NAS Docker 內的 PostgreSQL**。前端、R2 與模型可各自遷移。既有 PG 資料留在原地，原本 MongoDB 的歷史對話才需要依計畫回填至該主庫。NAS 繼續負責資料保存、更新、供電與還原。這是沒有額外託管資料庫月租的方案。[Cloudflare 私網 PostgreSQL 連線](https://developers.cloudflare.com/hyperdrive/configuration/connect-to-private-database-vpc/)
+**在 NAS Docker 的 PostgreSQL 實例新建專屬資料庫。** 正式連線走 **Worker → Hyperdrive → TCP VPC Service → Cloudflare Tunnel → NAS Docker 內的 PostgreSQL**。前端、R2 與模型可各自遷移。帳號、Bot、LINE 對話、知識、流程與 Flex 都從零開始。R2 使用新空間，舊環境獨立保留。NAS 繼續負責資料保存、更新、供電與還原。這是沒有額外託管資料庫月租的方案。[Cloudflare 私網 PostgreSQL 連線](https://developers.cloudflare.com/hyperdrive/configuration/connect-to-private-database-vpc/)
 
 | 項目 | 針對 NAS 的決策 |
 |---|---|
@@ -36,7 +36,7 @@
 3. **決策。** 固定規則先跑，只有明確 AI 節點或允許接管的未命中事件才進入 TypeScript agent loop。它按需呼叫 knowledge.search、knowledge.read、conversation.read_recent、flex.render 等工具。Worker 依 Bot 與文件版本授權，從 PG 或 R2 讀有限範圍，把結果交回模型。設定每個 run 的步數、用量及時間預算；將工具、來源位置、耗時及結果記入 PG。推論期間釋放 DB 連線。當來源不足、模型限流或超時，依政策要求澄清或移給客服。[Workers AI 工具呼叫](https://developers.cloudflare.com/workers-ai/features/function-calling/)
 4. **送出與接手。** 流程模擬器及正式執行器共用版本化的 ReplyPlan，預覽使用測試工具。只有派送端持有 LINE token。接手時在 PG 提高對話的控制版本，取消尚未送出的舊任務。送出前再核對控制版本、reply token 的時效及一次性。已在傳送中的訊息在客服介面明示。LINE 回應不明時記為待確認，自動改用 push 容易造成雙重回覆。Durable Object 只向已授權連線推播已提交事件，歷史以 PG 為準。[LINE 回覆訊息](https://developers.line.biz/en/reference/messaging-api/#send-reply-message) · [LINE 重試](https://developers.line.biz/en/docs/messaging-api/retrying-api-request/)
 
-**維運取捨。** 收件匣需要即時接手與跨分頁同步，這是引入 Durable Objects 最有價值的地方。若首批 Bot 可接受數秒延遲，可先用游標輪詢，並量測 PG 查詢量。第一版可省下 KV、D1、Vectorize、AI Search 及額外 agent 平台。PG 使用 NAS 既有主庫，建議以異機備份及 WAL 歸檔建立可驗證的時間點還原能力。入站由 Cloudflare 暫存，客服讀寫與提交回覆依賴 PG。應演練 PG 故障、恢復後消化積壓、R2 物件搭配資料庫版本還原，以及 AI 暫停時的人工接手。Cloudflare 區域故障也可能同時影響網站、佇列及模型。
+**維運取捨。** 收件匣需要即時接手與跨分頁同步，這是引入 Durable Objects 最有價值的地方。若首批 Bot 可接受數秒延遲，可先用游標輪詢，並量測 PG 查詢量。第一版可省下 KV、D1、Vectorize、AI Search 及額外 agent 平台。PG 使用 NAS 上的新資料庫，建議以異機備份及 WAL 歸檔建立可驗證的時間點還原能力。入站由 Cloudflare 暫存，客服讀寫與提交回覆依賴 PG。應演練 PG 故障、恢復後消化積壓、R2 物件搭配資料庫版本還原，以及 AI 暫停時的人工接手。Cloudflare 區域故障也可能同時影響網站、佇列及模型。
 
 ## Workers AI 能否完全接手模型
 
@@ -45,8 +45,8 @@
 | 工作 | 首輪試用候選與採用條件 |
 |---|---|
 | 繁中客服與工具選擇 | 把同一批已去識別、有人審定的台灣客服對話交給 @cf/google/gemma-4-26b-a4b-it 和 @cf/qwen/qwen3.8-27b。兩者皆列有 function calling。量測正確工具及參數、繁中語意、引用版本、缺證移交、P95 及每個成功案件成本。用達標且便宜者作預設。[Gemma](https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/) · [Qwen](https://developers.cloudflare.com/workers-ai/models/qwen3.8-27b/) |
-| 摘要與分析 | 分別重播知識摘要、Bot 報表和既有自訂問答；檢查結構化輸出及舊 Bot 的模型設定映射。在一段觀察期內按功能記錄 provider 使用量，全部清零再撤舊金鑰。版本升級前重跑同一套案例。[模型生命週期公告](https://developers.cloudflare.com/changelog/post/2026-11-05-planned-model-deprecations/) |
-| 檢索與讀原文 | 先比較「文件目錄＋關鍵字＋原文」和加入 @cf/baai/bge-m3 的命中率。現有知識與對話向量皆需盤點。保留有價值的索引，按新模型的實際輸出維度另建 pgvector 欄位／表，批次重算新向量，查詢與文件固定同模型和版本，驗證後切讀。舊向量無法直接與新模型向量比距離。[BGE-M3](https://developers.cloudflare.com/workers-ai/models/bge-m3/) |
+| 摘要與分析 | 以新建文件、報表和測試問答檢查結構化輸出，記錄各功能的模型用量。版本升級前重跑同一套案例。[模型生命週期公告](https://developers.cloudflare.com/changelog/post/2026-11-05-planned-model-deprecations/) |
+| 檢索與讀原文 | 先比較「文件目錄＋關鍵字＋原文」和加入 @cf/baai/bge-m3 的命中率。若測試顯示需要向量索引，再針對新文件產生向量，查詢與文件固定同模型和版本。[BGE-M3](https://developers.cloudflare.com/workers-ai/models/bge-m3/) |
 
 **文件解析是保留 Python 的主要理由。** 先比較 Workers AI 的 toMarkdown 與既有擷取器在實際繁中 PDF、表格、DOCX、掃描件的結果，檢查頁碼／段落能否定位、檔案上限、逾時及重試。OCR 或缺少頁碼的內容應標明證據位置。若原生套件實測仍有必要，可把該解析器單獨放 Cloudflare Containers，由 Worker 提交工作及存取 R2。其映像、啟動延遲、資源與維運成本另計。Python Workers 支援 FastAPI 及部分套件，但目前的 SQL 驅動、執行緒和程序內排程都要逐項驗證，不能用「支援 FastAPI」推定整套後端可原封搬遷。[Python 套件支援](https://developers.cloudflare.com/workers/languages/python/packages/) · [文件轉換](https://developers.cloudflare.com/workers-ai/features/markdown-conversion/) · [Containers](https://developers.cloudflare.com/containers/)
 
@@ -68,8 +68,8 @@
 |---|---|---|
 | 0 · 私網與還原 | 測試 Bot、私有 TCP 路徑、主庫 TLS、隔離測試庫與異機備份。 | 經 Worker 成功讀寫，演練 Tunnel 中斷、復線與備份還原。 |
 | 1a · 前端 | 將現有 dist 部署到預覽網域，沿用既有 API 契約。新設計可獨立驗收。設定深連結 fallback，保留 API 404、WS upgrade、OAuth callback 與 webhook。檢查 Cookie、CORS、舊 SW 更新、附件與私有 API 快取。 | 桌機及手機完成登入、重設密碼、聊天與兩個編輯器的載入／儲存，直接重整子頁成功。可獨立把前端路由切回舊站。 |
-| 1b · R2 | 先清點所有物件與引用並捕捉新增、改寫及刪除，再回填。保留內容型別、大小、可用的完整性校驗及舊網域代理。已發布 Flex／流程圖片改由長效 HTTPS 位址提供給 LINE。聊天附件及知識檔經 Worker 授權。舊媒體鍵有些只帶 LINE user ID，要查回所屬 Bot。 | 用接收過舊訊息的 LINE 客戶端驗圖，驗證大檔、Range／HEAD、私有檔權限及兩租戶同名檔。對帳使用內容雜湊，multipart ETag 不能一律當 MD5。新檔與刪除記錄可回投舊端，差異清零後將 MinIO 唯讀，再觀察及退役。 |
-| 2 · 收件與 PG 對話 | 先建立入口驗簽設定、入站 Queues、PG 交易與唯一派送者，再依 Bot 回填 Mongo、影子讀、核對歷史並切換單一寫入者。同步涵蓋人工訊息、分析、群組、收回事件和媒體回填。 | 按 Bot 比對數量、順序、游標及媒體。確認新寫入可反向追平、備份可還原，才退 Mongo。用 LINE 重送、人工搶接與工作中斷驗證去重，再驗證 WS 跨實例通知、重連補讀及無快取時的 PG 尖峰，才退 Redis。[詳細資料遷移](重構計畫.md) |
-| 3–5 · 影子測試、逐 Bot 切換與退役 | 新舊模型影子執行，僅正式派送者對外。分 Bot 開啟，沿用既有流程／Flex 發布版本，測試圖文與文件權限。逐條搬其餘 FastAPI 路由、分析、文件匯入、排程、郵件及 LINE 憑證讀取，盤點呼叫來源。 | 引用與移交達到同批人工標註基線，越權、雙送、人工接手後新增的自動派送為零。出錯可退回固定規則／人工。所有正式請求及背景工作均已離開舊主機、供應商用量清零，才移除舊後端與模型金鑰。 |
+| 1b · R2 | 新工作區使用專屬空間。新文件依 Bot、版本及雜湊寫入私有 R2，發布的公開圖片另用公開空間。 | 驗證第一份文件、重送、撤回、跨 Bot 權限，以及 LINE 可讀取新發布的圖片。 |
+| 2 · 收件與 PG 對話 | 建立入口驗簽設定、Queues 與 PG 唯一鍵，從新 Bot 的第一則事件建立對話。 | 重送只存一則，斷線復原可補收。人工接手後取消待辦。驗證備份可還原新對話及其引用。[全新工作區驗收](重構計畫.md) |
+| 3–5 · 模型與工作區 | 用新文件及測試事件評測 Workers AI。逐 Bot 開啟工具，發布新流程與 Flex。逐項完成剩餘 FastAPI 路由、分析、排程、郵件及 LINE 憑證存取。 | 模型引用可追溯，派送可切回人工。新工作區的功能在獨立 PG 與 Cloudflare 服務上通過驗收。 |
 
 這次依據 repository 與官方服務規格評估。上線決策仍缺正式資料體積、尖峰流量、NAS 實際網路與還原能力、真實模型品質及可接受的客服延遲。第一個技術試點建議選一個測試 Bot，串起「LINE 事件 → 驗簽並入列 → NAS PG → 查一份私有 R2 文件 → 繁中回覆提案 → 人工接手」，記錄每段耗時、每案成本與重送結果；它比只測模型單輪問答更能驗證整套方案。

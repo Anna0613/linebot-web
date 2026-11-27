@@ -24,7 +24,7 @@ async def sources(
         FROM inbox_sources s JOIN LATERAL (
           SELECT version,filename,published_at FROM inbox_source_versions
           WHERE source_id=s.id ORDER BY version DESC LIMIT 1
-        ) v ON true LEFT JOIN knowledge_documents d ON d.id=s.legacy_document_id WHERE d.deleted_at IS NULL AND s.bot_id=:bot AND NOT s.withdrawn ORDER BY v.filename,s.id
+        ) v ON true WHERE s.bot_id=:bot AND NOT s.withdrawn ORDER BY v.filename,s.id
     """),
         {"bot": bot},
     )

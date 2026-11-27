@@ -94,48 +94,25 @@ export async function processDraft(env: Bindings) {
   ) UPDATE inbox_jobs j SET draft_state='working',draft_lease=gen_random_uuid(),draft_started_at=now()
     FROM pick WHERE j.conversation_id=pick.conversation_id AND j.seq=pick.seq RETURNING pick.*,j.draft_lease`);
   if (!job) return;
-  const scope = `FROM knowledge_chunks k JOIN knowledge_documents d ON d.id=k.document_id
-    WHERE k.bot_id=$1 AND d.bot_id=$1 AND k.deleted_at IS NULL AND d.deleted_at IS NULL
-      AND NOT EXISTS(SELECT 1 FROM inbox_sources s WHERE s.legacy_document_id=d.id AND s.active_version>0)`;
-  const label =
-    "coalesce(nullif(d.title,''),d.original_file_name,'未命名文件')";
   let state = "failed",
     body = null,
     chunk = null,
     hash = null,
     tools: string[] = [];
   try {
-    const versionedHits = new Set<string>();
     const draft = await generateDraft(
       job.body,
       decideWith(env),
       async (term) => {
         const hits = await query(
-          `SELECT id,title,versioned FROM (
-          SELECT id,filename AS title,true AS versioned, strpos(lower(content),lower($2))>0 AS body_match,byte_start
-          FROM inbox_published_sections WHERE bot_id=$1 AND
-            (strpos(lower(content),lower($2))>0 OR strpos(lower(filename),lower($2))>0)
-          UNION ALL
-          SELECT k.id,${label},false,strpos(lower(k.content),lower($2))>0,0 ${scope} AND
-            (strpos(lower(k.content),lower($2))>0 OR strpos(lower(${label}),lower($2))>0)
-        ) hits ORDER BY body_match DESC,versioned DESC,title,byte_start,id LIMIT 6`,
+          `SELECT id,filename AS title FROM inbox_published_sections
+          WHERE bot_id=$1 AND (strpos(lower(content),lower($2))>0 OR strpos(lower(filename),lower($2))>0)
+          ORDER BY (strpos(lower(content),lower($2))>0) DESC,filename,byte_start,id LIMIT 6`,
           [job.bot_id, term],
         );
-        return hits.map((hit) => {
-          if (hit.versioned) versionedHits.add(hit.id);
-          return { id: hit.id, title: hit.title };
-        });
+        return hits.map(({ id, title }) => ({ id, title }));
       },
-      async (id) =>
-        versionedHits.has(id)
-          ? readSection(env, job.bot_id, id)
-          : ((
-              await query(
-                `SELECT k.id,${label} AS title,left(k.content,1400) AS excerpt,md5(k.content) AS hash
-          ${scope} AND k.id=$2`,
-                [job.bot_id, id],
-              )
-            )[0] as Passage | undefined),
+      (id) => readSection(env, job.bot_id, id),
     );
     state = draft.state;
     body = draft.text;

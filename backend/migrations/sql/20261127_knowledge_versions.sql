@@ -1,7 +1,6 @@
 CREATE TABLE inbox_sources (
     id uuid PRIMARY KEY,
     bot_id uuid NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
-    legacy_document_id uuid UNIQUE REFERENCES knowledge_documents(id) ON DELETE CASCADE,
     withdrawn boolean NOT NULL DEFAULT false,
     active_version integer NOT NULL DEFAULT 0
 );
@@ -43,8 +42,7 @@ CREATE VIEW inbox_published_sections AS
     FROM inbox_source_sections p
     JOIN inbox_sources s ON s.id=p.source_id AND s.active_version=p.version AND NOT s.withdrawn
     JOIN inbox_source_versions v USING(source_id,version)
-    LEFT JOIN knowledge_documents d ON d.id=s.legacy_document_id
-    WHERE v.published_at IS NOT NULL AND (s.legacy_document_id IS NULL OR (d.bot_id=s.bot_id AND d.deleted_at IS NULL));
+    WHERE v.published_at IS NOT NULL;
 -- next statement
 CREATE TABLE inbox_flow_releases (
     id uuid PRIMARY KEY,

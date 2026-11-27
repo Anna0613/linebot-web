@@ -26,17 +26,7 @@ async function request(url: string, options?: RequestInit) {
   return response.json();
 }
 
-export default function PublishedSources({
-  botId,
-  documents,
-}: {
-  botId: string;
-  documents: {
-    id: string;
-    title?: string | null;
-    original_file_name?: string | null;
-  }[];
-}) {
+export default function PublishedSources({ botId }: { botId: string }) {
   const url =
     API_CONFIG.UNIFIED.BASE_URL +
     "/bots/" +
@@ -48,7 +38,6 @@ export default function PublishedSources({
     refetchInterval: 4000,
   });
   const fileInput = useRef<HTMLInputElement>(null);
-  const [legacyId, setLegacyId] = useState("");
   const [target, setTarget] = useState<Source>();
   const [upload, setUpload] = useState<Upload>();
   const [withdraw, setWithdraw] = useState<Source>();
@@ -70,7 +59,6 @@ export default function PublishedSources({
         "file" in change ? "已排入發布，完成後即可引用。" : "已撤回來源。"
       );
       setUpload(undefined);
-      setLegacyId("");
       setTarget(undefined);
       setWithdraw(undefined);
       if (fileInput.current) fileInput.current.value = "";
@@ -104,40 +92,15 @@ export default function PublishedSources({
           type="button"
           size="sm"
           disabled={action.isPending}
-          onClick={() =>
-            choose(
-              legacyId
-                ? { id: legacyId, version: 0, active_version: 0, filename: "" }
-                : undefined
-            )
-          }
+          onClick={() => choose()}
         >
           新增來源
         </Button>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
         上傳 TXT、Markdown、PDF 或 DOCX，每份最多 5
-        MiB。升級既有文件後，收件匣將引用新版本。
+        MiB。文件發布後，客服草稿即可引用其中的段落。
       </p>
-      {documents.length > 0 && (
-        <label className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-          發布對象
-          <select
-            value={legacyId}
-            onChange={(e) => setLegacyId(e.target.value)}
-            disabled={action.isPending}
-          >
-            <option value="">新增獨立來源</option>
-            {documents
-              .filter((doc) => !list.data?.some((s) => s.id === doc.id))
-              .map((doc) => (
-                <option key={doc.id} value={doc.id}>
-                  升級 · {doc.title || doc.original_file_name || "未命名文件"}
-                </option>
-              ))}
-          </select>
-        </label>
-      )}
       <input
         type="file"
         ref={fileInput}
@@ -161,6 +124,9 @@ export default function PublishedSources({
             重新整理
           </button>
         </p>
+      )}
+      {list.isSuccess && list.data.length === 0 && (
+        <p className="mt-4 border-t pt-4 text-sm">目前沒有知識來源。點「新增來源」上傳第一份文件。</p>
       )}
       {list.data?.map((source) => (
         <div

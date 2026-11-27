@@ -120,9 +120,7 @@ async def stage_version(
     )
     if base_version == 0:
         await db.execute(
-            text("""INSERT INTO inbox_sources(id,bot_id,legacy_document_id)
-            SELECT :id,:bot,(SELECT id FROM knowledge_documents WHERE id=:id)
-            WHERE NOT EXISTS(SELECT 1 FROM knowledge_documents WHERE id=:id AND (bot_id IS DISTINCT FROM :bot OR deleted_at IS NOT NULL))
+            text("""INSERT INTO inbox_sources(id,bot_id) VALUES(:id,:bot)
             ON CONFLICT DO NOTHING"""),
             params,
         )
@@ -130,8 +128,6 @@ async def stage_version(
         await db.execute(
             text("""
         SELECT s.active_version FROM inbox_sources s WHERE s.id=:id AND s.bot_id=:bot AND NOT s.withdrawn
-          AND (s.legacy_document_id IS NULL OR EXISTS(SELECT 1 FROM knowledge_documents d
-               WHERE d.id=s.legacy_document_id AND d.bot_id=s.bot_id AND d.deleted_at IS NULL))
         FOR UPDATE OF s
     """),
             params,
