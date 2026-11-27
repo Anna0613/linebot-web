@@ -2,7 +2,7 @@
 Pydantic schemas for LINE Rich Menu management
 """
 from typing import List, Optional, Literal, Dict, Any, Union
-from pydantic import BaseModel, Field, conint
+from pydantic import ConfigDict, BaseModel, Field, conint
 from datetime import datetime
 
 
@@ -65,5 +65,4 @@ class RichMenuResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

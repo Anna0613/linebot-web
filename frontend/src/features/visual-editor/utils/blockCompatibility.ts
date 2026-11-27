@@ -133,7 +133,7 @@ export function isBlockCompatible(
     return isBlockCompatible(block, fallbackContext, existingBlocks);
   }
 
-  const category = 'category' in block ? block.category : getCategoryFromBlockType(block.blockType);
+  const category = block.category ?? getCategoryFromBlockType(block.blockType);
   const blockType = 'blockType' in block ? block.blockType : 'unknown';
   
   console.log('📦 積木類別檢查:', {

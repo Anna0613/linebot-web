@@ -6,10 +6,7 @@ import os
 import re
 from pathlib import Path
 from typing import List, Optional
-try:
-    from pydantic_settings import BaseSettings
-except ImportError:
-    from pydantic import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
 # 載入環境變數。後端設定優先；frontend/.env 只作為本機開發的公開 URL fallback。
@@ -290,10 +287,7 @@ class Settings(BaseSettings):
     # 知識庫背景任務狀態保留時間，避免完成任務長期堆積在記憶體中。
     KNOWLEDGE_JOB_RETENTION_SECONDS: int = int(os.getenv("KNOWLEDGE_JOB_RETENTION_SECONDS", "86400"))
 
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
-        extra = "ignore"  # 忽略額外的環境變數
+    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 
 # 創建設定實例
 settings = Settings()

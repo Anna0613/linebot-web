@@ -5,13 +5,15 @@ LINE Bot 分析 API 路由
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, Dict, List, Optional
-from datetime import date, datetime, timedelta
-import json
+from datetime import date, datetime, timedelta, timezone
 import logging
 import asyncio
 
 from app.db.database_async import get_async_db
 from app.dependencies import get_current_user_async, get_db_primary
+from app.config import settings
+from app.services.conversation import inbox_reporting
+from app.services.conversation.inbox_broadcast import enqueue_campaign
 from app.models.user import User
 from app.models.bot import Bot
 from app.models.line_user import LineBotUser
@@ -153,112 +155,6 @@ async def _line_delivery_series(line_bot_service: LineBotService, days: int) -> 
     return await asyncio.gather(*(fetch_day(day) for day in dates))
 
 
-async def sync_users_from_line_api(db: AsyncSession, bot: Bot, line_user_ids: List[str], conversations: List[Dict]) -> List:
-    """
-    從 LINE API 獲取用戶資料並同步到 PostgreSQL
-
-    Args:
-        db: 資料庫會話
-        bot: Bot 實例
-        line_user_ids: 需要同步的用戶 ID 列表
-        conversations: MongoDB 中的對話記錄
-
-    Returns:
-        List: 同步後的用戶記錄列表
-    """
-    from app.models.line_user import LineBotUser
-    from linebot.v3.messaging import Configuration, ApiClient, MessagingApi
-    from linebot.v3.exceptions import InvalidSignatureError
-    import uuid
-
-    synced_users = []
-
-    try:
-        # 創建 LINE Bot API 客戶端
-        configuration = Configuration(access_token=bot.channel_token)
-
-        with ApiClient(configuration) as api_client:
-            line_bot_api = MessagingApi(api_client)
-
-            # 為每個用戶獲取資料並同步
-            for line_user_id in line_user_ids:
-                try:
-                    # 從 LINE API 獲取用戶資料
-                    profile = await asyncio.to_thread(line_bot_api.get_profile, line_user_id)
-
-                    # 從對話記錄中獲取互動統計
-                    user_conversation = next(
-                        (conv for conv in conversations if conv['line_user_id'] == line_user_id),
-                        None
-                    )
-
-                    if user_conversation:
-                        message_count = user_conversation.get('message_count', 0)
-                        created_at = user_conversation.get('created_at')
-                        updated_at = user_conversation.get('updated_at')
-
-                        # 轉換時間格式
-                        if isinstance(created_at, datetime):
-                            first_interaction = created_at.replace(tzinfo=None)
-                        elif isinstance(created_at, str):
-                            try:
-                                first_interaction = datetime.fromisoformat(created_at.replace('Z', '+00:00')).replace(tzinfo=None)
-                            except:
-                                first_interaction = datetime.utcnow()
-                        else:
-                            first_interaction = datetime.utcnow()
-
-                        if isinstance(updated_at, datetime):
-                            last_interaction = updated_at.replace(tzinfo=None)
-                        elif isinstance(updated_at, str):
-                            try:
-                                last_interaction = datetime.fromisoformat(updated_at.replace('Z', '+00:00')).replace(tzinfo=None)
-                            except:
-                                last_interaction = datetime.utcnow()
-                        else:
-                            last_interaction = datetime.utcnow()
-                    else:
-                        message_count = 0
-                        first_interaction = datetime.utcnow()
-                        last_interaction = datetime.utcnow()
-
-                    # 創建用戶記錄
-                    user_record = LineBotUser(
-                        id=uuid.uuid4(),
-                        bot_id=bot.id,
-                        line_user_id=line_user_id,
-                        display_name=profile.display_name,
-                        picture_url=profile.picture_url or "",
-                        status_message=profile.status_message or "",
-                        language=profile.language or "zh-TW",
-                        is_followed=True,  # 有對話記錄假設為關注者
-                        interaction_count=message_count,
-                        first_interaction=first_interaction,
-                        last_interaction=last_interaction,
-                        created_at=datetime.utcnow(),
-                        updated_at=datetime.utcnow()
-                    )
-
-                    # 保存到資料庫
-                    db.add(user_record)
-                    await db.commit()
-                    await db.refresh(user_record)
-                    
-
-                    synced_users.append(user_record)
-
-                except Exception as e:
-                    logger.error(f"同步用戶 {line_user_id} 失敗: {e}")
-                    await db.rollback()
-                    continue
-
-    except Exception as e:
-        logger.error(f"LINE API 初始化失敗: {e}")
-        await db.rollback()
-        raise
-
-    return synced_users
-
 @router.get("/{bot_id}/analytics")
 async def get_bot_analytics(
     bot_id: str,
@@ -268,14 +164,14 @@ async def get_bot_analytics(
 ):
     """獲取 Bot 分析數據。
 
-    訊息量使用系統 MongoDB 對話紀錄，好友與人口統計維持使用 LINE Insight。
+    訊息量使用系統對話紀錄，好友與人口統計維持使用 LINE Insight。
     """
     try:
         bot = await _get_owned_bot(db, bot_id, current_user.id)
         line_bot_service = LineBotService(bot.channel_token, bot.channel_secret)
         days = _period_days(period)
         now = datetime.utcnow()
-        local_analytics = await ConversationService.get_bot_analytics(
+        local_analytics = await inbox_reporting.totals(db, bot.id, days) if settings.PG_INBOX_ENABLED else await ConversationService.get_bot_analytics(
             bot_id,
             now - timedelta(days=days),
             now,
@@ -326,7 +222,7 @@ async def get_message_stats(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取訊息統計數據（系統 MongoDB 對話紀錄）
+    """獲取訊息統計數據（系統對話紀錄）
 
     Args:
         bot_id: Bot ID
@@ -336,6 +232,12 @@ async def get_message_stats(
 
     try:
         await _get_owned_bot(db, bot_id, current_user.id)
+        if settings.PG_INBOX_ENABLED:
+            hourly = granularity == "hour"
+            rows = await inbox_reporting.series(db, bot_id, days, hourly)
+            return [dict(date=row["bucket"].replace(tzinfo=timezone.utc).isoformat() if hourly else row["bucket"].date().isoformat(),
+                         received=row["received"], sent=row["sent"],
+                         **({"hour":row["bucket"].hour} if hourly else {})) for row in rows]
         return await ConversationService.get_message_stats(
             bot_id,
             days or 7,
@@ -354,13 +256,12 @@ async def get_user_activity(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取用戶活躍度數據。
-
-    LINE Insight 不提供管理頁原本需要的每小時活躍用戶資料；為避免混用本地
-    ConversationService，此端點回傳空陣列。
-    """
+    """以 PostgreSQL 收件匣計算每小時活躍用戶。"""
     try:
         await _get_owned_bot(db, bot_id, current_user.id)
+        if settings.PG_INBOX_ENABLED:
+            rows = await inbox_reporting.series(db, bot_id, 1, True)
+            return [{"hour":row["bucket"].strftime("%H:00"),"activeUsers":row["active"]} for row in rows]
         return []
 
     except HTTPException:
@@ -431,6 +332,8 @@ async def get_bot_users(
         limit = max(1, min(int(limit or 50), 100))
         offset = max(0, int(offset or 0))
 
+        if settings.PG_INBOX_ENABLED:
+            return await inbox_reporting.contacts(db, bot.id, limit, offset)
         res_cnt = await db.execute(
             select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id)
         )
@@ -492,7 +395,7 @@ async def get_user_interactions(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取特定用戶的互動歷史（使用 MongoDB）"""
+    """獲取特定用戶的互動歷史"""
 
     # 驗證 Bot 所有權
     result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
@@ -505,7 +408,7 @@ async def get_user_interactions(
         from app.services.conversation.conversation_service import ConversationService
 
         # 使用 ConversationService 獲取聊天記錄
-        chat_history, total_count = await ConversationService.get_chat_history(
+        chat_history, total_count = await inbox_reporting.history(db, bot.id, line_user_id, limit, 0) if settings.PG_INBOX_ENABLED else await ConversationService.get_chat_history(
             bot_id=bot_id,
             line_user_id=line_user_id,
             limit=limit,
@@ -527,11 +430,14 @@ async def get_user_interactions(
 async def broadcast_message(
     bot_id: str,
     message_data: Dict,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_db_primary),
     current_user: User = Depends(get_current_user_async)
 ):
     """廣播訊息給所有關注者"""
     
+    if settings.PG_INBOX_ENABLED:
+        return await enqueue_campaign(db, bot_id, current_user.id, message_data, selective=False)
+
     # 驗證 Bot 所有權
     result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
     bot = result.scalars().first()
@@ -574,7 +480,7 @@ async def broadcast_message(
                     )
                     # 推送到 WebSocket，讓前端聊天室增量更新
                     try:
-                        admin_user_info = added.admin_user.dict() if hasattr(added.admin_user, 'dict') else {
+                        admin_user_info = added.admin_user.model_dump() if hasattr(added.admin_user, 'model_dump') else {
                             'id': getattr(added.admin_user, 'id', None),
                             'username': getattr(added.admin_user, 'username', None),
                             'full_name': getattr(added.admin_user, 'full_name', None)
@@ -622,7 +528,9 @@ async def send_message_to_user(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """發送訊息給特定用戶（使用 MongoDB 儲存聊天記錄）"""
+    """發送訊息給特定用戶。"""
+    if settings.PG_INBOX_ENABLED:
+        raise HTTPException(409, "請在客服對話中接手後送出回覆")
     
     # 驗證 Bot 所有權
     result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
@@ -669,7 +577,7 @@ async def send_message_to_user(
             )
             logger.info(f"管理者訊息已記錄到 MongoDB: bot_id={bot_id}, line_user_id={line_user_id}, admin_id={current_user.id}")
             try:
-                admin_user_info = added.admin_user.dict() if hasattr(added.admin_user, 'dict') else {
+                admin_user_info = added.admin_user.model_dump() if hasattr(added.admin_user, 'model_dump') else {
                     'id': getattr(added.admin_user, 'id', None),
                     'username': getattr(added.admin_user, 'username', None),
                     'full_name': getattr(added.admin_user, 'full_name', None)
@@ -714,11 +622,14 @@ async def send_message_to_user(
 async def selective_broadcast_message(
     bot_id: str,
     message_data: Dict,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_db_primary),
     current_user: User = Depends(get_current_user_async)
 ):
     """選擇性廣播訊息給指定用戶"""
     
+    if settings.PG_INBOX_ENABLED:
+        return await enqueue_campaign(db, bot_id, current_user.id, message_data, selective=True)
+
     # 驗證 Bot 所有權
     result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
     bot = result.scalars().first()
@@ -791,7 +702,7 @@ async def get_chat_history(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user_async)
 ):
-    """獲取用戶與管理者的聊天記錄（使用 MongoDB）"""
+    """獲取用戶與管理者的聊天記錄"""
     
     # 驗證 Bot 所有權
     result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.user_id == current_user.id))
@@ -804,7 +715,7 @@ async def get_chat_history(
         from app.services.conversation.conversation_service import ConversationService
         
         # 使用 ConversationService 獲取聊天記錄
-        chat_history, total_count = await ConversationService.get_chat_history(
+        chat_history, total_count = await inbox_reporting.history(db, bot.id, line_user_id, limit, offset, sender_type) if settings.PG_INBOX_ENABLED else await ConversationService.get_chat_history(
             bot_id=bot_id,
             line_user_id=line_user_id,
             limit=limit,
@@ -816,7 +727,7 @@ async def get_chat_history(
             "success": True,
             "chat_history": chat_history,
             "total_count": total_count,
-            "has_more": len(chat_history) == limit,
+            "has_more": offset + len(chat_history) < total_count,
             "pagination": {
                 "limit": limit,
                 "offset": offset,

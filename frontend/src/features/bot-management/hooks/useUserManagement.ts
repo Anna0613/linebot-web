@@ -1,13 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/services/UnifiedApiClient";
 import {
   GetBotUsersResponse,
-  GetUserInteractionsResponse,
   LineUser,
   PaginationInfo,
-  UserInteraction,
 } from "@/features/bot-management/types/botManagement";
 
 export const useUserManagement = (selectedBotId: string) => {
@@ -21,14 +19,9 @@ export const useUserManagement = (selectedBotId: string) => {
     has_prev: false,
   });
   const [selectedUser, setSelectedUser] = useState<LineUser | null>(null);
-  const [_userInteractions, _setUserInteractions] = useState<
-    UserInteraction[]
-  >([]);
   const [usersLoading, setUsersLoading] = useState(false);
-  const [_interactionsLoading, _setInteractionsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
-  const [broadcastLoading, setBroadcastLoading] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(
     new Set()
   );
@@ -37,6 +30,8 @@ export const useUserManagement = (selectedBotId: string) => {
   const [currentChatUser, setCurrentChatUser] = useState<LineUser | null>(null);
   const [selectiveBroadcastLoading, setSelectiveBroadcastLoading] =
     useState(false);
+
+  const pendingBroadcast = useRef<{ fingerprint: string; key: string }>();
 
   const filteredUsers = useMemo(
     () =>
@@ -58,7 +53,6 @@ export const useUserManagement = (selectedBotId: string) => {
       has_prev: false,
     });
     setSelectedUser(null);
-    _setUserInteractions([]);
     setSearchTerm("");
     setBroadcastMessage("");
     setSelectedUserIds(new Set());
@@ -145,94 +139,6 @@ export const useUserManagement = (selectedBotId: string) => {
     [applyUsersResponse, selectedBotId]
   );
 
-  const fetchUserInteractions = useCallback(
-    async (lineUserId: string) => {
-      if (!selectedBotId) return;
-
-      _setInteractionsLoading(true);
-      try {
-        const response = await apiClient.getUserInteractions(
-          selectedBotId,
-          lineUserId
-        );
-
-        if (response.data) {
-          const data = response.data as Partial<GetUserInteractionsResponse>;
-          _setUserInteractions(
-            (data.interactions as UserInteraction[] | undefined) || []
-          );
-        }
-      } catch (error) {
-        console.error("獲取好友互動失敗:", error);
-        toast({
-          variant: "destructive",
-          title: "載入失敗",
-          description: "無法載入好友互動歷史",
-        });
-      } finally {
-        _setInteractionsLoading(false);
-      }
-    },
-    [selectedBotId, toast]
-  );
-
-  const fetchUserInteractionsSilently = useCallback(
-    async (lineUserId: string) => {
-      if (!selectedBotId) return;
-
-      try {
-        const response = await apiClient.getUserInteractions(
-          selectedBotId,
-          lineUserId
-        );
-
-        if (response.data && !response.error) {
-          const data = response.data as Partial<GetUserInteractionsResponse>;
-          _setUserInteractions(
-            (data.interactions as UserInteraction[] | undefined) || []
-          );
-        }
-      } catch (error) {
-        console.error("靜默更新好友互動記錄失敗:", error);
-      }
-    },
-    [selectedBotId]
-  );
-
-  const handleBroadcast = useCallback(async () => {
-    if (!selectedBotId || !broadcastMessage.trim()) {
-      toast({
-        variant: "destructive",
-        title: "參數不足",
-        description: "請填寫廣播訊息內容",
-      });
-      return;
-    }
-
-    setBroadcastLoading(true);
-    try {
-      await apiClient.broadcastMessage(selectedBotId, {
-        message: broadcastMessage,
-      });
-
-      toast({
-        title: "廣播成功",
-        description: "訊息已發送給所有關注者",
-      });
-
-      setBroadcastMessage("");
-    } catch (error) {
-      console.error("廣播失敗:", error);
-      toast({
-        variant: "destructive",
-        title: "廣播失敗",
-        description: "無法發送廣播訊息",
-      });
-    } finally {
-      setBroadcastLoading(false);
-    }
-  }, [broadcastMessage, selectedBotId, toast]);
-
   const handleSelectiveBroadcast = useCallback(async () => {
     if (
       !selectedBotId ||
@@ -249,14 +155,25 @@ export const useUserManagement = (selectedBotId: string) => {
 
     setSelectiveBroadcastLoading(true);
     try {
-      await apiClient.selectiveBroadcastMessage(selectedBotId, {
+      const recipients = Array.from(selectedUserIds).sort();
+      const fingerprint = JSON.stringify([selectedBotId, recipients, broadcastMessage]);
+      if (pendingBroadcast.current?.fingerprint !== fingerprint) {
+        pendingBroadcast.current = { fingerprint, key: crypto.randomUUID() };
+      }
+      const response = await apiClient.selectiveBroadcastMessage(selectedBotId, {
         message: broadcastMessage,
-        user_ids: Array.from(selectedUserIds),
+        user_ids: recipients,
+        client_key: pendingBroadcast.current.key,
       });
 
+      if (response.error || !response.data?.success || ["unknown", "failed"].includes(response.data.state ?? "")) {
+        throw new Error(response.error || "廣播未確認");
+      }
+      pendingBroadcast.current = undefined;
+      const queued = response.data.state === "queued";
       toast({
-        title: "廣播成功",
-        description: `訊息已發送給 ${selectedUserIds.size} 位選中的好友`,
+        title: queued ? "廣播已排程" : "廣播已處理",
+        description: `廣播對象共 ${recipients.length} 位好友`,
       });
 
       setBroadcastMessage("");
@@ -283,9 +200,9 @@ export const useUserManagement = (selectedBotId: string) => {
   const handleUserSelect = useCallback(
     (user: LineUser) => {
       setSelectedUser(user);
-      void fetchUserInteractions(user.line_user_id);
+
     },
-    [fetchUserInteractions]
+    []
   );
 
   const handleUserCheck = useCallback((userId: string, checked: boolean) => {
@@ -327,7 +244,6 @@ export const useUserManagement = (selectedBotId: string) => {
     usersLoading,
     selectedUser,
     pagination,
-    broadcastLoading,
     selectiveBroadcastLoading,
     searchTerm,
     showChatPanel,
@@ -335,13 +251,11 @@ export const useUserManagement = (selectedBotId: string) => {
     currentChatUser,
     fetchUsers,
     fetchUsersSilently,
-    fetchUserInteractionsSilently,
     resetUserManagement,
     setBroadcastMessage,
     setSearchTerm,
     setShowChatPanel,
     setShowUserDetails,
-    handleBroadcast,
     handleSelectiveBroadcast,
     handleSelectAll,
     handleUserCheck,

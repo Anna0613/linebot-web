@@ -18,6 +18,7 @@ export interface Bindings {
   KNOWLEDGE: R2Bucket;
   CHANNEL_KEY: string;
   LOCAL_DRAFT_FIXTURE?: string;
+  LINE_DELIVERY_MODE?: "simulate" | "live";
   LOCAL_TICK_TOKEN?: string;
   AI?: {run(model: string, input: unknown, options?: { signal: AbortSignal }): Promise<{response: string}>};
   HYPERDRIVE: Hyperdrive;

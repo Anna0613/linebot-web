@@ -82,9 +82,9 @@ def extract_text_from_pdf(data: bytes) -> str:
             except Exception as pdfplumber_error:
                 logging.warning(f"pdfplumber 提取失敗，嘗試備用方法: {pdfplumber_error}")
 
-            # 方法 2: 使用 PyPDF2 作為備用
+            # 方法 2: 使用 pypdf 作為備用
             try:
-                from PyPDF2 import PdfReader  # type: ignore
+                from pypdf import PdfReader  # type: ignore
 
                 reader = PdfReader(io.BytesIO(data))
                 texts = []
@@ -93,15 +93,15 @@ def extract_text_from_pdf(data: bytes) -> str:
                         page_text = page.extract_text() or ""
                         texts.append(page_text)
                     except Exception as page_error:
-                        logging.warning(f"PyPDF2 第 {page_num + 1} 頁提取失敗: {page_error}")
+                        logging.warning(f"pypdf 第 {page_num + 1} 頁提取失敗: {page_error}")
                         texts.append("")
 
                 extracted_text = "\n".join(texts)
                 if extracted_text.strip():
                     return clean_text_for_database(extracted_text)
 
-            except Exception as pypdf2_error:
-                logging.warning(f"PyPDF2 提取失敗: {pypdf2_error}")
+            except Exception as pypdf_error:
+                logging.warning(f"pypdf 提取失敗: {pypdf_error}")
 
             # 方法 3: 使用 pdfminer 直接提取（最後備用）
             try:

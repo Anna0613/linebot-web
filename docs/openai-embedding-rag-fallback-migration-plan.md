@@ -279,7 +279,7 @@ failed
 
 ### Backfill 腳本
 
-新增腳本：
+歷史版本 `01050c4e` 的腳本路徑如下。全新資料庫以目前的知識來源發布流程建立索引。
 
 ```text
 backend/scripts/migration/backfill_openai_embeddings_1536.py

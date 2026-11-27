@@ -23,7 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 interface SecuritySectionProps {
-  onChangePassword: (oldPassword: string, newPassword: string) => Promise<void>;
+  onChangePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   onDeleteAccount: () => void;
   showDeleteConfirmation?: boolean;
 }
@@ -31,7 +31,6 @@ interface SecuritySectionProps {
 const SecuritySection = ({
   onChangePassword,
   onDeleteAccount,
-  _showDeleteConfirmation = false,
 }: SecuritySectionProps) => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({

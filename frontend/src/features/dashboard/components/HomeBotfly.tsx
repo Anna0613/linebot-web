@@ -196,7 +196,7 @@ const dashboardCopy = {
     botsTracked: "bots tracked",
     heroLabel: "Messages this week",
     heroUnit: "messages · last 7 days",
-    heroSource: "System conversation records (MongoDB) · updated hourly",
+    heroSource: "System conversation records",
     metrics: {
       messagesSent: "Messages sent",
       reach: "Reachable friends",
@@ -282,7 +282,7 @@ const dashboardCopy = {
     botsTracked: "個 Bot",
     heroLabel: "本週訊息量",
     heroUnit: "則 · 近 7 天",
-    heroSource: "系統對話紀錄（MongoDB）· 每小時更新",
+    heroSource: "系統對話紀錄",
     metrics: {
       messagesSent: "已發送訊息",
       reach: "可觸及好友",

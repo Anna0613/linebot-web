@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -175,7 +175,20 @@ class AIAnalysisService:
             messages = None
             cache_hit = False
 
-            if redis_manager.is_connected:
+            if settings.PG_INBOX_ENABLED:
+                from sqlalchemy import text
+                from app.db.database_async import AsyncSessionLocal
+                async with AsyncSessionLocal() as db:
+                    rows = await db.execute(text("""
+                        SELECT CASE WHEN m.delivery_state IS NULL THEN 'user' ELSE 'admin' END AS sender_type,
+                               jsonb_build_object('text',m.body) AS content, m.occurred_at AS timestamp, m.kind AS message_type
+                        FROM inbox_messages m JOIN inbox_conversations c ON c.id=m.conversation_id
+                        WHERE c.bot_id=:bot AND c.source_type='user' AND c.source_id=:contact AND NOT m.withdrawn
+                          AND (m.delivery_state IS NULL OR m.delivery_state IN ('accepted','simulated'))
+                        ORDER BY m.seq DESC LIMIT :lim
+                    """), {"bot": bot_id, "contact": line_user_id, "lim": AIAnalysisService.ANALYSIS_MAX_CANDIDATE_MESSAGES})
+                    messages = [dict(row) for row in rows.mappings()]
+            elif redis_manager.is_connected:
                 try:
                     cache_key = f"conversation:{bot_id}:{line_user_id}"
                     cached_obj = await AsyncCache.get(cache_key)
@@ -267,7 +280,10 @@ class AIAnalysisService:
             original_count = len(messages)
             if time_range_days and time_range_days > 0:
                 since = datetime.utcnow() - timedelta(days=time_range_days)
-                messages = [m for m in messages if m['timestamp'] >= since]
+                messages = [m for m in messages if (
+                    m["timestamp"].astimezone(timezone.utc).replace(tzinfo=None) if m["timestamp"].tzinfo
+                    else m["timestamp"]
+                ) >= since]
                 logger.debug(f"時間範圍過濾: {original_count} -> {len(messages)} 筆訊息 (最近 {time_range_days} 天)")
 
             # 依時間排序（舊→新），然後取固定候選上限；真正納入 AI 的內容由 token budget 決定

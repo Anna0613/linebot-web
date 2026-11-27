@@ -3,6 +3,44 @@ import React from "react";
 // Define types for Flex Message components
 interface FlexComponent {
   type: string;
+  align?: string;
+  alignItems?: string;
+  alt?: string;
+  aspectMode?: string;
+  aspectRatio?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  borderWidth?: string;
+  color?: string;
+  contents?: FlexComponent[];
+  cornerRadius?: string;
+  decoration?: string;
+  flex?: number;
+  gravity?: string;
+  height?: string;
+  justifyContent?: string;
+  layout?: string;
+  margin?: string;
+  maxLines?: number;
+  offsetBottom?: string;
+  offsetEnd?: string;
+  offsetStart?: string;
+  paddingAll?: string;
+  paddingBottom?: string;
+  paddingEnd?: string;
+  paddingStart?: string;
+  paddingTop?: string;
+  position?: string;
+  size?: string;
+  spacing?: string;
+  style?: string;
+  text?: string;
+  url?: string;
+  weight?: string;
+  width?: string;
+  wrap?: boolean;
+  background?: { type: string; angle?: string; startColor?: string; endColor?: string };
+  action?: { uri?: string; label?: string };
   [key: string]: unknown;
 }
 

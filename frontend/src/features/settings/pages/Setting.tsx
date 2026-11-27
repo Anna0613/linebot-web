@@ -152,8 +152,8 @@ const Setting: React.FC = () => {
         throw new Error(result.error);
       }
 
-      if (result.url) {
-        window.location.href = result.url;
+      if (result.login_url) {
+        window.location.href = result.login_url;
       } else {
         throw new Error("無法獲取 LINE 登入連結");
       }

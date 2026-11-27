@@ -129,8 +129,9 @@ const LoginPage = () => {
     e.preventDefault();
     if (formRef.current) {
       // 交給 jQuery Validation 驗證與 submitHandler
-      if ((window as { $?: unknown }).$) {
-        ((window as { $: (element: HTMLElement) => { submit: () => void } }).$)(formRef.current).submit();
+      const jquery = (window as Window & { $?: (element: HTMLElement) => { submit(): void } }).$;
+      if (jquery) {
+        jquery(formRef.current).submit();
       } else {
         // 如果沒有 jQuery，使用原生表單處理
         console.info('使用原生表單處理（jQuery 未載入）');

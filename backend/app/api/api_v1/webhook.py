@@ -258,6 +258,8 @@ async def handle_webhook_event(
     Returns:
         200 OK 響應
     """
+    if settings.PG_INBOX_ENABLED:
+        raise HTTPException(409, "此環境使用 Worker webhook")
     logger.debug(f"Webhook 開始處理: bot_id={bot_id}")
     logger.debug(f"webhook.py 已載入最新版本 - {datetime.now()}")
     try:

@@ -152,7 +152,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
     onChangePreview({
       name,
       chat_bar_text: chatBarText,
-      size: { width: 2500, height: Number(height) as 1686 | 843 },
+      size: { width: 2500 as const, height: Number(height) as 1686 | 843 },
       areas,
       image_url: imageUrl,
       image_meta: imageMeta || undefined,
@@ -214,7 +214,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
     setAreas(prev => prev.filter((_, i) => i !== index));
   };
 
-  const onChangeArea = (index: number, next: Partial<RichMenuArea>) => {
+  const onChangeArea = (index: number, next: { bounds?: Partial<RichMenuBounds>; action?: Partial<RichMenuArea["action"]> }) => {
     setAreas(prev => prev.map((a, i) => (i === index ? ({
       bounds: { ...a.bounds, ...(next.bounds || {}) },
       action: { ...a.action, ...(next.action || {}) },
@@ -224,7 +224,7 @@ const RichMenuForm: React.FC<Props> = ({ botId, menu, onSaved, onCancel, onChang
   const payload = useMemo(() => ({
     name,
     chat_bar_text: chatBarText,
-    size: { width: 2500, height: Number(height) as 1686 | 843 },
+    size: { width: 2500 as const, height: Number(height) as 1686 | 843 },
     areas,
   }), [name, chatBarText, height, areas]);
 

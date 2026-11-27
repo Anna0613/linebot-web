@@ -61,7 +61,7 @@ const DropZone: React.FC<DropZoneProps> = ({
   const [{ isOver, canDrop: _canDrop }, drop] = useDrop(() => ({
     accept: ['block', 'dropped-block'],
     hover: (item: UnifiedDropItem | { index?: number; block?: UnifiedBlock; id?: string }) => {
-      setHoveredItem(item);
+      setHoveredItem("blockType" in item ? item : item.block ?? null);
       
       try {
         // 檢查是否為重新排序操作（已存在的積木）

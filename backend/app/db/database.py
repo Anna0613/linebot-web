@@ -3,7 +3,7 @@
 支援讀寫分離功能
 """
 from sqlalchemy import text
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.exc import OperationalError
 import tenacity
 import logging

@@ -12,7 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import AuthFormLayout from "../components/AuthFormLayout";
-import { UnifiedApiClient } from "@/services/UnifiedApiClient";
+import { apiClient } from "@/services/UnifiedApiClient";
 
 const EmailVerificationPending = () => {
   const navigate = useNavigate();
@@ -47,7 +47,6 @@ const EmailVerificationPending = () => {
     setResendSuccess(false);
 
     try {
-      const apiClient = new UnifiedApiClient();
       const response = await apiClient.resendEmailVerification(email);
 
       if (response.success || response.status === 200) {

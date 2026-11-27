@@ -26,7 +26,7 @@ export async function startEmulator({ databaseUrl, botId, destination, secret, p
     modules: true, script: bridge + outputFiles[0].text, host: '127.0.0.1', port,
     compatibilityDate: '2026-05-04', compatibilityFlags: ['nodejs_compat'],
     hyperdrives: { HYPERDRIVE: databaseUrl },
-    r2Persist, r2Buckets: ['CHANNELS', 'KNOWLEDGE'], bindings: { CHANNEL_KEY: key.toString('base64'), LOCAL_DRAFT_FIXTURE:'1', LOCAL_TICK_TOKEN:tickToken ?? '' },
+    r2Persist, r2Buckets: ['CHANNELS', 'KNOWLEDGE'], bindings: { CHANNEL_KEY: key.toString('base64'), LOCAL_DRAFT_FIXTURE:'1', LINE_DELIVERY_MODE:'simulate', LOCAL_TICK_TOKEN:tickToken ?? '' },
     queueProducers: { INBOUND: 'line-inbound' },
     queueConsumers: { 'line-inbound': { maxBatchSize: 10, maxBatchTimeout: 1, retryDelay: 2, maxRetries: 8, deadLetterQueue: 'line-inbound-dead' } },
   });

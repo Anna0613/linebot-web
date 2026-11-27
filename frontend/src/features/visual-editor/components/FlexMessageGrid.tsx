@@ -64,7 +64,7 @@ interface FlexMessageGridProps {
 
 const FlexMessageGrid: React.FC<FlexMessageGridProps> = ({ onSelect, onCreate, onDelete }) => {
   const [messages, setMessages] = useState<FlexMessageSummary[]>([]);
-  const [previewBlocks, setPreviewBlocks] = useState<Map<string, FlexBlockLite[]>>(new Map());
+  const [previewBlocks, setPreviewBlocks] = useState<Map<string, UnifiedBlock[]>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newName, setNewName] = useState('');
@@ -86,7 +86,7 @@ const FlexMessageGrid: React.FC<FlexMessageGridProps> = ({ onSelect, onCreate, o
       setMessages(summaries);
       // 平行抓取完整訊息資料以取得 design_blocks
       const full = await VisualEditorApi.getUserFlexMessages(false);
-      const map = new Map<string, FlexBlockLite[]>();
+      const map = new Map<string, UnifiedBlock[]>();
       full.forEach((msg) => {
         if (Array.isArray(msg.design_blocks) && msg.design_blocks.length > 0) {
           map.set(msg.id, msg.design_blocks as UnifiedBlock[]);

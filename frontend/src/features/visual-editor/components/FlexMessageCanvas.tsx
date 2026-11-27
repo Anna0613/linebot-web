@@ -91,12 +91,12 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => (
 );
 
 const getButtonLabel = (data: Record<string, unknown>) => {
-  const action = isPlainObject(data.action) ? data.action : {};
+  const action: Record<string, unknown> = isPlainObject(data.action) ? data.action : {};
   return asString(action.label, asString(data.text, '按鈕'));
 };
 
 const getActionWithLabel = (data: Record<string, unknown>, label: string) => {
-  const action = isPlainObject(data.action)
+  const action: Record<string, unknown> = isPlainObject(data.action)
     ? { ...data.action }
     : { type: 'message' };
 

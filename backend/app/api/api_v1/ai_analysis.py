@@ -89,7 +89,7 @@ async def ai_query_user(
             answer=result["answer"],
             model=result["model"],
             provider=result["provider"],
-            usage_note="此回應依據 MongoDB 對話歷史生成，僅供客服與營運決策參考。",
+            usage_note="此回應依據 對話歷史生成，僅供客服與營運決策參考。",
             context_metadata=context_metadata,
         )
     except HTTPException:
@@ -128,7 +128,7 @@ async def clear_ai_conversation_history(
     """
     清除指定用戶的 AI 分析快取
 
-    注意：此操作僅清除 AI 分析對話的快取，不影響 MongoDB 中的原始對話記錄
+    注意：此操作僅清除 AI 分析對話的快取，不影響 中的原始對話記錄
     """
     try:
         # 清除 Redis 快取中的 AI 分析上下文快取（改為非同步 Redis 方案）

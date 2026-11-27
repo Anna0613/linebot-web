@@ -66,7 +66,7 @@ export const useEmailManagement = () => {
 
     setIsResendingEmailVerification(true);
     try {
-      const response = await apiClient.resendEmailVerification();
+      const response = await apiClient.resendEmailVerification(email);
 
       if (response.status === 200) {
         toast({

@@ -1,7 +1,8 @@
 """
 用戶相關的 Pydantic schemas
 """
-from pydantic import BaseModel, EmailStr, validator
+from typing import Literal
+from pydantic import ConfigDict, Field, BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
@@ -15,7 +16,8 @@ class UserCreate(UserBase):
     """用戶創建 schema"""
     password: str
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError('密碼必須至少 8 個字元')
@@ -35,8 +37,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     avatar_updated_at: Optional[datetime]
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UserProfile(BaseModel):
     """用戶個人檔案 schema"""
@@ -53,14 +54,14 @@ class UserProfile(BaseModel):
     picture_url: Optional[str] = None
     isLineUser: bool = False
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AvatarUpload(BaseModel):
     """頭像上傳 schema"""
     avatar_base64: str
     
-    @validator('avatar_base64')
+    @field_validator('avatar_base64')
+    @classmethod
     def validate_avatar(cls, v):
         import re
         import base64
@@ -94,5 +95,12 @@ class LineUserResponse(BaseModel):
     picture_url: Optional[str]
     created_at: datetime
     
-    class Config:
-        from_attributes = True 
+    model_config = ConfigDict(from_attributes=True)
+
+
+class Feedback(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    category: Literal["錯誤回報", "功能建議", "一般意見"]
+    message: str = Field(min_length=1, max_length=4000)
+    contact_name: Optional[str] = Field(default=None, max_length=100)
+    contact_email: Optional[EmailStr] = None

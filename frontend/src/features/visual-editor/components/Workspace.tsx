@@ -37,110 +37,10 @@ import {
   LayoutDashboard,
   Plus,
 } from "lucide-react";
-import VisualEditorApi, {
-  FlexMessage as StoredFlexMessage,
-} from "@/features/visual-editor/api/visualEditorApi";
 import { API_CONFIG } from "@/config/apiConfig";
-
-// 簡化的 Flex Message 生成器
-class FlexMessageGenerator {
-  generateFlexMessage(blocks: Block[]): Record<string, unknown> {
-    const bubble = {
-      type: "bubble",
-      body: {
-        type: "box",
-        layout: "vertical",
-        contents: [],
-      },
-    };
-
-    // 處理所有積木
-    blocks.forEach((block) => {
-      if (block.blockType === "flex-container") {
-        // 處理容器積木
-        switch (block.blockData.containerType) {
-          case "bubble":
-            // Bubble 容器已經是預設結構，不需要額外處理
-            break;
-          case "box":
-            // 如果是 box 容器，可以調整 layout
-            if (block.blockData.layout) {
-              bubble.body.layout = block.blockData.layout as string;
-            }
-            break;
-        }
-      } else if (block.blockType === "flex-content") {
-        // 處理內容積木
-        switch (block.blockData.contentType) {
-          case "text":
-            bubble.body.contents.push({
-              type: "text",
-              text: block.blockData.text || "示例文字",
-              size: block.blockData.size || "md",
-              weight: block.blockData.weight || "regular",
-              color: block.blockData.color || "#000000",
-            });
-            break;
-          case "image":
-            bubble.body.contents.push({
-              type: "image",
-              url: block.blockData.url || "https://via.placeholder.com/300x200",
-              size: block.blockData.size || "full",
-              aspectMode: block.blockData.aspectMode || "cover",
-              aspectRatio: block.blockData.aspectRatio || "20:13",
-              ...(block.blockData.align
-                ? { align: block.blockData.align }
-                : {}),
-              ...(block.blockData.backgroundColor &&
-              block.blockData.backgroundColor !== "transparent"
-                ? { backgroundColor: block.blockData.backgroundColor }
-                : {}),
-              ...(block.blockData.action
-                ? { action: block.blockData.action }
-                : {}),
-            });
-            break;
-          case "button":
-            bubble.body.contents.push({
-              type: "button",
-              action: {
-                type: "message",
-                label: block.blockData.text || "按鈕",
-                text: block.blockData.text || "按鈕被點擊",
-              },
-            });
-            break;
-          case "separator":
-            bubble.body.contents.push({
-              type: "separator",
-              margin: "md",
-            });
-            break;
-        }
-      }
-    });
-
-    // 如果沒有內容，添加一個預設文字
-    if (bubble.body.contents.length === 0) {
-      bubble.body.contents.push({
-        type: "text",
-        text: "Flex 訊息內容",
-        color: "#666666",
-        align: "center",
-      });
-    }
-
-    return bubble;
-  }
-}
 
 interface BlockData {
   [key: string]: unknown;
-}
-
-interface Block {
-  blockType: string;
-  blockData: BlockData;
 }
 
 const createFlexBlockId = () =>
@@ -339,47 +239,9 @@ const Workspace: React.FC<WorkspaceProps> = ({
   };
 
 
-  // Flex 訊息資料
-  const [_savedFlexMessages, setSavedFlexMessages] = useState<
-    Map<string, StoredFlexMessage>
-  >(new Map());
   const [selectedFlexBlockIndex, setSelectedFlexBlockIndex] = useState<
     number | null
   >(null);
-
-  // Flex 訊息生成器
-  const flexMessageGenerator = useMemo(() => new FlexMessageGenerator(), []);
-
-  // 轉換函數
-  const _convertFlexBlocksToFlexMessage = useCallback(
-    (blocks: Block[]) => {
-      return flexMessageGenerator.generateFlexMessage(blocks);
-    },
-    [flexMessageGenerator]
-  );
-
-  // 載入儲存的 Flex 訊息
-  const loadSavedFlexMessages = useCallback(async () => {
-    try {
-      const messages = await VisualEditorApi.getUserFlexMessages();
-      const map = new Map<string, StoredFlexMessage>();
-      // 同時以 ID 和名稱作為 key，方便查找
-      messages.forEach((m) => {
-        if (m && m.id) map.set(m.id, m);
-        if (m && typeof (m as Record<string, unknown>).name === "string") {
-          map.set((m as Record<string, string>).name, m);
-        }
-      });
-      setSavedFlexMessages(map);
-      console.log(`📦 載入了 ${messages.length} 個儲存的 Flex 訊息`);
-    } catch (err) {
-      console.error("載入已儲存 Flex 範本失敗", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadSavedFlexMessages();
-  }, [loadSavedFlexMessages]);
 
   useEffect(() => {
     if (shouldShowLeftPanel) {

@@ -1,10 +1,7 @@
 import AppShell from "@/components/layout/AppShell";
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, type FormEvent } from "react";
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { useEmailManagement } from "@/hooks/useEmailManagement";
-import { useToast } from "@/hooks/use-toast";
+import { API_CONFIG } from "@/config/apiConfig";
 import { Bug, Lightbulb, Mail, MessageSquare, Send } from "lucide-react";
 
 const feedbackTypes = [
@@ -13,98 +10,41 @@ const feedbackTypes = [
   { label: "一般意見", icon: MessageSquare },
 ];
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 const Suggest = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [displayName, setDisplayName] = useState("");
-  const [isEditingName, setIsEditingName] = useState(false);
+  const { user } = useUnifiedAuth({ requireAuth: true, redirectTo: "/login" });
+  const [category, setCategory] = useState("一般意見");
+  const [key, setKey] = useState(() => crypto.randomUUID());
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "failed">("idle");
 
-  // 使用認證 hook
-  const {
-    user: authUser,
-    loading: authLoading,
-    error: authError,
-  } = useUnifiedAuth({
-    requireAuth: true,
-    redirectTo: "/login",
-  });
+  function editFeedback() {
+    if (status === "failed") setKey(crypto.randomUUID());
+    setStatus("idle");
+  }
 
-  // 使用用戶資料管理 hooks
-  const {
-    user,
-    setUser,
-    userImage,
-    loading: profileLoading,
-    setLoading: setProfileLoading,
-    avatarLoading,
-    loadUserProfile,
-    loadUserAvatar,
-    updateDisplayName,
-    uploadAvatar,
-    deleteAvatar,
-    changePassword,
-    deleteAccount,
-  } = useUserProfile();
-
-  // 使用電子郵件管理 hook
-  const {
-    email,
-    setEmail,
-    emailVerified,
-    setEmailVerified,
-    isEditingEmail,
-    setIsEditingEmail,
-    isResendingEmailVerification,
-    loadEmailStatus,
-    updateEmail,
-    resendEmailVerification,
-  } = useEmailManagement();
-
-  // 初始化用戶資料
-  useEffect(() => {
-    const initializeUserData = async () => {
-      if (authUser && !authLoading) {
-        // 確保用戶數據結構完整
-        const completeUser = {
-          ...authUser,
-          display_name: authUser.display_name || authUser.username || "",
-          username: authUser.username || "",
-        };
-
-        setUser(completeUser);
-        setDisplayName(completeUser.display_name);
-        setEmail(authUser.email || "");
-        setEmailVerified(authUser.email_verified || false);
-
-        // 載入詳細的用戶資料
-        if (!authUser.isLineUser) {
-          await loadUserProfile();
-          await loadUserAvatar();
-          await loadEmailStatus();
-        }
-
-        setProfileLoading(false);
-      }
-    };
-
-    initializeUserData();
-  }, [
-    authUser,
-    authLoading,
-    setUser,
-    setEmail,
-    setEmailVerified,
-    loadUserProfile,
-    loadUserAvatar,
-    loadEmailStatus,
-    setProfileLoading,
-  ]);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const fields = new FormData(form);
+    setStatus("sending");
+    try {
+      const response = await fetch(API_CONFIG.UNIFIED.BASE_URL + "/users/feedback/" + key, {
+        method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, message: fields.get("message"), contact_name: fields.get("name") || null,
+          contact_email: fields.get("email") || null }),
+      });
+      if (!response.ok) throw Error(String(response.status));
+      form.reset();
+      setKey(crypto.randomUUID());
+      setCategory("一般意見");
+      setStatus("sent");
+    } catch {
+      setStatus("failed");
+    }
+  }
 
   return (
     <AppShell
-      user={user || authUser}
+      user={user}
       activeNav="settings"
       headerKicker="意見回饋"
       innerClassName="max-w-5xl"
@@ -118,7 +58,8 @@ const Suggest = () => {
 
           <div className="max-w-4xl mx-auto">
             <div className="app-panel p-8 sm:p-10">
-              <form className="space-y-8">
+              <form className="space-y-8" onSubmit={submit} onChange={editFeedback}>
+                <fieldset disabled={status === "sending"} className="space-y-8">
                 <div>
                   <label className="mb-4 block text-base font-semibold text-slate-950">
                     意見類型
@@ -129,8 +70,10 @@ const Suggest = () => {
                       return (
                         <button
                           key={type.label}
+                          aria-pressed={category === type.label}
+                          onClick={() => { if (category !== type.label) { setCategory(type.label); editFeedback(); } }}
                           type="button"
-                          className="rounded-[16px] border border-slate-200 bg-white p-4 text-center transition-colors hover:border-emerald-200 hover:bg-emerald-50/70"
+                          className="aria-pressed:border-blue-600 aria-pressed:bg-blue-50 rounded-[16px] border border-slate-200 bg-white p-4 text-center transition-colors hover:border-emerald-200 hover:bg-emerald-50/70"
                         >
                           <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-[14px] bg-emerald-100 text-emerald-700">
                             <Icon className="h-5 w-5" />
@@ -146,7 +89,7 @@ const Suggest = () => {
                   <label className="mb-3 block text-base font-semibold text-slate-950">
                     意見內容
                   </label>
-                  <textarea
+                  <textarea required name="message" maxLength={4000} aria-label="意見內容"
                     placeholder="請描述你遇到的問題，或想建議的功能。"
                     rows={6}
                     className="app-input min-h-36 resize-none py-3"
@@ -159,7 +102,7 @@ const Suggest = () => {
                       姓名（選填）
                     </label>
                     <input
-                      type="text"
+                      type="text" name="name" maxLength={100} aria-label="姓名（選填）"
                       placeholder="輸入姓名"
                       className="app-input"
                     />
@@ -169,7 +112,7 @@ const Suggest = () => {
                       Email（選填）
                     </label>
                     <input
-                      type="email"
+                      type="email" name="email" aria-label="Email（選填）"
                       placeholder="example@email.com"
                       className="app-input"
                     />
@@ -185,6 +128,9 @@ const Suggest = () => {
                     送出意見
                   </button>
                 </div>
+                </fieldset>
+                {status === "sent" && <p role="status">已收到你的意見。</p>}
+                {status === "failed" && <p role="alert">送出失敗，請稍後重試。</p>}
               </form>
             </div>
           </div>

@@ -110,7 +110,7 @@ export class LocalStorageCacheService {
   /**
    * 清理敏感欄位
    */
-  private sanitizeData<T>(data: T): T {
+  private sanitizeData(data: unknown): unknown {
     if (typeof data !== 'object' || data === null) {
       return data;
     }
@@ -150,7 +150,7 @@ export class LocalStorageCacheService {
     try {
       // 檢查數據類型
       const dataType = typeof data;
-      if (!CACHE_SECURITY.ALLOWED_TYPES.includes(dataType)) {
+      if (!CACHE_SECURITY.ALLOWED_TYPES.some(type => type === dataType)) {
         return false;
       }
 
@@ -196,7 +196,7 @@ export class LocalStorageCacheService {
       const dataString = JSON.stringify(sanitizedData);
       const signature = await this.generateSignature(dataString);
 
-      const cacheItem: CacheItem<T> = {
+      const cacheItem: CacheItem<unknown> = {
         data: sanitizedData,
         timestamp: now,
         expiry: now + expiry,

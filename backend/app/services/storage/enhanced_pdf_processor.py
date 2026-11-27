@@ -38,7 +38,7 @@ class EnhancedPDFProcessor:
         self.extraction_stats = {
             'total_processed': 0,
             'pdfplumber_success': 0,
-            'pypdf2_success': 0,
+            'pypdf_success': 0,
             'pdfminer_success': 0,
             'failed_extractions': 0
         }
@@ -117,10 +117,10 @@ class EnhancedPDFProcessor:
         
         return None
     
-    def _extract_with_pypdf2(self, data: bytes) -> Optional[PDFExtractionResult]:
-        """使用 PyPDF2 提取文字"""
+    def _extract_with_pypdf(self, data: bytes) -> Optional[PDFExtractionResult]:
+        """使用 pypdf 提取文字"""
         try:
-            from PyPDF2 import PdfReader
+            from pypdf import PdfReader
             
             reader = PdfReader(io.BytesIO(data))
             texts = []
@@ -147,19 +147,19 @@ class EnhancedPDFProcessor:
             extracted_text = "\n".join(texts).strip()
             
             if extracted_text:
-                self.extraction_stats['pypdf2_success'] += 1
+                self.extraction_stats['pypdf_success'] += 1
                 return PDFExtractionResult(
                     text=extracted_text,
                     page_count=metadata.get('page_count', 0),
-                    extraction_method='PyPDF2',
+                    extraction_method='pypdf',
                     warnings=warnings_list,
                     metadata=metadata
                 )
             
         except ImportError:
-            logger.warning("PyPDF2 未安裝，跳過此方法")
+            logger.warning("pypdf 未安裝，跳過此方法")
         except Exception as e:
-            logger.debug(f"PyPDF2 提取失敗: {e}")
+            logger.debug(f"pypdf 提取失敗: {e}")
         
         return None
     
@@ -209,7 +209,7 @@ class EnhancedPDFProcessor:
             # 按優先順序嘗試不同的提取方法
             extraction_methods = [
                 self._extract_with_pdfplumber,
-                self._extract_with_pypdf2,
+                self._extract_with_pypdf,
                 self._extract_with_pdfminer
             ]
             
@@ -252,7 +252,7 @@ class EnhancedPDFProcessor:
             **self.extraction_stats,
             'success_rate': (total - self.extraction_stats['failed_extractions']) / total * 100,
             'pdfplumber_rate': self.extraction_stats['pdfplumber_success'] / total * 100,
-            'pypdf2_rate': self.extraction_stats['pypdf2_success'] / total * 100,
+            'pypdf_rate': self.extraction_stats['pypdf_success'] / total * 100,
             'pdfminer_rate': self.extraction_stats['pdfminer_success'] / total * 100
         }
     

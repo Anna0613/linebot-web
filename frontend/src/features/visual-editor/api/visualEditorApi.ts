@@ -256,7 +256,7 @@ export class VisualEditorApi {
       }
 
       // 後端已修復雙重序列化問題，直接使用邏輯積木數據
-      const blockCount = response.data.logic_blocks ? response.data.logic_blocks.length : 0;
+      const blockCount = Array.isArray(response.data.logic_blocks) ? response.data.logic_blocks.length : 0;
       console.log(`📦 API 回傳邏輯模板 "${response.data.name}" - 積木數量: ${blockCount}`);
 
       // 儲存到快取
@@ -347,7 +347,7 @@ export class VisualEditorApi {
       const endpoint = `${API_CONFIG.UNIFIED.BASE_URL}/bots/messages`;
       
       // 確保使用認證的 API 呼叫
-      const response = await this.apiClient.get<FlexMessage[]>(endpoint, false); // skipAuth = false
+      const response = await this.apiClient.get<FlexMessage[]>(endpoint);
 
       if (!response.success || response.status >= 400) {
         const errorMsg = response.error || `API 錯誤 (${response.status})`;

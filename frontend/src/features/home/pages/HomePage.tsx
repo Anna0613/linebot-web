@@ -4,19 +4,15 @@ import { Link, useNavigate } from "react-router-dom";
 import BotlynBrand from "@/components/brand/BotlynIdentity";
 import { authManager } from "@/services/UnifiedAuthManager";
 
+const pgInbox = import.meta.env.VITE_PG_INBOX === "true";
+
 const integrations = [
   "LINE Messaging API",
   "Webhook",
   "Flex Message",
   "Rich Menu",
-  "Groq",
-  "Gemini",
-  "RAG 向量檢索",
+  ...(pgInbox ? ["知識來源引用", "Cloudflare Queues", "R2"] : ["Groq", "Gemini", "RAG 向量檢索"]),
   "PostgreSQL",
-  "Redis",
-  "MongoDB",
-  "MinIO",
-  "WebSocket",
 ];
 
 const features = [
@@ -30,9 +26,9 @@ const features = [
   },
   {
     id: "02 / AI",
-    title: "AI 知識庫接管",
+    title: pgInbox ? "有來源的 AI 客服草稿" : "AI 知識庫接管",
     description:
-      "整合 Groq 與 Gemini，讓 Bot 在你不在線時也能用你的資料回答問題。",
+      pgInbox ? "發布文件後，可在收件匣產生草稿，逐段核對引用來源。" : "整合 Groq 與 Gemini，讓 Bot 在你不在線時也能用你的資料回答問題。",
     className: "bc-t-ai",
     art: "ai",
   },
@@ -74,12 +70,12 @@ const faqs = [
   {
     question: "Bot 的對話資料儲存在哪？",
     answer:
-      "對話歷史儲存在加密的 MongoDB，媒體檔案儲存在 MinIO 物件儲存。你可以隨時下載或刪除所有對話資料，也可以選擇關閉對話記錄功能。",
+      pgInbox ? "對話歷史與客服回覆存於 PostgreSQL。知識文件的原檔與引用段落存於 R2。" : "對話歷史存於 MongoDB，媒體檔案使用 MinIO 物件儲存。",
   },
   {
-    question: "AI 接管是什麼意思？",
+    question: pgInbox ? "客服怎麼使用 AI 草稿？" : "AI 接管是什麼意思？",
     answer:
-      "當你定義的流程沒有匹配到使用者訊息時，可以選擇交給 AI 處理。AI 會基於你上傳到知識庫的內容，用 RAG 檢索方式回覆。",
+      pgInbox ? "在收件匣選取訊息產生草稿，展開原文核對，接手後即可送出客服回覆。" : "當你定義的流程沒有匹配到使用者訊息時，可以選擇交給 AI 處理。AI 會基於你上傳到知識庫的內容，用 RAG 檢索方式回覆。",
   },
   {
     question: "可以同時連到 LINE 以外的平台嗎？",
@@ -143,7 +139,7 @@ const FeatureArt = ({ type }: { type: string }) => {
     return (
       <div className="bc-art-ai">
         <div className="bc-ai-tags">
-          <span className="bc-ai-tag">RAG</span>
+          <span className="bc-ai-tag">{pgInbox ? "引用" : "RAG"}</span>
           <span className="bc-ai-tag bc-hot">向量檢索</span>
           <span className="bc-ai-tag">語意搜尋</span>
         </div>

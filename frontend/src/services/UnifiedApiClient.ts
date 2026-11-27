@@ -8,7 +8,8 @@ import { secureLog } from "../utils/secureTokenUtils";
 import { API_CONFIG, getApiUrl } from "../config/apiConfig";
 import LocalStorageCacheService from "./LocalStorageCacheService";
 import { CACHE_KEYS } from "../config/cacheConfig";
-import type { LineBotProfile, LineBotProfilePreviewData } from "@/types/bot";
+import type { UnifiedUser } from "./UnifiedAuthManager";
+import type { Bot, LineBotProfile, LineBotProfilePreviewData } from "@/types/bot";
 
 interface ApiResponse<T = unknown> {
   data?: T;
@@ -484,7 +485,7 @@ export class UnifiedApiClient {
   }
 
   // 用戶資料相關API
-  public async getProfile(): Promise<ApiResponse> {
+  public async getProfile(): Promise<ApiResponse<UnifiedUser>> {
     return this.get(
       getApiUrl(
         API_CONFIG.SETTING.BASE_URL,
@@ -524,7 +525,7 @@ export class UnifiedApiClient {
   }
 
   // Bot管理相關API
-  public async getBots(): Promise<ApiResponse> {
+  public async getBots(): Promise<ApiResponse<Bot[]>> {
     return this.get(
       getApiUrl(
         API_CONFIG.PUZZLE.BASE_URL,
@@ -533,7 +534,7 @@ export class UnifiedApiClient {
     );
   }
 
-  public async getBot(botId: string): Promise<ApiResponse> {
+  public async getBot(botId: string): Promise<ApiResponse<Bot>> {
     return this.get(
       getApiUrl(
         API_CONFIG.PUZZLE.BASE_URL,
@@ -644,7 +645,7 @@ export class UnifiedApiClient {
   }
 
   // 用戶頭像相關API
-  public async getAvatar(): Promise<ApiResponse> {
+  public async getAvatar(): Promise<ApiResponse<{ avatar?: string }>> {
     return this.get(
       getApiUrl(
         API_CONFIG.SETTING.BASE_URL,
@@ -653,11 +654,11 @@ export class UnifiedApiClient {
     );
   }
 
-  public async getUserAvatar(): Promise<ApiResponse> {
+  public async getUserAvatar(): Promise<ApiResponse<{ avatar?: string }>> {
     return this.getAvatar();
   }
 
-  public async updateAvatar(avatar: string): Promise<ApiResponse> {
+  public async updateAvatar(avatar: string): Promise<ApiResponse<{ avatar?: string }>> {
     return this.put(
       getApiUrl(
         API_CONFIG.SETTING.BASE_URL,
@@ -667,7 +668,7 @@ export class UnifiedApiClient {
     );
   }
 
-  public async uploadAvatar(formData: FormData): Promise<ApiResponse> {
+  public async uploadAvatar(formData: FormData): Promise<ApiResponse<{ avatar?: string }>> {
     try {
       // 從 FormData 中獲取文件並轉換為 base64
       const file = formData.get("avatar") as File;
@@ -732,7 +733,7 @@ export class UnifiedApiClient {
   }
 
   // 檢查電子郵件驗證狀態
-  public async checkEmailVerification(): Promise<ApiResponse> {
+  public async checkEmailVerification(): Promise<ApiResponse<{ verified: boolean }>> {
     return this.get(
       getApiUrl(
         API_CONFIG.SETTING.BASE_URL,
@@ -833,16 +834,6 @@ export class UnifiedApiClient {
     );
   }
 
-  public async broadcastMessage(
-    botId: string,
-    messageData: { message: string; user_ids?: string[] }
-  ): Promise<ApiResponse> {
-    return this.post(
-      getApiUrl(API_CONFIG.UNIFIED.BASE_URL, `/bots/${botId}/broadcast`),
-      messageData
-    );
-  }
-
   public async sendMessageToUser(
     botId: string,
     lineUserId: string,
@@ -859,8 +850,8 @@ export class UnifiedApiClient {
 
   public async selectiveBroadcastMessage(
     botId: string,
-    messageData: { message: string; user_ids: string[] }
-  ): Promise<ApiResponse> {
+    messageData: { message: string; user_ids: string[]; client_key: string }
+  ): Promise<ApiResponse<{ success: boolean; state?: string }>> {
     return this.post(
       getApiUrl(
         API_CONFIG.UNIFIED.BASE_URL,

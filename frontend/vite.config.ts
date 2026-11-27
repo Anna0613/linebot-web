@@ -2,11 +2,9 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { fileURLToPath, URL } from "node:url";
-// import { componentTagger } from "lovable-tagger"; // 已禁用以避免不必要的網路連接
 import fs from "fs";
-import type { ViteDevServer } from "vite";
+import type { PreviewServer, ViteDevServer } from "vite";
 import type { IncomingMessage, ServerResponse } from "http";
-// import { performanceOptimizationPlugin, criticalCSSPlugin } from './vite-plugins/performance-optimization';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -57,28 +55,16 @@ export default defineConfig(({ mode }) => {
       '@radix-ui/react-dialog',
       '@radix-ui/react-select',
       '@radix-ui/react-tabs',
-      '@radix-ui/react-accordion',
       '@radix-ui/react-alert-dialog',
-      '@radix-ui/react-aspect-ratio',
       '@radix-ui/react-avatar',
       '@radix-ui/react-checkbox',
-      '@radix-ui/react-collapsible',
-      '@radix-ui/react-context-menu',
       '@radix-ui/react-dropdown-menu',
-      '@radix-ui/react-hover-card',
       '@radix-ui/react-label',
-      '@radix-ui/react-menubar',
-      '@radix-ui/react-navigation-menu',
       '@radix-ui/react-popover',
       '@radix-ui/react-progress',
-      '@radix-ui/react-radio-group',
-      '@radix-ui/react-scroll-area',
       '@radix-ui/react-separator',
-      '@radix-ui/react-slider',
       '@radix-ui/react-slot',
       '@radix-ui/react-switch',
-      '@radix-ui/react-toggle',
-      '@radix-ui/react-toggle-group',
       '@radix-ui/react-toast'
     ],
     exclude: [
@@ -130,8 +116,6 @@ export default defineConfig(({ mode }) => {
   },
   plugins: [
     react(),
-    // 禁用 lovable-tagger 以避免不必要的網路連接錯誤
-    // mode === 'development' && componentTagger(),
     // 自定義靜態資源插件
     {
       name: 'assets-middleware',
@@ -188,7 +172,7 @@ export default defineConfig(({ mode }) => {
           res.end(JSON.stringify(manifest));
         });
       },
-      configurePreviewServer(server: ViteDevServer) {
+      configurePreviewServer(server: PreviewServer) {
         server.middlewares.use('/manifest.json', (_req: IncomingMessage, res: ServerResponse) => {
           const manifest = {
             name: 'Botlyn',
@@ -209,9 +193,6 @@ export default defineConfig(({ mode }) => {
         });
       }
     },
-    // 只在生產建置時啟用性能優化插件
-    // mode === 'production' && performanceOptimizationPlugin(),
-    // mode === 'production' && criticalCSSPlugin()
   ].filter(Boolean),
   resolve: {
     alias: {

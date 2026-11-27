@@ -385,7 +385,7 @@ class BotService:
                 detail="Bot 不存在"
             )
         
-        update_data = bot_data.dict(exclude_unset=True)
+        update_data = bot_data.model_dump(exclude_unset=True)
 
         # 檢查名稱重複（如果要更新名稱）
         if update_data.get("name") and update_data["name"] != bot.name:
@@ -958,7 +958,7 @@ class BotService:
                 )
         
         # 更新邏輯模板資料（JSONB 欄位會自動處理序列化）
-        update_data = template_data.dict(exclude_unset=True)
+        update_data = template_data.model_dump(exclude_unset=True)
         
         for field, value in update_data.items():
             setattr(template, field, value)
@@ -1102,7 +1102,7 @@ class BotService:
                 )
         
         # 更新 Flex 訊息資料（雙軌）
-        update_data = message_data.dict(exclude_unset=True)
+        update_data = message_data.model_dump(exclude_unset=True)
         name_changed = 'name' in update_data
         content_changed = 'content' in update_data
         design_blocks_changed = 'design_blocks' in update_data

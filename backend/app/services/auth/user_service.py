@@ -93,7 +93,7 @@ class UserService:
             user.email_verified = False
         
         # 更新用戶資料
-        update_data = user_data.dict(exclude_unset=True)
+        update_data = user_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(user, field, value)
         

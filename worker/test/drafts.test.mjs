@@ -15,3 +15,26 @@ test('agent stops after its bounded search budget', async () => {
   assert.equal(result.state,'handoff');
   assert.equal(calls,4);
 });
+
+test('LINE push retries use the same key and only accept a confirmed duplicate', async () => {
+  const { sendText } = await import('../src/delivery.ts');
+  const key = crypto.randomUUID();
+  assert.equal(await sendText('test', 'U1', 'message', key, async () => { throw new TypeError('network'); }), 'queued');
+  for (const [to, method] of [[null, 'broadcast'], [['U1'], 'multicast'], ['U1', 'push']]) {
+    await sendText('test', to, 'message', key, async (url, init) => {
+      assert.equal(url, 'https://api.line.me/v2/bot/message/' + method);
+      assert.deepEqual(JSON.parse(init.body).to, to ?? undefined);
+      return new Response(null, {status: 200});
+    });
+  }
+  for (const [code, headers, outcome] of [
+    [200, {}, 'accepted'], [409, {'x-line-accepted-request-id':'original'}, 'accepted'],
+    [409, {}, 'failed'], [503, {}, 'queued'], [408, {}, 'queued'], [429, {}, 'queued'], [400, {}, 'failed'],
+  ]) {
+    assert.equal(await sendText('test', 'U1', '客服回覆', key, async (_url, init) => {
+      assert.equal(init.headers['X-Line-Retry-Key'], key);
+      assert.equal(JSON.parse(init.body).to, 'U1');
+      return new Response(null, {status:code, headers});
+    }), outcome);
+  }
+});

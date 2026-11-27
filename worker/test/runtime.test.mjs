@@ -34,11 +34,15 @@ test('verified webhook survives a PostgreSQL outage and redelivery', { timeout: 
   t.after(() => pg.stop());
   const client = pg.getPgClient();
   await client.connect();
-  await client.query('CREATE TABLE bots(id uuid PRIMARY KEY, is_active boolean, user_id uuid)');
+  await client.query('CREATE TABLE users(id uuid PRIMARY KEY)');
+  await client.query('INSERT INTO users VALUES($1)', [owner]);
+  await client.query(await readFile(new URL('../../backend/migrations/sql/20261127_feedback.sql', import.meta.url), 'utf8'));
+  await client.query('CREATE TABLE bots(id uuid PRIMARY KEY, is_active boolean, user_id uuid, channel_token text)');
   await client.query('INSERT INTO bots VALUES($1,true,$2)', [bot, owner]);
   await client.query(await readFile(new URL('../../backend/migrations/sql/20261127_inbox.sql', import.meta.url), 'utf8'));
   await client.query(await readFile(new URL('../../backend/migrations/sql/20261127_inbox_drafts.sql', import.meta.url), 'utf8'));
   await client.query(await readFile(new URL('../../backend/migrations/sql/20261127_knowledge_versions.sql', import.meta.url), 'utf8'));
+  await client.query(await readFile(new URL('../../backend/migrations/sql/20261127_inbox_delivery.sql', import.meta.url), 'utf8'));
   await client.query(`CREATE TABLE logic_templates(id uuid PRIMARY KEY,bot_id uuid,user_id uuid,name text,logic_blocks jsonb);
     CREATE TABLE flex_messages(id uuid PRIMARY KEY,user_id uuid,name text,content jsonb)`);
   for (const table of ['inbox_conversations', 'inbox_messages', 'inbox_sources', 'inbox_flow_releases']) {
@@ -91,7 +95,7 @@ test('verified webhook survives a PostgreSQL outage and redelivery', { timeout: 
     if (process.env.INBOX_TEST_PYTHON) {
       const result = await promisify(execFile)(process.env.INBOX_TEST_PYTHON, ['-m', 'pytest', '-q', '-o', 'addopts=', '--noconftest', 'tests/test_pg_inbox.py'], {
         cwd: fileURLToPath(new URL('../../backend/', import.meta.url)),
-        env: { ...process.env, INBOX_TEST_URL:url.origin, INBOX_TEST_TICK:secret, INBOX_TEST_BOT: bot, INBOX_TEST_OWNER: owner,
+        env: { ...process.env, PG_INBOX_ENABLED:'true', INBOX_TEST_URL:url.origin, INBOX_TEST_TICK:secret, INBOX_TEST_BOT: bot, INBOX_TEST_OWNER: owner,
           DB_HOST:'127.0.0.1', DB_PORT:String(port), DB_NAME:'postgres', DB_USER:'postgres', DB_PASSWORD:password,
           DB_REPLICA_HOST:'127.0.0.1', DB_REPLICA_PORT:String(port), DB_REPLICA_NAME:'postgres',
           DB_REPLICA_USER:'postgres', DB_REPLICA_PASSWORD:password },

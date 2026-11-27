@@ -15,7 +15,7 @@ interface EmailManagementSectionProps {
   onEmailChange: (email: string) => void;
   onEditEmailToggle: (editing: boolean) => void;
   onSaveEmail: () => Promise<void>;
-  onResendVerification: () => Promise<void>;
+  onResendVerification: () => Promise<boolean>;
 }
 
 const EmailManagementSection = ({

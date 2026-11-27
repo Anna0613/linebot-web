@@ -2,7 +2,7 @@
 
 這是遷移計畫的第一段可執行流程。Webhook Worker 從私有 R2 binding 讀取帶 Bot ID 綁定的加密驗簽設定，核對 LINE 簽章及 destination，將整批事件逐一提交到入站佇列後回應。消費 Worker 經 Hyperdrive binding 寫 PG，交易提交後才確認消費。FastAPI 提供原有 Cookie 登入下的查詢與接手操作。React 收件匣位於 `/bots/inbox`。
 
-新環境從空白資料庫及 R2 空間開始。主庫保存文字、附件種類及 LINE 訊息 ID；撤回會清除本文。其他事件先保留收件憑據。接手會提升該對話的控制版本並取消新路徑的待辦。舊 FastAPI webhook 的 AI 接管仍由舊設定控制。新路徑沒有派送器，測試使用獨立 Bot。
+新環境從空白資料庫及 R2 空間開始。主庫保存文字、附件種類及 LINE 訊息 ID；撤回會清除本文。其他事件先保留收件憑據。接手會提升該對話的控制版本並取消新路徑的待辦。開啟 PG 收件匣時，FastAPI 的舊收件及單發入口會拒絕送件。Worker 負責人工回覆與廣播的 LINE 派送，本機模擬器會將派送標為「本機模擬送出」。
 
 ## 驗證整條路徑
 
@@ -21,8 +21,14 @@ INBOX_TEST_PYTHON=.venv/bin/python npm test
 1. 在本機 PostgreSQL 建立獨立空資料庫，例如 `botlyn_fresh`。現階段完整 FastAPI schema 使用 `uuid-ossp` 和 pgvector，測試可用 `pgvector/pgvector:pg16`。將 backend 的 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER`、`DB_PASSWORD` 及對應的 `DB_REPLICA_*` 明確指向此庫，在 `backend/` 執行 `.venv/bin/python scripts/database/db_manager.py init`。初始化會建立帳號、Bot、收件匣、知識與流程所需的結構。開啟 `PG_INBOX_ENABLED=true` 啟動 FastAPI，註冊新帳號並建立測試 Bot。這些頁面目前仍由 FastAPI 提供。
 2. 在 worker 設定 `LOCAL_DATABASE_URL`（限 loopback）、`LOCAL_BOT_ID`（該帳號已啟用的測試 Bot UUID）、`LOCAL_DESTINATION` 及 `LOCAL_CHANNEL_SECRET`（可自訂測試值），並將 `LOCAL_R2_DIR` 指向此環境專屬的新目錄。執行 `npm run dev`。它在 127.0.0.1:8787 建立本機 Worker 及驗簽設定。媒體、對話及查詢均不需真實 LINE 權杖。
 3. 以 `npm run sample` 從同一組環境變數送出具正確簽章的本機測試訊息。重複使用相同的 `LOCAL_EVENT_ID` 可檢查去重。以 `LOCAL_TEXT` 指定訊息內容。
-4. 在 frontend 設定 `VITE_PG_INBOX=true`，以 `VITE_UNIFIED_API_URL` 指向上述本機 FastAPI 並啟動 Vite。登入、選取同一個 Bot、從側欄開啟客服收件匣。可切換對話、分頁載入較早訊息、接手或等待同步。收件匣目前每五秒更新。
+4. 在 frontend 設定 `VITE_PG_INBOX=true`，以 `VITE_UNIFIED_API_URL` 指向上述本機 FastAPI 並啟動 Vite。登入、選取同一個 Bot、從側欄開啟客服收件匣。可切換對話、分頁載入較早訊息、接手並送出文字。從好友頁打開同一個人可看到同一則回覆及派送狀態。收件匣目前每五秒更新。
 5. 本機模擬器的暫存資源用於開發，測試時只關閉測試 PG 以重現 NAS 離線，保留 Worker 執行。正式環境的保留期限、死信重播、TLS Tunnel、AI、新媒體寫入 R2與 LINE 派送依主計畫另行驗證。
+
+## 客服回覆與廣播的派送狀態
+
+人工回覆在同一筆 PG 交易確認頻道、接手版本及請求識別碼，再建立待派送訊息。選擇性廣播會核對名單歸屬並寫入各自的對話，以 LINE multicast 送出一次。全體廣播走 LINE broadcast，僅保留廣播層級的結果，因為平台決定實際收件人。模擬器設定 `LINE_DELIVERY_MODE=simulate`，正式派送使用 `live`，未指定模式的排程只執行知識發布與草稿。Worker 以固定 LINE 重試鍵重試暫時性故障。LINE 接受請求後顯示「已受理」，收件人是否閱讀另計。超過本系統重試期限會標記為「結果未確認」。
+
+開啟 PG 模式後，FastAPI 啟動只需 PostgreSQL 服務。舊媒體、圖文選單及獨立客服分析等端點仍有各自的儲存或模型依賴。
 
 ## 在收件匣試用知識草稿
 

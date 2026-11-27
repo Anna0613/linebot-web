@@ -1,7 +1,7 @@
 """
 Bot 相關的 Pydantic schemas
 """
-from pydantic import BaseModel, validator
+from pydantic import ConfigDict, BaseModel, field_validator
 from typing import Optional, Any
 from datetime import datetime
 from uuid import UUID
@@ -15,7 +15,8 @@ class BotBase(BaseModel):
 
 class BotCreate(BotBase):
     """Bot 創建 schema"""
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         if len(v) < 1:
             raise ValueError('Bot 名稱不能為空')
@@ -23,13 +24,15 @@ class BotCreate(BotBase):
             raise ValueError('Bot 名稱不能超過 100 個字元')
         return v
     
-    @validator('channel_token')
+    @field_validator('channel_token')
+    @classmethod
     def validate_channel_token(cls, v):
         if len(v) < 10:
             raise ValueError('Channel Token 格式無效')
         return v
     
-    @validator('channel_secret')
+    @field_validator('channel_secret')
+    @classmethod
     def validate_channel_secret(cls, v):
         if len(v) < 10:
             raise ValueError('Channel Secret 格式無效')
@@ -42,7 +45,8 @@ class BotUpdate(BaseModel):
     channel_secret: Optional[str] = None
     is_active: Optional[bool] = None
     
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         if v is not None:
             if len(v) < 1:
@@ -66,8 +70,7 @@ class BotResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class LineBotProfileResponse(BaseModel):
     """LINE 平台回傳的 Bot 官方帳號資訊"""
@@ -88,13 +91,15 @@ class LineBotProfilePreviewRequest(BaseModel):
     channel_token: str
     channel_secret: str
 
-    @validator('channel_token')
+    @field_validator('channel_token')
+    @classmethod
     def validate_channel_token(cls, v):
         if len(v.strip()) < 10:
             raise ValueError('Channel Access Token 格式無效')
         return v.strip()
 
-    @validator('channel_secret')
+    @field_validator('channel_secret')
+    @classmethod
     def validate_channel_secret(cls, v):
         if len(v.strip()) < 10:
             raise ValueError('Channel Secret 格式無效')
@@ -111,7 +116,8 @@ class FlexMessageBase(BaseModel):
 
 class FlexMessageCreate(FlexMessageBase):
     """Flex 訊息創建 schema"""
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         if len(v.strip()) == 0:
             raise ValueError('FLEX 訊息名稱不能為空')
@@ -119,7 +125,8 @@ class FlexMessageCreate(FlexMessageBase):
             raise ValueError('FLEX 訊息名稱不能超過 255 個字元')
         return v
         
-    @validator('content')
+    @field_validator('content')
+    @classmethod
     def validate_content(cls, v):
         """驗證內容格式（不修改數據本身）"""
         try:
@@ -135,7 +142,8 @@ class FlexMessageCreate(FlexMessageBase):
         # 關鍵：返回原始數據
         return v
     
-    @validator('design_blocks')
+    @field_validator('design_blocks')
+    @classmethod
     def validate_design_blocks(cls, v):
         if v is None:
             return v
@@ -156,7 +164,8 @@ class FlexMessageUpdate(BaseModel):
     content: Optional[Any] = None
     design_blocks: Optional[Any] = None
     
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         if v is not None:
             if len(v.strip()) == 0:
@@ -165,7 +174,8 @@ class FlexMessageUpdate(BaseModel):
                 raise ValueError('FLEX 訊息名稱不能超過 255 個字元')
         return v
     
-    @validator('content')
+    @field_validator('content')
+    @classmethod
     def validate_content(cls, v):
         """驗證內容格式（不修改數據本身）"""
         if v is not None:
@@ -183,7 +193,8 @@ class FlexMessageUpdate(BaseModel):
         # 關鍵：返回原始數據
         return v
     
-    @validator('design_blocks')
+    @field_validator('design_blocks')
+    @classmethod
     def validate_design_blocks(cls, v):
         if v is not None:
             try:
@@ -207,8 +218,7 @@ class FlexMessageResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class LogicTemplateBase(BaseModel):
     """邏輯模板基礎 schema"""
@@ -221,7 +231,8 @@ class LogicTemplateCreate(LogicTemplateBase):
     """邏輯模板創建 schema"""
     bot_id: str
     
-    @validator('bot_id')
+    @field_validator('bot_id')
+    @classmethod
     def validate_bot_id(cls, v):
         try:
             UUID(v)
@@ -229,7 +240,8 @@ class LogicTemplateCreate(LogicTemplateBase):
             raise ValueError('無效的 Bot ID 格式')
         return v
     
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         if len(v.strip()) == 0:
             raise ValueError('邏輯模板名稱不能為空')
@@ -237,7 +249,8 @@ class LogicTemplateCreate(LogicTemplateBase):
             raise ValueError('邏輯模板名稱不能超過 255 個字元')
         return v
     
-    @validator('logic_blocks')
+    @field_validator('logic_blocks')
+    @classmethod
     def validate_logic_blocks(cls, v):
         """驗證邏輯積木數據格式（不修改數據本身）"""
         try:
@@ -262,7 +275,8 @@ class LogicTemplateUpdate(BaseModel):
     is_active: Optional[str] = None
     generated_code: Optional[str] = None
     
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         if v is not None:
             if len(v.strip()) == 0:
@@ -271,7 +285,8 @@ class LogicTemplateUpdate(BaseModel):
                 raise ValueError('邏輯模板名稱不能超過 255 個字元')
         return v
     
-    @validator('logic_blocks')
+    @field_validator('logic_blocks')
+    @classmethod
     def validate_logic_blocks(cls, v):
         """驗證邏輯積木數據格式（不修改數據本身）"""
         if v is not None:
@@ -302,8 +317,7 @@ class LogicTemplateResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class LogicTemplateSummary(BaseModel):
     """邏輯模板摘要 schema - 用於下拉選單"""
@@ -313,8 +327,7 @@ class LogicTemplateSummary(BaseModel):
     is_active: str
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class FlexMessageSummary(BaseModel):
     """FLEX 訊息摘要 schema - 用於下拉選單"""
@@ -322,8 +335,7 @@ class FlexMessageSummary(BaseModel):
     name: str
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class BotSummary(BaseModel):
     """Bot 摘要信息 schema - 用於下拉選單"""
@@ -332,5 +344,4 @@ class BotSummary(BaseModel):
     is_active: bool = True
     created_at: datetime
     
-    class Config:
-        from_attributes = True 
+    model_config = ConfigDict(from_attributes=True)

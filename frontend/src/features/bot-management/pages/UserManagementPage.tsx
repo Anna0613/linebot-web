@@ -68,20 +68,6 @@ const UserManagementLoadingPanel = ({ text }: { text: string }) => (
   </section>
 );
 
-const getLineUserIdFromMessage = (message: {
-  user_id?: string;
-  data?: unknown;
-}) => {
-  if (message.user_id) return message.user_id;
-
-  const data = message.data;
-  if (data && typeof data === "object" && "line_user_id" in data) {
-    return String((data as { line_user_id?: string }).line_user_id || "");
-  }
-
-  return "";
-};
-
 const UserManagementPage: React.FC = () => {
   const { user, loading: authLoading } = useUnifiedAuth({
     requireAuth: true,
@@ -102,18 +88,15 @@ const UserManagementPage: React.FC = () => {
 
   const userManagement = useUserManagement(selectedBotId);
   const {
-    currentChatUser,
-    fetchUserInteractionsSilently,
     fetchUsers,
     fetchUsersSilently,
     pagination,
     resetUserManagement,
-    selectedUser,
   } = userManagement;
   const { isConnected, lastMessage } = useWebSocket({
     botId: selectedBotId || undefined,
     autoReconnect: true,
-    enabled: !!selectedBotId,
+    enabled: !!selectedBotId && import.meta.env.VITE_PG_INBOX !== "true",
   });
 
   useEffect(() => {
@@ -146,6 +129,12 @@ const UserManagementPage: React.FC = () => {
   }, [fetchUsers, resetUserManagement, selectedBotId]);
 
   useEffect(() => {
+    if (!selectedBotId || import.meta.env.VITE_PG_INBOX !== "true") return;
+    const timer = window.setInterval(() => void fetchUsersSilently(pagination.limit, pagination.offset), 5000);
+    return () => window.clearInterval(timer);
+  }, [selectedBotId, fetchUsersSilently, pagination.limit, pagination.offset]);
+
+  useEffect(() => {
     if (!lastMessage || !selectedBotId) return;
     if (lastMessage.bot_id && lastMessage.bot_id !== selectedBotId) return;
 
@@ -155,14 +144,6 @@ const UserManagementPage: React.FC = () => {
       lastMessage.type === "chat_message"
     ) {
       void fetchUsersSilently(pagination.limit, pagination.offset);
-
-      const lineUserId = getLineUserIdFromMessage(lastMessage);
-      const selectedLineUserId =
-        currentChatUser?.line_user_id || selectedUser?.line_user_id;
-
-      if (lineUserId && selectedLineUserId === lineUserId) {
-        void fetchUserInteractionsSilently(lineUserId);
-      }
 
       if (lastMessage.type === "new_user_message") {
         toast({
@@ -176,12 +157,9 @@ const UserManagementPage: React.FC = () => {
     lastMessage,
     selectedBotId,
     toast,
-    currentChatUser?.line_user_id,
-    fetchUserInteractionsSilently,
     fetchUsersSilently,
     pagination.limit,
     pagination.offset,
-    selectedUser?.line_user_id,
   ]);
 
   useEffect(() => {
@@ -208,9 +186,9 @@ const UserManagementPage: React.FC = () => {
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
             <Wifi className="h-3.5 w-3.5 text-emerald-600" />
-            <span className="text-[var(--bc-ink-3)]">{copy.webSocket}</span>
+            <span className="text-[var(--bc-ink-3)]">{import.meta.env.VITE_PG_INBOX === "true" ? (language === "en" ? "Sync" : "同步") : copy.webSocket}</span>
             <span className="font-semibold text-[var(--bc-ink)]">
-              {isConnected ? copy.connected : copy.reconnecting}
+              {import.meta.env.VITE_PG_INBOX === "true" ? "5s" : isConnected ? copy.connected : copy.reconnecting}
             </span>
           </span>
         </>
@@ -257,6 +235,7 @@ const UserManagementPage: React.FC = () => {
 
         {!isInitialPageLoading && bots.length > 0 && (
           <UsersTabContent
+            account={user?.id ?? user?.username ?? ""}
             selectedBotId={selectedBotId}
             broadcastMessage={userManagement.broadcastMessage}
             totalCount={userManagement.totalCount}

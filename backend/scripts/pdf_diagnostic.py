@@ -189,7 +189,7 @@ class PDFDiagnostic:
             report += f"""
 📈 提取方法統計:
 - pdfplumber 成功率: {stats.get('pdfplumber_rate', 0):.1f}%
-- PyPDF2 成功率: {stats.get('pypdf2_rate', 0):.1f}%
+- pypdf 成功率: {stats.get('pypdf_rate', 0):.1f}%
 - pdfminer 成功率: {stats.get('pdfminer_rate', 0):.1f}%
 - 整體成功率: {stats.get('success_rate', 0):.1f}%
 """

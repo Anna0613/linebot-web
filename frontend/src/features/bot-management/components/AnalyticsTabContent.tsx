@@ -85,7 +85,7 @@ const analyticsCopy = {
     syncing: "Syncing",
     activityEmpty: "No real-time activity yet",
     heatmapTitle: "Hourly activity",
-    heatmapSubtitle: "LINE Insight doesn't expose hourly active users.",
+    heatmapSubtitle: import.meta.env.VITE_PG_INBOX === "true" ? "Distinct senders by hour today (UTC)." : "LINE Insight doesn't expose hourly active users.",
     usageTitle: "Follower demographics",
     usageSubtitle: "Distribution from LINE Insight demographics.",
     noData: "No data",
@@ -126,7 +126,7 @@ const analyticsCopy = {
     syncing: "同步中",
     activityEmpty: "尚無即時活動",
     heatmapTitle: "每小時活躍資料",
-    heatmapSubtitle: "LINE Insight 未提供每小時活躍好友資料。",
+    heatmapSubtitle: import.meta.env.VITE_PG_INBOX === "true" ? "依 UTC 時間統計今天每小時曾發訊息的使用者人數。" : "LINE Insight 未提供每小時活躍好友資料。",
     usageTitle: "好友人口統計分布",
     usageSubtitle: "來自 LINE Insight demographics 的分布資料。",
     noData: "無資料",
@@ -511,7 +511,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge
+              {import.meta.env.VITE_PG_INBOX !== "true" && <Badge
                 variant="outline"
                 className={cn(
                   "border-[var(--bc-line-2)] bg-[var(--bc-bg-2)] text-xs",
@@ -519,7 +519,7 @@ const AnalyticsTabContent: React.FC<AnalyticsTabContentProps> = ({
                 )}
               >
                 {isLive ? copy.live : copy.syncing}
-              </Badge>
+              </Badge>}
               <Button
                 type="button"
                 variant="outline"

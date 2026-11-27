@@ -2,11 +2,16 @@ import { Client } from 'pg';
 import { ingress, type Bindings, type Envelope } from './ingress.ts';
 import { storeEvent } from './store.ts';
 
+import { deliverCampaign, deliverReply } from "./delivery.ts";
 import { processDraft } from './drafts.ts';
 
 import { publishNext } from './publications.ts';
 
 async function tick(env: Bindings) {
+  if (env.LINE_DELIVERY_MODE === "live" || env.LINE_DELIVERY_MODE === "simulate") {
+    await deliverReply(env);
+    await deliverCampaign(env);
+  }
   try { await publishNext(env); }
   finally { await processDraft(env); }
 }

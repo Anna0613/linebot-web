@@ -10,9 +10,11 @@ import pytest
 def test_pg_inbox_api():
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
-    from app.api.api_v1 import inbox, inbox_sources, inbox_releases
+    from app.api.api_v1 import bot_analytics, inbox, inbox_sources, inbox_releases, users
 
     app = FastAPI()
+    app.include_router(users.router, prefix="/users")
+    app.include_router(bot_analytics.router, prefix="/bots")
     app.include_router(inbox.router, prefix="/bots")
     app.include_router(inbox_sources.router, prefix="/bots")
     app.include_router(inbox_releases.router, prefix="/bots")
@@ -20,6 +22,12 @@ def test_pg_inbox_api():
     app.dependency_overrides[inbox.get_current_user_async] = lambda: SimpleNamespace(id=owner)
     endpoint = "/bots/" + os.environ["INBOX_TEST_BOT"] + "/inbox"
     with TestClient(app) as client:
+        feedback = "/users/feedback/" + str(uuid4())
+        data = {"category":"一般意見","message":"請新增標籤"}
+        assert client.put(feedback, json=data).status_code == 201
+        assert client.put(feedback, json=data).status_code == 201
+        assert client.put(feedback, json={**data, "message":"其他"}).status_code == 409
+        assert client.put(feedback, json={**data, "message":"  "}).status_code == 422
         listing = client.get(endpoint)
         assert listing.status_code == 200, listing.text
         assert listing.headers["Cache-Control"] == "private, no-store"
@@ -113,16 +121,78 @@ def test_pg_inbox_api():
         assert client.post(other + "/releases/templates/" + template_id).status_code == 404
         assert client.put(other + "/sources/" + source_id, files={"file": ("另一個.txt", b"hello")},
                           data={"base_version": "0"}).status_code == 404
+        # This fixture normally exercises only inbox tables. Add contact-profile
+        # columns used by the shared PostgreSQL reporting queries.
+        with pg, pg.cursor() as cursor:
+            cursor.execute("""CREATE TABLE line_bot_users(id uuid, bot_id uuid, line_user_id text,
+                display_name text,picture_url text,status_message text,language text,is_followed boolean,
+                first_interaction timestamptz,last_interaction timestamptz,interaction_count text)""")
         pg.close()
+        friend = client.post(endpoint + "/contacts/U1/thread")
+        assert friend.status_code == 200 and friend.json()["id"] == thread
+        reply_url = f"{endpoint}/{thread}/replies"
+        reply = {"client_key": str(uuid4()), "body": "您好，我是客服", "ownership_epoch": 1}
+        assert client.post(reply_url, json=reply).status_code == 409
         url = f"{endpoint}/{thread}/takeover"
         assert client.post(url, json={"ownership_epoch": 9}).status_code == 409
         for _ in range(2):
             result = client.post(url, json={"ownership_epoch": 0})
             assert result.json() == {"owner_mode": "human", "ownership_epoch": 1}
+        first = client.post(reply_url, json=reply)
+        assert first.status_code == 202, first.text
+        assert client.post(reply_url, json=reply).json() == first.json()
+        assert client.post(reply_url, json={**reply, "body":"不同內容"}).status_code == 409
+        tick()
+        assert client.post(reply_url, json=reply).json()["state"] == "simulated"
+        timeline = client.get(f"{endpoint}/{thread}/messages").json()["items"]
+        assert len(timeline) == 2 and timeline[-1]["body"] == reply["body"]
+        assert timeline[-1]["delivery_state"] == "simulated"
+
+        from app.db.database_async import AsyncSessionLocal
+        from app.services.conversation import inbox_reporting
+
+        async def verify_reports():
+            bot_id = UUID(os.environ["INBOX_TEST_BOT"])
+            async with AsyncSessionLocal() as session:
+                listing = await inbox_reporting.contacts(session, bot_id, 20, 0)
+                assert [row["line_user_id"] for row in listing["users"]] == ["U1"]
+                history, count = await inbox_reporting.history(session, bot_id, "U1", 20, 0)
+                assert count == 2 and history[0]["sender_type"] == "admin"
+                assert (await inbox_reporting.totals(session, bot_id, 7))["totalMessages"] == 2
+                for hourly in (True, False):
+                    buckets = await inbox_reporting.series(session, bot_id, 7, hourly)
+                    assert sum(row["received"] for row in buckets) == 1
+                    assert sum(row["sent"] for row in buckets) == 1
+                    assert sum(row["active"] for row in buckets) == 1
+                dashboard = await inbox_reporting.dashboard(session, bot_id, "week")
+                assert dashboard["total_interactions"] == 2 and dashboard["active_users"] == 1
+                assert sum(row["activeUsers"] for row in dashboard["activity_distribution"]) == 1
+                assert not (await inbox_reporting.contacts(session, other_bot, 20, 0))["users"]
+        client.portal.call(verify_reports)
+
+        broadcast_url = endpoint.removesuffix("/inbox") + "/broadcast"
+        campaign = {"message":"假日公告", "user_ids":["U1"], "client_key":str(uuid4())}
+        selective = broadcast_url + "/selective"
+        assert client.post(selective, json={**campaign, "user_ids":["other"]}).status_code == 422
+        queued = client.post(selective, json=campaign)
+        assert queued.status_code == 200 and queued.json()["state"] == "queued", queued.text
+        assert client.post(selective, json=campaign).json() == queued.json()
+        assert client.post(selective, json={**campaign, "message":"另一則"}).status_code == 409
+        tick()
+        assert client.post(selective, json=campaign).json()["state"] == "simulated"
+        latest = client.get(f"{endpoint}/{thread}/messages").json()["items"]
+        assert len(latest) == 3 and latest[-1]["delivery_state"] == "simulated"
+        assert latest[-1]["body"] == "假日公告"
+        everyone = {"message":"全體公告","client_key":str(uuid4())}
+        assert client.post(broadcast_url, json=everyone).json()["state"] == "queued"
+        tick()
+        assert client.post(broadcast_url, json=everyone).json()["state"] == "simulated"
+        assert len(client.get(f"{endpoint}/{thread}/messages").json()["items"]) == 3
         assert client.post(draft_url).status_code == 409
         assert client.get(f"{endpoint}/{thread}/messages").json()["items"][0]["can_draft"] is False
         app.dependency_overrides[inbox.get_current_user_async] = lambda: SimpleNamespace(id=uuid4())
         assert client.post(draft_url).status_code == 404
+        assert client.post(reply_url, json=reply).status_code == 404
         assert client.get(endpoint).status_code == 404
         assert client.get(f"{endpoint}/{thread}/messages").status_code == 404
         assert client.post(url, json={"ownership_epoch": 1}).status_code == 404
@@ -132,8 +202,8 @@ def test_locate_source_sections():
     from io import BytesIO
     from hashlib import sha256
     from docx import Document
-    from PyPDF2 import PdfWriter
-    from PyPDF2.generic import DecodedStreamObject, DictionaryObject, NameObject
+    from pypdf import PdfWriter
+    from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
     from app.services.knowledge.source_publication import extract_sections
 
     document = Document()

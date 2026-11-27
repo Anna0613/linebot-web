@@ -27,10 +27,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/ui/loader";
 import { Textarea } from "@/components/ui/textarea";
+import { FriendConversation } from "@/features/inbox/InboxPage";
 import ChatPanel from "./users/ChatPanel";
 import { LineUser, PaginationInfo } from "@/features/bot-management/types/botManagement";
 
 interface UsersTabContentProps {
+  account: string;
   selectedBotId: string;
   broadcastMessage: string;
   totalCount: number;
@@ -54,7 +56,7 @@ interface UsersTabContentProps {
 }
 
 const UsersTabContent: React.FC<UsersTabContentProps> = ({
-  selectedBotId,
+  account, selectedBotId,
   broadcastMessage,
   totalCount,
   selectedUserIds,
@@ -287,10 +289,10 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({
 
       <div className="flex flex-col h-full min-h-0">
         <div className="flex-1 flex min-h-0 w-full">
-          <ChatPanel
+          {import.meta.env.VITE_PG_INBOX === "true" ? <FriendConversation bot={selectedBotId} account={account} contact={currentChatUser?.line_user_id} /> : <ChatPanel
             botId={selectedBotId}
             selectedUser={currentChatUser}
-          />
+          />}
         </div>
       </div>
 

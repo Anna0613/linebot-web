@@ -1,3 +1,4 @@
+import { isBlockCompatible } from "../utils/blockCompatibility";
 import { useRef, useCallback, useEffect } from 'react';
 import { UnifiedBlock, UnifiedDropItem, WorkspaceContext, BlockValidationResult } from '../types/block';
 
@@ -53,7 +54,7 @@ export const useCompatibilityWorker = () => {
         pendingRequestsRef.current.delete(id);
         
         if (type === 'ERROR') {
-          pendingRequest.reject(new Error(data.error));
+          pendingRequest.reject(new Error(String((data as {error?: string})?.error ?? "Worker error")));
         } else {
           pendingRequest.resolve(data);
         }
@@ -81,8 +82,9 @@ export const useCompatibilityWorker = () => {
       }
       
       // 清除所有待處理的請求
-      pendingRequests.forEach(({ timeout }) => {
+      pendingRequests.forEach(({ timeout, reject }) => {
         clearTimeout(timeout);
+        reject(new Error("Compatibility worker was closed"));
       });
       pendingRequests.clear();
     };
@@ -125,7 +127,7 @@ export const useCompatibilityWorker = () => {
   ): Promise<BlockValidationResult> => {
     if (!workerRef.current) {
       // Fallback to synchronous checking
-      return checkCompatibilitySync(block, context, existingBlocks);
+      return isBlockCompatible(block, context, existingBlocks);
     }
 
     try {
@@ -135,10 +137,10 @@ export const useCompatibilityWorker = () => {
         existingBlocks
       });
       
-      return result;
+      return result as BlockValidationResult;
     } catch (error) {
       console.warn('Worker compatibility check failed, falling back to sync:', error);
-      return checkCompatibilitySync(block, context, existingBlocks);
+      return isBlockCompatible(block, context, existingBlocks);
     }
   }, [sendWorkerMessage]);
 
@@ -150,7 +152,7 @@ export const useCompatibilityWorker = () => {
   ): Promise<BlockValidationResult[]> => {
     if (!workerRef.current) {
       // Fallback to synchronous checking
-      return blocks.map(block => checkCompatibilitySync(block, context, existingBlocks));
+      return blocks.map(block => isBlockCompatible(block, context, existingBlocks));
     }
 
     try {
@@ -160,10 +162,10 @@ export const useCompatibilityWorker = () => {
         existingBlocks
       });
       
-      return results;
+      return results as BlockValidationResult[];
     } catch (error) {
       console.warn('Worker batch compatibility check failed, falling back to sync:', error);
-      return blocks.map(block => checkCompatibilitySync(block, context, existingBlocks));
+      return blocks.map(block => isBlockCompatible(block, context, existingBlocks));
     }
   }, [sendWorkerMessage]);
 
@@ -183,82 +185,3 @@ export const useCompatibilityWorker = () => {
     isWorkerAvailable: !!workerRef.current
   };
 };
-
-// 同步後備相容性檢查函數
-function checkCompatibilitySync(
-  block: UnifiedBlock | UnifiedDropItem,
-  context: WorkspaceContext,
-  existingBlocks: UnifiedBlock[] = []
-): BlockValidationResult {
-  // 簡化的同步相容性檢查
-  // 這個函數作為 Worker 不可用時的後備方案
-  
-  // 基本驗證
-  if (!context) {
-    return {
-      isValid: false,
-      reason: '工作區上下文未正確初始化',
-      suggestions: ['請重新整理頁面']
-    };
-  }
-
-  if (context === WorkspaceContext.FLEX) {
-    if (!['flex-container', 'flex-content', 'flex-layout'].includes(block.blockType)) {
-      return {
-        isValid: false,
-        reason: '此積木不屬於 Flex Message 結構',
-        suggestions: ['請使用 Flex Message 編輯器左側的容器、內容或佈局積木']
-      };
-    }
-
-    if (block.blockType === 'flex-container') {
-      const data = block.blockData || {};
-      const containerType = typeof data.containerType === 'string' ? data.containerType : '';
-      const blockId = 'id' in block ? block.id : undefined;
-      const hasContainer = (type: string) => existingBlocks.some((existingBlock) => {
-        if (blockId && existingBlock.id === blockId) return false;
-        return existingBlock.blockType === 'flex-container' && existingBlock.blockData?.containerType === type;
-      });
-
-      if (containerType === 'carousel') {
-        if (hasContainer('carousel')) {
-          return {
-            isValid: false,
-            reason: '一個 Flex Message 只能有一個 Carousel 容器',
-            suggestions: ['請在現有 Carousel 裡新增 Bubble 卡片']
-          };
-        }
-
-        if (existingBlocks.length > 0) {
-          return {
-            isValid: false,
-            reason: 'Carousel 必須是 Flex Message 最外層容器',
-            suggestions: ['請先建立新的 Flex Message，再從 Carousel 容器開始設計']
-          };
-        }
-
-        return { isValid: true };
-      }
-
-      const hasCarousel = hasContainer('carousel');
-
-      if (!hasCarousel && containerType === 'bubble' && hasContainer('bubble')) {
-        return {
-          isValid: false,
-          reason: '單一卡片 Flex Message 只能有一個 Bubble 容器',
-          suggestions: ['若要建立多張卡片，請先建立 Carousel 容器']
-        };
-      }
-
-    }
-  }
-
-  // 寬鬆的相容性政策 - 允許大多數操作
-  return {
-    isValid: true,
-    reason: '使用同步後備相容性檢查（寬鬆政策）',
-    suggestions: ['如果遇到問題，請重新整理頁面以啟用 Web Worker 優化']
-  };
-}
-
-export default useCompatibilityWorker;

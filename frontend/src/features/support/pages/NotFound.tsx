@@ -16,8 +16,8 @@ const NotFound = () => {
     );
 
     // 檢查用戶登入狀態
-    const checkAuthStatus = () => {
-      const authStatus = authManager.isAuthenticated();
+    const checkAuthStatus = async () => {
+      const authStatus = await authManager.isAuthenticated();
       setIsAuthenticated(authStatus);
     };
 

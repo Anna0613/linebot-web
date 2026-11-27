@@ -1,14 +1,16 @@
 """
 用戶管理 API 路由
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict
+from uuid import UUID
+from sqlalchemy import text
 
 from app.db.database_async import get_async_db
-from app.dependencies import get_current_user_async
+from app.dependencies import get_current_user_async, get_db_primary
 from app.models.user import User
-from app.schemas.user import UserProfile, UserUpdate, AvatarUpload
+from app.schemas.user import Feedback, UserProfile, UserUpdate, AvatarUpload
 from app.schemas.auth import PasswordChange
 from app.services.auth.user_service import UserService
 
@@ -80,3 +82,21 @@ async def check_email_verification(
 ):
     """檢查email驗證狀態"""
     return {"verified": current_user.email_verified} 
+
+
+@router.put("/feedback/{feedback_id}", status_code=201)
+async def submit_feedback(feedback_id: UUID, feedback: Feedback, user: User = Depends(get_current_user_async),
+                          db: AsyncSession = Depends(get_db_primary)):
+    params = {**feedback.model_dump(), "id": feedback_id, "user_id": user.id}
+    saved = await db.scalar(text("""
+        INSERT INTO user_feedback(user_id,id,category,message,contact_name,contact_email)
+        VALUES(:user_id,:id,:category,:message,:contact_name,:contact_email)
+        ON CONFLICT(user_id,id) DO UPDATE SET id=excluded.id
+        WHERE (user_feedback.category, user_feedback.message, user_feedback.contact_name, user_feedback.contact_email)
+              IS NOT DISTINCT FROM (excluded.category, excluded.message, excluded.contact_name, excluded.contact_email)
+        RETURNING id
+    """), params)
+    if saved is None:
+        raise HTTPException(409, "此回饋識別碼已用於其他內容")
+    await db.commit()
+    return {"id": feedback_id}

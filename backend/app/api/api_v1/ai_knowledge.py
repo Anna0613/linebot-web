@@ -212,7 +212,7 @@ async def search_knowledge(
 @router.get("/{bot_id}/knowledge/documents", response_model=KnowledgeDocumentListResponse)
 async def list_knowledge_documents(
     bot_id: str,
-    scope: str = Query("project", regex="^(project|global)$"),
+    scope: str = Query("project", pattern="^(project|global)$"),
     q: Optional[str] = None,
     page: int = 1,
     page_size: int = 20,

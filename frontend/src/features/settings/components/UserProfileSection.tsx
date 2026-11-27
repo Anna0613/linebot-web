@@ -25,8 +25,8 @@ interface UserProfileSectionProps {
   onDisplayNameChange: (name: string) => void;
   onEditNameToggle: (editing: boolean) => void;
   onSaveDisplayName: () => Promise<void>;
-  onAvatarUpload: (file: File) => Promise<void>;
-  onAvatarDelete: () => Promise<void>;
+  onAvatarUpload: (file: File) => Promise<boolean>;
+  onAvatarDelete: () => Promise<boolean>;
 }
 
 const UserProfileSection = ({

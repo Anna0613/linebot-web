@@ -1,7 +1,7 @@
 """
 認證相關的 Pydantic schemas
 """
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 
 class UserRegister(BaseModel):
@@ -10,7 +10,8 @@ class UserRegister(BaseModel):
     password: str
     email: Optional[EmailStr] = None
     
-    @validator('username')
+    @field_validator('username')
+    @classmethod
     def validate_username(cls, v):
         if len(v) < 3:
             raise ValueError('用戶名稱必須至少 3 個字元')
@@ -18,7 +19,8 @@ class UserRegister(BaseModel):
             raise ValueError('用戶名稱不能超過 50 個字元')
         return v
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError('密碼必須至少 8 個字元')
@@ -48,7 +50,8 @@ class PasswordReset(BaseModel):
     token: str
     new_password: str
     
-    @validator('new_password')
+    @field_validator('new_password')
+    @classmethod
     def validate_new_password(cls, v):
         if len(v) < 8:
             raise ValueError('新密碼必須至少 8 個字元')
@@ -59,7 +62,8 @@ class PasswordChange(BaseModel):
     current_password: str
     new_password: str
     
-    @validator('new_password')
+    @field_validator('new_password')
+    @classmethod
     def validate_new_password(cls, v):
         if len(v) < 8:
             raise ValueError('新密碼必須至少 8 個字元')

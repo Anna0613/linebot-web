@@ -17,6 +17,7 @@ from app.models.bot import Bot, LogicTemplate
 from app.models.line_user import LineBotUser
 from app.services.line.line_bot_service import LineBotService
 from app.config import settings
+from app.services.conversation import inbox_reporting
 from app.config.redis_config import (
     CacheKeys,
     cache_result,
@@ -86,13 +87,12 @@ async def get_bot_dashboard(
     
     # 並行獲取資料以提升效能 - 優化版本
     try:
-        # 建立並行任務列表
-        parallel_tasks = []
-        
         # 基本統計資料（總是獲取，因為開銷小）
         async def get_basic_stats():
             from sqlalchemy import select, func
             async with AsyncSessionLocal() as task_db:
+                if settings.PG_INBOX_ENABLED:
+                    return {"total_users": await inbox_reporting.contact_count(task_db, bot_id)}
                 res = await task_db.execute(select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id))
                 total_users = res.scalar() or 0
                 return {"total_users": total_users}
@@ -125,6 +125,8 @@ async def get_bot_dashboard(
 
         async def get_analytics():
             async with AsyncSessionLocal() as task_db:
+                if settings.PG_INBOX_ENABLED:
+                    return await inbox_reporting.dashboard(task_db, bot_id, period)
                 return await _get_analytics_data(bot_id, period, task_db)
         
         # 建立並行任務
@@ -425,20 +427,14 @@ async def get_bot_dashboard_light(
     if not bot:
         raise HTTPException(status_code=404, detail="Bot 不存在或無權限訪問")
     
-    # 基本統計（避免阻塞事件圈）
-    res_cnt = await db.execute(select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id))
-    total_users = res_cnt.scalar() or 0
-    
-    # 今日互動數（快速查詢）
-    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = today_start + timedelta(days=1)
-    
-    # 去除未使用的同步子查詢，避免不必要的阻塞
-    
-    # 使用 MongoDB 獲取今日訊息數量
-    from app.services.conversation.conversation_service import ConversationService
-    today_interactions = await ConversationService.get_today_message_count(bot_id)
-    
+    if settings.PG_INBOX_ENABLED:
+        total_users = await inbox_reporting.contact_count(db, bot_id)
+        today_interactions = (await inbox_reporting.totals(db, bot_id, 1))["todayMessages"]
+    else:
+        from app.services.conversation.conversation_service import ConversationService
+        total_users = await db.scalar(select(func.count()).select_from(LineBotUser).where(LineBotUser.bot_id == bot_id))
+        today_interactions = await ConversationService.get_today_message_count(bot_id)
+
     return {
         "bot_info": {
             "id": bot.id,

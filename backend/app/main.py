@@ -55,62 +55,62 @@ async def lifespan(app: FastAPI):
         project_root = os.path.dirname(os.path.dirname(__file__))
         if init_database_enhanced(settings.DATABASE_URL, project_root):
             logger.info("✅ 增強資料庫初始化完成")
+        elif settings.PG_INBOX_ENABLED:
+            raise RuntimeError("PostgreSQL inbox migration failed")
         else:
             logger.warning("⚠️ 增強資料庫初始化失敗，嘗試基本初始化")
             init_database()
             logger.info("基本資料庫初始化完成")
         
-        # 初始化 Redis 連接
-        await init_redis()
-        logger.info("Redis 初始化完成")
-        
-        # 初始化 MongoDB 連接
-        mongodb_success = await init_mongodb()
-        if mongodb_success:
-            logger.info("✅ MongoDB 初始化完成")
-        else:
-            logger.warning("⚠️  MongoDB 初始化失敗，繼續啟動服務器，但 MongoDB 功能將不可用")
-        
-        # 預先初始化 MinIO（避免首個請求同步阻塞）
-        try:
-            svc, err = await asyncio.to_thread(init_minio_service, False)
-            if err:
-                logger.warning(f"MinIO 初始化警告: {err}")
+        if not settings.PG_INBOX_ENABLED:
+            # 初始化 Redis 連接
+            await init_redis()
+            logger.info("Redis 初始化完成")
+
+            # 初始化 MongoDB 連接
+            mongodb_success = await init_mongodb()
+            if mongodb_success:
+                logger.info("✅ MongoDB 初始化完成")
             else:
-                logger.info("MinIO 初始化完成")
-        except Exception as e:
-            logger.warning(f"MinIO 預先初始化失敗（將在首次使用時再嘗試）: {e}")
-        
-        # 初始化多層快取
-        cache = get_cache()
-        logger.info("多層快取系統初始化完成")
-        
+                logger.warning("⚠️  MongoDB 初始化失敗，繼續啟動服務器，但 MongoDB 功能將不可用")
+
+            # 預先初始化 MinIO（避免首個請求同步阻塞）
+            try:
+                svc, err = await asyncio.to_thread(init_minio_service, False)
+                if err:
+                    logger.warning(f"MinIO 初始化警告: {err}")
+                else:
+                    logger.info("MinIO 初始化完成")
+            except Exception as e:
+                logger.warning(f"MinIO 預先初始化失敗（將在首次使用時再嘗試）: {e}")
+
         # 啟動背景任務管理器
         task_manager = get_task_manager()
         await task_manager.start()
         logger.info("背景任務管理器啟動完成")
         
-        # 啟動效能優化器
-        optimizer = PerformanceOptimizer()
-        await optimizer.setup_cache_warming()
-        logger.info("效能優化器設置完成")
+        if not settings.PG_INBOX_ENABLED:
+            # 啟動效能優化器
+            optimizer = PerformanceOptimizer()
+            await optimizer.setup_cache_warming()
+            logger.info("效能優化器設置完成")
 
-        # 啟動 WebSocket Redis 訂閱（跨進程廣播）
-        try:
-            await websocket_manager.start()
-        except Exception as e:
-            logger.warning(f"WebSocket Redis 訂閱啟動失敗: {e}")
-        
-        # 添加定期效能報告任務
-        from app.services.runtime.background_tasks import generate_performance_report, TaskPriority
-        await task_manager.add_task(
-            "performance_report",
-            "定期效能報告",
-            generate_performance_report,
-            priority=TaskPriority.LOW,
-            delay=300  # 5分鐘後開始
-        )
-        
+            # 啟動 WebSocket Redis 訂閱（跨進程廣播）
+            try:
+                await websocket_manager.start()
+            except Exception as e:
+                logger.warning(f"WebSocket Redis 訂閱啟動失敗: {e}")
+
+            # 添加定期效能報告任務
+            from app.services.runtime.background_tasks import generate_performance_report, TaskPriority
+            await task_manager.add_task(
+                "performance_report",
+                "定期效能報告",
+                generate_performance_report,
+                priority=TaskPriority.LOW,
+                delay=300  # 5分鐘後開始
+            )
+
     except Exception as e:
         logger.error(f"初始化失敗: {e}")
         raise
@@ -125,17 +125,18 @@ async def lifespan(app: FastAPI):
         await task_manager.stop()
         logger.info("背景任務管理器已停止")
 
-        await close_redis()
-        logger.info("Redis 連接已關閉")
+        if not settings.PG_INBOX_ENABLED:
+            await close_redis()
+            logger.info("Redis 連接已關閉")
 
-        await close_mongodb()
-        logger.info("MongoDB 連接處理完成")
+            await close_mongodb()
+            logger.info("MongoDB 連接處理完成")
 
-        # 停止 WebSocket 訂閱
-        try:
-            await websocket_manager.stop()
-        except Exception as e:
-            logger.warning(f"關閉 WebSocket 訂閱失敗: {e}")
+            # 停止 WebSocket 訂閱
+            try:
+                await websocket_manager.stop()
+            except Exception as e:
+                logger.warning(f"關閉 WebSocket 訂閱失敗: {e}")
 
         # 關閉資料庫連線
         await db_manager.close()

@@ -1,6 +1,6 @@
 import FlowReplay from "./FlowReplay";
 import { useState } from "react";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, Hand, Inbox, LoaderCircle, RotateCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppShell from "@/components/layout/AppShell";
@@ -17,20 +17,22 @@ type Thread = {
 type Content = { kind: string; body: string | null; withdrawn: boolean };
 type Summary = Thread & Content & { last_activity: string };
 type Message = Content & {
-  seq: number; occurred_at: string; can_draft: boolean;
+  delivery_state?: "queued" | "accepted" | "simulated" | "failed" | "unknown"; seq: number; occurred_at: string; can_draft: boolean;
   draft_state: "requested" | "working" | "ready" | "handoff" | "failed" | "stale" | null;
   source_version?: number; source_location?: string; draft_body?: string; source_title?: string; source_excerpt?: string; draft_model?: string; draft_tools?: string[];
 };
 const copy = {
   zh: {
-    title: "客服收件匣", pilot: "試行工作區", note: "接手會取消新收件流程的待辦。此工作區尚未啟用 LINE 外送。",
+    title: "客服收件匣", pilot: "試行工作區", note: "接手後即可回覆，送出狀態會顯示在訊息旁。",
+    send: "送出回覆", reply: "輸入客服回覆", queued: "等待派送", accepted: "LINE 已接受", simulated: "本機模擬送出", failed: "派送失敗", unknown: "派送結果待確認",
     threads: "對話", empty: "目前沒有對話", choose: "選擇對話以查看訊息", error: "目前無法同步", retry: "重新整理",
     human: "人工接手中", auto: "自動模式", claim: "接手對話", older: "更早的訊息", more: "更多對話", removed: "訊息已收回",
     draft: "產生回覆草稿", pending: "正在查找文件", citation: "引用原文", fixture: "本機模擬", handoff: "缺少可引用的依據，請由客服處理。", stale: "來源已更新，請重新產生。", draftFailed: "產生失敗，可重新嘗試。", search: "搜尋文件", read: "讀取段落",
     user: "個人", group: "群組", room: "聊天室", noBot: "請先選擇或建立頻道", dashboard: "回工作台", loading: "載入中",
   },
   en: {
-    title: "Support inbox", pilot: "Pilot workspace", note: "Taking over cancels pending work in this inbox. LINE delivery is not enabled here.",
+    title: "Support inbox", pilot: "Pilot workspace", note: "Take over to reply. Each reply shows its delivery status.",
+    send: "Send reply", reply: "Write a reply", queued: "Queued", accepted: "Accepted by LINE", simulated: "Simulated locally", failed: "Delivery failed", unknown: "Delivery unconfirmed",
     threads: "Conversations", empty: "No conversations yet", choose: "Select a conversation to read its messages", error: "Sync unavailable", retry: "Refresh",
     human: "Human support", auto: "Automatic", claim: "Take over", older: "Earlier messages", more: "More conversations", removed: "Message withdrawn",
     draft: "Generate reply draft", pending: "Checking sources", citation: "Source passage", fixture: "Local simulator", handoff: "No supporting source. Review manually.", stale: "Source changed. Generate again.", draftFailed: "Draft failed. Try again.", search: "Search documents", read: "Read passage",
@@ -45,7 +47,7 @@ async function read<T>(url: string, options: RequestInit = {}): Promise<T> {
   return response.json();
 }
 
-function ThreadView({ base, keys, thread, labels }: { base: string; keys: string[]; thread: Summary; labels: Labels }) {
+function ThreadView({ base, keys, thread, labels }: { base: string; keys: string[]; thread: Thread; labels: Labels }) {
   const cache = useQueryClient();
   const details = useInfiniteQuery({
     queryKey: [...keys, thread.id], initialPageParam: 0, refetchInterval: 5000, retry: false,
@@ -65,6 +67,16 @@ function ThreadView({ base, keys, thread, labels }: { base: string; keys: string
     mutationFn: (seq: number) => read(base + "/" + thread.id + "/messages/" + seq + "/draft", {method: "POST"}),
     onSettled: () => cache.invalidateQueries({ queryKey: [...keys, thread.id] }),
   });
+  const [body, setBody] = useState("");
+  const [clientKey, setClientKey] = useState(() => crypto.randomUUID());
+  const reply = useMutation({
+    mutationFn: () => read(base + "/" + thread.id + "/replies", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ownership_epoch: current.ownership_epoch, client_key: clientKey, body }),
+    }),
+    onSuccess: () => { setBody(""); setClientKey(crypto.randomUUID()); },
+    onSettled: () => cache.invalidateQueries({ queryKey: keys }),
+  });
   const items = details.data?.pages.slice().reverse().flatMap(page => page.items) ?? [];
   return <section className="inbox-detail">
     <header><div><small>{labels[current.source_type]}</small><h2>{current.source_id}</h2></div>
@@ -77,6 +89,7 @@ function ThreadView({ base, keys, thread, labels }: { base: string; keys: string
       {details.hasNextPage && <button disabled={details.isFetchingNextPage} onClick={() => void details.fetchNextPage()}>{labels.older}</button>}
       {items.map(item => <article key={item.seq}>
         <time dateTime={item.occurred_at}>{new Date(item.occurred_at).toLocaleString()}</time>
+        {item.delivery_state && <small>{labels[item.delivery_state]}</small>}
         <p>{item.withdrawn ? labels.removed : item.body ?? item.kind}</p>
         {item.can_draft && current.owner_mode === "auto" && !claim.isPending && !details.isError &&
           <div className="studio-draft">
@@ -94,10 +107,37 @@ function ThreadView({ base, keys, thread, labels }: { base: string; keys: string
               ? <small role="status">{labels.pending}</small>
               : <button disabled={draft.isPending} onClick={() => draft.mutate(item.seq)}>{labels.draft}</button>}
           </div>}
-        {item.kind === "text" && item.body && !item.withdrawn && <FlowReplay base={base} cacheKeys={keys} body={item.body} english={labels === copy.en} />}
+        {!item.delivery_state && item.kind === "text" && item.body && !item.withdrawn && <FlowReplay base={base} cacheKeys={keys} body={item.body} english={labels === copy.en} />}
       </article>)}
     </div>
+    {current.owner_mode === "human" && <form className="flex flex-wrap items-center gap-2 border-t p-3" onSubmit={e => {
+      e.preventDefault();
+      if (body.trim() && !reply.isPending) reply.mutate();
+    }}>
+      <textarea className="app-input flex-1" aria-label={labels.reply} placeholder={labels.reply} maxLength={5000}
+        value={body} disabled={reply.isPending} onChange={e => {
+          if (reply.isError) { reply.reset(); setClientKey(crypto.randomUUID()); }
+          setBody(e.target.value);
+        }} />
+      <button className="app-primary-button" disabled={!body.trim() || reply.isPending}>{labels.send}</button>
+      {reply.isError && <span role="alert">{labels.error}</span>}
+    </form>}
   </section>;
+}
+
+export function FriendConversation({ bot, contact, account }: { bot: string; contact?: string; account: string }) {
+  const { language } = useLanguagePreference();
+  const labels = copy[language];
+  const base = API_CONFIG.UNIFIED.BASE_URL + "/bots/" + encodeURIComponent(bot) + "/inbox";
+  const keys = ["inbox", account, bot];
+  const query = useQuery({
+    queryKey: [...keys, "contact", contact], enabled: !!contact,
+    queryFn: () => read<Thread>(base + "/contacts/" + encodeURIComponent(contact!) + "/thread", {method: "POST"}),
+  });
+  if (!contact) return <p>{labels.choose}</p>;
+  if (query.isError) return <button onClick={() => void query.refetch()}>{labels.retry}</button>;
+  if (!query.data) return <p>{labels.loading}</p>;
+  return <ThreadView key={query.data.id} base={base} keys={keys} thread={query.data} labels={labels} />;
 }
 
 function ChannelInbox({ bot, account, labels }: { bot: string; account: string; labels: Labels }) {

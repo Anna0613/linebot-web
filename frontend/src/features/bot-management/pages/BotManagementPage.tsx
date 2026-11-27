@@ -148,12 +148,9 @@ const BotManagementPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [timeRange, setTimeRange] = useState("week");
-  const [_refreshing, setRefreshing] = useState(false);
+  const pgInbox = import.meta.env.VITE_PG_INBOX === "true";
   const [botHealth, setBotHealth] = useState<"online" | "offline" | "error">(
     "online"
-  );
-  const [_lastRenderTime, setLastRenderTime] = useState(
-    new Date().toISOString()
   );
 
   // WebSocket 即時連接 - 在選擇 Bot 後立即連接，由 useWebSocket 內部處理延遲
@@ -161,7 +158,7 @@ const BotManagementPage: React.FC = () => {
     botId: selectedBotId || undefined,
     autoReconnect: true,
     // 只要選中了 Bot 就啟用 WebSocket，連接時序由 hook 內部處理
-    enabled: !!selectedBotId,
+    enabled: !!selectedBotId && !pgInbox,
   });
 
   // 創建穩定的 WebSocket 連接檢查函數，避免每次渲染都創建新函數
@@ -372,7 +369,6 @@ const BotManagementPage: React.FC = () => {
   // 手動刷新資料
   const handleRefreshData = async () => {
     if (!selectedBotId) return;
-    setRefreshing(true);
     try {
       // 使用統一的 fetchAnalytics 函數來刷新所有數據
       await fetchAnalytics(selectedBotId, undefined, false);
@@ -386,8 +382,6 @@ const BotManagementPage: React.FC = () => {
         description: "無法取得最新互動紀錄",
         variant: "destructive",
       });
-    } finally {
-      setRefreshing(false);
     }
   };
 
@@ -656,9 +650,6 @@ const BotManagementPage: React.FC = () => {
 
   // 更新渲染時間
   useEffect(() => {
-    const renderTime = new Date().toISOString();
-    setLastRenderTime(renderTime);
-
     // 更新文檔標題
     if (analytics) {
       document.title = `${copy.documentTitle} - ${analytics.totalMessages || 0} messages`;
@@ -683,13 +674,13 @@ const BotManagementPage: React.FC = () => {
               {selectedBot?.is_active === false ? copy.inactive : copy.active}
             </span>
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
+          {!pgInbox && <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
             <Wifi className="h-3.5 w-3.5 text-emerald-600" />
             <span className="text-[var(--bc-ink-3)]">{copy.webSocket}</span>
             <span className="font-semibold text-[var(--bc-ink)]">
               {isConnected ? copy.connected : copy.reconnecting}
             </span>
-          </span>
+          </span>}
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--bc-line-2)] bg-white/70 px-2.5 py-1 text-xs font-medium text-[var(--bc-ink-2)] shadow-sm">
             <Radio className="h-3.5 w-3.5 text-emerald-600" />
             <span className="text-[var(--bc-ink-3)]">{copy.botHealth}</span>

@@ -37,7 +37,7 @@ def extract_sections(name: str, raw: bytes):
         raise HTTPException(415, "請選擇 TXT、Markdown、PDF 或 DOCX 文件")
     try:
         if ext == ".pdf":
-            from PyPDF2 import PdfReader
+            from pypdf import PdfReader
 
             pages = PdfReader(BytesIO(raw)).pages
             parts = (
