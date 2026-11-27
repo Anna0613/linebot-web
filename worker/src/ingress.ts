@@ -15,6 +15,7 @@ export interface Envelope {
 export interface Bindings {
   INBOUND: Queue<Envelope>;
   CHANNELS: R2Bucket;
+  KNOWLEDGE: R2Bucket;
   CHANNEL_KEY: string;
   LOCAL_DRAFT_FIXTURE?: string;
   LOCAL_TICK_TOKEN?: string;

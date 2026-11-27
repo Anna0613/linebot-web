@@ -1,3 +1,4 @@
+import FlowReplay from "./FlowReplay";
 import { useState } from "react";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, Hand, Inbox, LoaderCircle, RotateCw } from "lucide-react";
@@ -18,7 +19,7 @@ type Summary = Thread & Content & { last_activity: string };
 type Message = Content & {
   seq: number; occurred_at: string; can_draft: boolean;
   draft_state: "requested" | "working" | "ready" | "handoff" | "failed" | "stale" | null;
-  draft_body?: string; source_title?: string; source_excerpt?: string; draft_model?: string; draft_tools?: string[];
+  source_version?: number; source_location?: string; draft_body?: string; source_title?: string; source_excerpt?: string; draft_model?: string; draft_tools?: string[];
 };
 const copy = {
   zh: {
@@ -82,7 +83,7 @@ function ThreadView({ base, keys, thread, labels }: { base: string; keys: string
             {item.draft_state === "ready" && <>
               <strong>{item.draft_model === "local-fixture" ? labels.fixture : item.draft_model}</strong>
               <blockquote>{item.draft_body}</blockquote>
-              <details><summary>{labels.citation} · {item.source_title}</summary>
+              <details><summary>{labels.citation} · {item.source_title}{item.source_version && ` · v${item.source_version} · ${item.source_location}`}</summary>
                 <small>{item.draft_tools?.map(tool => tool === "knowledge.search" ? labels.search : labels.read).join(" → ")}</small>
                 <div>{item.source_excerpt}</div></details>
             </>}
@@ -93,6 +94,7 @@ function ThreadView({ base, keys, thread, labels }: { base: string; keys: string
               ? <small role="status">{labels.pending}</small>
               : <button disabled={draft.isPending} onClick={() => draft.mutate(item.seq)}>{labels.draft}</button>}
           </div>}
+        {item.kind === "text" && item.body && !item.withdrawn && <FlowReplay base={base} cacheKeys={keys} body={item.body} english={labels === copy.en} />}
       </article>)}
     </div>
   </section>;

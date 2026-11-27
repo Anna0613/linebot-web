@@ -1,8 +1,9 @@
 import test from 'node:test';
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
-import { createHmac, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -39,6 +40,9 @@ test('verified webhook survives a PostgreSQL outage and redelivery', { timeout: 
   await client.query(await readFile(new URL('../../backend/migrations/sql/20261127_inbox_drafts.sql', import.meta.url), 'utf8'));
   await client.query(`CREATE TABLE knowledge_documents(id uuid PRIMARY KEY, bot_id uuid, title text, original_file_name text, deleted_at timestamptz);
     CREATE TABLE knowledge_chunks(id uuid PRIMARY KEY, document_id uuid, bot_id uuid, content text, deleted_at timestamptz)`);
+  await client.query(await readFile(new URL('../../backend/migrations/sql/20261127_knowledge_versions.sql', import.meta.url), 'utf8'));
+  await client.query(`CREATE TABLE logic_templates(id uuid PRIMARY KEY,bot_id uuid,user_id uuid,name text,logic_blocks jsonb);
+    CREATE TABLE flex_messages(id uuid PRIMARY KEY,user_id uuid,name text,content jsonb)`);
   const doc = randomUUID(), chunk = randomUUID();
   await client.query("INSERT INTO knowledge_documents(id,bot_id,title) VALUES ($1,$2,'門市資訊')", [doc,bot]);
   await client.query("INSERT INTO knowledge_chunks(id,document_id,bot_id,content) VALUES ($1,$2,$3,'營業時間為週一至週五九點到六點。')", [chunk,doc,bot]);
@@ -87,15 +91,48 @@ test('verified webhook survives a PostgreSQL outage and redelivery', { timeout: 
     assert.equal(draft.draft_state,'ready');
     assert.deepEqual(draft.draft_tools,['knowledge.search','knowledge.read']);
     if (process.env.INBOX_TEST_PYTHON) {
-      execFileSync(process.env.INBOX_TEST_PYTHON, ['-m', 'pytest', '-q', '-o', 'addopts=', '--noconftest', 'tests/test_pg_inbox.py'], {
-        cwd: fileURLToPath(new URL('../../backend/', import.meta.url)), stdio: 'inherit',
-        env: { ...process.env, INBOX_TEST_BOT: bot, INBOX_TEST_OWNER: owner,
+      const result = await promisify(execFile)(process.env.INBOX_TEST_PYTHON, ['-m', 'pytest', '-q', '-o', 'addopts=', '--noconftest', 'tests/test_pg_inbox.py'], {
+        cwd: fileURLToPath(new URL('../../backend/', import.meta.url)),
+        env: { ...process.env, INBOX_TEST_URL:url.origin, INBOX_TEST_TICK:secret, INBOX_TEST_BOT: bot, INBOX_TEST_OWNER: owner,
           DB_HOST:'127.0.0.1', DB_PORT:String(port), DB_NAME:'postgres', DB_USER:'postgres', DB_PASSWORD:password,
           DB_REPLICA_HOST:'127.0.0.1', DB_REPLICA_PORT:String(port), DB_REPLICA_NAME:'postgres',
           DB_REPLICA_USER:'postgres', DB_REPLICA_PASSWORD:password },
       });
+      console.log(result.stdout);
+      const bucket = await runtime.getR2Bucket('KNOWLEDGE');
+      const versions = await check.query('SELECT * FROM inbox_source_versions ORDER BY version');
+      assert.equal(versions.rowCount,2);
+      for (const v of versions.rows) {
+        assert.equal(v.raw_bytes,null);
+        assert.equal(v.normalized_bytes,null);
+        const raw = await bucket.get(`sources/${bot}/${v.source_id}/${v.version}/${v.raw_hash}`);
+        assert.equal(createHash('sha256').update(Buffer.from(await raw.arrayBuffer())).digest('hex'),v.raw_hash);
+      }
       assert.equal((await check.query('SELECT state FROM inbox_jobs')).rows[0].state, 'cancelled');
     }
+    // Recover from a partial publication without exposing it or overwriting a conflicting object.
+    const retrySource = randomUUID();
+    const rawBytes = Buffer.from('可重播的原檔');
+    const normalized = Buffer.from('可重播的原檔\n');
+    const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+    await check.query('INSERT INTO inbox_sources(id,bot_id) VALUES($1,$2)',[retrySource,bot]);
+    await check.query(`INSERT INTO inbox_source_versions
+      (source_id,version,filename,raw_hash,text_hash,raw_bytes,normalized_bytes)
+      VALUES($1,1,'retry.txt',$2,$3,$4,$5)`,[retrySource,digest(rawBytes),digest(normalized),rawBytes,normalized]);
+    const bucket = await runtime.getR2Bucket('KNOWLEDGE');
+    const key = `sources/${bot}/${retrySource}/1/${digest(normalized)}`;
+    await bucket.put(key, 'conflicting content');
+    const runTick = () => runtime.dispatchFetch('http://localhost/internal/local-draft-tick', {
+      method:'POST',headers:{Authorization:'Bearer ' + secret}
+    });
+    assert.equal((await runTick()).status,503);
+    assert.equal((await check.query('SELECT active_version FROM inbox_sources WHERE id=$1',[retrySource])).rows[0].active_version,0);
+    const rawObject = await bucket.get(`sources/${bot}/${retrySource}/1/${digest(rawBytes)}`);
+    assert.equal(await rawObject.text(), rawBytes.toString());
+    await bucket.delete(key);
+    await check.query("UPDATE inbox_source_versions SET retry_at=now() WHERE source_id=$1",[retrySource]);
+    assert.equal((await runTick()).status,204);
+    assert.equal((await check.query('SELECT active_version FROM inbox_sources WHERE id=$1',[retrySource])).rows[0].active_version,1);
   } finally {
     await check.end();
   }

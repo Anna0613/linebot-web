@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import AIKnowledgeApi, { KnowledgeDocumentItem, Scope } from '../api/aiKnowledgeApi';
 import { API_CONFIG } from '@/config/apiConfig';
+import PublishedSources from "./PublishedSources";
 import ProcessingJobTracker from './ProcessingJobTracker';
 
 type Props = {
@@ -418,6 +419,7 @@ export const AIKnowledgeBaseManager: React.FC<Props> = ({ botId }) => {
         <h1>知識庫</h1>
         <p>管理這個頻道用來回答顧客問題的文件與文字。</p>
       </header>
+      {botId && import.meta.env.VITE_PG_INBOX === "true" && <PublishedSources key={botId} botId={botId} documents={items} />}
       <section className="studio-documents">
         <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

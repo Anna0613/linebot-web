@@ -17,6 +17,9 @@ api_router.include_router(users.router, prefix="/users", tags=["用戶管理"])
 # Bot 管理路由
 api_router.include_router(bots.router, prefix="/bots", tags=["Bot 管理"])
 if settings.PG_INBOX_ENABLED:
+    from app.api.api_v1 import inbox_sources, inbox_releases
+    api_router.include_router(inbox_releases.router, prefix="/bots", tags=["收件匣流程測試"])
+    api_router.include_router(inbox_sources.router, prefix="/bots", tags=["收件匣知識來源"])
     api_router.include_router(inbox.router, prefix="/bots", tags=["客服收件匣"])
 api_router.include_router(rich_menu.router, prefix="/bots", tags=["Rich Menu"])
 

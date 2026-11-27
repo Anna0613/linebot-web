@@ -53,16 +53,19 @@ async def messages(thread_id: UUID, bot_id: UUID = Depends(owned_bot),
     result = await db.execute(text("""
         SELECT m.seq, m.actor_id, m.kind, m.body, m.withdrawn, m.occurred_at,
                j.seq IS NOT NULL AS can_draft,
-               CASE WHEN j.draft_state='ready' AND d.id IS NULL THEN 'stale' ELSE j.draft_state END AS draft_state,
-               CASE WHEN d.id IS NOT NULL THEN j.draft_body END AS draft_body,
-               CASE WHEN d.id IS NOT NULL THEN coalesce(d.title,d.original_file_name,'未命名文件') END AS source_title,
-               CASE WHEN d.id IS NOT NULL THEN left(k.content,1400) END AS source_excerpt,
+               CASE WHEN j.draft_state='ready' AND d.id IS NULL AND p.id IS NULL THEN 'stale' ELSE j.draft_state END AS draft_state,
+               CASE WHEN d.id IS NOT NULL OR p.id IS NOT NULL THEN j.draft_body END AS draft_body,
+               CASE WHEN p.id IS NOT NULL THEN p.filename WHEN d.id IS NOT NULL THEN coalesce(d.title,d.original_file_name,'未命名文件') END AS source_title,
+               CASE WHEN p.id IS NOT NULL THEN p.content WHEN d.id IS NOT NULL THEN left(k.content,1400) END AS source_excerpt,
+               p.version AS source_version,p.location AS source_location,
                j.draft_tools, j.draft_model
         FROM inbox_messages m
         LEFT JOIN inbox_jobs j ON j.conversation_id=m.conversation_id AND j.seq=m.seq AND j.state='pending'
+        LEFT JOIN inbox_published_sections p ON p.id=j.draft_chunk AND p.bot_id=:bot AND p.sha256=j.draft_hash
         LEFT JOIN knowledge_chunks k ON k.id=j.draft_chunk AND k.bot_id=:bot
             AND k.deleted_at IS NULL AND md5(k.content)=j.draft_hash
         LEFT JOIN knowledge_documents d ON d.id=k.document_id AND d.bot_id=:bot AND d.deleted_at IS NULL
+            AND NOT EXISTS (SELECT 1 FROM inbox_sources s WHERE s.legacy_document_id=d.id AND s.active_version>0)
         WHERE m.conversation_id=:thread AND (CAST(:before AS bigint) IS NULL OR m.seq < :before)
         ORDER BY m.seq DESC LIMIT :lim
     """), params)

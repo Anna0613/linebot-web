@@ -1,4 +1,4 @@
-import { Client } from "pg";
+import { database, readSection } from "./publications.ts";
 import type { Bindings } from "./ingress.ts";
 
 type Step = { tool: "search" | "read" | "reply" | "handoff"; value?: string };
@@ -81,19 +81,7 @@ export async function generateDraft(
 }
 
 export async function processDraft(env: Bindings) {
-  // Each query releases its connection before inference begins.
-  const query = async (sql: string, params: unknown[] = []) => {
-    const db = new Client({
-      connectionString: env.HYPERDRIVE.connectionString,
-      connectionTimeoutMillis: 4000,
-    });
-    try {
-      await db.connect();
-      return (await db.query(sql, params)).rows;
-    } finally {
-      await db.end();
-    }
-  };
+  const query = database(env);
   const [job] = await query(`WITH pick AS (
     SELECT j.conversation_id, j.seq, c.bot_id, m.body FROM inbox_jobs j
     JOIN inbox_conversations c ON c.id=j.conversation_id
@@ -107,7 +95,8 @@ export async function processDraft(env: Bindings) {
     FROM pick WHERE j.conversation_id=pick.conversation_id AND j.seq=pick.seq RETURNING pick.*,j.draft_lease`);
   if (!job) return;
   const scope = `FROM knowledge_chunks k JOIN knowledge_documents d ON d.id=k.document_id
-    WHERE k.bot_id=$1 AND d.bot_id=$1 AND k.deleted_at IS NULL AND d.deleted_at IS NULL`;
+    WHERE k.bot_id=$1 AND d.bot_id=$1 AND k.deleted_at IS NULL AND d.deleted_at IS NULL
+      AND NOT EXISTS(SELECT 1 FROM inbox_sources s WHERE s.legacy_document_id=d.id AND s.active_version>0)`;
   const label =
     "coalesce(nullif(d.title,''),d.original_file_name,'未命名文件')";
   let state = "failed",
@@ -116,24 +105,37 @@ export async function processDraft(env: Bindings) {
     hash = null,
     tools: string[] = [];
   try {
+    const versionedHits = new Set<string>();
     const draft = await generateDraft(
       job.body,
       decideWith(env),
-      async (term) =>
-        (await query(
-          `SELECT k.id,${label} AS title ${scope} AND
-        (strpos(lower(k.content),lower($2))>0 OR strpos(lower(${label}),lower($2))>0)
-        ORDER BY k.id LIMIT 6`,
+      async (term) => {
+        const hits = await query(
+          `SELECT id,title,versioned FROM (
+          SELECT id,filename AS title,true AS versioned, strpos(lower(content),lower($2))>0 AS body_match,byte_start
+          FROM inbox_published_sections WHERE bot_id=$1 AND
+            (strpos(lower(content),lower($2))>0 OR strpos(lower(filename),lower($2))>0)
+          UNION ALL
+          SELECT k.id,${label},false,strpos(lower(k.content),lower($2))>0,0 ${scope} AND
+            (strpos(lower(k.content),lower($2))>0 OR strpos(lower(${label}),lower($2))>0)
+        ) hits ORDER BY body_match DESC,versioned DESC,title,byte_start,id LIMIT 6`,
           [job.bot_id, term],
-        )) as { id: string; title: string }[],
+        );
+        return hits.map((hit) => {
+          if (hit.versioned) versionedHits.add(hit.id);
+          return { id: hit.id, title: hit.title };
+        });
+      },
       async (id) =>
-        (
-          await query(
-            `SELECT k.id,${label} AS title,left(k.content,1400) AS excerpt,md5(k.content) AS hash
-        ${scope} AND k.id=$2`,
-            [job.bot_id, id],
-          )
-        )[0] as Passage | undefined,
+        versionedHits.has(id)
+          ? readSection(env, job.bot_id, id)
+          : ((
+              await query(
+                `SELECT k.id,${label} AS title,left(k.content,1400) AS excerpt,md5(k.content) AS hash
+          ${scope} AND k.id=$2`,
+                [job.bot_id, id],
+              )
+            )[0] as Passage | undefined),
     );
     state = draft.state;
     body = draft.text;

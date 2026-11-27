@@ -4,14 +4,21 @@ import { storeEvent } from './store.ts';
 
 import { processDraft } from './drafts.ts';
 
+import { publishNext } from './publications.ts';
+
+async function tick(env: Bindings) {
+  try { await publishNext(env); }
+  finally { await processDraft(env); }
+}
+
 export default {
-  async scheduled(_event: ScheduledController, env: Bindings) { await processDraft(env); },
+  async scheduled(_event: ScheduledController, env: Bindings) { await tick(env); },
   async fetch(request: Request, env: Bindings) {
     try {
       if (env.LOCAL_TICK_TOKEN && request.method === 'POST' &&
           new URL(request.url).pathname === '/internal/local-draft-tick' &&
           request.headers.get('authorization') === 'Bearer ' + env.LOCAL_TICK_TOKEN) {
-        await processDraft(env);
+        await tick(env);
         return new Response(null, {status: 204});
       }
       return await ingress(request, env);

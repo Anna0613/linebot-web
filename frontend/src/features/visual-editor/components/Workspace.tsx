@@ -321,6 +321,23 @@ const Workspace: React.FC<WorkspaceProps> = ({
     flex: { isValid: true, errors: [], warnings: [] },
   });
   const { toast } = useToast();
+  const [freezing, setFreezing] = useState(false);
+  const freezeSavedFlow = async () => {
+    if (!selectedBotId || !selectedLogicTemplateId || freezing) return;
+    setFreezing(true);
+    try {
+      const url = API_CONFIG.UNIFIED.BASE_URL + "/bots/" + selectedBotId + "/inbox/releases/templates/" + selectedLogicTemplateId;
+      const response = await fetch(url, {method:"POST", credentials:"include"});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || "無法建立測試版本");
+      toast({title:`流程測試版 v${result.version} 已就緒`,description:"可在收件匣選擇文字訊息重播。"});
+    } catch (error) {
+      toast({title:"建立測試版失敗",description:error instanceof Error ? error.message : undefined,variant:"destructive"});
+    } finally {
+      setFreezing(false);
+    }
+  };
+
 
   // Flex 訊息資料
   const [_savedFlexMessages, setSavedFlexMessages] = useState<
@@ -831,6 +848,10 @@ const Workspace: React.FC<WorkspaceProps> = ({
           <span className="truncate text-sm font-medium text-slate-700">
             {currentLogicTemplateName}
           </span>
+          {import.meta.env.VITE_PG_INBOX === "true" && !isUnsupportedLogicTemplate &&
+            <Button size="sm" variant="outline" disabled={freezing} onClick={freezeSavedFlow}>
+              {freezing ? "建立中…" : "將已儲存流程存為測試版"}
+            </Button>}
         </div>
       );
     }
